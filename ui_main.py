@@ -9,16 +9,58 @@
 ################################################################################
 
 from PySide2.QtCore import (QCoreApplication, QMetaObject, QObject, QPoint,
-    QRect, QSize, QUrl, Qt)
+    QRect, QSize, QUrl, Qt, QMimeData)
 from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont,
     QFontDatabase, QIcon, QLinearGradient, QPalette, QPainter, QPixmap,
-    QRadialGradient)
+    QRadialGradient, QDrag)
 from PySide2.QtWidgets import *
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog#, QPushButton
 import sys
 import os
+
+# Class to create a region that allows dragging and dropping a file to upload.
+class DropLabel(QLabel):
+    def __init__(self, *args, **kwargs):
+        QLabel.__init__(self, *args, **kwargs)
+
+        # Allow dropping files in this region
+        self.setAcceptDrops(True)
+
+        # # Init. file icon (hidden)
+        # fileIcon = QLabel(self)
+        # pixmap = QPixmap('./images/blank-file-128.ico')
+        # fileIcon.setPixmap(pixmap)
+        # fileIcon.hide()
+        
+        # # Init. remove button (hidden)
+        # removeBtn_Test = RemoveBtn(self)
+        # removeBtn_Test.setEnabled(False)
+        # removeBtn_Test.hide()
+
+    def dragEnterEvent(self, event):
+        if event.mimeData().hasText():
+            event.acceptProposedAction()
+
+    def dropEvent(self, event):
+        print ("dropEvent: self.parent(): {}".format(self.parent()))
+        print ("dropEvent: self: {}".format(self))
+        print ("dir(self.parent()): {}".format(dir(self.parent())))
+        pos = event.pos()
+        text = event.mimeData().text()
+        self.setText(text)
+
+        # Show file img
+        self.fileIcon.show()
+
+        # Show remove btn
+        self.removeBtn_Test.show()
+        #self.parent().removeBtn_Test.show()
+        self.parent().removeBtn_Test.setEnabled(True)
+        self.parent().removeBtn_Test.setText("Remove_Test")
+
+        event.acceptProposedAction()
 
 
 class Ui_MainWindow(object):
