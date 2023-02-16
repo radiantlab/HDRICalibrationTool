@@ -24,7 +24,7 @@ import os
 import ntpath
 
 # Creates a region to upload a file to, given input coords, region size, and a region color.
-class UploadFileRegion(QWidget):
+class UploadFileRegion( QWidget ):
     # regionCoords[0]: x
     # regionCoords[1]: y
     # regionSize[0]: width
@@ -169,7 +169,7 @@ class UploadFileRegion(QWidget):
         
 
     # Allow the dragging of image/text files onto region.
-    def dragEnterEvent(self, event):
+    def dragEnterEvent( self, event ):
         # Only accept dragEnterEvents if region does not have a file already
         if (self.hasFile == False):
             if event.mimeData().hasText():
@@ -178,8 +178,14 @@ class UploadFileRegion(QWidget):
 
     # On image/text file drop event
     def dropEvent(self, event):
-        # Set filePathLabel
+        # Get file path from file
         filepath = event.mimeData().text()
+
+        # Remove 'file:///' if it exists after uploadinf file
+        if ( filepath.startswith( "file:///" ) ):
+            filepath = filepath[8:]
+
+        # Set filePathLabel
         self.filePathLabel.setText( filepath )
 
         # Set fileNameLabel and show
@@ -205,12 +211,20 @@ class UploadFileRegion(QWidget):
         self.fileNameLabel.setStyleSheet( u"background-color: white;"
                                            "color: black;"
                                            "font-weight: normal;" )
+        
+        # Basic validation
+        if (self.uploadRegion.objectName() == "UploadFileRegion_Vignetting"):
+            print( "Upload region is for vignetting. Validating..." )
+            self.vc_validation()
+        else:
+            print( "Upload region is unknown. self.uploadRegion.objectName(): {}".format( self.uploadRegion.objectName() ) )
+            
 
         event.acceptProposedAction()
 
 
     # Remove button click event
-    def removeBtnClicked(self):
+    def removeBtnClicked( self ):
         # Clear file name/path labels' text
         self.fileNameLabel.setText("")
         self.filePathLabel.setText("")
@@ -239,10 +253,42 @@ class UploadFileRegion(QWidget):
 
 
     # Get the filename from the path
-    def getFilenameFromPath(self, path):
+    def getFilenameFromPath( self, path ):
         head, tail = ntpath.split(path)
         return tail or ntpath.basename(head)
     
+
+    # Basic vignetting calibration (vc) file validation
+    def vc_validation( self ):
+        fileSize = os.stat(self.filePathLabel.text()).st_size
+
+        if ( fileSize == 0 ):
+            print( "File: \"{}\" at location {} is empty.".format( self.filePathLabel.text(), self.fileNameLabel.text() ) )
+
+            # Display empty error in this case
+        
+        else:
+            print( "File: \"{}\" at location {} has size: {} bytes.".format( self.filePathLabel.text(), self.fileNameLabel.text(), fileSize ) )
+
+            # In this case, file is not empty so check for variable definitions and initializations
+
+        return
+    
+
+    # Basic fisheye correction calibration (fc) file validation
+    def fc_validation( self ):
+        return
+    
+
+    # Basic calibration factor calibration (cf) file validation
+    def cf_validation( self ):
+        return
+    
+
+    # Basic neutral density filter calibration (nd) file validation
+    def nd_validation( self ):
+        return
+
 
 
 class Ui_MainWindow(object):
