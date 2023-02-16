@@ -47,7 +47,7 @@ class UploadFileRegion(QWidget):
 
         # File icon pixmap
         self.fileIcon = QLabel( self )
-        pixmap = QPixmap( './images/blank-file-128.ico' )
+        pixmap = QPixmap( './assets/blank-file-128.ico' )
         self.fileIcon.setPixmap( pixmap )
         self.fileIcon.setStyleSheet( u"background-color: rgb({}, {}, {});".format( regionColor[0], regionColor[1], regionColor[2] ) )
         self.fileIcon.hide()
