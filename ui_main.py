@@ -20,6 +20,147 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 import sys
 import os
 
+# For file name extraction
+import ntpath
+
+# Creates a region to upload a file to, given input coords, region size, and a region color.
+class UploadFileRegion(QWidget):
+    # regionCoords[0]: x
+    # regionCoords[1]: y
+    # regionSize[0]: width
+    # regionSize[1]: height
+    # regionColor[0]: R value 0-255
+    # regionColor[1]: G value 0-255
+    # regionColor[2]: B value 0-255
+    def __init__( self, regionLabel="DefaultLabel", regionCoords=[0,0], regionSize=[128, 128], regionColor=[255,255,255] ):
+        QWidget.__init__(self)
+        # Visible region
+        region = QLabel(self)
+
+        # Region label
+        self.regionLabel = QLabel( regionLabel, self )
+        self.regionLabel.move( regionCoords[0], regionCoords[1] )
+        self.regionLabel.setStyleSheet( u"background-color: rgb({}, {}, {});".format( regionColor[0], regionColor[1], regionColor[2] ) )
+        regionFont = QFont()
+        regionFont.setPointSize( 28 )
+        self.regionLabel.setFont( regionFont )
+
+        # File icon pixmap
+        self.fileIcon = QLabel( self )
+        pixmap = QPixmap( './images/blank-file-128.ico' )
+        self.fileIcon.setPixmap( pixmap )
+        self.fileIcon.setStyleSheet( u"background-color: rgb({}, {}, {});".format( regionColor[0], regionColor[1], regionColor[2] ) )
+        self.fileIcon.hide()
+
+        # File path label (hidden)
+        self.filePathLabel = QLabel( self )
+        self.filePathLabel.setText( "" )
+        self.filePathLabel.hide()
+
+        # File name label
+        self.fileNameLabel = QLabel( self )
+        self.fileNameLabel.setStyleSheet( u"background-color: rgb({}, {}, {});".format( regionColor[0], regionColor[1], regionColor[2] ) )
+        # Move filename label to right of icon, down to lower section of region
+        self.fileNameLabel.move( ( pixmap.width() + 32 ), ( regionSize[1] * 0.7 ) )
+        self.fileNameLabel.hide()
+        labelFont = QFont()
+        labelFont.setPointSize( 16 )
+        self.fileNameLabel.setFont( labelFont )
+
+        # Set region object name
+        region.setObjectName( "UploadFileRegion_{}".format( regionLabel ) )
+
+        # Set region size (at least as tall as the file icon)
+        if ( regionSize[1] < pixmap.height() ):
+            region.setGeometry( QRect( regionCoords[0], regionCoords[1], regionSize[0], pixmap.height() ) )
+        else:
+            region.setGeometry( QRect( regionCoords[0], regionCoords[1], regionSize[0], regionSize[1] ) )
+
+        # Set region color
+        region.setStyleSheet( u"background-color: rgb({}, {}, {});".format(regionColor[0], regionColor[1], regionColor[2]) )
+
+        # Reposition file icon relative to region height
+        self.fileIcon.move( 0, ( region.height() - pixmap.height() - 24 ) )
+
+        # Create remove button for an uploaded file, bind custom click event
+        self.removeBtn = QPushButton( "Remove", self )
+        self.removeBtn.clicked.connect( self.removeBtnClicked )
+        self.removeBtn.move( ( region.width() - self.removeBtn.width() ), 16 )
+        self.removeBtn.hide()
+
+        # Allow dropping files in this region
+        self.setAcceptDrops( True )
+
+        # Init. flag that stores if region has an uploaded file.
+        self.hasFile = False
+
+        region.create()
+
+
+    def create(self):
+        #todo: clean up init by moving non-creation stuff here
+        return
+        
+
+    # Allow the dragging of image/text files onto region.
+    def dragEnterEvent(self, event):
+        # Only accept dragEnterEvents if region does not have a file already
+        if (self.hasFile == False):
+            if event.mimeData().hasText():
+                event.acceptProposedAction()
+
+
+    # On image/text file drop event
+    def dropEvent(self, event):
+        pos = event.pos()
+
+        filepath = event.mimeData().text()
+
+        # Set filePathLabel
+        self.filePathLabel.setText( filepath )
+
+        # Set fileNameLabel and show
+        filename = self.getFilenameFromPath( filepath )
+        self.fileNameLabel.setText( filename )
+        self.fileNameLabel.show()
+
+        # Show file icon
+        self.fileIcon.show()
+
+        # Show removeBtn
+        self.removeBtn.show()
+
+        # Set hasFile flag
+        self.hasFile = True
+
+        event.acceptProposedAction()
+
+
+    # Remove button click event
+    def removeBtnClicked(self):
+        # Clear file name/path labels' text
+        self.fileNameLabel.setText("")
+        self.filePathLabel.setText("")
+
+        # Hide file name label
+        self.fileNameLabel.hide()
+
+        # Hide file icon
+        self.fileIcon.hide()
+
+        # Set hasFile flag
+        self.hasFile = False
+
+        # Hide removeBtn
+        self.removeBtn.hide()
+
+
+    # Get the filename from the path
+    def getFilenameFromPath(self, path):
+        head, tail = ntpath.split(path)
+        return tail or ntpath.basename(head)
+    
+
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -347,6 +488,22 @@ class Ui_MainWindow(object):
                              "border-color: black;"
                              "border-radius: 3px")
         #upload buttons ending
+
+        # -------------------------------------------------------------------------------------------------
+        # Upload file regions
+        # Create new layout for self.page_4
+        calibrationPage = QVBoxLayout()
+
+        # Add test widget: UploadFileRegionObject class object
+        vc_UploadRegion = UploadFileRegion( "Vignetting", [0, 0], [880, 200], [95, 120, 160] )
+
+        # Add vignetting UploadRegion object to the QVBox
+        calibrationPage.addWidget( vc_UploadRegion )
+
+        # Add calibrationPage QVbox layout to verticalLayout_9's own QVBox
+        self.verticalLayout_9.addLayout(calibrationPage)
+        # -------------------------------------------------------------------------------------------------
+
         #------------------------
         #adding page 4 element end 
 
