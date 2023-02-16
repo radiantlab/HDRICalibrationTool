@@ -50,7 +50,6 @@ class UploadFileRegion( QWidget ):
         # File icon pixmap
         self.fileIcon = QLabel( self )
         self.pixmap = QPixmap( './assets/blank-file-128.ico' )
-        self.fileIcon.setPixmap( self.pixmap )
 
         # File path label
         self.filePathLabel = QLabel( self )
@@ -82,11 +81,13 @@ class UploadFileRegion( QWidget ):
         # Set style
         self.uploadRegion.setStyleSheet( u"background-color: {};".format( self.regionColor ) )
 
-        # Set size (at least as tall as the file icon)
-        if ( self.regionHeight < self.pixmap.height() ):
-            self.uploadRegion.setGeometry( QRect( self.regionXPosition, self.regionYPosition, self.regionWidth, self.pixmap.height() ) )
-        else:
-            self.uploadRegion.setGeometry( QRect( self.regionXPosition, self.regionYPosition, self.regionWidth, self.regionHeight ) )
+        # # Set size (at least as tall as the file icon)
+        # if ( self.regionHeight < self.pixmap.height() ):
+        #     self.uploadRegion.setGeometry( QRect( self.regionXPosition, self.regionYPosition, self.regionWidth, self.pixmap.height() ) )
+        # else:
+        #     self.uploadRegion.setGeometry( QRect( self.regionXPosition, self.regionYPosition, self.regionWidth, self.regionHeight ) )
+        # Set size
+        self.uploadRegion.setGeometry( QRect( self.regionXPosition, self.regionYPosition, self.regionWidth, self.regionHeight ) )
 
         # -------------------------------------------------------------------------------------
         # Region Label
@@ -114,6 +115,10 @@ class UploadFileRegion( QWidget ):
 
         # Visibility
         self.fileIcon.hide()
+
+        # Resize and set pixmap : https://stackoverflow.com/questions/21802868/python-how-to-resize-raster-image-with-pyqt
+        self.pixmap = self.pixmap.scaledToHeight( self.regionHeight - self.regionLabel.height() )
+        self.fileIcon.setPixmap( self.pixmap )
 
         # -------------------------------------------------------------------------------------
         # File Path Label
@@ -533,7 +538,7 @@ class Ui_MainWindow(object):
         self.label_3.setStyleSheet(u"color: #000;")
         self.label_3.setAlignment(Qt.AlignCenter)
 
-        #adding page 4 element
+        # Adding page_4 QWidget
         self.page_4 = QWidget()
         self.page_4.setObjectName(u"page_4")
         self.verticalLayout_9 = QVBoxLayout(self.page_4)
@@ -543,95 +548,53 @@ class Ui_MainWindow(object):
         self.label_4.setFont(font)
         self.label_4.setStyleSheet(u"color: #000;")
         self.label_4.setAlignment(Qt.AlignCenter)
-        #upload file section
-        #-----------------
-        self.label_vc = QLabel(self.page_4)
-        self.label_vc.setAlignment(Qt.AlignLeft)
-        self.label_vc.setText("Vignetting Correction")
-        self.label_vc.setFont(labelfont)
-        self.label_vc.adjustSize()
-        self.label_fc = QLabel(self.page_4)
-        self.label_fc.setAlignment(Qt.AlignLeft)
-        self.label_fc.setText("Fisheye Correction")
-        self.label_fc.setFont(labelfont)
-        self.label_fc.adjustSize()
-        self.label_fc.move(0,100)
-        self.label_cf = QLabel(self.page_4)
-        self.label_cf.setAlignment(Qt.AlignLeft)
-        self.label_cf.setText("Calibration Factor")
-        self.label_cf.setFont(labelfont)
-        self.label_cf.adjustSize()
-        self.label_cf.move(0,200)
-        self.label_nd = QLabel(self.page_4)
-        self.label_nd.setAlignment(Qt.AlignLeft)
-        self.label_nd.setText("Neutral Density Filter")
-        self.label_nd.setFont(labelfont)
-        self.label_nd.adjustSize()
-        self.label_nd.move(0,300)
-        #index: vc = vignetting correction, fc = fisheye correction, cf = calibration factor, nd = neutral density filter
-        self.vc_button = QPushButton(self.page_4)
-        self.vc_button.setText("upload files")
-        self.vc_button.setObjectName(u"vignett_cal")
-        #self.uploadfilebutton.clicked.connect(openFileNameDialog(self))
-        self.vc_button.setGeometry(550,30,150,30)
-        self.vc_button.setStyleSheet("color: black;"
-                             "background-color: #C5C5C5;"
-                             "border-style: solid;"
-                             "border-width: 2px;"
-                             "border-color: black;"
-                             "border-radius: 3px")
-        self.fc_button = QPushButton(self.page_4)
-        self.fc_button.setText("upload files")
-        self.fc_button.setObjectName(u"fisheye")
-        #self.uploadfilebutton.clicked.connect(openFileNameDialog(self))
-        self.fc_button.setGeometry(550,130,150,30)
-        self.fc_button.setStyleSheet("color: black;"
-                             "background-color: #C5C5C5;"
-                             "border-style: solid;"
-                             "border-width: 2px;"
-                             "border-color: black;"
-                             "border-radius: 3px")
-        self.cf_button = QPushButton(self.page_4)
-        self.cf_button.setText("upload files")
-        self.cf_button.setObjectName(u"calibration_factor")
-        #self.uploadfilebutton.clicked.connect(openFileNameDialog(self))
-        self.cf_button.setGeometry(550,230,150,30)
-        self.cf_button.setStyleSheet("color: black;"
-                             "background-color: #C5C5C5;"
-                             "border-style: solid;"
-                             "border-width: 2px;"
-                             "border-color: black;"
-                             "border-radius: 3px")
-        self.nd_button = QPushButton(self.page_4)
-        self.nd_button.setText("upload files")
-        self.nd_button.setObjectName(u"neutral_density")
-        #self.uploadfilebutton.clicked.connect(openFileNameDialog(self))
-        self.nd_button.setGeometry(550,330,150,30)
-        self.nd_button.setStyleSheet("color: black;"
-                             "background-color: #C5C5C5;"
-                             "border-style: solid;"
-                             "border-width: 2px;"
-                             "border-color: black;"
-                             "border-radius: 3px")
-        #upload buttons ending
 
         # -------------------------------------------------------------------------------------------------
         # Upload file regions
         # Create new layout for self.page_4
         calibrationPage = QVBoxLayout()
+        calibrationPage.setSpacing( 4 )
+        calibrationPage.setMargin( 0 )
 
-        # Add test widget: UploadFileRegionObject class object
-        vc_UploadRegion = UploadFileRegion( "Vignetting", [0, 0], [880, 200], "#CBEEB0" )
+        # Vignetting region
+        # Add widget: UploadFileRegionObject class object
+        vc_UploadRegion = UploadFileRegion( "Vignetting", [0, 0], [900, 200], "#CBEEB0" )
 
         # Add vignetting UploadRegion object to the QVBox
-        calibrationPage.addWidget( vc_UploadRegion )
+        calibrationPage.addWidget( vc_UploadRegion, 25 )
+
+        # Fisheye correction region
+        # Add widget: UploadFileRegionObject class object
+        fc_UploadRegion = UploadFileRegion( "Fisheye Correction", [0, 0], [900, 200], "#CBEEB0" )
+        print( fc_UploadRegion.width() )
+        print( fc_UploadRegion.height() )
+
+        # Add vignetting UploadRegion object to the QVBox
+        calibrationPage.addWidget( fc_UploadRegion, 25 )
+
+        # Camera factor region
+        # Add widget: UploadFileRegionObject class object
+        cf_UploadRegion = UploadFileRegion( "Camera Factor", [0, 0], [900, 200], "#CBEEB0" )
+
+        # Add vignetting UploadRegion object to the QVBox
+        calibrationPage.addWidget( cf_UploadRegion, 25 )
+
+        # Neutral Density Filter region
+        # Add widget: UploadFileRegionObject class object
+        nd_UploadRegion = UploadFileRegion( "Neutral Density Filter", [0, 0], [900, 200], "#CBEEB0" )
+
+        # Add vignetting UploadRegion object to the QVBox
+        calibrationPage.addWidget( nd_UploadRegion, 25 )
+
 
         # Add calibrationPage QVbox layout to verticalLayout_9's own QVBox
-        self.verticalLayout_9.addLayout(calibrationPage)
+        self.verticalLayout_9.addLayout( calibrationPage, 100 )
+
         # -------------------------------------------------------------------------------------------------
 
+
         #------------------------
-        #adding page 4 element end 
+        # Adding page_4 QWidget end 
 
         #adding page 5 element
         self.page_5 = QWidget()
