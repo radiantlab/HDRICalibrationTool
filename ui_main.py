@@ -11,7 +11,7 @@
 from PySide2.QtCore import (QCoreApplication, QMetaObject, QObject, QPoint,
     QRect, QSize, QUrl, Qt)
 from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont,
-    QFontDatabase, QIcon, QLinearGradient, QPalette, QPainter, QPixmap,
+    QFontDatabase, QIcon, QLinearGradient, QPalette, QPixmap,
     QRadialGradient)
 from PySide2.QtWidgets import *
 from PyQt5 import QtWidgets
@@ -29,64 +29,38 @@ class UploadFileRegion(QWidget):
     # regionCoords[1]: y
     # regionSize[0]: width
     # regionSize[1]: height
-    # regionColor[0]: R value 0-255
-    # regionColor[1]: G value 0-255
-    # regionColor[2]: B value 0-255
-    def __init__( self, regionLabel="DefaultLabel", regionCoords=[0,0], regionSize=[128, 128], regionColor=[255,255,255] ):
+    # regionColor: Color formatted as a hexidecimal string: "#aabbcc"
+    def __init__( self, regionName="DefaultLabel", regionCoords=[0,0], regionSize=[128, 128], regionColor="#FFFFFF" ):
         QWidget.__init__(self)
-        # Visible region
-        region = QLabel(self)
 
+        # Store input parameters as class attributes
+        self.regionName = regionName
+        self.regionColor = regionColor
+        self.regionXPosition = regionCoords[0]
+        self.regionYPosition = regionCoords[1]
+        self.regionWidth = regionSize[0]
+        self.regionHeight = regionSize[1]
+
+        # Visible region background
+        self.uploadRegion = QLabel(self)
+        
         # Region label
-        self.regionLabel = QLabel( regionLabel, self )
-        self.regionLabel.move( regionCoords[0], regionCoords[1] )
-        self.regionLabel.setStyleSheet( u"background-color: rgb({}, {}, {});".format( regionColor[0], regionColor[1], regionColor[2] ) )
-        regionFont = QFont()
-        regionFont.setPointSize( 28 )
-        self.regionLabel.setFont( regionFont )
-
+        self.regionLabel = QLabel( regionName, self )
+        
         # File icon pixmap
         self.fileIcon = QLabel( self )
-        pixmap = QPixmap( './assets/blank-file-128.ico' )
-        self.fileIcon.setPixmap( pixmap )
-        self.fileIcon.setStyleSheet( u"background-color: rgb({}, {}, {});".format( regionColor[0], regionColor[1], regionColor[2] ) )
-        self.fileIcon.hide()
+        self.pixmap = QPixmap( './assets/blank-file-128.ico' )
+        self.fileIcon.setPixmap( self.pixmap )
 
-        # File path label (hidden)
+        # File path label
         self.filePathLabel = QLabel( self )
-        self.filePathLabel.setText( "" )
-        self.filePathLabel.hide()
 
         # File name label
         self.fileNameLabel = QLabel( self )
-        self.fileNameLabel.setStyleSheet( u"background-color: rgb({}, {}, {});".format( regionColor[0], regionColor[1], regionColor[2] ) )
-        # Move filename label to right of icon, down to lower section of region
-        self.fileNameLabel.move( ( pixmap.width() + 32 ), ( regionSize[1] * 0.7 ) )
-        self.fileNameLabel.hide()
-        labelFont = QFont()
-        labelFont.setPointSize( 16 )
-        self.fileNameLabel.setFont( labelFont )
 
-        # Set region object name
-        region.setObjectName( "UploadFileRegion_{}".format( regionLabel ) )
-
-        # Set region size (at least as tall as the file icon)
-        if ( regionSize[1] < pixmap.height() ):
-            region.setGeometry( QRect( regionCoords[0], regionCoords[1], regionSize[0], pixmap.height() ) )
-        else:
-            region.setGeometry( QRect( regionCoords[0], regionCoords[1], regionSize[0], regionSize[1] ) )
-
-        # Set region color
-        region.setStyleSheet( u"background-color: rgb({}, {}, {});".format(regionColor[0], regionColor[1], regionColor[2]) )
-
-        # Reposition file icon relative to region height
-        self.fileIcon.move( 0, ( region.height() - pixmap.height() - 24 ) )
-
-        # Create remove button for an uploaded file, bind custom click event
+        # Create remove button for an uploaded file
         self.removeBtn = QPushButton( "Remove", self )
-        self.removeBtn.clicked.connect( self.removeBtnClicked )
-        self.removeBtn.move( ( region.width() - self.removeBtn.width() ), 16 )
-        self.removeBtn.hide()
+
 
         # Allow dropping files in this region
         self.setAcceptDrops( True )
@@ -94,11 +68,103 @@ class UploadFileRegion(QWidget):
         # Init. flag that stores if region has an uploaded file.
         self.hasFile = False
 
-        region.create()
+        # Adjust elements of object
+        self.create()
 
 
-    def create(self):
-        #todo: clean up init by moving non-creation stuff here
+    def create( self ):
+        # -------------------------------------------------------------------------------------
+        # Upload Region
+
+        # Set object name
+        self.uploadRegion.setObjectName( "UploadFileRegion_{}".format( self.regionName ) )
+
+        # Set style
+        self.uploadRegion.setStyleSheet( u"background-color: {};".format( self.regionColor ) )
+
+        # Set size (at least as tall as the file icon)
+        if ( self.regionHeight < self.pixmap.height() ):
+            self.uploadRegion.setGeometry( QRect( self.regionXPosition, self.regionYPosition, self.regionWidth, self.pixmap.height() ) )
+        else:
+            self.uploadRegion.setGeometry( QRect( self.regionXPosition, self.regionYPosition, self.regionWidth, self.regionHeight ) )
+
+        # -------------------------------------------------------------------------------------
+        # Region Label
+
+        # Move
+        self.regionLabel.move( self.regionXPosition, self.regionYPosition )
+        # Set style
+        self.regionLabel.setStyleSheet( u"background-color: {};"
+                                         "color: black;"
+                                         "font-weight: bold;".format( self.regionColor ) )
+
+        # Adjusting font
+        regionFont = QFont()
+        regionFont.setPointSize( 28 )
+        self.regionLabel.setFont( regionFont )
+
+        # -------------------------------------------------------------------------------------
+        # File Icon
+
+        # Reposition relative to region height
+        self.fileIcon.move( 0, ( self.uploadRegion.height() - self.pixmap.height() - 24 ) )
+
+        # Set style
+        self.fileIcon.setStyleSheet( u"background-color: {};".format( self.regionColor ) )
+
+        # Visibility
+        self.fileIcon.hide()
+
+        # -------------------------------------------------------------------------------------
+        # File Path Label
+
+        # Set text
+        self.filePathLabel.setText( "" )
+
+        # Visibility
+        self.filePathLabel.hide()
+
+        # -------------------------------------------------------------------------------------
+        # File Name Label
+
+        # Move
+        self.fileNameLabel.move( ( self.pixmap.width() + 32 ), ( self.regionHeight * 0.7 ) )
+
+        # Set style
+        self.fileNameLabel.setStyleSheet( u"background-color: {};"
+                                           "color: black;"
+                                           "font-weight: normal;".format( self.regionColor ) )
+
+        # Visibility
+        self.fileNameLabel.hide()
+
+        # Properties
+        self.fileNameLabel.setMaximumWidth( ( self.regionWidth - self.pixmap.width() - 32 ) )
+
+        # Adjusting font
+        labelFont = QFont()
+        labelFont.setPointSize( 16 )
+        self.fileNameLabel.setFont( labelFont )
+
+        # -------------------------------------------------------------------------------------
+        # Remove Button
+
+        # Move
+        self.removeBtn.move( ( self.uploadRegion.width() - self.removeBtn.width() ), 16 )
+
+        # Set style
+        self.removeBtn.setStyleSheet( "background-color: #FF8C8C;"
+                                      "color: white;"
+                                      "font-weight: bold;" )
+
+        # Connect event to signal
+        self.removeBtn.clicked.connect( self.removeBtnClicked )
+
+        # Visibility
+        self.removeBtn.hide()
+
+        # -------------------------------------------------------------------------------------
+
         return
         
 
@@ -112,11 +178,8 @@ class UploadFileRegion(QWidget):
 
     # On image/text file drop event
     def dropEvent(self, event):
-        pos = event.pos()
-
-        filepath = event.mimeData().text()
-
         # Set filePathLabel
+        filepath = event.mimeData().text()
         self.filePathLabel.setText( filepath )
 
         # Set fileNameLabel and show
@@ -133,6 +196,16 @@ class UploadFileRegion(QWidget):
         # Set hasFile flag
         self.hasFile = True
 
+        # Adjust colors
+        self.uploadRegion.setStyleSheet( u"background-color: white;" )
+        self.fileIcon.setStyleSheet( u"background-color: white;" )
+        self.regionLabel.setStyleSheet( u"background-color: white;"
+                                         "color: black;"
+                                         "font-weight: bold;")
+        self.fileNameLabel.setStyleSheet( u"background-color: white;"
+                                           "color: black;"
+                                           "font-weight: normal;" )
+
         event.acceptProposedAction()
 
 
@@ -148,11 +221,21 @@ class UploadFileRegion(QWidget):
         # Hide file icon
         self.fileIcon.hide()
 
+        # Hide removeBtn
+        self.removeBtn.hide()
+
         # Set hasFile flag
         self.hasFile = False
 
-        # Hide removeBtn
-        self.removeBtn.hide()
+        # Adjust colors
+        self.uploadRegion.setStyleSheet( u"background-color: {};".format( self.regionColor ) )
+        self.fileIcon.setStyleSheet( u"background-color: {};".format( self.regionColor ) )
+        self.regionLabel.setStyleSheet( u"background-color: {};"
+                                         "color: black;"
+                                         "font-weight: bold;".format( self.regionColor ) )
+        self.fileNameLabel.setStyleSheet( u"background-color: {};"
+                                           "color: black;"
+                                           "font-weight: normal;".format( self.regionColor ) )
 
 
     # Get the filename from the path
@@ -451,9 +534,6 @@ class Ui_MainWindow(object):
                              "border-width: 2px;"
                              "border-color: black;"
                              "border-radius: 3px")
-        painter = QPainter()
-        painter.begin(self.page_4)
-        painter.drawLine(100, 100, 1000, 100)
         self.fc_button = QPushButton(self.page_4)
         self.fc_button.setText("upload files")
         self.fc_button.setObjectName(u"fisheye")
@@ -495,7 +575,7 @@ class Ui_MainWindow(object):
         calibrationPage = QVBoxLayout()
 
         # Add test widget: UploadFileRegionObject class object
-        vc_UploadRegion = UploadFileRegion( "Vignetting", [0, 0], [880, 200], [95, 120, 160] )
+        vc_UploadRegion = UploadFileRegion( "Vignetting", [0, 0], [880, 200], "#CBEEB0" )
 
         # Add vignetting UploadRegion object to the QVBox
         calibrationPage.addWidget( vc_UploadRegion )
