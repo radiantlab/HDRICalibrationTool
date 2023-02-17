@@ -658,6 +658,7 @@ class Ui_MainWindow(object):
         self.label_cd.setFont(labelfont)
         self.label_cd.adjustSize()
         self.label_cd.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.label_cd.setStyleSheet("background-color: #a0a0a0")
         self.label_cd.move(10,10)
 
 
@@ -667,6 +668,7 @@ class Ui_MainWindow(object):
         self.label_LVA.setFont(labelfont)
         self.label_LVA.adjustSize()
         self.label_LVA.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.label_LVA.setStyleSheet("background-color: #a0a0a0")
         self.label_LVA.move(10,10)
         self.label_LVA.raise_()
 
@@ -677,6 +679,7 @@ class Ui_MainWindow(object):
         self.label_OID.setFont(labelfont)
         self.label_OID.adjustSize()
         self.label_OID.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.label_OID.setStyleSheet("background-color: #a0a0a0")
         self.label_OID.move(10,10)
         self.label_OID.raise_()
 
@@ -687,6 +690,7 @@ class Ui_MainWindow(object):
         self.label_UCR.setFont(labelfont)
         self.label_UCR.adjustSize()
         self.label_UCR.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.label_UCR.setStyleSheet("background-color: #a0a0a0")
         self.label_UCR.move(10,10)
         self.label_UCR.raise_()
         
@@ -706,12 +710,14 @@ class Ui_MainWindow(object):
         self.label_md11 = QLabel(self.mdiArea)
         self.label_md11.setAlignment(Qt.AlignLeft)
         self.label_md11.setText("x")
+        self.label_md11.setStyleSheet("background-color: #a0a0a0")
         self.label_md11.move(149,102)
 
 
         self.label_iir = QLabel(self.mdiArea)
         self.label_iir.setAlignment(Qt.AlignLeft)
         self.label_iir.setText("Input Image Resolution")
+        self.label_iir.setStyleSheet("background-color: #a0a0a0")
         self.label_iir.move(10,70)
 
         self.lineEdit_md13 = QLineEdit(self.mdiArea)
@@ -722,11 +728,13 @@ class Ui_MainWindow(object):
         self.label_md13 = QLabel(self.mdiArea)
         self.label_md13.setAlignment(Qt.AlignLeft)
         self.label_md13.setText("Fisheye View Diameter")
+        self.label_md13.setStyleSheet("background-color: #a0a0a0")
         self.label_md13.move(10,180)
 
         self.label_md14 = QLabel(self.mdiArea)
         self.label_md14.setAlignment(Qt.AlignLeft)
         self.label_md14.setText("X Crop Offset")
+        self.label_md14.setStyleSheet("background-color: #a0a0a0")
         self.label_md14.move(500,70)
 
         self.lineEdit_md14 = QLineEdit(self.mdiArea)
@@ -737,12 +745,17 @@ class Ui_MainWindow(object):
         self.label_md15 = QLabel(self.mdiArea)
         self.label_md15.setAlignment(Qt.AlignLeft)
         self.label_md15.setText("Y Crop Offset")
+        self.label_md15.setStyleSheet("background-color: #a0a0a0")
         self.label_md15.move(500,180)
 
         self.lineEdit_md15 = QLineEdit(self.mdiArea)
         self.lineEdit_md15.setText("")
         self.lineEdit_md15.setObjectName("lineEdit_md15")
         self.lineEdit_md15.move(500,200)
+
+        self.area1button = QPushButton('Enter', self.mdiArea)
+        self.area1button.move(200,300)
+        #area1button.clicked.connect(self.on_click)
 
         #area 2 edit 
         
@@ -754,11 +767,13 @@ class Ui_MainWindow(object):
         self.label_md21 = QLabel(self.mdiArea_2)
         self.label_md21.setAlignment(Qt.AlignLeft)
         self.label_md21.setText("View Angle Vertical")
+        self.label_md21.setStyleSheet("background-color: #a0a0a0")
         self.label_md21.move(10,70)
 
         self.label_md22 = QLabel(self.mdiArea_2)
         self.label_md22.setAlignment(Qt.AlignLeft)
         self.label_md22.setText("View Angle Horizontal")
+        self.label_md22.setStyleSheet("background-color: #a0a0a0")
         self.label_md22.move(250,70)
 
         self.lineEdit_md22 = QLineEdit(self.mdiArea_2)
@@ -771,6 +786,7 @@ class Ui_MainWindow(object):
         self.label_md31 = QLabel(self.mdiArea_3)
         self.label_md31.setAlignment(Qt.AlignLeft)
         self.label_md31.setText("HDR Image Output Resolution")
+        self.label_md31.setStyleSheet("background-color: #a0a0a0")
         self.label_md31.move(10,70)
 
         self.lineEdit_md31 = QLineEdit(self.mdiArea_3)
@@ -781,6 +797,7 @@ class Ui_MainWindow(object):
         self.label_md31x = QLabel(self.mdiArea_3)
         self.label_md31x.setAlignment(Qt.AlignLeft)
         self.label_md31x.setText("x")
+        self.label_md31x.setStyleSheet("background-color: #a0a0a0")
         self.label_md31x.move(149,92)
 
         self.lineEdit_md32 = QLineEdit(self.mdiArea_3)
