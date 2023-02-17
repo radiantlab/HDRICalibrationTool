@@ -1,0 +1,38 @@
+/* Styling document for the UploadFileRegion class. */
+
+
+/* The visible portion of the upload region */
+QLabel
+{
+	background-color: #CBEEB0;
+}
+
+/* The label for the upload region */
+QLabel#UploadFileRegionLabel
+{
+	background-color: #CBEEB0;
+	color: black;
+	font-weight: bold;
+}
+
+/* The file icon */
+QLabel#FileIcon
+{
+	background-color: #CBEEB0;
+}
+
+/* The file name label */
+QLabel#UploadFileNameLabel
+{
+	background-color: #CBEEB0;
+	color: black;
+	font-weight: normal;
+}
+
+/* The remove button */
+QPushButton#UploadFileRemoveButton
+{
+	background-color: #FF8C8C;
+	color: white;
+	font-weight: bold;
+}
