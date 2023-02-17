@@ -372,8 +372,8 @@ class UploadFileRegion( QWidget ):
 
     # Basic vignetting calibration (vc) file validation
     def vc_validation( self ):
+        # Validation flags
         fileIsValid = False
-
         r_var_exists = False
         sf_var_exists = False
         ro_var_exists = False
@@ -384,6 +384,9 @@ class UploadFileRegion( QWidget ):
         with open( self.filePathLabel.text(), "r" ) as file:
             # loop through each line in file
             for num, line in enumerate( file, 1 ):
+                # Remove spaces and tab characters, but maintain \n \r
+                line = line.replace( " ", "" ).replace( "\t", "" )
+
                 # Found an instance of var, print to console the value
                 if ( "r=" in line ):
                     print( "Value of 'r' found on line {}: {}".format( num, line.split( "=" )[1] ) )
