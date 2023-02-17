@@ -823,7 +823,7 @@ class Ui_MainWindow(object):
         self.cameraSettingsPage.setSpacing( 4 )
         self.cameraSettingsPage.setMargin( 0 )
 
-        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[100, 300], [900, 200] )
+        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[10, 620], [900, 300] )
 
         self.cameraSettingsPage.addWidget( rsp_uploadarea, 25 )
 
