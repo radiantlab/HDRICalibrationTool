@@ -576,7 +576,7 @@ class Ui_MainWindow(object):
         self.intro_para.setText("The ALD lighting application is a crowd-sourced and free \n built by a group of college kids...")
         self.intro_para.setFont(labelfont)
         self.intro_para.adjustSize()
-        #self.intro_para.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.intro_para.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
         self.intro_para.move(20,20)
         self.intro_para.move(100,100)
 
@@ -633,80 +633,80 @@ class Ui_MainWindow(object):
 
 
         self.mdiArea = QMdiArea(self.page_3)
-        self.mdiArea.setGeometry(QRect(10, 10, 770, 250))
+        self.mdiArea.setGeometry(QRect(10, 10, 970, 250))
         self.mdiArea.setObjectName("mdiArea_2")
 
         self.mdiArea_2 = QMdiArea(self.page_3)
-        self.mdiArea_2.setGeometry(QRect(10, 290, 770, 120))
+        self.mdiArea_2.setGeometry(QRect(10, 290, 970, 140))
         self.mdiArea_2.setObjectName("mdiArea_2")
 
 
         self.mdiArea_3 = QMdiArea(self.page_3)
-        self.mdiArea_3.setGeometry(QRect(10, 440, 770, 120))
+        self.mdiArea_3.setGeometry(QRect(10, 460, 970, 140))
         self.mdiArea_3.setObjectName("mdiArea_3")
 
 
         self.mdiArea_4 = QMdiArea(self.page_3)
-        self.mdiArea_4.setGeometry(QRect(10, 590, 770, 120))
+        self.mdiArea_4.setGeometry(QRect(10, 610, 970, 140))
         self.mdiArea_4.setObjectName("mdiArea_4")
         self.mdiArea_4.raise_()
 
 
-        self.label_cd = QLabel(self.page_3)
+        self.label_cd = QLabel(self.mdiArea)
         self.label_cd.setAlignment(Qt.AlignLeft)
         self.label_cd.setText("Cropping Dimensions")
         self.label_cd.setFont(labelfont)
         self.label_cd.adjustSize()
         self.label_cd.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.label_cd.move(20,20)
+        self.label_cd.move(10,10)
 
 
-        self.label_LVA = QLabel(self.page_3)
+        self.label_LVA = QLabel(self.mdiArea_2)
         self.label_LVA.setAlignment(Qt.AlignLeft)
         self.label_LVA.setText("Lens Viewing Angle")
         self.label_LVA.setFont(labelfont)
         self.label_LVA.adjustSize()
         self.label_LVA.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.label_LVA.move(20,300)
+        self.label_LVA.move(10,10)
         self.label_LVA.raise_()
 
 
-        self.label_OID = QLabel(self.page_3)
+        self.label_OID = QLabel(self.mdiArea_3)
         self.label_OID.setAlignment(Qt.AlignLeft)
         self.label_OID.setText("Output Image Dimensions")
         self.label_OID.setFont(labelfont)
         self.label_OID.adjustSize()
         self.label_OID.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.label_OID.move(20,450)
+        self.label_OID.move(10,10)
         self.label_OID.raise_()
 
 
-        self.label_UCR = QLabel(self.page_3)
+        self.label_UCR = QLabel(self.mdiArea_4)
         self.label_UCR.setAlignment(Qt.AlignLeft)
         self.label_UCR.setText("Upload Camera Response File (.rsp)")
         self.label_UCR.setFont(labelfont)
         self.label_UCR.adjustSize()
         self.label_UCR.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.label_UCR.move(20,600)
+        self.label_UCR.move(10,10)
         self.label_UCR.raise_()
         
         #mdi area 1 line edits 
         self.lineEdit_md11 = QLineEdit(self.mdiArea)
         self.lineEdit_md11.setText("")
-        self.lineEdit_md11.setObjectName("lineEdit")
+        self.lineEdit_md11.setObjectName("lineEdit_md11")
         self.lineEdit_md11.move(10,100)
 
 
         self.lineEdit_md12 = QLineEdit(self.mdiArea)
         self.lineEdit_md12.setText("")
-        self.lineEdit_md12.setObjectName("lineEdit")
+        self.lineEdit_md12.setObjectName("lineEdit_md12")
         self.lineEdit_md12.move(160,100)
 
 
         self.label_md11 = QLabel(self.mdiArea)
         self.label_md11.setAlignment(Qt.AlignLeft)
         self.label_md11.setText("x")
-        self.label_md11.move(144,102)
+        self.label_md11.move(149,102)
 
 
         self.label_iir = QLabel(self.mdiArea)
@@ -714,7 +714,93 @@ class Ui_MainWindow(object):
         self.label_iir.setText("Input Image Resolution")
         self.label_iir.move(10,70)
 
+        self.lineEdit_md13 = QLineEdit(self.mdiArea)
+        self.lineEdit_md13.setText("")
+        self.lineEdit_md13.setObjectName("lineEdit_md13")
+        self.lineEdit_md13.move(10,200)
 
+        self.label_md13 = QLabel(self.mdiArea)
+        self.label_md13.setAlignment(Qt.AlignLeft)
+        self.label_md13.setText("Fisheye View Diameter")
+        self.label_md13.move(10,180)
+
+        self.label_md14 = QLabel(self.mdiArea)
+        self.label_md14.setAlignment(Qt.AlignLeft)
+        self.label_md14.setText("X Crop Offset")
+        self.label_md14.move(500,70)
+
+        self.lineEdit_md14 = QLineEdit(self.mdiArea)
+        self.lineEdit_md14.setText("")
+        self.lineEdit_md14.setObjectName("lineEdit_md14")
+        self.lineEdit_md14.move(500,100)
+
+        self.label_md15 = QLabel(self.mdiArea)
+        self.label_md15.setAlignment(Qt.AlignLeft)
+        self.label_md15.setText("Y Crop Offset")
+        self.label_md15.move(500,180)
+
+        self.lineEdit_md15 = QLineEdit(self.mdiArea)
+        self.lineEdit_md15.setText("")
+        self.lineEdit_md15.setObjectName("lineEdit_md15")
+        self.lineEdit_md15.move(500,200)
+
+        #area 2 edit 
+        
+        self.lineEdit_md21 = QLineEdit(self.mdiArea_2)
+        self.lineEdit_md21.setText("")
+        self.lineEdit_md21.setObjectName("lineEdit_md21")
+        self.lineEdit_md21.move(10,90)
+
+        self.label_md21 = QLabel(self.mdiArea_2)
+        self.label_md21.setAlignment(Qt.AlignLeft)
+        self.label_md21.setText("View Angle Vertical")
+        self.label_md21.move(10,70)
+
+        self.label_md22 = QLabel(self.mdiArea_2)
+        self.label_md22.setAlignment(Qt.AlignLeft)
+        self.label_md22.setText("View Angle Horizontal")
+        self.label_md22.move(250,70)
+
+        self.lineEdit_md22 = QLineEdit(self.mdiArea_2)
+        self.lineEdit_md22.setText("")
+        self.lineEdit_md22.setObjectName("lineEdit_md22")
+        self.lineEdit_md22.move(250,90)
+
+        #area 3 edit
+
+        self.label_md31 = QLabel(self.mdiArea_3)
+        self.label_md31.setAlignment(Qt.AlignLeft)
+        self.label_md31.setText("HDR Image Output Resolution")
+        self.label_md31.move(10,70)
+
+        self.lineEdit_md31 = QLineEdit(self.mdiArea_3)
+        self.lineEdit_md31.setText("")
+        self.lineEdit_md31.setObjectName("lineEdit_md31")
+        self.lineEdit_md31.move(10,90)
+
+        self.label_md31x = QLabel(self.mdiArea_3)
+        self.label_md31x.setAlignment(Qt.AlignLeft)
+        self.label_md31x.setText("x")
+        self.label_md31x.move(149,92)
+
+        self.lineEdit_md32 = QLineEdit(self.mdiArea_3)
+        self.lineEdit_md32.setText("")
+        self.lineEdit_md32.setObjectName("lineEdit_md32")
+        self.lineEdit_md32.move(160,90)
+
+
+        #area 4 upload rsp
+
+        self.cameraSettingsPage = QVBoxLayout( self.page_3)
+        self.cameraSettingsPage.setContentsMargins( 0, 0, 0, 0 )
+        self.cameraSettingsPage.setSpacing( 4 )
+        self.cameraSettingsPage.setMargin( 0 )
+
+        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[0, 0], [900, 200] )
+
+        self.cameraSettingsPage.addWidget( rsp_uploadarea, 25 )
+
+        
         # Adding page_4 QWidget
         self.page_4 = QWidget()
         self.page_4.setObjectName(u"page_4")
