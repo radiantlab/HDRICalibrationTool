@@ -534,7 +534,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_4.addWidget(self.btn_start_pipeline)
 
         
-        self.verticalLayout_4.addwidget()
+        #self.verticalLayout_4.addwidget()
         # ---------------------------------------------------------------------------------------
 
 
