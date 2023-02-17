@@ -575,7 +575,7 @@ class Ui_MainWindow(object):
         self.label_p1_title.setText("Meet The Team!")
         self.label_p1_title.setStyleSheet("font: 16pt \".AppleSystemUIFont\";")
         self.label_p1_title.adjustSize()
-        self.label_p1_title.move(700,450)
+        self.label_p1_title.move(350,720)
         
         #page_1.addWidget(label_p1)
         self.label_p1.show()
@@ -635,32 +635,30 @@ class Ui_MainWindow(object):
 
         self.cameraSettingsPage = QVBoxLayout(self.page_3)
         self.cameraSettingsPage.setObjectName(u"cameraSettingsPage")
+        self.cameraSettingsPage.setContentsMargins( 0, 0, 0, 0 )
+        self.cameraSettingsPage.setSpacing( 4 )
+        self.cameraSettingsPage.setMargin( 0 )
+
         self.label_3 = QLabel(self.page_3)
         self.label_3.setObjectName(u"label_3")
         self.label_3.setFont(font)
         self.label_3.setStyleSheet(u"color: #000;")
         self.label_3.setAlignment(Qt.AlignCenter)
 
-
         self.mdiArea = QMdiArea(self.page_3)
-        self.mdiArea.setGeometry(QRect(10, 10, 970, 250))
+        #self.mdiArea.setGeometry(QRect(10, 10, 970, 250))
         self.mdiArea.setObjectName("mdiArea_2")
+        self.cameraSettingsPage.addWidget(self.mdiArea)
 
         self.mdiArea_2 = QMdiArea(self.page_3)
-        self.mdiArea_2.setGeometry(QRect(10, 290, 970, 140))
+        #self.mdiArea_2.setGeometry(QRect(10, 290, 970, 140))
         self.mdiArea_2.setObjectName("mdiArea_2")
-
+        self.cameraSettingsPage.addWidget(self.mdiArea_2)
 
         self.mdiArea_3 = QMdiArea(self.page_3)
-        self.mdiArea_3.setGeometry(QRect(10, 460, 970, 140))
+        #self.mdiArea_3.setGeometry(QRect(10, 460, 970, 140))
         self.mdiArea_3.setObjectName("mdiArea_3")
-
-        '''
-        self.mdiArea_4 = QMdiArea(self.page_3)
-        self.mdiArea_4.setGeometry(QRect(10, 610, 970, 140))
-        self.mdiArea_4.setObjectName("mdiArea_4")
-        self.mdiArea_4.raise_()
-        '''
+        self.cameraSettingsPage.addWidget(self.mdiArea_3)
 
         self.label_cd = QLabel(self.mdiArea)
         self.label_cd.setAlignment(Qt.AlignLeft)
@@ -692,18 +690,6 @@ class Ui_MainWindow(object):
         self.label_OID.setStyleSheet("background-color: #a0a0a0")
         self.label_OID.move(10,10)
         self.label_OID.raise_()
-
-        '''
-        self.label_UCR = QLabel(self.mdiArea_4)
-        self.label_UCR.setAlignment(Qt.AlignLeft)
-        self.label_UCR.setText("Upload Camera Response File (.rsp)")
-        self.label_UCR.setFont(labelfont)
-        self.label_UCR.adjustSize()
-        self.label_UCR.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.label_UCR.setStyleSheet("background-color: #a0a0a0")
-        self.label_UCR.move(10,10)
-        self.label_UCR.raise_()
-        '''
         
         #mdi area 1 line edits 
         self.lineEdit_md11 = QLineEdit(self.mdiArea)
@@ -765,7 +751,7 @@ class Ui_MainWindow(object):
         self.lineEdit_md15.move(500,200)
 
         self.area1button = QPushButton('Enter', self.mdiArea)
-        self.area1button.move(200,300)
+        self.area1button.move(750,200)
         #area1button.clicked.connect(self.on_click)
 
         #area 2 edit 
@@ -792,6 +778,9 @@ class Ui_MainWindow(object):
         self.lineEdit_md22.setObjectName("lineEdit_md22")
         self.lineEdit_md22.move(250,90)
 
+        self.area2button = QPushButton('Enter', self.mdiArea_2)
+        self.area2button.move(750,200)
+
         #area 3 edit
 
         self.label_md31 = QLabel(self.mdiArea_3)
@@ -816,16 +805,13 @@ class Ui_MainWindow(object):
         self.lineEdit_md32.setObjectName("lineEdit_md32")
         self.lineEdit_md32.move(160,90)
 
+        self.area3button = QPushButton('Enter', self.mdiArea_3)
+        self.area3button.move(750,200)
 
         #area 4 upload rsp
-
-        self.cameraSettingsPage.setContentsMargins( 0, 0, 0, 0 )
-        self.cameraSettingsPage.setSpacing( 4 )
-        self.cameraSettingsPage.setMargin( 0 )
-
-        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[10, 620], [900, 300] )
-
-        self.cameraSettingsPage.addWidget( rsp_uploadarea, 25 )
+        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[0, 0], [900, 200] )
+        #rsp_uploadarea.lower()
+        self.cameraSettingsPage.addWidget(rsp_uploadarea)
 
         
         # Adding page_4 QWidget
@@ -846,28 +832,28 @@ class Ui_MainWindow(object):
         vc_UploadRegion = UploadFileRegion( "Vignetting", [0, 0], [900, 200] )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( vc_UploadRegion, 25 )
+        self.calibrationPage.addWidget( vc_UploadRegion)
 
         # Fisheye correction region
         # Add widget: UploadFileRegionObject class object
         fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [0, 0], [900, 200] )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( fc_UploadRegion, 25 )
+        self.calibrationPage.addWidget( fc_UploadRegion)
 
         # Camera factor region
         # Add widget: UploadFileRegionObject class object
         cf_UploadRegion = UploadFileRegion( "CameraFactor", [0, 0], [900, 200] )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( cf_UploadRegion, 25 )
+        self.calibrationPage.addWidget( cf_UploadRegion)
 
         # Neutral Density Filter region
         # Add widget: UploadFileRegionObject class object
         nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [0, 0], [900, 200] )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( nd_UploadRegion, 25 )
+        self.calibrationPage.addWidget( nd_UploadRegion)
 
         # -------------------------------------------------------------------------------------------------
 
