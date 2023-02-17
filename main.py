@@ -10,7 +10,7 @@ import sys
 import platform
 from PySide2 import QtCore, QtGui, QtWidgets
 from PySide2.QtCore import (QCoreApplication, QPropertyAnimation, QDate, QDateTime, QMetaObject, QObject, QPoint, QRect, QSize, QTime, QUrl, Qt, QEvent)
-from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont, QFontDatabase, QIcon, QKeySequence, QLinearGradient, QPalette, QPainter, QPixmap, QRadialGradient)
+from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont, QFontDatabase, QIcon, QKeySequence, QLinearGradient, QPalette, QPixmap, QRadialGradient)
 from PySide2.QtWidgets import *
 
 # GUI FILE
@@ -24,10 +24,6 @@ class MainWindow(QMainWindow):
         QMainWindow.__init__(self)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
-
-        ## TOGGLE/BURGUER MENU
-        ########################################################################
-        self.ui.Btn_Toggle.clicked.connect(lambda: UIFunctions.toggleMenu(self, 250, True))
 
         ## PAGES
         ########################################################################
@@ -45,7 +41,7 @@ class MainWindow(QMainWindow):
         self.ui.btn_page_4.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_4))
 
         # PAGE 5 
-        self.ui.btn_page_5.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_5))
+        self.ui.btn_start_pipeline.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_5))
 
         ## SHOW ==> MAIN WINDOW
         ########################################################################
