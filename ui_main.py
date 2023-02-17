@@ -557,20 +557,30 @@ class Ui_MainWindow(object):
         self.label_1.setFont(font)
         self.label_1.setStyleSheet(u"color: #000;")
         self.label_1.setAlignment(Qt.AlignCenter)
-
-        # edit page 1
-        teampic = QVBoxLayout(self.page_1)
-    
-        label_p1 = QLabel(self)
-        pixmap = QPixmap('logo.png')
-        label_p1.setPixmap(pixmap)
-        self.resize(pixmap.width(), pixmap.height())
-        
-        teampic.addWidget(label_p1)
-        self.show()
         self.verticalLayout_7.addWidget(self.label_1)
-
         self.stackedWidget.addWidget(self.page_1)
+        # edit page 1
+        #teampic = QVBoxLayout(self.page_1)
+
+        self.label_p1 = QLabel(self.page_1)
+        self.pixmap = QPixmap('officeteamstock.jpeg')
+        self.label_p1.setPixmap(self.pixmap)
+        self.label_p1.setAlignment(Qt.AlignRight)
+        self.label_p1.resize(self.pixmap.width(), self.pixmap.height())
+        
+        #page_1.addWidget(label_p1)
+        self.label_p1.show()
+
+        self.intro_para = QLabel(self.page_1)
+        self.intro_para.setAlignment(Qt.AlignHCenter)
+        self.intro_para.setText("The ALD lighting application is a crowd-sourced and free \n built by a group of college kids...")
+        self.intro_para.setFont(labelfont)
+        self.intro_para.adjustSize()
+        #self.intro_para.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.intro_para.move(20,20)
+        self.intro_para.move(100,100)
+
+        
         self.page_2 = QWidget()
         self.page_2.setObjectName(u"page_2")
         self.verticalLayout_6 = QVBoxLayout(self.page_2)
