@@ -1,0 +1,55 @@
+/* Styling document for the main UI widgets for the application */
+
+/* Page-routing buttons in menu sidebar */
+QPushButton#btn_page_1,
+			#btn_page_2,
+			#btn_page_3,
+			#btn_page_4
+{
+    color: black;
+    background-color: #E8E7DF;
+    border: 2px solid;
+    border-color: black;
+}
+
+QPushButton#btn_page_1:hover,
+			#btn_page_2:hover,
+			#btn_page_3:hover,
+			#btn_page_4:hover
+{
+    color: white;
+    background-color: #599CC1;
+}
+
+QPushButton#btn_page_1:pressed,
+			#btn_page_2:pressed,
+			#btn_page_3:pressed,
+			#btn_page_4:pressed
+{
+    background-color: #477C9A;
+}
+
+/* "Go" button in menu sidebar that begins the Radiance pipeline process */
+QPushButton#btn_start_pipeline
+{
+	color: white;
+    background-color: #72B170;
+    border: 2px solid;
+    border-color: white;
+}
+
+QPushButton#btn_start_pipeline:hover
+{
+	background-color: #669F64;
+}
+
+QPushButton#btn_start_pipeline:pressed
+{
+	background-color: #476F46;
+}
+
+QPushButton#btn_start_pipeline:disabled
+{
+	color: black;
+    background-color: #B2CFB1;
+}
