@@ -16,7 +16,7 @@ from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont,
 from PySide2.QtWidgets import *
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QStyle
 import sys
 import os
 
@@ -507,6 +507,12 @@ class Ui_MainWindow(object):
         self.btn_start_pipeline.setObjectName(u"btn_start_pipeline")
         self.btn_start_pipeline.setMinimumSize(QSize(0, 40))
         
+        '''
+        self.btn_help = QPushButton(self.frame_top_menus)
+        self.btn_help.setObjectName(u"btn_start_pipeline")
+        self.btn_help.setMinimumSize(QSize(0, 40))
+        self.btn_help(self.style().standardIcon(getattr(QStyle, SP_TitleBarContextHelpButton)))
+        '''
         # Set button styling
         with open(stylesheetPath, "r") as stylesheet:
             self.btn_start_pipeline.setStyleSheet( stylesheet.read() )
@@ -527,6 +533,8 @@ class Ui_MainWindow(object):
         # Add Go button to sidebar
         self.verticalLayout_4.addWidget(self.btn_start_pipeline)
 
+        
+        self.verticalLayout_4.addwidget()
         # ---------------------------------------------------------------------------------------
 
 
@@ -582,7 +590,7 @@ class Ui_MainWindow(object):
 
         self.intro_para = QLabel(self.page_1)
         self.intro_para.setAlignment(Qt.AlignHCenter)
-        self.intro_para.setText("The ALD lighting application is a crowd-sourced and free \n built by a group of college kids...")
+        self.intro_para.setText("The HDRI Lighting Calibration Tool is a crowd-sourced and \n free application developed by a small team of students \n from Oregon State Univeristy.")
         self.intro_para.setFont(labelfont)
         self.intro_para.adjustSize()
         self.intro_para.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
@@ -644,7 +652,10 @@ class Ui_MainWindow(object):
         self.label_3.setFont(font)
         self.label_3.setStyleSheet(u"color: #000;")
         self.label_3.setAlignment(Qt.AlignCenter)
-
+        
+        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[0, 0], [900, 200] )
+        self.cameraSettingsPage.addWidget(rsp_uploadarea)
+        
         self.mdiArea = QMdiArea(self.page_3)
         #self.mdiArea.setGeometry(QRect(10, 10, 970, 250))
         self.mdiArea.setObjectName("mdiArea_2")
@@ -809,10 +820,9 @@ class Ui_MainWindow(object):
         self.area3button.move(750,200)
 
         #area 4 upload rsp
+        
         rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[0, 0], [900, 200] )
-        #rsp_uploadarea.lower()
         self.cameraSettingsPage.addWidget(rsp_uploadarea)
-
         
         # Adding page_4 QWidget
         self.page_4 = QWidget()
