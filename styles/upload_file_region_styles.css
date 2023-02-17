@@ -32,6 +32,7 @@ QLabel[hasFile="true"]#UploadFileNameLabel
 	color: black;
 	font-weight: normal;
 }
+
 QLabel[hasFile="false"]#UploadFileNameLabel
 {
 	background-color: #CBEEB0;
@@ -47,7 +48,7 @@ QPushButton#UploadFileRemoveButton
 	font-weight: bold;
 }
 
-/* The visible portion of the upload region */
+/* The visible portion of the upload region, including placeholder spacers */
 QLabel[hasFile="true"]
 {
 	background-color: white;
