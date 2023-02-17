@@ -23,6 +23,9 @@ import os
 # For file name extraction
 import ntpath
 
+# For regular expressions
+import re
+
 # Creates a region to upload a file to, given input coords, region size, and a region color.
 class UploadFileRegion( QWidget ):
     # regionCoords[0]: x
@@ -43,7 +46,8 @@ class UploadFileRegion( QWidget ):
         self.uploadRegion = QLabel(self)
         
         # Region label
-        self.regionLabel = QLabel( regionName, self )
+        regionNameWithSpaces = re.sub(r"(\w)([A-Z])", r"\1 \2", regionName)
+        self.regionLabel = QLabel( regionNameWithSpaces, self )
         
         # File icon pixmap
         self.fileIcon = QLabel( self )
@@ -80,6 +84,8 @@ class UploadFileRegion( QWidget ):
         self.uploadRegion.setObjectName( "UploadFileRegion_{}".format( self.regionName ) )
 
         # Set style
+        self.uploadRegion.setProperty( "hasFile", self.hasFile )
+
         with open(stylesheetPath, "r") as stylesheet:
             self.uploadRegion.setStyleSheet( stylesheet.read() )
 
@@ -96,6 +102,8 @@ class UploadFileRegion( QWidget ):
         self.regionLabel.move( self.regionXPosition, self.regionYPosition )
 
         # Set style
+        self.regionLabel.setProperty( "hasFile", self.hasFile )
+
         with open(stylesheetPath, "r") as stylesheet:
             self.regionLabel.setStyleSheet( stylesheet.read() )
 
@@ -114,6 +122,8 @@ class UploadFileRegion( QWidget ):
         self.fileIcon.move( 0, ( self.uploadRegion.height() - self.pixmap.height() - 24 ) )
 
         # Set style
+        self.fileIcon.setProperty( "hasFile", self.hasFile )
+
         with open(stylesheetPath, "r") as stylesheet:
             self.fileIcon.setStyleSheet( stylesheet.read() )
 
@@ -146,6 +156,8 @@ class UploadFileRegion( QWidget ):
         self.fileNameLabel.move( ( self.pixmap.width() + 32 ), ( self.regionHeight * 0.7 ) )
 
         # Set style
+        self.fileNameLabel.setProperty( "hasFile", self.hasFile )
+
         with open(stylesheetPath, "r") as stylesheet:
             self.fileNameLabel.setStyleSheet( stylesheet.read() )
 
@@ -181,6 +193,7 @@ class UploadFileRegion( QWidget ):
 
         # -------------------------------------------------------------------------------------
 
+
         return
         
 
@@ -194,6 +207,9 @@ class UploadFileRegion( QWidget ):
 
     # On image/text file drop event
     def dropEvent(self, event):
+        # Set hasFile flag
+        self.hasFile = True
+
         # Get file path from file
         filepath = event.mimeData().text()
 
@@ -215,32 +231,72 @@ class UploadFileRegion( QWidget ):
         # Show removeBtn
         self.removeBtn.show()
 
-        # Set hasFile flag
-        self.hasFile = True
 
-        # Adjust colors
-        self.uploadRegion.setStyleSheet( u"background-color: white;" )
-        self.fileIcon.setStyleSheet( u"background-color: white;" )
-        self.regionLabel.setStyleSheet( u"background-color: white;"
-                                         "color: black;"
-                                         "font-weight: bold;")
-        self.fileNameLabel.setStyleSheet( u"background-color: white;"
-                                           "color: black;"
-                                           "font-weight: normal;" )
-        
+        # Adjust styling
+        # Stylesheet path
+        stylesheetPath = "./styles/upload_file_region_styles.css"
+
+        # Set property for stylsheet to apply correct style
+        self.uploadRegion.setProperty( "hasFile", self.hasFile )
+        self.regionLabel.setProperty( "hasFile", self.hasFile )
+        self.fileIcon.setProperty( "hasFile", self.hasFile )
+        self.fileNameLabel.setProperty( "hasFile", self.hasFile )
+
+        # Apply style
+        with open(stylesheetPath, "r") as stylesheet:
+            self.uploadRegion.setStyleSheet( stylesheet.read() )
+        with open(stylesheetPath, "r") as stylesheet:
+            self.regionLabel.setStyleSheet( stylesheet.read() )
+        with open(stylesheetPath, "r") as stylesheet:
+            self.fileIcon.setStyleSheet( stylesheet.read() )
+        with open(stylesheetPath, "r") as stylesheet:
+            self.fileNameLabel.setStyleSheet( stylesheet.read() )
+
+        # ----------------------------------------------------------------------------------------
         # Basic validation
-        if (self.uploadRegion.objectName() == "UploadFileRegion_Vignetting"):
-            print( "Upload region is for vignetting. Validating..." )
-            self.vc_validation()
+
+        # Check file size
+        fileSize = os.stat(self.filePathLabel.text()).st_size
+
+        if ( fileSize == 0 ):
+            print( "File: \"{}\" at location {} is empty.".format( self.filePathLabel.text(), self.fileNameLabel.text() ) )
+
+            # Display empty error in this case
+        
         else:
-            print( "Upload region is unknown. self.uploadRegion.objectName(): {}".format( self.uploadRegion.objectName() ) )
-            
+            print( "File: \"{}\" at location {} has size: {} bytes.".format( self.filePathLabel.text(), self.fileNameLabel.text(), fileSize ) )
+
+            # In this case, file is not empty so check for variable definitions and initializations (varies by calibration file)
+            if (self.uploadRegion.objectName() == "UploadFileRegion_Vignetting"):
+                print( "Upload region is for vignetting. Validating..." )
+                self.vc_validation()
+
+            elif (self.uploadRegion.objectName() == "UploadFileRegion_FisheyeCorrection"):
+                print( "Upload region is for fisheye correction. Validating..." )
+                self.fc_validation()
+
+            elif (self.uploadRegion.objectName() == "UploadFileRegion_CameraFactor"):
+                print( "Upload region is for camera factor adjustment. Validating..." )
+                self.cf_validation()
+
+            elif (self.uploadRegion.objectName() == "UploadFileRegion_NeutralDensityFilter"):
+                print( "Upload region is for neutral density filter adjustment. Validating..." )
+                self.nd_validation()
+
+            else:
+                print( "Upload region is unknown. self.uploadRegion.objectName(): {}".format( self.uploadRegion.objectName() ) )
+
+        # ----------------------------------------------------------------------------------------
+
 
         event.acceptProposedAction()
 
 
     # Remove button click event
     def removeBtnClicked( self ):
+        # Set hasFile flag
+        self.hasFile = False
+
         # Clear file name/path labels' text
         self.fileNameLabel.setText("")
         self.filePathLabel.setText("")
@@ -254,18 +310,27 @@ class UploadFileRegion( QWidget ):
         # Hide removeBtn
         self.removeBtn.hide()
 
-        # Set hasFile flag
-        self.hasFile = False
 
-        # Adjust colors
-        self.uploadRegion.setStyleSheet( u"background-color: {};".format( self.regionColor ) )
-        self.fileIcon.setStyleSheet( u"background-color: {};".format( self.regionColor ) )
-        self.regionLabel.setStyleSheet( u"background-color: {};"
-                                         "color: black;"
-                                         "font-weight: bold;".format( self.regionColor ) )
-        self.fileNameLabel.setStyleSheet( u"background-color: {};"
-                                           "color: black;"
-                                           "font-weight: normal;".format( self.regionColor ) )
+        # Adjust styling
+        # Stylesheet path
+        stylesheetPath = "./styles/upload_file_region_styles.css"
+
+        # Set property for stylsheet to apply correct style
+        self.uploadRegion.setProperty( "hasFile", self.hasFile )
+        self.regionLabel.setProperty( "hasFile", self.hasFile )
+        self.fileIcon.setProperty( "hasFile", self.hasFile )
+        self.fileNameLabel.setProperty( "hasFile", self.hasFile )
+
+        # Apply style
+        with open(stylesheetPath, "r") as stylesheet:
+            self.uploadRegion.setStyleSheet( stylesheet.read() )
+        with open(stylesheetPath, "r") as stylesheet:
+            self.regionLabel.setStyleSheet( stylesheet.read() )
+        with open(stylesheetPath, "r") as stylesheet:
+            self.fileIcon.setStyleSheet( stylesheet.read() )
+        with open(stylesheetPath, "r") as stylesheet:
+            self.fileNameLabel.setStyleSheet( stylesheet.read() )
+
 
 
     # Get the filename from the path
@@ -276,17 +341,7 @@ class UploadFileRegion( QWidget ):
 
     # Basic vignetting calibration (vc) file validation
     def vc_validation( self ):
-        fileSize = os.stat(self.filePathLabel.text()).st_size
-
-        if ( fileSize == 0 ):
-            print( "File: \"{}\" at location {} is empty.".format( self.filePathLabel.text(), self.fileNameLabel.text() ) )
-
-            # Display empty error in this case
         
-        else:
-            print( "File: \"{}\" at location {} has size: {} bytes.".format( self.filePathLabel.text(), self.fileNameLabel.text(), fileSize ) )
-
-            # In this case, file is not empty so check for variable definitions and initializations
 
         return
     
@@ -336,40 +391,8 @@ class Ui_MainWindow(object):
         self.horizontalLayout.setSpacing(0)
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
 
-        # self.frame_toggle = QFrame(self.Top_Bar)
-        # self.frame_toggle.setObjectName(u"frame_toggle")
-        # self.frame_toggle.setMaximumSize(QSize(70, 40))
-        # self.frame_toggle.setStyleSheet(u"background-color: rgb(85, 170, 255);")
-        # self.frame_toggle.setFrameShape(QFrame.StyledPanel)
-        # self.frame_toggle.setFrameShadow(QFrame.Raised)
-
-        # self.verticalLayout_2 = QVBoxLayout(self.frame_toggle)
-        # self.verticalLayout_2.setObjectName(u"verticalLayout_2")
-        # self.verticalLayout_2.setSpacing(0)
-        # self.verticalLayout_2.setContentsMargins(0, 0, 0, 0)
-       # self.Btn_Toggle = QPushButton(self.frame_toggle)
-       # self.Btn_Toggle.setObjectName(u"Btn_Toggle")
-       # sizePolicy = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-       # sizePolicy.setHorizontalStretch(0)
-       # sizePolicy.setVerticalStretch(0)
-       # sizePolicy.setHeightForWidth(self.Btn_Toggle.sizePolicy().hasHeightForWidth())
-       # self.Btn_Toggle.setSizePolicy(sizePolicy)
-       # self.Btn_Toggle.setStyleSheet(u"color: rgb(255, 255, 255);\n"
-#"border: 0px solid;")
-
-       # self.verticalLayout_2.addWidget(self.Btn_Toggle)
-
-
-       # self.horizontalLayout.addWidget(self.frame_toggle)
-
-        # self.frame_top = QFrame(self.Top_Bar)
-        # self.frame_top.setObjectName(u"frame_top")
-        # self.frame_top.setFrameShape(QFrame.StyledPanel)
-        # self.frame_top.setFrameShadow(QFrame.Raised)
-
-        # self.horizontalLayout.addWidget(self.frame_top)
-
         self.verticalLayout.addWidget(self.Top_Bar)
+
 
         self.Content = QFrame(self.centralwidget)
         self.Content.setObjectName(u"Content")
@@ -557,24 +580,17 @@ class Ui_MainWindow(object):
         self.label_3.setStyleSheet(u"color: #000;")
         self.label_3.setAlignment(Qt.AlignCenter)
 
+
+
         # Adding page_4 QWidget
         self.page_4 = QWidget()
         self.page_4.setObjectName(u"page_4")
-        # self.verticalLayout_9 = QVBoxLayout(self.page_4)
-        # self.verticalLayout_9.setObjectName(u"verticalLayout_9")
-        # self.label_4 = QLabel(self.page_4)
-        # self.label_4.setObjectName(u"label_4")
-        # self.label_4.setFont(font)
-        # self.label_4.setStyleSheet(u"color: #000;")
-        # self.label_4.setAlignment(Qt.AlignCenter)
 
         # -------------------------------------------------------------------------------------------------
         # Upload file regions
         # Create new layout for self.page_4
         self.calibrationPage = QVBoxLayout( self.page_4 )
-       # calibrationPage.setGeometry( QRect( 0, 0,  ) )
         self.calibrationPage.setContentsMargins( 0, 0, 0, 0 )
-       # calibrationPage.SetMinimumSize( QLayout() )
         self.calibrationPage.setSpacing( 4 )
         self.calibrationPage.setMargin( 0 )
         
@@ -588,7 +604,7 @@ class Ui_MainWindow(object):
 
         # Fisheye correction region
         # Add widget: UploadFileRegionObject class object
-        fc_UploadRegion = UploadFileRegion( "Fisheye Correction", [0, 0], [900, 200] )
+        fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [0, 0], [900, 200] )
         print( fc_UploadRegion.width() )
         print( fc_UploadRegion.height() )
 
@@ -597,28 +613,21 @@ class Ui_MainWindow(object):
 
         # Camera factor region
         # Add widget: UploadFileRegionObject class object
-        cf_UploadRegion = UploadFileRegion( "Camera Factor", [0, 0], [900, 200] )
+        cf_UploadRegion = UploadFileRegion( "CameraFactor", [0, 0], [900, 200] )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( cf_UploadRegion, 25 )
 
         # Neutral Density Filter region
         # Add widget: UploadFileRegionObject class object
-        nd_UploadRegion = UploadFileRegion( "Neutral Density Filter", [0, 0], [900, 200] )
+        nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [0, 0], [900, 200] )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( nd_UploadRegion, 25 )
 
-
-        # Add calibrationPage QVbox layout to verticalLayout_9's own QVBox
-       # self.verticalLayout_9.addLayout( calibrationPage, 100 )
-       # self.page_4.addLayout( self.calibrationPage, 100 )
-
         # -------------------------------------------------------------------------------------------------
 
 
-        #------------------------
-        # Adding page_4 QWidget end 
 
         #adding page 5 element
         self.page_5 = QWidget()
@@ -633,7 +642,6 @@ class Ui_MainWindow(object):
         #adding page 5 element end 
 
         self.verticalLayout_8.addWidget(self.label_3)
-        #self.verticalLayout_9.addWidget(self.label_4)
         self.verticalLayout_10.addWidget(self.label_5)
         self.stackedWidget.addWidget(self.page_3)
         self.stackedWidget.addWidget(self.page_4)
@@ -659,7 +667,6 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"HDRI Calibration Tool", None))
-       # self.Btn_Toggle.setText(QCoreApplication.translate("MainWindow", u"Expand", None))
         self.btn_page_1.setText(QCoreApplication.translate("MainWindow", u"Welcome", None))
         self.btn_page_2.setText(QCoreApplication.translate("MainWindow", u"Upload LDR images", None))
         self.btn_page_3.setText(QCoreApplication.translate("MainWindow", u"Camera Settings", None))
@@ -668,14 +675,16 @@ class Ui_MainWindow(object):
         self.label_1.setText(QCoreApplication.translate("MainWindow", u"PAGE 1", None))
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"PAGE 2", None))
         self.label_3.setText(QCoreApplication.translate("MainWindow", u"PAGE 3", None))
-        #self.label_4.setText(QCoreApplication.translate("MainWindow", u"", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"PAGE 5", None))
-    # retranslateUi
+
+
 
 def checkVal(list_val): #checking values of .cal files
     print(" (checkVal function running) ")#compare value
     if list_val[0] == "this": #placeholder
         print("correct")
+
+
 
 def readFile(fileName):
     f = open(fileName,"r")
@@ -687,11 +696,19 @@ def readFile(fileName):
     print(list_val)
     return list_val
 
+
+
 def upload_response(self,fileName):
     self.label.setText(fileName)
     self.update()
+
+
+
 def update(self):
     self.label.adjustSize()
+
+
+
 def openFileNameDialog(self):
     options = QFileDialog.Options()
     options |= QFileDialog.DontUseNativeDialog
