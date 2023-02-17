@@ -558,6 +558,16 @@ class Ui_MainWindow(object):
         self.label_1.setStyleSheet(u"color: #000;")
         self.label_1.setAlignment(Qt.AlignCenter)
 
+        # edit page 1
+        teampic = QVBoxLayout(self.page_1)
+    
+        label_p1 = QLabel(self)
+        pixmap = QPixmap('logo.png')
+        label_p1.setPixmap(pixmap)
+        self.resize(pixmap.width(), pixmap.height())
+        
+        teampic.addWidget(label_p1)
+        self.show()
         self.verticalLayout_7.addWidget(self.label_1)
 
         self.stackedWidget.addWidget(self.page_1)
@@ -565,6 +575,8 @@ class Ui_MainWindow(object):
         self.page_2.setObjectName(u"page_2")
         self.verticalLayout_6 = QVBoxLayout(self.page_2)
         self.verticalLayout_6.setObjectName(u"verticalLayout_6")
+
+        #edit page 2 
 
         #uploading file setup begin -------
         def upload_response(self,fileName):
@@ -609,6 +621,88 @@ class Ui_MainWindow(object):
         self.label_3.setStyleSheet(u"color: #000;")
         self.label_3.setAlignment(Qt.AlignCenter)
 
+
+        self.mdiArea = QMdiArea(self.page_3)
+        self.mdiArea.setGeometry(QRect(10, 10, 770, 250))
+        self.mdiArea.setObjectName("mdiArea_2")
+
+        self.mdiArea_2 = QMdiArea(self.page_3)
+        self.mdiArea_2.setGeometry(QRect(10, 290, 770, 120))
+        self.mdiArea_2.setObjectName("mdiArea_2")
+
+
+        self.mdiArea_3 = QMdiArea(self.page_3)
+        self.mdiArea_3.setGeometry(QRect(10, 440, 770, 120))
+        self.mdiArea_3.setObjectName("mdiArea_3")
+
+
+        self.mdiArea_4 = QMdiArea(self.page_3)
+        self.mdiArea_4.setGeometry(QRect(10, 590, 770, 120))
+        self.mdiArea_4.setObjectName("mdiArea_4")
+        self.mdiArea_4.raise_()
+
+
+        self.label_cd = QLabel(self.page_3)
+        self.label_cd.setAlignment(Qt.AlignLeft)
+        self.label_cd.setText("Cropping Dimensions")
+        self.label_cd.setFont(labelfont)
+        self.label_cd.adjustSize()
+        self.label_cd.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.label_cd.move(20,20)
+
+
+        self.label_LVA = QLabel(self.page_3)
+        self.label_LVA.setAlignment(Qt.AlignLeft)
+        self.label_LVA.setText("Lens Viewing Angle")
+        self.label_LVA.setFont(labelfont)
+        self.label_LVA.adjustSize()
+        self.label_LVA.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.label_LVA.move(20,300)
+        self.label_LVA.raise_()
+
+
+        self.label_OID = QLabel(self.page_3)
+        self.label_OID.setAlignment(Qt.AlignLeft)
+        self.label_OID.setText("Output Image Dimensions")
+        self.label_OID.setFont(labelfont)
+        self.label_OID.adjustSize()
+        self.label_OID.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.label_OID.move(20,450)
+        self.label_OID.raise_()
+
+
+        self.label_UCR = QLabel(self.page_3)
+        self.label_UCR.setAlignment(Qt.AlignLeft)
+        self.label_UCR.setText("Upload Camera Response File (.rsp)")
+        self.label_UCR.setFont(labelfont)
+        self.label_UCR.adjustSize()
+        self.label_UCR.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.label_UCR.move(20,600)
+        self.label_UCR.raise_()
+        
+        #mdi area 1 line edits 
+        self.lineEdit_md11 = QLineEdit(self.mdiArea)
+        self.lineEdit_md11.setText("")
+        self.lineEdit_md11.setObjectName("lineEdit")
+        self.lineEdit_md11.move(10,100)
+
+
+        self.lineEdit_md12 = QLineEdit(self.mdiArea)
+        self.lineEdit_md12.setText("")
+        self.lineEdit_md12.setObjectName("lineEdit")
+        self.lineEdit_md12.move(160,100)
+
+
+        self.label_md11 = QLabel(self.mdiArea)
+        self.label_md11.setAlignment(Qt.AlignLeft)
+        self.label_md11.setText("x")
+        self.label_md11.move(144,102)
+
+
+        self.label_iir = QLabel(self.mdiArea)
+        self.label_iir.setAlignment(Qt.AlignLeft)
+        self.label_iir.setText("Input Image Resolution")
+        self.label_iir.move(10,70)
 
 
         # Adding page_4 QWidget
@@ -699,9 +793,10 @@ class Ui_MainWindow(object):
         self.btn_page_3.setText(QCoreApplication.translate("MainWindow", u"Camera Settings", None))
         self.btn_page_4.setText(QCoreApplication.translate("MainWindow", u"Upload Calibration", None))
         self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO!", None))
-        self.label_1.setText(QCoreApplication.translate("MainWindow", u"PAGE 1", None))
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"PAGE 2", None))
-        self.label_3.setText(QCoreApplication.translate("MainWindow", u"PAGE 3", None))
+        self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
+        self.label_1.setAlignment(Qt.AlignHCenter)
+        #self.label_2.setText(QCoreApplication.translate("MainWindow", u"PAGE 2", None))
+        #self.label_3.setText(QCoreApplication.translate("MainWindow", u"PAGE 3", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"PAGE 5", None))
 
 
