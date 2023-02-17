@@ -53,7 +53,7 @@ class UploadFileRegion( QWidget ):
         
         # File icon pixmap
         self.fileIcon = QLabel( self )
-        self.pixmap = QPixmap( './assets/blank-file-128.ico' )
+        self.pixmap = QPixmap( './assets/icons/blank-file-128.ico' )
 
         # File path label
         self.filePathLabel = QLabel( self )
@@ -64,6 +64,9 @@ class UploadFileRegion( QWidget ):
         # Create remove button for an uploaded file
         self.removeBtn = QPushButton( "Remove", self )
 
+        # Browse file button
+        self.browseBtn = QPushButton( "Browse", self )
+        self.browseBtn.clicked.connect( self.browseCalFiles )
 
         # Allow dropping files in this region
         self.setAcceptDrops( True )
@@ -359,6 +362,14 @@ class UploadFileRegion( QWidget ):
         return tail or ntpath.basename(head)
     
 
+    # Open file dialog box to browse for files
+    def browseCalFiles( self ):
+        inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "", "Calibration File (*.cal)" )
+        print( "filename: {}".format( inputFileName[0] ) )
+        self.filePathLabel = inputFileName
+        self.fileNameLabel = self.getFilenameFromPath( inputFileName[0] )
+
+
     # Basic vignetting calibration (vc) file validation
     def vc_validation( self ):
         fileIsValid = False
@@ -595,7 +606,7 @@ class Ui_MainWindow(object):
         #teampic = QVBoxLayout(self.page_1)
 
         self.label_p1 = QLabel(self.page_1)
-        self.pixmap = QPixmap('officeteamstock.jpg')
+        self.pixmap = QPixmap('./assets/images/officeteamstock.jpg')
         #self.label_p1 = self.pixmap.scaled(64, 64, Qt.KeepAspectRatio)
         self.label_p1.setPixmap(self.pixmap)
         self.label_p1.setAlignment(Qt.AlignCenter)
