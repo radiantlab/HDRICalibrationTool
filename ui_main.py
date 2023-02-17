@@ -564,16 +564,18 @@ class Ui_MainWindow(object):
 
         self.label_p1 = QLabel(self.page_1)
         self.pixmap = QPixmap('officeteamstock.jpg')
-        self.label_p1 = self.pixmap.scaled(64, 64, Qt.KeepAspectRatio)
-        #self.label_p1.setPixmap(self.pixmap)
+        #self.label_p1 = self.pixmap.scaled(64, 64, Qt.KeepAspectRatio)
+        self.label_p1.setPixmap(self.pixmap)
         self.label_p1.setAlignment(Qt.AlignCenter)
-        self.label_p1.resize(self.pixmap.width(), self.pixmap.height())
-        
+        #self.label_p1.resize(self.pixmap.width(), self.pixmap.height())
+        self.label_p1.resize(100,100)
         self.label_p1.move(130,300)
         
         self.label_p1_title = QLabel(self.page_1)
         self.label_p1_title.setText("Meet The Team!")
-        self.label_p1_title.move(300,400)
+        self.label_p1_title.setStyleSheet("font: 16pt \".AppleSystemUIFont\";")
+        self.label_p1_title.adjustSize()
+        self.label_p1_title.move(700,450)
         
         #page_1.addWidget(label_p1)
         self.label_p1.show()
@@ -626,12 +628,13 @@ class Ui_MainWindow(object):
         self.label_2.setAlignment(Qt.AlignCenter)
 
         self.verticalLayout_6.addWidget(self.label_2)
-
         self.stackedWidget.addWidget(self.page_2)
+
         self.page_3 = QWidget()
         self.page_3.setObjectName(u"page_3")
-        self.verticalLayout_8 = QVBoxLayout(self.page_3)
-        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
+
+        self.cameraSettingsPage = QVBoxLayout(self.page_3)
+        self.cameraSettingsPage.setObjectName(u"cameraSettingsPage")
         self.label_3 = QLabel(self.page_3)
         self.label_3.setObjectName(u"label_3")
         self.label_3.setFont(font)
@@ -815,13 +818,13 @@ class Ui_MainWindow(object):
 
         #area 4 upload rsp
 
-        self.cameraSettingsPage = QVBoxLayout( self.page_3)
+       # self.cameraSettingsPage = QVBoxLayout(self.page_3)
         self.cameraSettingsPage.setContentsMargins( 0, 0, 0, 0 )
         self.cameraSettingsPage.setSpacing( 4 )
         self.cameraSettingsPage.setMargin( 0 )
 
         rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[0, 0], [900, 200] )
-
+        
         self.cameraSettingsPage.addWidget( rsp_uploadarea, 25 )
 
         
@@ -882,7 +885,7 @@ class Ui_MainWindow(object):
         self.label_5.setAlignment(Qt.AlignCenter)
         #adding page 5 element end 
 
-        self.verticalLayout_8.addWidget(self.label_3)
+        self.cameraSettingsPage.addWidget(self.label_3)
         self.verticalLayout_10.addWidget(self.label_5)
         self.stackedWidget.addWidget(self.page_3)
         self.stackedWidget.addWidget(self.page_4)
