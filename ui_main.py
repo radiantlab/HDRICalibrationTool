@@ -26,21 +26,20 @@ import ntpath
 # For regular expressions
 import re
 
-# Creates a region to upload a file to, given input coords, region size, and a region color.
+# Creates a region to upload a file to, given an object name, and region size.
 class UploadFileRegion( QWidget ):
-    # regionCoords[0]: x
-    # regionCoords[1]: y
     # regionSize[0]: width
     # regionSize[1]: height
-    def __init__( self, regionName="DefaultLabel", regionCoords=[0,0], regionSize=[128, 128] ):
+    def __init__( self, regionName="DefaultLabel", regionSize=[128, 128] ):
         QWidget.__init__(self)
 
         # Store input parameters as class attributes
         self.regionName = regionName
-        self.regionXPosition = regionCoords[0]
-        self.regionYPosition = regionCoords[1]
         self.regionWidth = regionSize[0]
         self.regionHeight = regionSize[1]
+
+        # Style path
+        self.region_style_path = "./styles/upload_file_region_styles.css"
 
         # Visible region background
         self.uploadRegion = QLabel( self )
@@ -77,9 +76,6 @@ class UploadFileRegion( QWidget ):
 
 
     def create( self ):
-        # Stylesheet path
-        stylesheetPath = "./styles/upload_file_region_styles.css"
-
         # -------------------------------------------------------------------------------------
         # Upload Region
 
@@ -89,11 +85,11 @@ class UploadFileRegion( QWidget ):
         # Set style
         self.uploadRegion.setProperty( "hasFile", self.hasFile )
 
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.region_style_path, "r" ) as stylesheet:
             self.uploadRegion.setStyleSheet( stylesheet.read() )
 
         # Set size
-        self.uploadRegion.setGeometry( QRect( self.regionXPosition, self.regionYPosition, self.regionWidth, self.regionHeight ) )
+        self.uploadRegion.setGeometry( QRect( 0, 0, self.regionWidth, self.regionHeight ) )
 
         # -------------------------------------------------------------------------------------
         # Region Spacer Region
@@ -104,7 +100,7 @@ class UploadFileRegion( QWidget ):
         # Set style
         self.regionSpacer.setProperty( "hasFile", self.hasFile )
 
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.region_style_path, "r" ) as stylesheet:
             self.regionSpacer.setStyleSheet( stylesheet.read() )
 
         # -------------------------------------------------------------------------------------
@@ -116,7 +112,7 @@ class UploadFileRegion( QWidget ):
         # Set style
         self.regionLabel.setProperty( "hasFile", self.hasFile )
 
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.region_style_path, "r" ) as stylesheet:
             self.regionLabel.setStyleSheet( stylesheet.read() )
 
         # Adjusting font
@@ -133,14 +129,14 @@ class UploadFileRegion( QWidget ):
         # Set style
         self.fileIcon.setProperty( "hasFile", self.hasFile )
 
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.region_style_path, "r" ) as stylesheet:
             self.fileIcon.setStyleSheet( stylesheet.read() )
 
         # Visibility
         self.fileIcon.hide()
 
         # Resize and set pixmap : https://stackoverflow.com/questions/21802868/python-how-to-resize-raster-image-with-pyqt
-        self.pixmap = self.pixmap.scaledToHeight( self.regionHeight - self.regionLabel.height() - 32 )
+        #self.pixmap = self.pixmap.scaledToHeight( self.regionHeight - self.regionLabel.height() - 32 )
         self.fileIcon.setPixmap( self.pixmap )
 
         # -------------------------------------------------------------------------------------
@@ -164,7 +160,7 @@ class UploadFileRegion( QWidget ):
         # Set style
         self.fileNameLabel.setProperty( "hasFile", self.hasFile )
 
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.region_style_path, "r" ) as stylesheet:
             self.fileNameLabel.setStyleSheet( stylesheet.read() )
 
         # Visibility
@@ -182,7 +178,7 @@ class UploadFileRegion( QWidget ):
         self.removeBtn.setObjectName( "UploadFileRemoveButton" )
 
         # Set style
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.region_style_path, "r" ) as stylesheet:
             self.removeBtn.setStyleSheet( stylesheet.read() )
 
         # Connect event to signal
@@ -257,8 +253,6 @@ class UploadFileRegion( QWidget ):
 
 
         # Adjust styling
-        # Stylesheet path
-        stylesheetPath = "./styles/upload_file_region_styles.css"
 
         # Set property for stylsheet to apply correct style
         self.uploadRegion.setProperty( "hasFile", self.hasFile )
@@ -268,22 +262,18 @@ class UploadFileRegion( QWidget ):
         self.fileNameLabel.setProperty( "hasFile", self.hasFile )
 
         # Apply style
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.region_style_path, "r" ) as stylesheet:
             self.uploadRegion.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
             self.regionSpacer.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
             self.regionLabel.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
             self.fileIcon.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
             self.fileNameLabel.setStyleSheet( stylesheet.read() )
 
         # ----------------------------------------------------------------------------------------
         # Basic validation
 
         # Check file size
-        fileSize = os.stat(self.filePathLabel.text()).st_size
+        fileSize = os.stat( self.filePathLabel.text() ).st_size
 
         if ( fileSize == 0 ):
             print( "File: \"{}\" at location {} is empty.".format( self.filePathLabel.text(), self.fileNameLabel.text() ) )
@@ -294,19 +284,26 @@ class UploadFileRegion( QWidget ):
             print( "File: \"{}\" at location {} has size: {} bytes.".format( self.filePathLabel.text(), self.fileNameLabel.text(), fileSize ) )
 
             # In this case, file is not empty so check for variable definitions and initializations (varies by calibration file)
-            if (self.uploadRegion.objectName() == "UploadFileRegion_Vignetting"):
+            if ( self.uploadRegion.objectName() == "UploadFileRegion_Vignetting" ):
                 print( "Upload region is for vignetting. Validating..." )
-                self.vc_validation()
 
-            elif (self.uploadRegion.objectName() == "UploadFileRegion_FisheyeCorrection"):
+                # Set RadianceData object path_vignetting here when valid vc file
+                print ( "self.vc_validation(): ".format( self.vc_validation() ) )
+                if ( self.vc_validation() == True ):
+                    path_vignetting = self.filePathLabel.text()
+                    print("got here")
+                    #TODO: reference obj. name
+
+
+            elif ( self.uploadRegion.objectName() == "UploadFileRegion_FisheyeCorrection" ):
                 print( "Upload region is for fisheye correction. Validating..." )
                 self.fc_validation()
 
-            elif (self.uploadRegion.objectName() == "UploadFileRegion_CameraFactor"):
+            elif ( self.uploadRegion.objectName() == "UploadFileRegion_CameraFactor" ):
                 print( "Upload region is for camera factor adjustment. Validating..." )
                 self.cf_validation()
 
-            elif (self.uploadRegion.objectName() == "UploadFileRegion_NeutralDensityFilter"):
+            elif ( self.uploadRegion.objectName() == "UploadFileRegion_NeutralDensityFilter" ):
                 print( "Upload region is for neutral density filter adjustment. Validating..." )
                 self.nd_validation()
 
@@ -339,8 +336,6 @@ class UploadFileRegion( QWidget ):
 
 
         # Adjust styling
-        # Stylesheet path
-        stylesheetPath = "./styles/upload_file_region_styles.css"
 
         # Set property for stylsheet to apply correct style
         self.uploadRegion.setProperty( "hasFile", self.hasFile )
@@ -350,15 +345,11 @@ class UploadFileRegion( QWidget ):
         self.fileNameLabel.setProperty( "hasFile", self.hasFile )
 
         # Apply style
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.region_style_path, "r" ) as stylesheet:
             self.uploadRegion.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
             self.regionSpacer.setStyleSheet( stylesheet.read() )    
-        with open(stylesheetPath, "r") as stylesheet:
             self.regionLabel.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
             self.fileIcon.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
             self.fileNameLabel.setStyleSheet( stylesheet.read() )
 
 
@@ -370,9 +361,49 @@ class UploadFileRegion( QWidget ):
 
     # Basic vignetting calibration (vc) file validation
     def vc_validation( self ):
-        
+        fileIsValid = False
 
-        return
+        r_var_exists = False
+        sf_var_exists = False
+        ro_var_exists = False
+        go_var_exists = False
+        bo_var_exists = False
+
+        # Check for vars in file
+        with open( self.filePathLabel.text(), "r" ) as file:
+            # loop through each line in file
+            for num, line in enumerate( file, 1 ):
+                # Found an instance of var, print to console the value
+                if ( "r=" in line ):
+                    print( "Value of 'r' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    r_var_exists = True
+
+                if ( "sf=" in line ):
+                    print( "Value of 'sf' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    sf_var_exists = True
+                    
+                if ( "ro=" in line ):
+                    print( "Value of 'ro' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    ro_var_exists = True
+                    
+                if ( "go=" in line ):
+                    print( "Value of 'go' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    go_var_exists = True
+                    
+                if ( "bo=" in line ):
+                    print( "Value of 'bo' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    bo_var_exists = True
+                    
+        # If all expected vars a represent, set flag to true
+        if ( r_var_exists
+             and sf_var_exists
+             and ro_var_exists
+             and go_var_exists
+             and bo_var_exists ):
+            fileIsValid = True
+
+
+        return fileIsValid
     
 
     # Basic fisheye correction calibration (fc) file validation
@@ -395,6 +426,9 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
+
+        # Main Window stylesheet path
+        self.main_styles_path = "./styles/main_styles.css"
 
         MainWindow.resize(1150, 840)
         MainWindow.setMinimumSize(QSize(1000, 500))
@@ -458,9 +492,7 @@ class Ui_MainWindow(object):
 
         # ---------------------------------------------------------------------------------------
         # Setting up page-routing buttons in menu sidebar
-
-        # Stylesheet path
-        stylesheetPath = "./styles/main_styles.css"
+        
 
         # Page 1 (Welcome landing page)
         self.btn_page_1 = QPushButton(self.frame_top_menus)
@@ -468,7 +500,7 @@ class Ui_MainWindow(object):
         self.btn_page_1.setMinimumSize(QSize(0, 40))
 
         # Set button styling
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.main_styles_path, "r" ) as stylesheet:
             self.btn_page_1.setStyleSheet( stylesheet.read() )
 
 
@@ -478,7 +510,7 @@ class Ui_MainWindow(object):
         self.btn_page_2.setMinimumSize(QSize(0, 40))
        
         # Set button styling
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.main_styles_path, "r" ) as stylesheet:
             self.btn_page_2.setStyleSheet( stylesheet.read() )
 
 
@@ -488,7 +520,7 @@ class Ui_MainWindow(object):
         self.btn_page_3.setMinimumSize(QSize(0, 40))
 
         # Set button styling
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.main_styles_path, "r" ) as stylesheet:
             self.btn_page_3.setStyleSheet( stylesheet.read() )
 
 
@@ -498,7 +530,7 @@ class Ui_MainWindow(object):
         self.btn_page_4.setMinimumSize(QSize(0, 40))
 
         # Set button styling
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.main_styles_path, "r" ) as stylesheet:
             self.btn_page_4.setStyleSheet( stylesheet.read() )
 
 
@@ -508,7 +540,7 @@ class Ui_MainWindow(object):
         self.btn_start_pipeline.setMinimumSize(QSize(0, 40))
         
         # Set button styling
-        with open(stylesheetPath, "r") as stylesheet:
+        with open( self.main_styles_path, "r" ) as stylesheet:
             self.btn_start_pipeline.setStyleSheet( stylesheet.read() )
 
 
@@ -823,7 +855,7 @@ class Ui_MainWindow(object):
         self.cameraSettingsPage.setSpacing( 4 )
         self.cameraSettingsPage.setMargin( 0 )
 
-        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[0, 0], [900, 200] )
+        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)", [900, 200] )
         
         self.cameraSettingsPage.addWidget( rsp_uploadarea, 25 )
 
@@ -843,28 +875,28 @@ class Ui_MainWindow(object):
 
         # Vignetting region
         # Add widget: UploadFileRegionObject class object
-        vc_UploadRegion = UploadFileRegion( "Vignetting", [0, 0], [900, 200] )
+        vc_UploadRegion = UploadFileRegion( "Vignetting", [900, 200] )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( vc_UploadRegion, 25 )
 
         # Fisheye correction region
         # Add widget: UploadFileRegionObject class object
-        fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [0, 0], [900, 200] )
+        fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [900, 200] )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( fc_UploadRegion, 25 )
 
         # Camera factor region
         # Add widget: UploadFileRegionObject class object
-        cf_UploadRegion = UploadFileRegion( "CameraFactor", [0, 0], [900, 200] )
+        cf_UploadRegion = UploadFileRegion( "CameraFactor", [900, 200] )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( cf_UploadRegion, 25 )
 
         # Neutral Density Filter region
         # Add widget: UploadFileRegionObject class object
-        nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [0, 0], [900, 200] )
+        nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [900, 200] )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( nd_UploadRegion, 25 )
