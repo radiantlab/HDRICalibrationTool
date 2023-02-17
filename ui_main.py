@@ -914,9 +914,9 @@ class Ui_MainWindow(object):
         self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO!", None))
         self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
         self.label_1.setAlignment(Qt.AlignHCenter)
-        #self.label_2.setText(QCoreApplication.translate("MainWindow", u"PAGE 2", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"LDR Image Upload Page", None))
         #self.label_3.setText(QCoreApplication.translate("MainWindow", u"PAGE 3", None))
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"PAGE 5", None))
+        self.label_5.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
 
 
 
