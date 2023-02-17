@@ -43,8 +43,11 @@ class UploadFileRegion( QWidget ):
         self.regionHeight = regionSize[1]
 
         # Visible region background
-        self.uploadRegion = QLabel(self)
-        
+        self.uploadRegion = QLabel( self )
+
+        # Spacers for QVBox/QHBox layouts
+        self.regionSpacer = QLabel( self )
+
         # Region label
         regionNameWithSpaces = re.sub(r"(\w)([A-Z])", r"\1 \2", regionName)
         self.regionLabel = QLabel( regionNameWithSpaces, self )
@@ -78,7 +81,7 @@ class UploadFileRegion( QWidget ):
         stylesheetPath = "./styles/upload_file_region_styles.css"
 
         # -------------------------------------------------------------------------------------
-        # Upload Region ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        # Upload Region
 
         # Set object name
         self.uploadRegion.setObjectName( "UploadFileRegion_{}".format( self.regionName ) )
@@ -93,13 +96,22 @@ class UploadFileRegion( QWidget ):
         self.uploadRegion.setGeometry( QRect( self.regionXPosition, self.regionYPosition, self.regionWidth, self.regionHeight ) )
 
         # -------------------------------------------------------------------------------------
+        # Region Spacer Region
+
+        # Set object name
+        self.regionSpacer.setObjectName( "regionSpacer" )
+
+        # Set style
+        self.regionSpacer.setProperty( "hasFile", self.hasFile )
+
+        with open(stylesheetPath, "r") as stylesheet:
+            self.regionSpacer.setStyleSheet( stylesheet.read() )
+
+        # -------------------------------------------------------------------------------------
         # Region Label
 
         # Set object name
         self.regionLabel.setObjectName( "UploadFileRegionLabel" )
-
-        # Move
-        self.regionLabel.move( self.regionXPosition, self.regionYPosition )
 
         # Set style
         self.regionLabel.setProperty( "hasFile", self.hasFile )
@@ -117,9 +129,6 @@ class UploadFileRegion( QWidget ):
 
         # Set object name
         self.fileIcon.setObjectName( "FileIcon" )
-
-        # Reposition relative to region height
-        self.fileIcon.move( 0, ( self.uploadRegion.height() - self.pixmap.height() - 24 ) )
 
         # Set style
         self.fileIcon.setProperty( "hasFile", self.hasFile )
@@ -152,9 +161,6 @@ class UploadFileRegion( QWidget ):
         # Set object name
         self.fileNameLabel.setObjectName( "UploadFileNameLabel" )
 
-        # Move
-        self.fileNameLabel.move( ( self.pixmap.width() + 32 ), ( self.regionHeight * 0.7 ) )
-
         # Set style
         self.fileNameLabel.setProperty( "hasFile", self.hasFile )
 
@@ -163,9 +169,6 @@ class UploadFileRegion( QWidget ):
 
         # Visibility
         self.fileNameLabel.hide()
-
-        # Properties
-        self.fileNameLabel.setMaximumWidth( ( self.regionWidth - self.pixmap.width() - 32 ) )
 
         # Adjusting font
         labelFont = QFont()
@@ -178,9 +181,6 @@ class UploadFileRegion( QWidget ):
         # Set object name
         self.removeBtn.setObjectName( "UploadFileRemoveButton" )
 
-        # Move
-        self.removeBtn.move( ( self.uploadRegion.width() - self.removeBtn.width() ), 16 )
-
         # Set style
         with open(stylesheetPath, "r") as stylesheet:
             self.removeBtn.setStyleSheet( stylesheet.read() )
@@ -192,6 +192,30 @@ class UploadFileRegion( QWidget ):
         self.removeBtn.hide()
 
         # -------------------------------------------------------------------------------------
+
+
+        # Layout creation
+        self.baseVLayout = QVBoxLayout()
+
+        self.upperHLayout = QHBoxLayout()
+        self.lowerHLayout = QHBoxLayout()
+
+        self.innerVLayout = QVBoxLayout()
+
+        self.lowerHLayout.addWidget( self.fileIcon, stretch=1 )
+        self.lowerHLayout.addLayout( self.innerVLayout, stretch=6 )
+
+        self.baseVLayout.addLayout( self.upperHLayout, stretch=1 )
+        self.baseVLayout.addLayout( self.lowerHLayout, stretch=4 )
+
+        self.innerVLayout.addWidget( self.regionSpacer, stretch=3 )
+        self.innerVLayout.addWidget( self.fileNameLabel, stretch=1 )
+
+        self.upperHLayout.addWidget( self.regionLabel, stretch=6 )
+        self.upperHLayout.addWidget( self.regionSpacer, stretch=1 )
+        self.upperHLayout.addWidget( self.removeBtn, stretch=1 )
+
+        self.uploadRegion.setLayout( self.baseVLayout )
 
 
         return
@@ -238,6 +262,7 @@ class UploadFileRegion( QWidget ):
 
         # Set property for stylsheet to apply correct style
         self.uploadRegion.setProperty( "hasFile", self.hasFile )
+        self.regionSpacer.setProperty( "hasFile", self.hasFile )
         self.regionLabel.setProperty( "hasFile", self.hasFile )
         self.fileIcon.setProperty( "hasFile", self.hasFile )
         self.fileNameLabel.setProperty( "hasFile", self.hasFile )
@@ -245,6 +270,8 @@ class UploadFileRegion( QWidget ):
         # Apply style
         with open(stylesheetPath, "r") as stylesheet:
             self.uploadRegion.setStyleSheet( stylesheet.read() )
+        with open(stylesheetPath, "r") as stylesheet:
+            self.regionSpacer.setStyleSheet( stylesheet.read() )
         with open(stylesheetPath, "r") as stylesheet:
             self.regionLabel.setStyleSheet( stylesheet.read() )
         with open(stylesheetPath, "r") as stylesheet:
@@ -317,6 +344,7 @@ class UploadFileRegion( QWidget ):
 
         # Set property for stylsheet to apply correct style
         self.uploadRegion.setProperty( "hasFile", self.hasFile )
+        self.regionSpacer.setProperty( "hasFile", self.hasFile )
         self.regionLabel.setProperty( "hasFile", self.hasFile )
         self.fileIcon.setProperty( "hasFile", self.hasFile )
         self.fileNameLabel.setProperty( "hasFile", self.hasFile )
@@ -325,12 +353,13 @@ class UploadFileRegion( QWidget ):
         with open(stylesheetPath, "r") as stylesheet:
             self.uploadRegion.setStyleSheet( stylesheet.read() )
         with open(stylesheetPath, "r") as stylesheet:
+            self.regionSpacer.setStyleSheet( stylesheet.read() )    
+        with open(stylesheetPath, "r") as stylesheet:
             self.regionLabel.setStyleSheet( stylesheet.read() )
         with open(stylesheetPath, "r") as stylesheet:
             self.fileIcon.setStyleSheet( stylesheet.read() )
         with open(stylesheetPath, "r") as stylesheet:
             self.fileNameLabel.setStyleSheet( stylesheet.read() )
-
 
 
     # Get the filename from the path
@@ -367,7 +396,7 @@ class Ui_MainWindow(object):
         if MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
 
-        MainWindow.resize(1000, 500)
+        MainWindow.resize(1150, 840)
         MainWindow.setMinimumSize(QSize(1000, 500))
         MainWindow.setStyleSheet(u"background-color: #EAEAEA;")
 
@@ -605,8 +634,6 @@ class Ui_MainWindow(object):
         # Fisheye correction region
         # Add widget: UploadFileRegionObject class object
         fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [0, 0], [900, 200] )
-        print( fc_UploadRegion.width() )
-        print( fc_UploadRegion.height() )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( fc_UploadRegion, 25 )
