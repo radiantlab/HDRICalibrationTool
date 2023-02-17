@@ -567,8 +567,8 @@ class Ui_MainWindow(object):
         #self.label_p1 = self.pixmap.scaled(64, 64, Qt.KeepAspectRatio)
         self.label_p1.setPixmap(self.pixmap)
         self.label_p1.setAlignment(Qt.AlignCenter)
-        #self.label_p1.resize(self.pixmap.width(), self.pixmap.height())
-        self.label_p1.resize(100,100)
+        self.label_p1.resize(self.pixmap.width(), self.pixmap.height())
+        #self.label_p1.resize(100,100)
         self.label_p1.move(130,300)
         
         self.label_p1_title = QLabel(self.page_1)
@@ -824,7 +824,7 @@ class Ui_MainWindow(object):
         self.cameraSettingsPage.setMargin( 0 )
 
         rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[0, 0], [900, 200] )
-        
+
         self.cameraSettingsPage.addWidget( rsp_uploadarea, 25 )
 
         
