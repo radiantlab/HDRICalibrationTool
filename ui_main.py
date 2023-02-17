@@ -563,10 +563,17 @@ class Ui_MainWindow(object):
         #teampic = QVBoxLayout(self.page_1)
 
         self.label_p1 = QLabel(self.page_1)
-        self.pixmap = QPixmap('officeteamstock.jpeg')
-        self.label_p1.setPixmap(self.pixmap)
-        self.label_p1.setAlignment(Qt.AlignRight)
+        self.pixmap = QPixmap('officeteamstock.jpg')
+        self.label_p1 = self.pixmap.scaled(64, 64, Qt.KeepAspectRatio)
+        #self.label_p1.setPixmap(self.pixmap)
+        self.label_p1.setAlignment(Qt.AlignCenter)
         self.label_p1.resize(self.pixmap.width(), self.pixmap.height())
+        
+        self.label_p1.move(130,300)
+        
+        self.label_p1_title = QLabel(self.page_1)
+        self.label_p1_title.setText("Meet The Team!")
+        self.label_p1_title.move(300,400)
         
         #page_1.addWidget(label_p1)
         self.label_p1.show()
