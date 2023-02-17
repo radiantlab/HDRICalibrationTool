@@ -655,12 +655,12 @@ class Ui_MainWindow(object):
         self.mdiArea_3.setGeometry(QRect(10, 460, 970, 140))
         self.mdiArea_3.setObjectName("mdiArea_3")
 
-
+        '''
         self.mdiArea_4 = QMdiArea(self.page_3)
         self.mdiArea_4.setGeometry(QRect(10, 610, 970, 140))
         self.mdiArea_4.setObjectName("mdiArea_4")
         self.mdiArea_4.raise_()
-
+        '''
 
         self.label_cd = QLabel(self.mdiArea)
         self.label_cd.setAlignment(Qt.AlignLeft)
@@ -693,7 +693,7 @@ class Ui_MainWindow(object):
         self.label_OID.move(10,10)
         self.label_OID.raise_()
 
-
+        '''
         self.label_UCR = QLabel(self.mdiArea_4)
         self.label_UCR.setAlignment(Qt.AlignLeft)
         self.label_UCR.setText("Upload Camera Response File (.rsp)")
@@ -703,6 +703,7 @@ class Ui_MainWindow(object):
         self.label_UCR.setStyleSheet("background-color: #a0a0a0")
         self.label_UCR.move(10,10)
         self.label_UCR.raise_()
+        '''
         
         #mdi area 1 line edits 
         self.lineEdit_md11 = QLineEdit(self.mdiArea)
@@ -818,12 +819,11 @@ class Ui_MainWindow(object):
 
         #area 4 upload rsp
 
-       # self.cameraSettingsPage = QVBoxLayout(self.page_3)
         self.cameraSettingsPage.setContentsMargins( 0, 0, 0, 0 )
         self.cameraSettingsPage.setSpacing( 4 )
         self.cameraSettingsPage.setMargin( 0 )
 
-        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[0, 0], [900, 200] )
+        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[100, 300], [900, 200] )
 
         self.cameraSettingsPage.addWidget( rsp_uploadarea, 25 )
 
