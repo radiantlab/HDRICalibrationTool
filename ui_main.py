@@ -278,15 +278,18 @@ class UploadFileRegion( QWidget ):
         # Check file size
         fileSize = os.stat( self.filePathLabel.text() ).st_size
 
+        # Handle empty file
         if ( fileSize == 0 ):
             print( "File: \"{}\" at location {} is empty.".format( self.filePathLabel.text(), self.fileNameLabel.text() ) )
 
+            # TODO
             # Display empty error in this case
         
+        # In this case, file is not empty so check for variable definitions and initializations (varies by calibration file)
         else:
             print( "File: \"{}\" at location {} has size: {} bytes.".format( self.filePathLabel.text(), self.fileNameLabel.text(), fileSize ) )
 
-            # In this case, file is not empty so check for variable definitions and initializations (varies by calibration file)
+            # Upload region is for Vignetting
             if ( self.uploadRegion.objectName() == "UploadFileRegion_Vignetting" ):
                 print( "Upload region is for vignetting. Validating..." )
 
@@ -294,21 +297,38 @@ class UploadFileRegion( QWidget ):
                 print ( "self.vc_validation(): ".format( self.vc_validation() ) )
                 if ( self.vc_validation() == True ):
                     path_vignetting = self.filePathLabel.text()
-                    print("got here")
+                    print( "Set path_vignetting to path: {}".format( path_vignetting ) )
                     #TODO: reference obj. name
 
-
+            # Upload region is for Fisheye Correction
             elif ( self.uploadRegion.objectName() == "UploadFileRegion_FisheyeCorrection" ):
                 print( "Upload region is for fisheye correction. Validating..." )
-                self.fc_validation()
+                
+                # Set RadianceData object path_fisheye here when valid fc file
+                if ( self.fc_validation() == True ):
+                    path_fisheye = self.filePathLabel.text()
+                    print( "Set path_fisheye to path: {}".format( path_fisheye ) )
+                    #TODO: reference obj. name
 
+            # Upload region is for Camera Factor
             elif ( self.uploadRegion.objectName() == "UploadFileRegion_CameraFactor" ):
                 print( "Upload region is for camera factor adjustment. Validating..." )
-                self.cf_validation()
 
+                # Set RadianceData object path_calfact here when valid cf file
+                if ( self.cf_validation() == True ):
+                    path_calfact = self.filePathLabel.text()
+                    print( "Set path_calfact to path: {}".format( path_calfact ) )
+                    #TODO: reference obj. name
+
+            # Upload region is for ND Filter
             elif ( self.uploadRegion.objectName() == "UploadFileRegion_NeutralDensityFilter" ):
                 print( "Upload region is for neutral density filter adjustment. Validating..." )
-                self.nd_validation()
+                
+                # Set RadianceData object path_ndfilter here when valid nd file
+                if ( self.nd_validation() == True ):
+                    path_ndfilter = self.filePathLabel.text()
+                    print( "Set path_ndfilter to path: {}".format( path_ndfilter ) )
+                    #TODO: reference obj. name
 
             else:
                 print( "Upload region is unknown. self.uploadRegion.objectName(): {}".format( self.uploadRegion.objectName() ) )
@@ -416,23 +436,160 @@ class UploadFileRegion( QWidget ):
              and bo_var_exists ):
             fileIsValid = True
 
-
         return fileIsValid
     
 
     # Basic fisheye correction calibration (fc) file validation
     def fc_validation( self ):
-        return
+        # Validation flags
+        fileIsValid = False
+        map_inverse_exists = False
+        inp_r_exists = False
+        mapped_r_exists = False
+        rmult_exists = False
+        xoff_exists = False
+        yoff_exists = False
+        ro_var_exists = False
+        go_var_exists = False
+        bo_var_exists = False
+        rad_r_exists = False
+
+        # Check for vars in file
+        with open( self.filePathLabel.text(), "r" ) as file:
+            # loop through each line in file
+            for num, line in enumerate( file, 1 ):
+                # Remove spaces and tab characters, but maintain \n \r
+                line = line.replace( " ", "" ).replace( "\t", "" )
+
+                # Found an instance of var, print to console the value
+                if ( "map_inverse=" in line ):
+                    print( "Value of 'map_inverse' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    map_inverse_exists = True
+
+                if ( "inp_r=" in line ):
+                    print( "Value of 'inp_r' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    inp_r_exists = True
+
+                if ( "mapped_r=" in line ):
+                    print( "Value of 'mapped_r' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    mapped_r_exists = True
+
+                if ( "rmult=" in line ):
+                    print( "Value of 'rmult' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    rmult_exists = True
+                
+                if ( "xoff=" in line ):
+                    print( "Value of 'xoff' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    xoff_exists = True
+
+                if ( "yoff=" in line ):
+                    print( "Value of 'yoff' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    yoff_exists = True
+                                   
+                if ( "ro=" in line ):
+                    print( "Value of 'ro' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    ro_var_exists = True
+                    
+                if ( "go=" in line ):
+                    print( "Value of 'go' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    go_var_exists = True
+                    
+                if ( "bo=" in line ):
+                    print( "Value of 'bo' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    bo_var_exists = True
+                
+                if ( "rad(r)=" in line ):
+                    print( "Function definition for 'rad(r)' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    rad_r_exists = True
+                    
+        # If all expected vars a represent, set flag to true
+        if ( map_inverse_exists 
+             and inp_r_exists
+             and mapped_r_exists
+             and rmult_exists
+             and xoff_exists
+             and yoff_exists
+             and ro_var_exists
+             and go_var_exists
+             and bo_var_exists
+             and rad_r_exists ):
+            fileIsValid = True
+
+        return fileIsValid
     
 
     # Basic calibration factor calibration (cf) file validation
     def cf_validation( self ):
-        return
+        # Validation flags
+        fileIsValid = False
+        ro_var_exists = False
+        go_var_exists = False
+        bo_var_exists = False
+
+        # Check for vars in file
+        with open( self.filePathLabel.text(), "r" ) as file:
+            # loop through each line in file
+            for num, line in enumerate( file, 1 ):
+                # Remove spaces and tab characters, but maintain \n \r
+                line = line.replace( " ", "" ).replace( "\t", "" )
+
+                # Found an instance of var, print to console the value                   
+                if ( "ro=" in line ):
+                    print( "Value of 'ro' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    ro_var_exists = True
+                    
+                if ( "go=" in line ):
+                    print( "Value of 'go' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    go_var_exists = True
+                    
+                if ( "bo=" in line ):
+                    print( "Value of 'bo' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    bo_var_exists = True
+                    
+        # If all expected vars a represent, set flag to true
+        if ( ro_var_exists
+             and go_var_exists
+             and bo_var_exists ):
+            fileIsValid = True
+
+        return fileIsValid
     
 
     # Basic neutral density filter calibration (nd) file validation
     def nd_validation( self ):
-        return
+        # Validation flags
+        fileIsValid = False
+        ro_var_exists = False
+        go_var_exists = False
+        bo_var_exists = False
+
+        # Check for vars in file
+        with open( self.filePathLabel.text(), "r" ) as file:
+            # loop through each line in file
+            for num, line in enumerate( file, 1 ):
+                # Remove spaces and tab characters, but maintain \n \r
+                line = line.replace( " ", "" ).replace( "\t", "" )
+
+                # Found an instance of var, print to console the value                   
+                if ( "ro=" in line ):
+                    print( "Value of 'ro' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    ro_var_exists = True
+                    
+                if ( "go=" in line ):
+                    print( "Value of 'go' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    go_var_exists = True
+                    
+                if ( "bo=" in line ):
+                    print( "Value of 'bo' found on line {}: {}".format( num, line.split( "=" )[1] ) )
+                    bo_var_exists = True
+                    
+        # If all expected vars a represent, set flag to true
+        if ( ro_var_exists
+             and go_var_exists
+             and bo_var_exists ):
+            fileIsValid = True
+
+        return fileIsValid
 
 
 
