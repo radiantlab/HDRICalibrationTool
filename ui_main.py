@@ -16,7 +16,7 @@ from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont,
 from PySide2.QtWidgets import *
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QStyle
 import sys
 import os
 
@@ -722,6 +722,12 @@ class Ui_MainWindow(object):
         self.btn_start_pipeline.setObjectName(u"btn_start_pipeline")
         self.btn_start_pipeline.setMinimumSize(QSize(0, 40))
         
+        '''
+        self.btn_help = QPushButton(self.frame_top_menus)
+        self.btn_help.setObjectName(u"btn_start_pipeline")
+        self.btn_help.setMinimumSize(QSize(0, 40))
+        self.btn_help(self.style().standardIcon(getattr(QStyle, SP_TitleBarContextHelpButton)))
+        '''
         # Set button styling
         with open( self.main_styles_path, "r" ) as stylesheet:
             self.btn_start_pipeline.setStyleSheet( stylesheet.read() )
@@ -742,6 +748,8 @@ class Ui_MainWindow(object):
         # Add Go button to sidebar
         self.verticalLayout_4.addWidget(self.btn_start_pipeline)
 
+        
+        #self.verticalLayout_4.addwidget()
         # ---------------------------------------------------------------------------------------
 
 
@@ -782,22 +790,22 @@ class Ui_MainWindow(object):
         #self.label_p1 = self.pixmap.scaled(64, 64, Qt.KeepAspectRatio)
         self.label_p1.setPixmap(self.pixmap)
         self.label_p1.setAlignment(Qt.AlignCenter)
-        #self.label_p1.resize(self.pixmap.width(), self.pixmap.height())
-        self.label_p1.resize(100,100)
+        self.label_p1.resize(self.pixmap.width(), self.pixmap.height())
+        #self.label_p1.resize(100,100)
         self.label_p1.move(130,300)
         
         self.label_p1_title = QLabel(self.page_1)
         self.label_p1_title.setText("Meet The Team!")
         self.label_p1_title.setStyleSheet("font: 16pt \".AppleSystemUIFont\";")
         self.label_p1_title.adjustSize()
-        self.label_p1_title.move(700,450)
+        self.label_p1_title.move(350,720)
         
         #page_1.addWidget(label_p1)
         self.label_p1.show()
 
         self.intro_para = QLabel(self.page_1)
         self.intro_para.setAlignment(Qt.AlignHCenter)
-        self.intro_para.setText("The ALD lighting application is a crowd-sourced and free \n built by a group of college kids...")
+        self.intro_para.setText("The HDRI Lighting Calibration Tool is a crowd-sourced and \n free application developed by a small team of students \n from Oregon State Univeristy.")
         self.intro_para.setFont(labelfont)
         self.intro_para.adjustSize()
         self.intro_para.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
@@ -850,32 +858,33 @@ class Ui_MainWindow(object):
 
         self.cameraSettingsPage = QVBoxLayout(self.page_3)
         self.cameraSettingsPage.setObjectName(u"cameraSettingsPage")
+        self.cameraSettingsPage.setContentsMargins( 0, 0, 0, 0 )
+        self.cameraSettingsPage.setSpacing( 4 )
+        self.cameraSettingsPage.setMargin( 0 )
+
         self.label_3 = QLabel(self.page_3)
         self.label_3.setObjectName(u"label_3")
         self.label_3.setFont(font)
         self.label_3.setStyleSheet(u"color: #000;")
         self.label_3.setAlignment(Qt.AlignCenter)
-
-
+        
+        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[0, 0], [900, 200] )
+        self.cameraSettingsPage.addWidget(rsp_uploadarea)
+        
         self.mdiArea = QMdiArea(self.page_3)
-        self.mdiArea.setGeometry(QRect(10, 10, 970, 250))
+        #self.mdiArea.setGeometry(QRect(10, 10, 970, 250))
         self.mdiArea.setObjectName("mdiArea_2")
+        self.cameraSettingsPage.addWidget(self.mdiArea)
 
         self.mdiArea_2 = QMdiArea(self.page_3)
-        self.mdiArea_2.setGeometry(QRect(10, 290, 970, 140))
+        #self.mdiArea_2.setGeometry(QRect(10, 290, 970, 140))
         self.mdiArea_2.setObjectName("mdiArea_2")
-
+        self.cameraSettingsPage.addWidget(self.mdiArea_2)
 
         self.mdiArea_3 = QMdiArea(self.page_3)
-        self.mdiArea_3.setGeometry(QRect(10, 460, 970, 140))
+        #self.mdiArea_3.setGeometry(QRect(10, 460, 970, 140))
         self.mdiArea_3.setObjectName("mdiArea_3")
-
-
-        self.mdiArea_4 = QMdiArea(self.page_3)
-        self.mdiArea_4.setGeometry(QRect(10, 610, 970, 140))
-        self.mdiArea_4.setObjectName("mdiArea_4")
-        self.mdiArea_4.raise_()
-
+        self.cameraSettingsPage.addWidget(self.mdiArea_3)
 
         self.label_cd = QLabel(self.mdiArea)
         self.label_cd.setAlignment(Qt.AlignLeft)
@@ -907,17 +916,6 @@ class Ui_MainWindow(object):
         self.label_OID.setStyleSheet("background-color: #a0a0a0")
         self.label_OID.move(10,10)
         self.label_OID.raise_()
-
-
-        self.label_UCR = QLabel(self.mdiArea_4)
-        self.label_UCR.setAlignment(Qt.AlignLeft)
-        self.label_UCR.setText("Upload Camera Response File (.rsp)")
-        self.label_UCR.setFont(labelfont)
-        self.label_UCR.adjustSize()
-        self.label_UCR.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.label_UCR.setStyleSheet("background-color: #a0a0a0")
-        self.label_UCR.move(10,10)
-        self.label_UCR.raise_()
         
         #mdi area 1 line edits 
         self.lineEdit_md11 = QLineEdit(self.mdiArea)
@@ -979,7 +977,7 @@ class Ui_MainWindow(object):
         self.lineEdit_md15.move(500,200)
 
         self.area1button = QPushButton('Enter', self.mdiArea)
-        self.area1button.move(200,300)
+        self.area1button.move(750,200)
         #area1button.clicked.connect(self.on_click)
 
         #area 2 edit 
@@ -1006,6 +1004,9 @@ class Ui_MainWindow(object):
         self.lineEdit_md22.setObjectName("lineEdit_md22")
         self.lineEdit_md22.move(250,90)
 
+        self.area2button = QPushButton('Enter', self.mdiArea_2)
+        self.area2button.move(750,200)
+
         #area 3 edit
 
         self.label_md31 = QLabel(self.mdiArea_3)
@@ -1030,18 +1031,13 @@ class Ui_MainWindow(object):
         self.lineEdit_md32.setObjectName("lineEdit_md32")
         self.lineEdit_md32.move(160,90)
 
+        self.area3button = QPushButton('Enter', self.mdiArea_3)
+        self.area3button.move(750,200)
 
         #area 4 upload rsp
-
-       # self.cameraSettingsPage = QVBoxLayout(self.page_3)
-        self.cameraSettingsPage.setContentsMargins( 0, 0, 0, 0 )
-        self.cameraSettingsPage.setSpacing( 4 )
-        self.cameraSettingsPage.setMargin( 0 )
-
-        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)", [900, 200], 2 )
         
-        self.cameraSettingsPage.addWidget( rsp_uploadarea, 25 )
-
+        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[0, 0], [900, 200] )
+        self.cameraSettingsPage.addWidget(rsp_uploadarea)
         
         # Adding page_4 QWidget
         self.page_4 = QWidget()
@@ -1133,9 +1129,9 @@ class Ui_MainWindow(object):
         self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO!", None))
         self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
         self.label_1.setAlignment(Qt.AlignHCenter)
-        #self.label_2.setText(QCoreApplication.translate("MainWindow", u"PAGE 2", None))
+        self.label_2.setText(QCoreApplication.translate("MainWindow", u"LDR Image Upload Page", None))
         #self.label_3.setText(QCoreApplication.translate("MainWindow", u"PAGE 3", None))
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"PAGE 5", None))
+        self.label_5.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
 
 
 
