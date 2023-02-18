@@ -30,13 +30,15 @@ import re
 class UploadFileRegion( QWidget ):
     # regionSize[0]: width
     # regionSize[1]: height
-    def __init__( self, regionName="DefaultLabel", regionSize=[128, 128] ):
+    # fileType: Restricts file upload to 0: any; 1: .cal; 2: .rsp
+    def __init__( self, regionName="DefaultLabel", regionSize=[128, 128], fileType=0 ):
         QWidget.__init__(self)
 
         # Store input parameters as class attributes
         self.regionName = regionName
         self.regionWidth = regionSize[0]
         self.regionHeight = regionSize[1]
+        self.fileType = fileType
 
         # Style path
         self.region_style_path = "./styles/upload_file_region_styles.css"
@@ -66,7 +68,7 @@ class UploadFileRegion( QWidget ):
 
         # Browse file button
         self.browseBtn = QPushButton( "Browse", self )
-        self.browseBtn.clicked.connect( self.browseCalFiles )
+        self.browseBtn.clicked.connect( self.browseFiles )
 
         # Allow dropping files in this region
         self.setAcceptDrops( True )
@@ -335,7 +337,6 @@ class UploadFileRegion( QWidget ):
 
         # ----------------------------------------------------------------------------------------
 
-
         event.acceptProposedAction()
 
 
@@ -382,9 +383,20 @@ class UploadFileRegion( QWidget ):
         return tail or ntpath.basename(head)
     
 
-    # Open file dialog box to browse for files
-    def browseCalFiles( self ):
-        inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "", "Calibration File (*.cal)" )
+    # Open file dialog box to browse for calibration .cal files
+    def browseFiles( self ):
+        # Restrict to .cal file upload
+        if ( self.fileType == 1 ):
+            inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "", "Calibration File (*.cal)" )
+        
+        # Restrict to .rsp file upload
+        elif ( self.fileType == 2 ):
+            inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "", "Response Function File (*.rsp)" )
+
+        # Allow any file to upload
+        else:
+            inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "" )
+
         print( "filename: {}".format( inputFileName[0] ) )
         self.filePathLabel = inputFileName
         self.fileNameLabel = self.getFilenameFromPath( inputFileName[0] )
@@ -1026,7 +1038,7 @@ class Ui_MainWindow(object):
         self.cameraSettingsPage.setSpacing( 4 )
         self.cameraSettingsPage.setMargin( 0 )
 
-        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)", [900, 200] )
+        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)", [900, 200], 2 )
         
         self.cameraSettingsPage.addWidget( rsp_uploadarea, 25 )
 
@@ -1046,31 +1058,31 @@ class Ui_MainWindow(object):
 
         # Vignetting region
         # Add widget: UploadFileRegionObject class object
-        vc_UploadRegion = UploadFileRegion( "Vignetting", [900, 200] )
+        vc_UploadRegion = UploadFileRegion( "Vignetting", [900, 200], 1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( vc_UploadRegion, 25 )
+        self.calibrationPage.addWidget( vc_UploadRegion )
 
         # Fisheye correction region
         # Add widget: UploadFileRegionObject class object
-        fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [900, 200] )
+        fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [900, 200], 1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( fc_UploadRegion, 25 )
+        self.calibrationPage.addWidget( fc_UploadRegion )
 
         # Camera factor region
         # Add widget: UploadFileRegionObject class object
-        cf_UploadRegion = UploadFileRegion( "CameraFactor", [900, 200] )
+        cf_UploadRegion = UploadFileRegion( "CameraFactor", [900, 200], 1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( cf_UploadRegion, 25 )
+        self.calibrationPage.addWidget( cf_UploadRegion )
 
         # Neutral Density Filter region
         # Add widget: UploadFileRegionObject class object
-        nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [900, 200] )
+        nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [900, 200], 1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( nd_UploadRegion, 25 )
+        self.calibrationPage.addWidget( nd_UploadRegion )
 
         # -------------------------------------------------------------------------------------------------
 
