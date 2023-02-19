@@ -48,6 +48,26 @@ QPushButton#UploadFileRemoveButton
 	font-weight: bold;
 }
 
+/* The click-to-browse button */
+QPushButton#BrowseButton
+{
+	background-color: #599CC1;
+	color: white;
+	font-weight: bold;
+}
+QPushButton#BrowseButton:hover
+{
+	background-color: #477C9A;
+	color: white;
+	font-weight: bold;
+}
+QPushButton#BrowseButton:pressed
+{
+	background-color: #355D73;
+	color: white;
+	font-weight: bold;
+}
+
 /* The visible portion of the upload region, including placeholder spacers */
 QLabel[hasFile="true"]
 {
