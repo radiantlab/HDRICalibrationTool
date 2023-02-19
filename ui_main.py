@@ -93,31 +93,35 @@ class Ui_MainWindow(object):
 
         # ---------------------------------------------------------------------------------------
         # Setting up page-routing buttons in menu sidebar
-        
 
-        # Page 1 (Welcome landing page)
+        # Page 1 (Welcome landing page, isActive on app launch)
         self.btn_page_1 = QPushButton(self.frame_top_menus)
-        self.btn_page_1.setObjectName(u"btn_page_1")
+        self.btn_page_1.setObjectName( "btn_page_1" )
+        self.btn_page_1.setProperty( "isActivePage", True )
         self.btn_page_1.setMinimumSize(QSize(0, 40))
 
         # Page 2 (Upload LDR images)
         self.btn_page_2 = QPushButton(self.frame_top_menus)
-        self.btn_page_2.setObjectName(u"btn_page_2")
+        self.btn_page_2.setObjectName( "btn_page_2" )
+        self.btn_page_2.setProperty( "isActivePage", False )
         self.btn_page_2.setMinimumSize(QSize(0, 40))
 
         # Page 3 (Adjust camera settings)
         self.btn_page_3 = QPushButton(self.frame_top_menus)
-        self.btn_page_3.setObjectName(u"btn_page_3")
+        self.btn_page_3.setObjectName( "btn_page_3" )
+        self.btn_page_2.setProperty( "isActivePage", False )
         self.btn_page_3.setMinimumSize(QSize(0, 40))
 
         # Page 4 (Adjust calibration settings)
         self.btn_page_4 = QPushButton(self.frame_top_menus)
-        self.btn_page_4.setObjectName(u"btn_page_4")
+        self.btn_page_4.setObjectName( "btn_page_4" )
+        self.btn_page_4.setProperty( "isActivePage", False )
         self.btn_page_4.setMinimumSize(QSize(0, 40))
 
         # Go button - Starts Radiance pipeline process
         self.btn_start_pipeline = QPushButton(self.frame_top_menus)
-        self.btn_start_pipeline.setObjectName(u"btn_start_pipeline")
+        self.btn_start_pipeline.setObjectName( "btn_start_pipeline" )
+        self.btn_start_pipeline.setProperty( "isActivePage", False )
         self.btn_start_pipeline.setMinimumSize(QSize(0, 40))
         
 
@@ -135,6 +139,15 @@ class Ui_MainWindow(object):
         self.btn_help(self.style().standardIcon(getattr(QStyle, SP_TitleBarContextHelpButton)))
         '''
 
+        # Default active page
+        self.activePage = self.btn_page_1
+
+        self.btn_page_1.clicked.connect( lambda: self.setActivePage( self.btn_page_1 ) )
+        self.btn_page_2.clicked.connect( lambda: self.setActivePage( self.btn_page_2 ) )
+        self.btn_page_3.clicked.connect( lambda: self.setActivePage( self.btn_page_3 ) )
+        self.btn_page_4.clicked.connect( lambda: self.setActivePage( self.btn_page_4 ) )
+        self.btn_start_pipeline.clicked.connect( lambda: self.setActivePage( self.btn_start_pipeline ) )
+
         # Add page-routing buttons to sidebar
         self.sidebarMenuVLayout.addWidget( self.btn_page_1, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_page_2, stretch=1 )
@@ -142,17 +155,8 @@ class Ui_MainWindow(object):
         self.sidebarMenuVLayout.addWidget( self.btn_page_4, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_start_pipeline, stretch=1 )
 
-        # Set button styling
-        with open( self.main_styles_path, "r" ) as stylesheet:
-            self.btn_page_1.setStyleSheet( stylesheet.read() )
-        with open( self.main_styles_path, "r" ) as stylesheet:
-            self.btn_page_2.setStyleSheet( stylesheet.read() )
-        with open( self.main_styles_path, "r" ) as stylesheet:
-            self.btn_page_3.setStyleSheet( stylesheet.read() )
-        with open( self.main_styles_path, "r" ) as stylesheet:
-            self.btn_page_4.setStyleSheet( stylesheet.read() )
-        with open( self.main_styles_path, "r" ) as stylesheet:
-            self.btn_start_pipeline.setStyleSheet( stylesheet.read() )
+        # Set style of sidebar menu buttons
+        self.setButtonStyling()
 
         # ---------------------------------------------------------------------------------------
 
@@ -539,6 +543,48 @@ class Ui_MainWindow(object):
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"LDR Image Upload Page", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
 
+
+    # Sets the active page based on sidebar menu button clicks
+    def setActivePage( self, newActiveBtn ):
+        # Set attribute
+        self.activePage = newActiveBtn
+
+        self.btn_page_1.setProperty( "isActivePage", False )
+        self.btn_page_2.setProperty( "isActivePage", False )
+        self.btn_page_3.setProperty( "isActivePage", False )
+        self.btn_page_4.setProperty( "isActivePage", False )
+        self.btn_start_pipeline.setProperty( "isActivePage", False )
+
+        if ( newActiveBtn.objectName() == "btn_page_1" ):
+            self.btn_page_1.setProperty( "isActivePage", True )
+        elif  ( newActiveBtn.objectName() == "btn_page_2" ):
+            self.btn_page_2.setProperty( "isActivePage", True )
+        elif  ( newActiveBtn.objectName() == "btn_page_3" ):
+            self.btn_page_3.setProperty( "isActivePage", True )
+        elif  ( newActiveBtn.objectName() == "btn_page_4" ):
+            self.btn_page_4.setProperty( "isActivePage", True )
+        elif  ( newActiveBtn.objectName() == "btn_start_pipeline" ):
+            self.btn_start_pipeline.setProperty( "isActivePage", True )
+        else:
+            print( "newActiveBtn: {}".format( newActiveBtn.objectName() ) )
+
+        self.setButtonStyling()
+
+        return
+
+    
+    # Set sidebar menu button styling
+    def setButtonStyling( self ):
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_page_1.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_page_2.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_page_3.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_page_4.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_start_pipeline.setStyleSheet( stylesheet.read() )
 
 
 # def checkVal(list_val): #checking values of .cal files
