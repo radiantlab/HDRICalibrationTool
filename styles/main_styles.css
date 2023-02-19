@@ -2,6 +2,14 @@
 
 
 /* Page-routing buttons in menu sidebar */
+QPushButton#btn_page_1[isActivePage="true"],
+		   #btn_page_2[isActivePage="true"],
+		   #btn_page_3[isActivePage="true"],
+		   #btn_page_4[isActivePage="true"]
+{
+    color: white;
+    background-color: #599CC1;
+}
 QPushButton#btn_page_1,
 		   #btn_page_2,
 		   #btn_page_3,
@@ -19,6 +27,8 @@ QPushButton#btn_page_1:hover,
 {
     color: white;
     background-color: #599CC1;
+	border-color: white;
+	border-width: 2px;
 }
 QPushButton#btn_page_1:pressed,
 		   #btn_page_2:pressed,
