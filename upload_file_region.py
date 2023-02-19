@@ -135,8 +135,15 @@ class UploadFileRegion( QWidget ):
         # Set states of the created widgets (styles, visibility)
         self.setWidgetStates()
 
-        # -------------------------------------------------------------------------------------
-        # Layout creation
+        # Create layout and add widgets
+        self.initRegionLayout()
+        
+        return
+    
+
+    # Sets up the region layouts
+    def initRegionLayout( self ):
+        # Create layouts
         self.baseVLayout = QVBoxLayout()
 
         self.upperHLayout = QHBoxLayout()
@@ -150,6 +157,7 @@ class UploadFileRegion( QWidget ):
         self.uploadIconVLayout = QVBoxLayout()
         self.uploadIconHLayout = QHBoxLayout()
 
+        # Add widgets and layouts
         self.lowerHLayout.addWidget( self.fileIcon, stretch=1 )
         self.lowerHLayout.addLayout( self.innerVLayout, stretch=6 )
 
@@ -167,8 +175,8 @@ class UploadFileRegion( QWidget ):
         self.uploadIconVLayout.addWidget( self.dragTextLabel, stretch=2, alignment=Qt.AlignLeft )
         self.uploadIconVLayout.addWidget( self.regionSpacer, stretch=1 )
 
-        self.uploadIconHLayout.addWidget( self.uploadFileIcon, stretch=6, alignment=Qt.AlignCenter )
-        self.uploadIconHLayout.addWidget( self.regionSpacer, stretch=7 )
+        self.uploadIconHLayout.addWidget( self.uploadFileIcon, stretch=1, alignment=Qt.AlignCenter )
+        self.uploadIconHLayout.addWidget( self.regionSpacer, stretch=1 )
 
         self.textVLayout.addWidget( self.regionSpacer, stretch=1 )
         self.textVLayout.addLayout( self.buttonLabelHLayout, stretch=2 )
@@ -182,12 +190,11 @@ class UploadFileRegion( QWidget ):
         self.upperHLayout.addWidget( self.regionSpacer, stretch=1 )
         self.upperHLayout.addWidget( self.removeBtn, stretch=1 )
 
+        # Add all inner layouts to the base layout for the region
         self.uploadRegion.setLayout( self.baseVLayout )
-        # -------------------------------------------------------------------------------------
-
 
         return
-        
+
 
     # Allow the dragging of image/text files onto region.
     def dragEnterEvent( self, event ):
