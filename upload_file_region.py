@@ -730,7 +730,7 @@ class UploadFileRegion( QWidget ):
                 formattedString += " - "
 
                 # Remove the hyphen from the token
-                tokenizedList[currentTerm].replace( "-", "" )
+                tokenizedList[currentTerm] = tokenizedList[currentTerm].replace( "-", "" )
 
             else:
                 # Token isn't first, so prepend an addition sign
