@@ -2,71 +2,76 @@
 
 
 /* The label for the upload region */
-QLabel[hasFile="true"]#UploadFileRegionLabel
+QLabel[hasFile="true"]#regionLabel
 {
 	background-color: white;
 	color: black;
 	font-weight: bold;
+	font-size: 28px;
 }
-QLabel[hasFile="false"]#UploadFileRegionLabel
+QLabel[hasFile="false"]#regionLabel
 {
 	background-color: #CBEEB0;
 	color: black;
 	font-weight: bold;
+	font-size: 28px;
 }
 
-/* The file icon */
-QLabel[hasFile="true"]#FileIcon
-{
-	background-color: white;
-}
-QLabel[hasFile="false"]#FileIcon
-{
-	background-color: #CBEEB0;
-}
 
 /* The file name label */
-QLabel[hasFile="true"]#UploadFileNameLabel
+QLabel[hasFile="true"]#fileNameLabel
 {
 	background-color: white;
 	color: black;
-	font-weight: normal;
+	font-weight: bold;
+	font-size: 20px;
 }
-
-QLabel[hasFile="false"]#UploadFileNameLabel
+QLabel[hasFile="false"]#fileNameLabel
 {
 	background-color: #CBEEB0;
-	color: black;
-	font-weight: normal;
 }
 
+
+/* The file icon */
+QLabel[hasFile="true"]#fileIcon
+{
+	background-color: white;
+}
+QLabel[hasFile="false"]#fileIcon
+{
+	background-color: #CBEEB0;
+}
+
+
 /* The remove button */
-QPushButton#UploadFileRemoveButton
+QPushButton#removeButton
 {
 	background-color: #FF8C8C;
 	color: white;
 	font-weight: bold;
 }
 
+
 /* The click-to-browse button */
-QPushButton#BrowseButton
+QPushButton#browseButton
 {
 	background-color: #599CC1;
 	color: white;
 	font-weight: bold;
 }
-QPushButton#BrowseButton:hover
+QPushButton#browseButton:hover
 {
 	background-color: #477C9A;
 	color: white;
 	font-weight: bold;
 }
-QPushButton#BrowseButton:pressed
+QPushButton#browseButton:pressed
 {
 	background-color: #355D73;
 	color: white;
 	font-weight: bold;
 }
+
 
 /* The visible portion of the upload region, including placeholder spacers */
 QLabel[hasFile="true"]

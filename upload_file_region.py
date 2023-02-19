@@ -1,7 +1,7 @@
 import os
 
 from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
-from PySide2.QtGui import QPixmap, QFont
+from PySide2.QtGui import QPixmap
 from PySide2.QtCore import Qt, QRect
 
 from PyQt5.QtWidgets import QFileDialog
@@ -74,10 +74,11 @@ class UploadFileRegion( QWidget ):
         self.create()
 
 
+    # Setting widget object names and pixmaps
     def create( self ):
         # -------------------------------------------------------------------------------------
         # Upload Region
-        self.uploadRegion.setObjectName( "UploadFileRegion_{}".format( self.regionName ) )
+        self.uploadRegion.setObjectName( "uploadFileRegion_{}".format( self.regionName ) )
         self.uploadRegion.setGeometry( QRect( 0, 0, self.regionWidth, self.regionHeight ) )
 
 
@@ -86,48 +87,48 @@ class UploadFileRegion( QWidget ):
 
 
         # Region Label
-        self.regionLabel.setObjectName( "UploadFileRegionLabel" )
+        self.regionLabel.setObjectName( "regionLabel" )
 
 
         # File Icon
-        self.fileIcon.setObjectName( "FileIcon" )
+        self.fileIcon.setObjectName( "fileIcon" )
         # Set pixmap
         self.fileIcon.setPixmap( self.fileIconPixmap )
 
 
         # File Path Label
-        self.filePathLabel.setObjectName( "UploadedFilePathLabel" )
+        self.filePathLabel.setObjectName( "filePathLabel" )
         self.filePathLabel.setText( "" )
 
 
         # File Name Label
-        self.fileNameLabel.setObjectName( "UploadFileNameLabel" )
+        self.fileNameLabel.setObjectName( "fileNameLabel" )
 
 
         # Remove Button
-        self.removeBtn.setObjectName( "UploadFileRemoveButton" )
+        self.removeBtn.setObjectName( "removeButton" )
         # Connect event to signal
         self.removeBtn.clicked.connect( self.removeBtnClicked )
 
 
         # Upload File Icon
-        self.uploadFileIcon.setObjectName( "UploadFileIcon" )
+        self.uploadFileIcon.setObjectName( "uploadFileIcon" )
         # Set pixmap 
         self.uploadFileIcon.setPixmap( self.uploadFileIconPixmap )
 
 
         # Browse Button
-        self.browseBtn.setObjectName( "BrowseButton" )
+        self.browseBtn.setObjectName( "browseButton" )
         # Connect event to signal
         self.browseBtn.clicked.connect( self.browseFiles )
 
 
         # Drag Text Label
-        self.dragTextLabel.setObjectName( "DragTextLabel" )
+        self.dragTextLabel.setObjectName( "dragTextLabel" )
 
 
         # Or Text Label
-        self.orTextLabel.setObjectName( "OrTextLabel" )
+        self.orTextLabel.setObjectName( "orTextLabel" )
 
         # -------------------------------------------------------------------------------------
 
@@ -197,7 +198,7 @@ class UploadFileRegion( QWidget ):
 
 
     # On image/text file drop event
-    def dropEvent(self, event):
+    def dropEvent( self, event ):
         # Set hasFile flag
         self.hasFile = True
 
@@ -377,15 +378,6 @@ class UploadFileRegion( QWidget ):
             self.removeBtn.setStyleSheet( stylesheet.read() )
             self.browseBtn.setStyleSheet( stylesheet.read() )
 
-        # Fonts
-        regionLabelFont = QFont()
-        regionLabelFont.setPointSize( 28 )
-        self.regionLabel.setFont( regionLabelFont )
-
-        fileNameLabelFont = QFont()
-        fileNameLabelFont.setPointSize( 16 )
-        self.fileNameLabel.setFont( fileNameLabelFont )
-
 
     # Sets the state of the region's widgets
     def setWidgetStates( self ):
@@ -396,6 +388,7 @@ class UploadFileRegion( QWidget ):
         self.setWidgetStyle()   
 
 
+    # Uploaded file validation. Ensures file is not empty.
     def validateFile( self ):
         # Check file size
         fileSize = os.stat( self.filePathLabel.text() ).st_size
@@ -412,7 +405,7 @@ class UploadFileRegion( QWidget ):
             print( "File: \"{}\" at location {} has size: {} bytes.".format( self.filePathLabel.text(), self.fileNameLabel.text(), fileSize ) )
 
             # Upload region is for Vignetting
-            if ( self.uploadRegion.objectName() == "UploadFileRegion_Vignetting" ):
+            if ( self.uploadRegion.objectName() == "uploadFileRegion_Vignetting" ):
                 print( "Upload region is for vignetting. Validating..." )
 
                 # Set RadianceData object path_vignetting here when valid vc file
@@ -422,7 +415,7 @@ class UploadFileRegion( QWidget ):
                     #TODO: reference obj. name
 
             # Upload region is for Fisheye Correction
-            elif ( self.uploadRegion.objectName() == "UploadFileRegion_FisheyeCorrection" ):
+            elif ( self.uploadRegion.objectName() == "uploadFileRegion_FisheyeCorrection" ):
                 print( "Upload region is for fisheye correction. Validating..." )
                 
                 # Set RadianceData object path_fisheye here when valid fc file
@@ -432,7 +425,7 @@ class UploadFileRegion( QWidget ):
                     #TODO: reference obj. name
 
             # Upload region is for Camera Factor
-            elif ( self.uploadRegion.objectName() == "UploadFileRegion_CameraFactor" ):
+            elif ( self.uploadRegion.objectName() == "uploadFileRegion_CameraFactor" ):
                 print( "Upload region is for camera factor adjustment. Validating..." )
 
                 # Set RadianceData object path_calfact here when valid cf file
@@ -442,7 +435,7 @@ class UploadFileRegion( QWidget ):
                     #TODO: reference obj. name
 
             # Upload region is for ND Filter
-            elif ( self.uploadRegion.objectName() == "UploadFileRegion_NeutralDensityFilter" ):
+            elif ( self.uploadRegion.objectName() == "uploadFileRegion_NeutralDensityFilter" ):
                 print( "Upload region is for neutral density filter adjustment. Validating..." )
                 
                 # Set RadianceData object path_ndfilter here when valid nd file
