@@ -30,7 +30,7 @@ import re
 class UploadFileRegion( QWidget ):
     # regionSize[0]: width
     # regionSize[1]: height
-    # fileType: Restricts file upload to 0: any; 1: .cal; 2: .rsp
+    # fileType: Restricts file upload to: [0: any;  1: .cal;  2: .rsp]
     def __init__( self, regionName="DefaultLabel", regionSize=[128, 128], fileType=0 ):
         QWidget.__init__(self)
 
@@ -853,6 +853,10 @@ class Ui_MainWindow(object):
         self.verticalLayout_6.addWidget(self.label_2)
         self.stackedWidget.addWidget(self.page_2)
 
+
+
+        # ----------------------------------------------------------------------------------------
+        # Page 3 setup
         self.page_3 = QWidget()
         self.page_3.setObjectName(u"page_3")
 
@@ -862,29 +866,19 @@ class Ui_MainWindow(object):
         self.cameraSettingsPage.setSpacing( 4 )
         self.cameraSettingsPage.setMargin( 0 )
 
-        self.label_3 = QLabel(self.page_3)
-        self.label_3.setObjectName(u"label_3")
-        self.label_3.setFont(font)
-        self.label_3.setStyleSheet(u"color: #000;")
-        self.label_3.setAlignment(Qt.AlignCenter)
+        # self.label_3 = QLabel(self.page_3)
+        # self.label_3.setObjectName(u"label_3")
+        # self.label_3.setFont(font)
+        # self.label_3.setStyleSheet(u"color: #000;")
+        # self.label_3.setAlignment(Qt.AlignCenter)
         
-        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[0, 0], [900, 200] )
-        self.cameraSettingsPage.addWidget(rsp_uploadarea)
+        # rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)", [900, 200], fileType=2 )
+        # self.cameraSettingsPage.addWidget(rsp_uploadarea)
         
+        # Cropping Area mdiArea
         self.mdiArea = QMdiArea(self.page_3)
         #self.mdiArea.setGeometry(QRect(10, 10, 970, 250))
         self.mdiArea.setObjectName("mdiArea_2")
-        self.cameraSettingsPage.addWidget(self.mdiArea)
-
-        self.mdiArea_2 = QMdiArea(self.page_3)
-        #self.mdiArea_2.setGeometry(QRect(10, 290, 970, 140))
-        self.mdiArea_2.setObjectName("mdiArea_2")
-        self.cameraSettingsPage.addWidget(self.mdiArea_2)
-
-        self.mdiArea_3 = QMdiArea(self.page_3)
-        #self.mdiArea_3.setGeometry(QRect(10, 460, 970, 140))
-        self.mdiArea_3.setObjectName("mdiArea_3")
-        self.cameraSettingsPage.addWidget(self.mdiArea_3)
 
         self.label_cd = QLabel(self.mdiArea)
         self.label_cd.setAlignment(Qt.AlignLeft)
@@ -895,6 +889,11 @@ class Ui_MainWindow(object):
         self.label_cd.setStyleSheet("background-color: #a0a0a0")
         self.label_cd.move(10,10)
 
+
+        # Viewing angles mdiArea
+        self.mdiArea_2 = QMdiArea(self.page_3)
+        #self.mdiArea_2.setGeometry(QRect(10, 290, 970, 140))
+        self.mdiArea_2.setObjectName("mdiArea_2")
 
         self.label_LVA = QLabel(self.mdiArea_2)
         self.label_LVA.setAlignment(Qt.AlignLeft)
@@ -907,6 +906,11 @@ class Ui_MainWindow(object):
         self.label_LVA.raise_()
 
 
+        # Output Dimensions mdiArea
+        self.mdiArea_3 = QMdiArea(self.page_3)
+        #self.mdiArea_3.setGeometry(QRect(10, 460, 970, 140))
+        self.mdiArea_3.setObjectName("mdiArea_3")
+
         self.label_OID = QLabel(self.mdiArea_3)
         self.label_OID.setAlignment(Qt.AlignLeft)
         self.label_OID.setText("Output Image Dimensions")
@@ -916,7 +920,8 @@ class Ui_MainWindow(object):
         self.label_OID.setStyleSheet("background-color: #a0a0a0")
         self.label_OID.move(10,10)
         self.label_OID.raise_()
-        
+
+
         #mdi area 1 line edits 
         self.lineEdit_md11 = QLineEdit(self.mdiArea)
         self.lineEdit_md11.setText("")
@@ -981,7 +986,6 @@ class Ui_MainWindow(object):
         #area1button.clicked.connect(self.on_click)
 
         #area 2 edit 
-        
         self.lineEdit_md21 = QLineEdit(self.mdiArea_2)
         self.lineEdit_md21.setText("")
         self.lineEdit_md21.setObjectName("lineEdit_md21")
@@ -1008,7 +1012,6 @@ class Ui_MainWindow(object):
         self.area2button.move(750,200)
 
         #area 3 edit
-
         self.label_md31 = QLabel(self.mdiArea_3)
         self.label_md31.setAlignment(Qt.AlignLeft)
         self.label_md31.setText("HDR Image Output Resolution")
@@ -1034,19 +1037,28 @@ class Ui_MainWindow(object):
         self.area3button = QPushButton('Enter', self.mdiArea_3)
         self.area3button.move(750,200)
 
-        #area 4 upload rsp
+        # Area 4 upload .rsp file region
+        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)", [900, 200], fileType=2 )
+
+
+        # Add widgets to Layout
+        self.cameraSettingsPage.addWidget( self.mdiArea, stretch=1 )
+        self.cameraSettingsPage.addWidget( self.mdiArea_2, stretch=1 )
+        self.cameraSettingsPage.addWidget( self.mdiArea_3, stretch=1 )
+        self.cameraSettingsPage.addWidget( rsp_uploadarea, stretch=1 )
         
-        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)",[0, 0], [900, 200] )
-        self.cameraSettingsPage.addWidget(rsp_uploadarea)
-        
+
+
+        # -------------------------------------------------------------------------------------------------
         # Adding page_4 QWidget
         self.page_4 = QWidget()
         self.page_4.setObjectName(u"page_4")
 
-        # -------------------------------------------------------------------------------------------------
+
         # Upload file regions
         # Create new layout for self.page_4
         self.calibrationPage = QVBoxLayout( self.page_4 )
+        self.calibrationPage.setObjectName( "calibrationPage" )
         self.calibrationPage.setContentsMargins( 0, 0, 0, 0 )
         self.calibrationPage.setSpacing( 4 )
         self.calibrationPage.setMargin( 0 )
@@ -1054,28 +1066,28 @@ class Ui_MainWindow(object):
 
         # Vignetting region
         # Add widget: UploadFileRegionObject class object
-        vc_UploadRegion = UploadFileRegion( "Vignetting", [900, 200], 1 )
+        vc_UploadRegion = UploadFileRegion( "Vignetting", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( vc_UploadRegion )
 
         # Fisheye correction region
         # Add widget: UploadFileRegionObject class object
-        fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [900, 200], 1 )
+        fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( fc_UploadRegion )
 
         # Camera factor region
         # Add widget: UploadFileRegionObject class object
-        cf_UploadRegion = UploadFileRegion( "CameraFactor", [900, 200], 1 )
+        cf_UploadRegion = UploadFileRegion( "CameraFactor", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( cf_UploadRegion )
 
         # Neutral Density Filter region
         # Add widget: UploadFileRegionObject class object
-        nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [900, 200], 1 )
+        nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( nd_UploadRegion )
@@ -1096,7 +1108,7 @@ class Ui_MainWindow(object):
         self.label_5.setAlignment(Qt.AlignCenter)
         #adding page 5 element end 
 
-        self.cameraSettingsPage.addWidget(self.label_3)
+        #self.cameraSettingsPage.addWidget(self.label_3)
         self.verticalLayout_10.addWidget(self.label_5)
         self.stackedWidget.addWidget(self.page_3)
         self.stackedWidget.addWidget(self.page_4)
@@ -1130,7 +1142,6 @@ class Ui_MainWindow(object):
         self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
         self.label_1.setAlignment(Qt.AlignHCenter)
         self.label_2.setText(QCoreApplication.translate("MainWindow", u"LDR Image Upload Page", None))
-        #self.label_3.setText(QCoreApplication.translate("MainWindow", u"PAGE 3", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
 
 
