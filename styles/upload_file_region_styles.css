@@ -73,6 +73,13 @@ QPushButton#browseButton:pressed
 }
 
 
+/* The upload text labels in the UploadFileRegion */
+QLabel#dragTextLabel, QLabel#orTextLabel
+{
+	font-weight: bold;
+}
+
+
 /* The visible portion of the upload region, including placeholder spacers */
 QLabel[hasFile="true"]
 {
