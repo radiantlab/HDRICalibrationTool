@@ -217,7 +217,7 @@ class Ui_MainWindow(object):
 
         self.intro_para = QLabel(self.page_1)
         self.intro_para.setAlignment(Qt.AlignHCenter)
-        self.intro_para.setText("The HDRI Lighting Calibration Tool is a crowd-sourced and \n free application developed by a small team of students \n from Oregon State Univeristy.")
+        self.intro_para.setText("The HDRI Lighting Calibration Tool is a free, open-source \n application developed by a small team of students \n from Oregon State Univeristy.")
         self.intro_para.setFont(labelfont)
         self.intro_para.adjustSize()
         self.intro_para.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
