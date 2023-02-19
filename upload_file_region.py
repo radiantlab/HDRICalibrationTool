@@ -751,3 +751,4 @@ class UploadFileRegion( QWidget ):
             order -= 1
 
         return formattedString
+    
