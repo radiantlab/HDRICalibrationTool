@@ -431,7 +431,7 @@ class Ui_MainWindow(object):
         self.area3button.move(750,200)
 
         # Area 4 upload .rsp file region
-        rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)", [900, 200], fileType=2 )
+        rsp_uploadarea = UploadFileRegion("CameraResponseFileUpload", [900, 200], fileType=2 )
 
 
         # Add widgets to Layout
