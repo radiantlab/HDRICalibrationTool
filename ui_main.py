@@ -55,7 +55,11 @@ class UploadFileRegion( QWidget ):
         
         # File icon pixmap
         self.fileIcon = QLabel( self )
-        self.pixmap = QPixmap( './assets/icons/blank-file-128.ico' )
+        self.fileIconPixmap = QPixmap( './assets/icons/blank-file-128.ico' )
+
+        # Upload file icon pixmap
+        self.uploadFileIcon = QLabel( self )
+        self.uploadFileIconPixmap = QPixmap( './assets/icons/upload-file-multi.ico' )
 
         # File path label
         self.filePathLabel = QLabel( self )
@@ -69,6 +73,10 @@ class UploadFileRegion( QWidget ):
         # Browse file button
         self.browseBtn = QPushButton( "Browse", self )
         self.browseBtn.clicked.connect( self.browseFiles )
+
+        # Text labels for uploading
+        self.dragTextLabel = QLabel( "drag file here to upload", self )
+        self.orTextLabel = QLabel( "Or", self )
 
         # Allow dropping files in this region
         self.setAcceptDrops( True )
@@ -141,8 +149,7 @@ class UploadFileRegion( QWidget ):
         self.fileIcon.hide()
 
         # Resize and set pixmap : https://stackoverflow.com/questions/21802868/python-how-to-resize-raster-image-with-pyqt
-        #self.pixmap = self.pixmap.scaledToHeight( self.regionHeight - self.regionLabel.height() - 32 )
-        self.fileIcon.setPixmap( self.pixmap )
+        self.fileIcon.setPixmap( self.fileIconPixmap )
 
         # -------------------------------------------------------------------------------------
         # File Path Label (Hidden)
@@ -193,6 +200,54 @@ class UploadFileRegion( QWidget ):
         self.removeBtn.hide()
 
         # -------------------------------------------------------------------------------------
+        # Upload File Icon
+
+        # Set object name
+        self.uploadFileIcon.setObjectName( "UploadFileIcon" )
+
+        # Set style
+        self.uploadFileIcon.setProperty( "hasFile", self.hasFile )
+
+        with open( self.region_style_path, "r" ) as stylesheet:
+            self.uploadFileIcon.setStyleSheet( stylesheet.read() )
+
+        # Visibility
+        self.uploadFileIcon.show()
+
+        # Set pixmap 
+        self.uploadFileIcon.setPixmap( self.uploadFileIconPixmap )
+
+        # -------------------------------------------------------------------------------------
+        # Drag Text Label
+
+        # Set object name
+        self.dragTextLabel.setObjectName( "DragTextLabel" )
+
+        # Set style
+        self.dragTextLabel.setProperty( "hasFile", self.hasFile )
+
+        with open( self.region_style_path, "r" ) as stylesheet:
+            self.dragTextLabel.setStyleSheet( stylesheet.read() )
+
+        # Visibility
+        self.uploadFileIcon.show()
+
+        # -------------------------------------------------------------------------------------
+        # Or Text Label
+
+        # Set object name
+        self.orTextLabel.setObjectName( "OrTextLabel" )
+
+        # Set style
+        self.orTextLabel.setProperty( "hasFile", self.hasFile )
+
+        with open( self.region_style_path, "r" ) as stylesheet:
+            self.orTextLabel.setStyleSheet( stylesheet.read() )
+
+        # Visibility
+        self.orTextLabel.show()
+
+        # -------------------------------------------------------------------------------------
 
 
         # Layout creation
@@ -203,14 +258,39 @@ class UploadFileRegion( QWidget ):
 
         self.innerVLayout = QVBoxLayout()
 
+        self.uploadHLayout = QHBoxLayout()
+        self.textVLayout = QVBoxLayout()
+        self.buttonLabelHLayout = QHBoxLayout()
+        self.uploadIconVLayout = QVBoxLayout()
+        self.uploadIconHLayout = QHBoxLayout()
+
         self.lowerHLayout.addWidget( self.fileIcon, stretch=1 )
         self.lowerHLayout.addLayout( self.innerVLayout, stretch=6 )
 
         self.baseVLayout.addLayout( self.upperHLayout, stretch=1 )
         self.baseVLayout.addLayout( self.lowerHLayout, stretch=4 )
 
-        self.innerVLayout.addWidget( self.regionSpacer, stretch=3 )
+        self.innerVLayout.addLayout( self.uploadHLayout, stretch=3 )
         self.innerVLayout.addWidget( self.fileNameLabel, stretch=1 )
+
+        self.uploadHLayout.addLayout( self.textVLayout, stretch=7 )
+        self.uploadHLayout.addLayout( self.uploadIconVLayout, stretch=4 )
+        self.uploadHLayout.addWidget( self.regionSpacer, stretch=3 )
+
+        self.uploadIconVLayout.addLayout( self.uploadIconHLayout, stretch=6)
+        self.uploadIconVLayout.addWidget( self.dragTextLabel, stretch=2, alignment=Qt.AlignLeft )
+        self.uploadIconVLayout.addWidget( self.regionSpacer, stretch=1 )
+
+        self.uploadIconHLayout.addWidget( self.uploadFileIcon, stretch=6, alignment=Qt.AlignCenter )
+        self.uploadIconHLayout.addWidget( self.regionSpacer, stretch=7 )
+
+        self.textVLayout.addWidget( self.regionSpacer, stretch=1 )
+        self.textVLayout.addLayout( self.buttonLabelHLayout, stretch=2 )
+        self.textVLayout.addWidget( self.regionSpacer, stretch=1 )
+
+        self.buttonLabelHLayout.addWidget( self.regionSpacer, stretch=4, alignment=Qt.AlignRight )
+        self.buttonLabelHLayout.addWidget( self.browseBtn, stretch=8, alignment=Qt.AlignRight )
+        self.buttonLabelHLayout.addWidget( self.orTextLabel, stretch=3, alignment=Qt.AlignCenter )
 
         self.upperHLayout.addWidget( self.regionLabel, stretch=6 )
         self.upperHLayout.addWidget( self.regionSpacer, stretch=1 )
@@ -248,31 +328,44 @@ class UploadFileRegion( QWidget ):
         # Set fileNameLabel and show
         filename = self.getFilenameFromPath( filepath )
         self.fileNameLabel.setText( filename )
-        self.fileNameLabel.show()
 
-        # Show file icon
-        self.fileIcon.show()
+        # 
+        self.fileUploadedEvent()
 
-        # Show removeBtn
-        self.removeBtn.show()
+        # # Show file icon
+        # self.fileIcon.show()
+
+        # # Show removeBtn
+        # self.removeBtn.show()
+
+        # # Hide text labels
+        # self.dragTextLabel.hide()
+        # self.orTextLabel.hide()
+
+        # # Hide upload file icon
+        # self.uploadFileIcon.hide()
+
+        # # Hide Browse button
+        # self.browseBtn.hide()
 
 
-        # Adjust styling
 
-        # Set property for stylsheet to apply correct style
-        self.uploadRegion.setProperty( "hasFile", self.hasFile )
-        self.regionSpacer.setProperty( "hasFile", self.hasFile )
-        self.regionLabel.setProperty( "hasFile", self.hasFile )
-        self.fileIcon.setProperty( "hasFile", self.hasFile )
-        self.fileNameLabel.setProperty( "hasFile", self.hasFile )
+        # # Adjust styling
 
-        # Apply style
-        with open( self.region_style_path, "r" ) as stylesheet:
-            self.uploadRegion.setStyleSheet( stylesheet.read() )
-            self.regionSpacer.setStyleSheet( stylesheet.read() )
-            self.regionLabel.setStyleSheet( stylesheet.read() )
-            self.fileIcon.setStyleSheet( stylesheet.read() )
-            self.fileNameLabel.setStyleSheet( stylesheet.read() )
+        # # Set property for stylsheet to apply correct style
+        # self.uploadRegion.setProperty( "hasFile", self.hasFile )
+        # self.regionSpacer.setProperty( "hasFile", self.hasFile )
+        # self.regionLabel.setProperty( "hasFile", self.hasFile )
+        # self.fileIcon.setProperty( "hasFile", self.hasFile )
+        # self.fileNameLabel.setProperty( "hasFile", self.hasFile )
+
+        # # Apply style
+        # with open( self.region_style_path, "r" ) as stylesheet:
+        #     self.uploadRegion.setStyleSheet( stylesheet.read() )
+        #     self.regionSpacer.setStyleSheet( stylesheet.read() )
+        #     self.regionLabel.setStyleSheet( stylesheet.read() )
+        #     self.fileIcon.setStyleSheet( stylesheet.read() )
+        #     self.fileNameLabel.setStyleSheet( stylesheet.read() )
 
         # ----------------------------------------------------------------------------------------
         # Basic validation
@@ -358,6 +451,16 @@ class UploadFileRegion( QWidget ):
         # Hide removeBtn
         self.removeBtn.hide()
 
+        # Show text labels
+        self.dragTextLabel.show()
+        self.orTextLabel.show()
+
+        # Show upload file icon
+        self.uploadFileIcon.show()
+
+        # Show Browse button
+        self.browseBtn.show()
+
 
         # Adjust styling
 
@@ -397,9 +500,69 @@ class UploadFileRegion( QWidget ):
         else:
             inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "" )
 
-        print( "filename: {}".format( inputFileName[0] ) )
-        self.filePathLabel = inputFileName
-        self.fileNameLabel = self.getFilenameFromPath( inputFileName[0] )
+        # Clicking 'cancel' button in dialog box will return empty string, so don't set attribute values in this case
+        if (inputFileName[0] != ""):
+            # Set file flag
+            self.hasFile = True
+
+            print( "filename: {}".format( inputFileName[0] ) )
+
+            self.filePathLabel.setText( inputFileName[0] )
+
+            filename = self.getFilenameFromPath( inputFileName[0] )
+            self.fileNameLabel.setText( filename )
+
+            # Adjust styling and visibility
+            self.fileUploadedEvent()
+
+        else:
+            print( "User clicked cancel on browse dialog" )
+
+
+    # Function to handle an uploaded file from any method (drag+drop, click-to-browse) and adjust styling and visibility
+    def fileUploadedEvent( self ):
+        if ( not self.hasFile):
+            print( "{} has no file!".format( self.regionName ) )
+            return
+        
+        else:
+            print( "self.filePathLabel: {}".format( self.filePathLabel ) )
+
+            # Show fileNameLabel
+            self.fileNameLabel.show()
+
+            # Show file icon
+            self.fileIcon.show()
+
+            # Show removeBtn
+            self.removeBtn.show()
+
+            # Hide text labels
+            self.dragTextLabel.hide()
+            self.orTextLabel.hide()
+
+            # Hide upload file icon
+            self.uploadFileIcon.hide()
+
+            # Hide Browse button
+            self.browseBtn.hide()
+
+            # Adjust styling
+
+            # Set property for stylsheet to apply correct style
+            self.uploadRegion.setProperty( "hasFile", self.hasFile )
+            self.regionSpacer.setProperty( "hasFile", self.hasFile )
+            self.regionLabel.setProperty( "hasFile", self.hasFile )
+            self.fileIcon.setProperty( "hasFile", self.hasFile )
+            self.fileNameLabel.setProperty( "hasFile", self.hasFile )
+
+            # Apply style
+            with open( self.region_style_path, "r" ) as stylesheet:
+                self.uploadRegion.setStyleSheet( stylesheet.read() )
+                self.regionSpacer.setStyleSheet( stylesheet.read() )
+                self.regionLabel.setStyleSheet( stylesheet.read() )
+                self.fileIcon.setStyleSheet( stylesheet.read() )
+                self.fileNameLabel.setStyleSheet( stylesheet.read() )
 
 
     # Basic vignetting calibration (vc) file validation
@@ -786,11 +949,11 @@ class Ui_MainWindow(object):
         #teampic = QVBoxLayout(self.page_1)
 
         self.label_p1 = QLabel(self.page_1)
-        self.pixmap = QPixmap('./assets/images/officeteamstock.jpg')
-        #self.label_p1 = self.pixmap.scaled(64, 64, Qt.KeepAspectRatio)
-        self.label_p1.setPixmap(self.pixmap)
+        self.welcomeImagePixmap = QPixmap('./assets/images/officeteamstock.jpg')
+        #self.label_p1 = self.welcomeImagePixmap.scaled(64, 64, Qt.KeepAspectRatio)
+        self.label_p1.setPixmap(self.welcomeImagePixmap)
         self.label_p1.setAlignment(Qt.AlignCenter)
-        self.label_p1.resize(self.pixmap.width(), self.pixmap.height())
+        self.label_p1.resize(self.welcomeImagePixmap.width(), self.welcomeImagePixmap.height())
         #self.label_p1.resize(100,100)
         self.label_p1.move(130,300)
         
