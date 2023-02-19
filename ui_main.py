@@ -84,10 +84,10 @@ class Ui_MainWindow(object):
         self.frame_top_menus.setFrameShape(QFrame.NoFrame)
         self.frame_top_menus.setFrameShadow(QFrame.Raised)
 
-        self.verticalLayout_4 = QVBoxLayout(self.frame_top_menus)
-        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.verticalLayout_4.setSpacing( 8 )
-        self.verticalLayout_4.setContentsMargins(0, 0, 0, 0)
+        self.sidebarMenuVLayout = QVBoxLayout(self.frame_top_menus)
+        self.sidebarMenuVLayout.setObjectName( "sidebarMenuVLayout" )
+        self.sidebarMenuVLayout.setSpacing( 8 )
+        self.sidebarMenuVLayout.setContentsMargins( 2, 2, 2, 2 )
 
 
 
@@ -100,80 +100,65 @@ class Ui_MainWindow(object):
         self.btn_page_1.setObjectName(u"btn_page_1")
         self.btn_page_1.setMinimumSize(QSize(0, 40))
 
-        # Set button styling
-        with open( self.main_styles_path, "r" ) as stylesheet:
-            self.btn_page_1.setStyleSheet( stylesheet.read() )
-
-
         # Page 2 (Upload LDR images)
         self.btn_page_2 = QPushButton(self.frame_top_menus)
         self.btn_page_2.setObjectName(u"btn_page_2")
         self.btn_page_2.setMinimumSize(QSize(0, 40))
-       
-        # Set button styling
-        with open( self.main_styles_path, "r" ) as stylesheet:
-            self.btn_page_2.setStyleSheet( stylesheet.read() )
-
 
         # Page 3 (Adjust camera settings)
         self.btn_page_3 = QPushButton(self.frame_top_menus)
         self.btn_page_3.setObjectName(u"btn_page_3")
         self.btn_page_3.setMinimumSize(QSize(0, 40))
 
-        # Set button styling
-        with open( self.main_styles_path, "r" ) as stylesheet:
-            self.btn_page_3.setStyleSheet( stylesheet.read() )
-
-
         # Page 4 (Adjust calibration settings)
         self.btn_page_4 = QPushButton(self.frame_top_menus)
         self.btn_page_4.setObjectName(u"btn_page_4")
         self.btn_page_4.setMinimumSize(QSize(0, 40))
-
-        # Set button styling
-        with open( self.main_styles_path, "r" ) as stylesheet:
-            self.btn_page_4.setStyleSheet( stylesheet.read() )
-
 
         # Go button - Starts Radiance pipeline process
         self.btn_start_pipeline = QPushButton(self.frame_top_menus)
         self.btn_start_pipeline.setObjectName(u"btn_start_pipeline")
         self.btn_start_pipeline.setMinimumSize(QSize(0, 40))
         
+
+        # TODO
+        # Add spacer here after GO btn
+        # Then add button for Settings page
+        # Then add Help Button
+        # Then add QLabel for where we put version number
+
+
         '''
         self.btn_help = QPushButton(self.frame_top_menus)
         self.btn_help.setObjectName(u"btn_start_pipeline")
         self.btn_help.setMinimumSize(QSize(0, 40))
         self.btn_help(self.style().standardIcon(getattr(QStyle, SP_TitleBarContextHelpButton)))
         '''
+
+        # Add page-routing buttons to sidebar
+        self.sidebarMenuVLayout.addWidget( self.btn_page_1, stretch=1 )
+        self.sidebarMenuVLayout.addWidget( self.btn_page_2, stretch=1 )
+        self.sidebarMenuVLayout.addWidget( self.btn_page_3, stretch=1 )
+        self.sidebarMenuVLayout.addWidget( self.btn_page_4, stretch=1 )
+        self.sidebarMenuVLayout.addWidget( self.btn_start_pipeline, stretch=1 )
+
         # Set button styling
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_page_1.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_page_2.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_page_3.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_page_4.setStyleSheet( stylesheet.read() )
         with open( self.main_styles_path, "r" ) as stylesheet:
             self.btn_start_pipeline.setStyleSheet( stylesheet.read() )
 
-
-        # Add Page 1-routing button to sidebar
-        self.verticalLayout_4.addWidget(self.btn_page_1)
-
-        # Add Page 2-routing button to sidebar
-        self.verticalLayout_4.addWidget(self.btn_page_2)
-
-        # Add Page 3-routing button to sidebar
-        self.verticalLayout_4.addWidget(self.btn_page_3)
-
-        # Add Page 4-routing button to sidebar
-        self.verticalLayout_4.addWidget(self.btn_page_4)
-
-        # Add Go button to sidebar
-        self.verticalLayout_4.addWidget(self.btn_start_pipeline)
-
-        
-        #self.verticalLayout_4.addwidget()
         # ---------------------------------------------------------------------------------------
 
 
 
         self.sidebar_menu_v_layout.addWidget(self.frame_top_menus, 0, Qt.AlignTop)
-
 
         self.horizontalLayout_2.addWidget(self.sidebar_menu)
 
@@ -181,10 +166,17 @@ class Ui_MainWindow(object):
         self.frame_pages.setObjectName(u"frame_pages")
         self.frame_pages.setFrameShape(QFrame.StyledPanel)
         self.frame_pages.setFrameShadow(QFrame.Raised)
+
         self.verticalLayout_5 = QVBoxLayout(self.frame_pages)
         self.verticalLayout_5.setObjectName(u"verticalLayout_5")
+
         self.stackedWidget = QStackedWidget(self.frame_pages)
         self.stackedWidget.setObjectName(u"stackedWidget")
+
+
+
+        # -------------------------------------------------------------------------------------------------
+        # Page 1 Setup
         self.page_1 = QWidget()
         self.page_1.setObjectName(u"page_1")
         self.verticalLayout_7 = QVBoxLayout(self.page_1)
@@ -199,17 +191,16 @@ class Ui_MainWindow(object):
         self.label_1.setStyleSheet(u"color: #000;")
         self.label_1.setAlignment(Qt.AlignCenter)
         self.verticalLayout_7.addWidget(self.label_1)
-        self.stackedWidget.addWidget(self.page_1)
-        # edit page 1
-        #teampic = QVBoxLayout(self.page_1)
+        
+
 
         self.label_p1 = QLabel(self.page_1)
         self.welcomeImagePixmap = QPixmap('./assets/images/officeteamstock.jpg')
-        #self.label_p1 = self.welcomeImagePixmap.scaled(64, 64, Qt.KeepAspectRatio)
+
         self.label_p1.setPixmap(self.welcomeImagePixmap)
         self.label_p1.setAlignment(Qt.AlignCenter)
         self.label_p1.resize(self.welcomeImagePixmap.width(), self.welcomeImagePixmap.height())
-        #self.label_p1.resize(100,100)
+
         self.label_p1.move(130,300)
         
         self.label_p1_title = QLabel(self.page_1)
@@ -218,7 +209,6 @@ class Ui_MainWindow(object):
         self.label_p1_title.adjustSize()
         self.label_p1_title.move(350,720)
         
-        #page_1.addWidget(label_p1)
         self.label_p1.show()
 
         self.intro_para = QLabel(self.page_1)
@@ -230,36 +220,16 @@ class Ui_MainWindow(object):
         self.intro_para.move(20,20)
         self.intro_para.move(100,100)
 
+        # -------------------------------------------------------------------------------------------------
+
+
         
+        # ------------------------------------------------------------------------------------------------------------
+        # Page 2 Setup
         self.page_2 = QWidget()
         self.page_2.setObjectName(u"page_2")
         self.verticalLayout_6 = QVBoxLayout(self.page_2)
         self.verticalLayout_6.setObjectName(u"verticalLayout_6")
-
-        #edit page 2 
-
-        #uploading file setup begin -------
-        def upload_response(self,fileName):
-            self.label.setText(fileName)
-            self.update()
-        def update(self):
-            self.label.adjustSize()
-        def openFileNameDialog(self):
-            options = QFileDialog.Options()
-            options |= QFileDialog.DontUseNativeDialog
-            fileName, _ = QFileDialog.getOpenFileName(self,"choose the desired .cal file", "",".Cal Files (*.cal)", options=options)
-            file_list = []
-            if fileName:
-                print("file path imported: " + fileName)
-                file_list += [fileName]
-                self.file_label.setText(os.path.basename(fileName))
-            list_val = []
-            list_val = readFile(fileName)
-            checkVal(list_val) 
-       
-        #self.uploadfilebutton = QtWidgets.QPushButton(self.page_4)
-        
-        #uploading file setup end --------
         
 
         self.label_2 = QLabel(self.page_2)
@@ -269,7 +239,8 @@ class Ui_MainWindow(object):
         self.label_2.setAlignment(Qt.AlignCenter)
 
         self.verticalLayout_6.addWidget(self.label_2)
-        self.stackedWidget.addWidget(self.page_2)
+        
+        # -------------------------------------------------------------------------------------------------
 
 
 
@@ -465,10 +436,12 @@ class Ui_MainWindow(object):
         self.cameraSettingsPage.addWidget( self.mdiArea_3, stretch=1 )
         self.cameraSettingsPage.addWidget( rsp_uploadarea, stretch=1 )
         
+        # -------------------------------------------------------------------------------------------------
+
 
 
         # -------------------------------------------------------------------------------------------------
-        # Adding page_4 QWidget
+        # Page 4 Setup
         self.page_4 = QWidget()
         self.page_4.setObjectName(u"page_4")
 
@@ -513,8 +486,9 @@ class Ui_MainWindow(object):
         # -------------------------------------------------------------------------------------------------
 
 
+        # -------------------------------------------------------------------------------------------------
+        # Page 5 setup
 
-        #adding page 5 element
         self.page_5 = QWidget()
         self.page_5.setObjectName(u"page_5")
         self.verticalLayout_10 = QVBoxLayout(self.page_5)
@@ -524,19 +498,23 @@ class Ui_MainWindow(object):
         self.label_5.setFont(font)
         self.label_5.setStyleSheet(u"color: #000;")
         self.label_5.setAlignment(Qt.AlignCenter)
-        #adding page 5 element end 
+
+        # -------------------------------------------------------------------------------------------------
 
         #self.cameraSettingsPage.addWidget(self.label_3)
         self.verticalLayout_10.addWidget(self.label_5)
+
+        # Add pages to multi-page view stackedWidget
+        self.stackedWidget.addWidget(self.page_1)
+        self.stackedWidget.addWidget(self.page_2)
         self.stackedWidget.addWidget(self.page_3)
         self.stackedWidget.addWidget(self.page_4)
         self.stackedWidget.addWidget(self.page_5)
 
+
         self.verticalLayout_5.addWidget(self.stackedWidget)
-
-
+        
         self.horizontalLayout_2.addWidget(self.frame_pages)
-
 
         self.verticalLayout.addWidget(self.Content)
 
@@ -546,9 +524,8 @@ class Ui_MainWindow(object):
 
         self.stackedWidget.setCurrentIndex(0)
 
-
         QMetaObject.connectSlotsByName(MainWindow)
-    # setupUi
+    
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"HDRI Calibration Tool", None))
@@ -564,10 +541,10 @@ class Ui_MainWindow(object):
 
 
 
-def checkVal(list_val): #checking values of .cal files
-    print(" (checkVal function running) ")#compare value
-    if list_val[0] == "this": #placeholder
-        print("correct")
+# def checkVal(list_val): #checking values of .cal files
+#     print(" (checkVal function running) ")#compare value
+#     if list_val[0] == "this": #placeholder
+#         print("correct")
 
 
 
@@ -594,15 +571,15 @@ def update(self):
 
 
 
-def openFileNameDialog(self):
-    options = QFileDialog.Options()
-    options |= QFileDialog.DontUseNativeDialog
-    fileName, _ = QFileDialog.getOpenFileName(self,"choose the desired .cal file", "",".Cal Files (*.cal)", options=options)
-    file_list = []
-    if fileName:
-        print("file path imported: " + fileName)
-        file_list += [fileName]
-        self.file_label.setText(os.path.basename(fileName))
-    list_val = []
-    list_val = readFile(fileName)
-    checkVal(list_val) 
+# def openFileNameDialog(self):
+#     options = QFileDialog.Options()
+#     options |= QFileDialog.DontUseNativeDialog
+#     fileName, _ = QFileDialog.getOpenFileName(self,"choose the desired .cal file", "",".Cal Files (*.cal)", options=options)
+#     file_list = []
+#     if fileName:
+#         print("file path imported: " + fileName)
+#         file_list += [fileName]
+#         self.file_label.setText(os.path.basename(fileName))
+#     list_val = []
+#     list_val = readFile(fileName)
+#     checkVal(list_val) 
