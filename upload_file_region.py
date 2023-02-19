@@ -451,6 +451,16 @@ class UploadFileRegion( QWidget ):
                     print( "Set path_ndfilter to path: {}".format( path_ndfilter ) )
                     #TODO: reference obj. name
 
+            # Upload region is for camera response function file (.rsp for camera settings page)
+            elif ( self.uploadRegion.objectName() == "uploadFileRegion_CameraResponseFileUpload" ):
+                print( "Upload region is for camera response function. Validating..." )
+                
+                # Set RadianceData object path_rsp_fn here when valid rsp file
+                if ( self.rsp_validation() == True ):
+                    path_rsp_fn = self.filePathLabel.text()
+                    print( "Set path_rsp_fn to path: {}".format( path_rsp_fn ) )
+                    #TODO: reference obj. name
+
             else:
                 print( "Upload region is unknown. self.uploadRegion.objectName(): {}".format( self.uploadRegion.objectName() ) )
 
@@ -655,3 +665,89 @@ class UploadFileRegion( QWidget ):
             fileIsValid = True
 
         return fileIsValid
+    
+
+    # Basic camera response function (rsp) file validation
+    def rsp_validation( self ):
+        # Validation flags
+        fileIsValid = False
+        rgb_response_function_def_count = 0
+
+        # Check for vars in file
+        with open( self.filePathLabel.text(), "r" ) as file:
+            # loop through each line in file
+            for lineNum, line in enumerate( file, 1 ):
+                # Replace tab characters with space character, but maintain other spaces. Remove newline
+                line = line.replace( "\t", " " ).replace( "\n", "" )
+
+                # Split line into a tokenized list, space-delimited
+                tokenizedLine = line.split( " " )
+
+                # If the first token of a line is not a digit, unexpected format             
+                if ( tokenizedLine[0].isdigit == False ):
+                    print( "Incorrect format on line {}: Expected a digit, instead token is: {}".format( lineNum, tokenizedLine[0] ) )
+
+                    break
+                    
+                else:
+                    # If the first value doesn't signify the order of the function (number of tokens following), unexpected format
+                    # Subtract 2 from length check: 1 for first token that says the order of function, 1 more for the x^0 term
+                    if ( ( len( tokenizedLine ) - 2 ) != int( tokenizedLine[0] ) ):
+                        print( "Incorrect format on line {}: Expected the first token to signify number of tokens following-- {} != {}".format( lineNum, int( tokenizedLine[0] ), ( len(tokenizedLine) - 2 ) ) )
+                    
+                    # Valid response function definition found
+                    else:
+                        tokenizedLineAsFunction = self.formatRspAsFunction( tokenizedLine )
+                        print( "Response function defintion found on line {}: {}".format( lineNum, tokenizedLineAsFunction ) )
+
+                        rgb_response_function_def_count += 1
+
+                        # Found a response function for all 3 colors
+                        if ( rgb_response_function_def_count == 3 ):
+                            print( "R, G, B response function definitions found on line {}".format( lineNum ) )
+
+                            fileIsValid = True
+                        
+                        # File has more than 3 (RGB) response function definitions, unsure what they all go to
+                        elif ( rgb_response_function_def_count > 3 ):
+                            print( "Incorrect format: Too many response function definitions found." )
+
+                            fileIsValid = False
+
+        return fileIsValid
+    
+
+    # Formats a tokenized list as a list[0]-order polynomial
+    def formatRspAsFunction( self, tokenizedList ):
+        order = int( tokenizedList[0] )
+        numTokens = len( tokenizedList )
+
+        formattedString = ""
+
+        for currentTerm in range( 1, numTokens ):
+            # Token has a negative sign
+            if ( tokenizedList[currentTerm].find( "-" ) != -1 ):
+                formattedString += " - "
+
+                # Remove the hyphen from the token
+                tokenizedList[currentTerm].replace( "-", "" )
+
+            else:
+                # Token isn't first, so prepend an addition sign
+                if ( currentTerm > 1 ):
+                    formattedString += " + "
+
+            # Print token
+            formattedString += "({})".format( tokenizedList[currentTerm] )
+
+            # Print x on 1st order or higher
+            if ( currentTerm < ( numTokens - 1 ) ):
+                formattedString += "x"
+                
+                # Have an exponent on terms 2nd order or higher
+                if ( currentTerm < numTokens ):
+                    formattedString += "^{}".format( order )
+
+            order -= 1
+
+        return formattedString
