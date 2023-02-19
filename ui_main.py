@@ -23,6 +23,8 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QStyle
 
 from upload_file_region import UploadFileRegion
 
+appVersion = 0.6
+
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if MainWindow.objectName():
@@ -43,48 +45,42 @@ class Ui_MainWindow(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
 
-        self.Top_Bar = QFrame(self.centralwidget)
-        self.Top_Bar.setObjectName(u"Top_Bar")
-        self.Top_Bar.setMaximumSize(QSize(16777215, 40))
-        self.Top_Bar.setStyleSheet(u"background-color: rgb(35, 35, 35);")
-        self.Top_Bar.setFrameShape(QFrame.NoFrame)
-        self.Top_Bar.setFrameShadow(QFrame.Raised)
+        # self.Top_Bar = QFrame(self.centralwidget)
+        # self.Top_Bar.setObjectName(u"Top_Bar")
+        # self.Top_Bar.setMaximumSize(QSize(16777215, 40))
+        # self.Top_Bar.setStyleSheet(u"background-color: rgb(35, 35, 35);")
+        # self.Top_Bar.setFrameShape(QFrame.NoFrame)
+        # self.Top_Bar.setFrameShadow(QFrame.Raised)
 
-        self.horizontalLayout = QHBoxLayout(self.Top_Bar)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setSpacing(0)
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
+        # self.horizontalLayout = QHBoxLayout(self.centralwidget)
+        # self.horizontalLayout.setObjectName(u"horizontalLayout")
+        # self.horizontalLayout.setSpacing(0)
+        # self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
 
-        self.verticalLayout.addWidget(self.Top_Bar)
+        #self.verticalLayout.addWidget(self.Top_Bar)
 
 
         self.Content = QFrame(self.centralwidget)
         self.Content.setObjectName(u"Content")
         self.Content.setFrameShape(QFrame.NoFrame)
         self.Content.setFrameShadow(QFrame.Raised)
-        self.horizontalLayout_2 = QHBoxLayout(self.Content)
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.horizontalLayout_2.setSpacing(0)
-        self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
 
-        self.sidebar_menu = QFrame(self.Content)
-        self.sidebar_menu.setObjectName(u"sidebar_menu")
-        self.sidebar_menu.setMinimumSize(QSize(220, 0))
-        self.sidebar_menu.setMaximumSize(QSize(250, 4000))
-        self.sidebar_menu.setStyleSheet(u"background-color: #A5A5A5;")
-        self.sidebar_menu.setFrameShape(QFrame.StyledPanel)
-        self.sidebar_menu.setFrameShadow(QFrame.Raised)
-        
-        self.sidebar_menu_v_layout = QVBoxLayout(self.sidebar_menu)
-        self.sidebar_menu_v_layout.setObjectName(u"sidebar_menu_v_layout")
-        self.sidebar_menu_v_layout.setContentsMargins(0, 0, 0, 0)
+        self.mainWindowHLayout = QHBoxLayout( self.Content )
+        self.mainWindowHLayout.setObjectName(u"mainWindowHLayout")
+        self.mainWindowHLayout.setSpacing(0)
+        self.mainWindowHLayout.setContentsMargins(0, 0, 0, 0)
 
-        self.frame_top_menus = QFrame(self.sidebar_menu)
-        self.frame_top_menus.setObjectName(u"frame_top_menus")
-        self.frame_top_menus.setFrameShape(QFrame.NoFrame)
-        self.frame_top_menus.setFrameShadow(QFrame.Raised)
 
-        self.sidebarMenuVLayout = QVBoxLayout(self.frame_top_menus)
+        # Sidebar menu layout setup
+        self.sidebarMenuFrame = QFrame( self.Content )
+        self.sidebarMenuFrame.setObjectName(u"sidebarMenuFrame")
+        # self.sidebarMenuFrame.setMinimumSize(QSize(220, 0))
+        # self.sidebarMenuFrame.setMaximumSize(QSize(250, 4000))
+        self.sidebarMenuFrame.setStyleSheet(u"background-color: #A5A5A5;")
+        # self.sidebarMenuFrame.setFrameShape(QFrame.StyledPanel)
+        # self.sidebarMenuFrame.setFrameShadow(QFrame.Raised)
+
+        self.sidebarMenuVLayout = QVBoxLayout( self.sidebarMenuFrame )
         self.sidebarMenuVLayout.setObjectName( "sidebarMenuVLayout" )
         self.sidebarMenuVLayout.setSpacing( 8 )
         self.sidebarMenuVLayout.setContentsMargins( 2, 2, 2, 2 )
@@ -95,34 +91,34 @@ class Ui_MainWindow(object):
         # Setting up page-routing buttons in menu sidebar
 
         # Page 1 (Welcome landing page, isActive on app launch)
-        self.btn_page_1 = QPushButton(self.frame_top_menus)
+        self.btn_page_1 = QPushButton( self.sidebarMenuFrame )
         self.btn_page_1.setObjectName( "btn_page_1" )
         self.btn_page_1.setProperty( "isActivePage", True )
-        self.btn_page_1.setMinimumSize(QSize(0, 40))
+        self.btn_page_1.setMinimumSize( QSize( 0, 48 ) )
 
         # Page 2 (Upload LDR images)
-        self.btn_page_2 = QPushButton(self.frame_top_menus)
+        self.btn_page_2 = QPushButton( self.sidebarMenuFrame )
         self.btn_page_2.setObjectName( "btn_page_2" )
         self.btn_page_2.setProperty( "isActivePage", False )
-        self.btn_page_2.setMinimumSize(QSize(0, 40))
+        self.btn_page_2.setMinimumSize( QSize( 0, 48 ) )
 
         # Page 3 (Adjust camera settings)
-        self.btn_page_3 = QPushButton(self.frame_top_menus)
+        self.btn_page_3 = QPushButton( self.sidebarMenuFrame )
         self.btn_page_3.setObjectName( "btn_page_3" )
         self.btn_page_2.setProperty( "isActivePage", False )
-        self.btn_page_3.setMinimumSize(QSize(0, 40))
+        self.btn_page_3.setMinimumSize( QSize( 0, 48 ) )
 
         # Page 4 (Adjust calibration settings)
-        self.btn_page_4 = QPushButton(self.frame_top_menus)
+        self.btn_page_4 = QPushButton( self.sidebarMenuFrame )
         self.btn_page_4.setObjectName( "btn_page_4" )
         self.btn_page_4.setProperty( "isActivePage", False )
-        self.btn_page_4.setMinimumSize(QSize(0, 40))
+        self.btn_page_4.setMinimumSize( QSize( 0, 48 ) )
 
         # Go button - Starts Radiance pipeline process
-        self.btn_start_pipeline = QPushButton(self.frame_top_menus)
+        self.btn_start_pipeline = QPushButton( self.sidebarMenuFrame )
         self.btn_start_pipeline.setObjectName( "btn_start_pipeline" )
         self.btn_start_pipeline.setProperty( "isActivePage", False )
-        self.btn_start_pipeline.setMinimumSize(QSize(0, 40))
+        self.btn_start_pipeline.setMinimumSize( QSize( 0, 64 ) )
         
 
         # TODO
@@ -133,7 +129,7 @@ class Ui_MainWindow(object):
 
 
         '''
-        self.btn_help = QPushButton(self.frame_top_menus)
+        self.btn_help = QPushButton(self.sidebarMenuFrame)
         self.btn_help.setObjectName(u"btn_start_pipeline")
         self.btn_help.setMinimumSize(QSize(0, 40))
         self.btn_help(self.style().standardIcon(getattr(QStyle, SP_TitleBarContextHelpButton)))
@@ -155,16 +151,24 @@ class Ui_MainWindow(object):
         self.sidebarMenuVLayout.addWidget( self.btn_page_4, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_start_pipeline, stretch=1 )
 
+        settingsBtn = QPushButton( "Settings", self.sidebarMenuFrame)
+        settingsBtn.setMinimumSize( QSize( 0, 52 ) )
+        settingsBtn.setGeometry(0,0, 200, 30)
+        settingsBtn.setStyleSheet( "background-color: #D9D9D9;" )
+        settingsBtn.setIcon( QIcon("./assets/icons/settings-icon.png") )
+
+        self.sidebarMenuVLayout.addWidget( settingsBtn, stretch=2 )
+
+        appVersionLabel = "Version: {}".format( str( appVersion ))
+        self.versionLabel = QLabel( appVersionLabel )
+        self.sidebarMenuVLayout.addWidget( self.versionLabel, stretch=1, alignment=Qt.AlignRight )
+
         # Set style of sidebar menu buttons
         self.setButtonStyling()
 
         # ---------------------------------------------------------------------------------------
 
-
-
-        self.sidebar_menu_v_layout.addWidget(self.frame_top_menus, 0, Qt.AlignTop)
-
-        self.horizontalLayout_2.addWidget(self.sidebar_menu)
+        
 
         self.frame_pages = QFrame(self.Content)
         self.frame_pages.setObjectName(u"frame_pages")
@@ -177,6 +181,11 @@ class Ui_MainWindow(object):
         self.stackedWidget = QStackedWidget(self.frame_pages)
         self.stackedWidget.setObjectName(u"stackedWidget")
 
+
+        self.mainWindowHLayout.addWidget( self.sidebarMenuFrame, stretch=2 )
+        self.mainWindowHLayout.addWidget( self.frame_pages, stretch=9 )
+
+        self.Content.setLayout( self.mainWindowHLayout )
 
 
         # -------------------------------------------------------------------------------------------------
@@ -259,14 +268,6 @@ class Ui_MainWindow(object):
         self.cameraSettingsPage.setSpacing( 4 )
         self.cameraSettingsPage.setMargin( 0 )
 
-        # self.label_3 = QLabel(self.page_3)
-        # self.label_3.setObjectName(u"label_3")
-        # self.label_3.setFont(font)
-        # self.label_3.setStyleSheet(u"color: #000;")
-        # self.label_3.setAlignment(Qt.AlignCenter)
-        
-        # rsp_uploadarea = UploadFileRegion("Camera Response File Upload (.rsp)", [900, 200], fileType=2 )
-        # self.cameraSettingsPage.addWidget(rsp_uploadarea)
         
         # Cropping Area mdiArea
         self.mdiArea = QMdiArea(self.page_3)
@@ -505,7 +506,8 @@ class Ui_MainWindow(object):
 
         # -------------------------------------------------------------------------------------------------
 
-        #self.cameraSettingsPage.addWidget(self.label_3)
+
+
         self.verticalLayout_10.addWidget(self.label_5)
 
         # Add pages to multi-page view stackedWidget
@@ -518,7 +520,7 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_5.addWidget(self.stackedWidget)
         
-        self.horizontalLayout_2.addWidget(self.frame_pages)
+        # self.mainWindowHLayout.addWidget(self.frame_pages)
 
         self.verticalLayout.addWidget(self.Content)
 
@@ -585,47 +587,3 @@ class Ui_MainWindow(object):
             self.btn_page_4.setStyleSheet( stylesheet.read() )
         with open( self.main_styles_path, "r" ) as stylesheet:
             self.btn_start_pipeline.setStyleSheet( stylesheet.read() )
-
-
-# def checkVal(list_val): #checking values of .cal files
-#     print(" (checkVal function running) ")#compare value
-#     if list_val[0] == "this": #placeholder
-#         print("correct")
-
-
-
-def readFile(fileName):
-    f = open(fileName,"r")
-    list_val = []
-    lines = f.readlines()
-    print(lines)
-    for i in lines:
-        list_val.append (i.replace(";\n",""))
-    print(list_val)
-    return list_val
-
-
-
-def upload_response(self,fileName):
-    self.label.setText(fileName)
-    self.update()
-
-
-
-def update(self):
-    self.label.adjustSize()
-
-
-
-# def openFileNameDialog(self):
-#     options = QFileDialog.Options()
-#     options |= QFileDialog.DontUseNativeDialog
-#     fileName, _ = QFileDialog.getOpenFileName(self,"choose the desired .cal file", "",".Cal Files (*.cal)", options=options)
-#     file_list = []
-#     if fileName:
-#         print("file path imported: " + fileName)
-#         file_list += [fileName]
-#         self.file_label.setText(os.path.basename(fileName))
-#     list_val = []
-#     list_val = readFile(fileName)
-#     checkVal(list_val) 
