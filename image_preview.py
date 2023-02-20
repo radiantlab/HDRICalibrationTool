@@ -27,9 +27,12 @@ class ImagePreview( QtWidgets.QWidget ):
         remove_button.clicked.connect( self.remove_self )
         self.layout.addWidget( remove_button )
 
-    def remove_self(self):
+
+    def remove_self( self ):
         # Remove this ImagePreview from its parent layout and delete it
         parent_layout = self.parent().layout()
         layout_item = parent_layout.itemAt( parent_layout.indexOf( self ) )
         parent_layout.removeItem( layout_item )
         self.deleteLater()
+
+        return
