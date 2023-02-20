@@ -22,8 +22,10 @@ from PyQt5 import QtCore, QtGui
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QStyle
 
 from upload_file_region import UploadFileRegion
+#from upload_image_region import UploadImageRegion
+from image_uploader import ImageUploader
 
-appVersion = 0.6
+appVersion = "0.6"
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -159,7 +161,7 @@ class Ui_MainWindow(object):
 
         self.sidebarMenuVLayout.addWidget( settingsBtn, stretch=2 )
 
-        appVersionLabel = "Version: {}".format( str( appVersion ))
+        appVersionLabel = "Version: {}".format( appVersion )
         self.versionLabel = QLabel( appVersionLabel )
         self.sidebarMenuVLayout.addWidget( self.versionLabel, stretch=1, alignment=Qt.AlignRight )
 
@@ -244,14 +246,10 @@ class Ui_MainWindow(object):
         self.verticalLayout_6 = QVBoxLayout(self.page_2)
         self.verticalLayout_6.setObjectName(u"verticalLayout_6")
         
+        uploader = ImageUploader()
 
-        self.label_2 = QLabel(self.page_2)
-        self.label_2.setObjectName(u"label_2")
-        self.label_2.setFont(font)
-        self.label_2.setStyleSheet(u"color: #000;")
-        self.label_2.setAlignment(Qt.AlignCenter)
 
-        self.verticalLayout_6.addWidget(self.label_2)
+        self.verticalLayout_6.addWidget( uploader )
         
         # -------------------------------------------------------------------------------------------------
 
@@ -542,7 +540,7 @@ class Ui_MainWindow(object):
         self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO!", None))
         self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
         self.label_1.setAlignment(Qt.AlignHCenter)
-        self.label_2.setText(QCoreApplication.translate("MainWindow", u"LDR Image Upload Page", None))
+       # self.label_2.setText(QCoreApplication.translate("MainWindow", u"LDR Image Upload Page", None))
         self.label_5.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
 
 
