@@ -1,9 +1,15 @@
+# Author: OpenAI (adapted by Nate Klump)
+# Title: Python Class for Uploading Multiple Images and Displaying Them with PyQt5
+# Year: 2023
+# URL: https://chat.openai.com/
+# Access date: 2.19.2023
+
 import os
 from PySide2 import QtWidgets, QtGui, QtCore
 from image_preview import ImagePreview
 
-class ImageUploader(QtWidgets.QWidget):
-    def __init__(self):
+class ImageUploader( QtWidgets.QWidget ):
+    def __init__( self ):
         super().__init__()
 
         # UI setup
@@ -30,6 +36,7 @@ class ImageUploader(QtWidgets.QWidget):
         # Initialize variables
         self.image_paths = []
 
+
     def add_images(self):
         # Show file dialog to select images
         file_dialog = QtWidgets.QFileDialog()
@@ -42,6 +49,7 @@ class ImageUploader(QtWidgets.QWidget):
                 if filename not in self.image_paths:
                     self.image_paths.append( filename )
                     self.add_image_to_list( filename )
+
 
     def add_image_to_list( self, image_path ):
         # Add ImagePreview to grid layout
