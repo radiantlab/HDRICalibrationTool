@@ -14,21 +14,19 @@ import re
 
 
 # Creates a region to upload a file to, given an object name, and region size.
-class UploadFileRegion( QWidget ):
+class UploadImageRegion( QWidget ):
     # regionSize[0]: width
     # regionSize[1]: height
-    # fileType: Restricts file upload to: [0: any;  1: .cal;  2: .rsp]
-    def __init__( self, regionName="DefaultLabel", regionSize=[128, 128], fileType=0 ):
+    def __init__( self, regionName="DefaultLabel", regionSize=[128, 128] ):
         QWidget.__init__(self)
 
         # Store input parameters as class attributes
         self.regionName = regionName
         self.regionWidth = regionSize[0]
         self.regionHeight = regionSize[1]
-        self.fileType = fileType
 
         # Style path
-        self.region_style_path = "./styles/upload_file_region_styles.css"
+        self.region_style_path = "./styles/upload_image_region_styles.css"
 
         # Visible region background
         self.uploadRegion = QLabel( self )
@@ -40,9 +38,9 @@ class UploadFileRegion( QWidget ):
         regionNameWithSpaces = re.sub(r"(\w)([A-Z])", r"\1 \2", regionName)
         self.regionLabel = QLabel( regionNameWithSpaces, self )
         
-        # File icon pixmap
-        self.fileIcon = QLabel( self )
-        self.fileIconPixmap = QPixmap( './assets/icons/blank-file-128.ico' )
+        # # File icon pixmap
+        # self.fileIcon = QLabel( self )
+        # self.fileIconPixmap = QPixmap( './assets/icons/blank-file-128.ico' )
 
         # Upload file icon pixmap
         self.uploadFileIcon = QLabel( self )
@@ -54,8 +52,8 @@ class UploadFileRegion( QWidget ):
         # File name label
         self.fileNameLabel = QLabel( self )
 
-        # Create remove button for an uploaded file
-        self.removeBtn = QPushButton( "Remove", self )
+        # # Create remove button for an uploaded file
+        # self.removeBtn = QPushButton( "Remove", self )
 
         # Browse file button
         self.browseBtn = QPushButton( "Browse", self )
@@ -67,8 +65,8 @@ class UploadFileRegion( QWidget ):
         # Allow dropping files in this region
         self.setAcceptDrops( True )
 
-        # Init. flag that stores if region has an uploaded file.
-        self.hasFile = False
+        # # Init. flag that stores if region has an uploaded file.
+        # self.hasFile = False
 
         # Adjust elements of object
         self.create()
@@ -78,7 +76,7 @@ class UploadFileRegion( QWidget ):
     def create( self ):
         # -------------------------------------------------------------------------------------
         # Upload Region
-        self.uploadRegion.setObjectName( "uploadFileRegion_{}".format( self.regionName ) )
+        self.uploadRegion.setObjectName( "uploadImageRegion_{}".format( self.regionName ) )
         self.uploadRegion.setGeometry( QRect( 0, 0, self.regionWidth, self.regionHeight ) )
 
 
@@ -90,10 +88,10 @@ class UploadFileRegion( QWidget ):
         self.regionLabel.setObjectName( "regionLabel" )
 
 
-        # File Icon
-        self.fileIcon.setObjectName( "fileIcon" )
-        # Set pixmap
-        self.fileIcon.setPixmap( self.fileIconPixmap )
+        # # File Icon
+        # self.fileIcon.setObjectName( "fileIcon" )
+        # # Set pixmap
+        # self.fileIcon.setPixmap( self.fileIconPixmap )
 
 
         # File Path Label
@@ -105,10 +103,10 @@ class UploadFileRegion( QWidget ):
         self.fileNameLabel.setObjectName( "fileNameLabel" )
 
 
-        # Remove Button
-        self.removeBtn.setObjectName( "removeButton" )
-        # Connect event to signal
-        self.removeBtn.clicked.connect( self.removeBtnClicked )
+        # # Remove Button
+        # self.removeBtn.setObjectName( "removeButton" )
+        # # Connect event to signal
+        # self.removeBtn.clicked.connect( self.removeBtnClicked )
 
 
         # Upload File Icon
@@ -230,11 +228,11 @@ class UploadFileRegion( QWidget ):
         event.acceptProposedAction()
 
 
-    # Remove button click event
-    def removeBtnClicked( self ):
-        print( "Removing uploaded file: {} from path: {}".format( self.fileNameLabel.text(), self.filePathLabel.text() ) )
+    # # Remove button click event
+    # def removeBtnClicked( self ):
+    #     print( "Removing uploaded file: {} from path: {}".format( self.fileNameLabel.text(), self.filePathLabel.text() ) )
 
-        self.resetWidgetState()
+    #     self.resetWidgetState()
 
    
     # Reset the widget to the default state
@@ -258,17 +256,17 @@ class UploadFileRegion( QWidget ):
 
     # Open file dialog box to browse for calibration .cal files
     def browseFiles( self ):
-        # Restrict to .cal file upload
-        if ( self.fileType == 1 ):
-            inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "", "Calibration File (*.cal)" )
+        # # Restrict to .cal file upload
+        # if ( self.fileType == 1 ):
+        #     inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "", "Calibration File (*.cal)" )
         
-        # Restrict to .rsp file upload
-        elif ( self.fileType == 2 ):
-            inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "", "Response Function File (*.rsp)" )
+        # # Restrict to .rsp file upload
+        # elif ( self.fileType == 2 ):
+        #     inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "", "Response Function File (*.rsp)" )
 
-        # Allow any file to upload
-        else:
-            inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "" )
+        # # Allow any file to upload
+        # else:
+        inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "Image Files (*.jpg, *.png)" )
 
         # Clicking 'cancel' button in dialog box will return empty string, so don't set attribute values in this case
         if (inputFileName[0] != ""):
