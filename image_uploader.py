@@ -8,7 +8,6 @@ import os
 from PySide2 import QtWidgets, QtGui, QtCore
 from image_preview import ImagePreview
 
-#from upload_file_region import UploadFileRegion
 from upload_image_region import UploadImageRegion
 
 class ImageUploader( QtWidgets.QWidget ):
@@ -34,9 +33,6 @@ class ImageUploader( QtWidgets.QWidget ):
 
         self.gridLayout = QtWidgets.QGridLayout( self.scrollAreaWidgetContents )
 
-        self.addImageButton = QtWidgets.QPushButton( "Add Images" )
-        self.addImageButton.clicked.connect( self.add_images )
-
         self.layout.addWidget( self.scrollArea, stretch=2 )
 
         self.total_images_label = QtWidgets.QLabel()
@@ -48,24 +44,7 @@ class ImageUploader( QtWidgets.QWidget ):
         self.image_paths = []
 
 
-    def add_images(self):
-        # Show file dialog to select images
-        file_dialog = QtWidgets.QFileDialog()
-        file_dialog.setFileMode( QtWidgets.QFileDialog.ExistingFiles )
-        file_dialog.setNameFilter( "Image files (*.jpg *.png)" )
-
-        if file_dialog.exec_():
-            filenames = file_dialog.selectedFiles()
-            for filename in filenames:
-                if filename not in self.image_paths:
-                    self.image_paths.append( filename )
-                    self.add_image_to_list( filename )
-
-        print( "self.image_paths: {}".format( self.image_paths ) )
-
-        return
-
-
+    # Adds a single image to the ScrollBox by creating an ImagePreview obj.
     def add_image_to_list( self, image_path ):
         # Add ImagePreview to grid layout
         row = self.gridLayout.rowCount()
@@ -78,7 +57,11 @@ class ImageUploader( QtWidgets.QWidget ):
         return
     
 
+    # Updates the total image count label self.total_images
     def update_total_image_count( self ):
+        # Get count, set text
         total_images = self.gridLayout.count()
-
         self.total_images_label.setText( "Total Images: {}".format( total_images ) )
+
+
+        return
