@@ -8,21 +8,12 @@
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-import sys
-import os
-
-from PySide2.QtCore import (QCoreApplication, QMetaObject, QObject, QPoint,
-    QRect, QSize, QUrl, Qt)
-from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont,
-    QFontDatabase, QIcon, QLinearGradient, QPalette, QPixmap,
-    QRadialGradient)
+from PySide2.QtCore import (QCoreApplication, QMetaObject, QRect, QSize, Qt)
+from PySide2.QtGui import ( QFont, QIcon, QPixmap)
 from PySide2.QtWidgets import *
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QStyle
 
 from upload_file_region import UploadFileRegion
-#from upload_image_region import UploadImageRegion
+
 from image_uploader import ImageUploader
 
 appVersion = "0.6"
