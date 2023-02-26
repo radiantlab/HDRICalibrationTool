@@ -250,7 +250,6 @@ class Ui_MainWindow(object):
         
         uploader = ImageUploader()
 
-
         self.page_2_Vlayout.addWidget( uploader, stretch=1 )
         
         # -------------------------------------------------------------------------------------------------

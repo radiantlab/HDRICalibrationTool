@@ -33,6 +33,14 @@ class ImagePreview( QtWidgets.QWidget ):
         parent_layout = self.parent().layout()
         layout_item = parent_layout.itemAt( parent_layout.indexOf( self ) )
         parent_layout.removeItem( layout_item )
+
+        # Get up to the ImageUploader object
+        imageUploaderContainer = self.parent().parent().parent().parent()
+        
+        imageUploaderContainer.image_paths.remove( self.image_path )
+
+        imageUploaderContainer.update_total_image_count()
+
         self.deleteLater()
 
         return

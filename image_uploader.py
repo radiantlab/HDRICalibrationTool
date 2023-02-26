@@ -8,7 +8,8 @@ import os
 from PySide2 import QtWidgets, QtGui, QtCore
 from image_preview import ImagePreview
 
-from upload_file_region import UploadFileRegion
+#from upload_file_region import UploadFileRegion
+from upload_image_region import UploadImageRegion
 
 class ImageUploader( QtWidgets.QWidget ):
     def __init__( self ):
@@ -21,7 +22,8 @@ class ImageUploader( QtWidgets.QWidget ):
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout( self.layout )
 
-        self.imageUploadRegion = UploadFileRegion( "Upload Image Files", [900, 200], fileType="" )
+        self.imageUploadRegion = UploadImageRegion( "Upload Image Files", [900, 200] )
+        self.imageUploadRegion.setParent( self )
         self.layout.addWidget( self.imageUploadRegion, stretch=1 )
 
         self.scrollArea = QtWidgets.QScrollArea()
@@ -34,14 +36,15 @@ class ImageUploader( QtWidgets.QWidget ):
 
         self.addImageButton = QtWidgets.QPushButton( "Add Images" )
         self.addImageButton.clicked.connect( self.add_images )
-        self.layout.addWidget( self.addImageButton, stretch=1 )
 
-        self.layout.addWidget( self.scrollArea, stretch=6 )
+        self.layout.addWidget( self.scrollArea, stretch=2 )
 
         self.total_images_label = QtWidgets.QLabel()
         self.layout.addWidget( self.total_images_label, stretch=1 )
 
-        # Initialize variables
+        self.update_total_image_count()
+
+        # Initialize list of images
         self.image_paths = []
 
 
@@ -70,7 +73,12 @@ class ImageUploader( QtWidgets.QWidget ):
         self.gridLayout.addWidget( preview, row, 0 )
 
         # Update the total images label
-        total_images = self.gridLayout.count()
-        self.total_images_label.setText( "Total Images: {}".format( total_images ) )
+        self.update_total_image_count()
 
         return
+    
+
+    def update_total_image_count( self ):
+        total_images = self.gridLayout.count()
+
+        self.total_images_label.setText( "Total Images: {}".format( total_images ) )
