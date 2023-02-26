@@ -23,7 +23,7 @@ class ImageUploader( QtWidgets.QWidget ):
 
         self.imageUploadRegion = UploadImageRegion( "Upload Image Files", [900, 200] )
         self.imageUploadRegion.setParent( self )
-        self.layout.addWidget( self.imageUploadRegion, stretch=1 )
+        self.layout.addWidget( self.imageUploadRegion, stretch=4 )
 
         self.scrollArea = QtWidgets.QScrollArea()
         self.scrollArea.setWidgetResizable( True )
@@ -33,7 +33,7 @@ class ImageUploader( QtWidgets.QWidget ):
 
         self.gridLayout = QtWidgets.QGridLayout( self.scrollAreaWidgetContents )
 
-        self.layout.addWidget( self.scrollArea, stretch=2 )
+        self.layout.addWidget( self.scrollArea, stretch=10 )
 
         self.totalImagesLabel = QtWidgets.QLabel()
         self.layout.addWidget( self.totalImagesLabel, stretch=1 )
