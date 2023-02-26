@@ -35,33 +35,42 @@ class ImageUploader( QtWidgets.QWidget ):
 
         self.layout.addWidget( self.scrollArea, stretch=2 )
 
-        self.total_images_label = QtWidgets.QLabel()
-        self.layout.addWidget( self.total_images_label, stretch=1 )
+        self.totalImagesLabel = QtWidgets.QLabel()
+        self.layout.addWidget( self.totalImagesLabel, stretch=1 )
 
-        self.update_total_image_count()
+        self.updateTotalImagesCount()
 
         # Initialize list of images
-        self.image_paths = []
+        self.imagePaths = []
 
 
     # Adds a single image to the ScrollBox by creating an ImagePreview obj.
-    def add_image_to_list( self, image_path ):
-        # Add ImagePreview to grid layout
+    def addImageToList( self, imagePath ):
+        # Create ImagePreview object for given image
         row = self.gridLayout.rowCount()
-        preview = ImagePreview( image_path )
+        preview = ImagePreview( imagePath )
+
+        # Add ImagePreview to grid
         self.gridLayout.addWidget( preview, row, 0 )
 
         # Update the total images label
-        self.update_total_image_count()
+        self.updateTotalImagesCount()
+
+        # Update the ldr_paths variable
+        self.updatePathsLDR()
 
         return
     
 
-    # Updates the total image count label self.total_images
-    def update_total_image_count( self ):
+    # Updates the total image count label self.totalImages
+    def updateTotalImagesCount( self ):
         # Get count, set text
-        total_images = self.gridLayout.count()
-        self.total_images_label.setText( "Total Images: {}".format( total_images ) )
-
+        totalImages = self.gridLayout.count()
+        self.totalImagesLabel.setText( "Total Images: {}".format( totalImages ) )
 
         return
+    
+
+    # Updates the paths_ldr variable for the Radiance object
+    def updatePathsLDR( self ):
+        paths_ldr = self.imagePaths
