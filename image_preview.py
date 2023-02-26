@@ -6,42 +6,73 @@ import os
 from PySide2 import QtWidgets, QtGui, QtCore
 
 class ImagePreview( QtWidgets.QWidget ):
-    def __init__( self, image_path ):
+    def __init__( self, imagePath ):
         super().__init__()
 
-        self.image_path = image_path
+        self.imagePath = imagePath
+
+        # Style path
+        self.imagePreviewStylePath = "./styles/image_preview_styles.css"
 
         # UI setup
         self.layout = QtWidgets.QHBoxLayout()
         self.setLayout( self.layout )
 
-        image_label = QtWidgets.QLabel()
-        image_pixmap = QtGui.QPixmap( self.image_path )
-        image_label.setPixmap( image_pixmap.scaled( 150, 150, QtCore.Qt.KeepAspectRatio ) )
-        self.layout.addWidget( image_label )
+        self.imageLabel = QtWidgets.QLabel()
+        self.imageLabel.setObjectName( "imageLabel" )
 
-        filename_label = QtWidgets.QLabel( os.path.basename( self.image_path ) )
-        self.layout.addWidget( filename_label )
+        self.imagePixmap = QtGui.QPixmap( self.imagePath )
+        self.imageLabel.setPixmap( self.imagePixmap.scaled( 150, 150, QtCore.Qt.KeepAspectRatio ) )
+        self.layout.addWidget( self.imageLabel )
 
-        remove_button = QtWidgets.QPushButton( "Remove" )
-        remove_button.clicked.connect( self.remove_self )
-        self.layout.addWidget( remove_button )
+        self.filenameLabel = QtWidgets.QLabel( os.path.basename( self.imagePath ) )
+        self.filenameLabel.setObjectName( "filenameLabel" )
+        self.layout.addWidget( self.filenameLabel )
+
+        self.removeButton = QtWidgets.QPushButton( "Remove" )
+        self.removeButton.setObjectName( "removeButton" )
+        self.removeButton.clicked.connect( self.removeSelf )
+        self.layout.addWidget( self.removeButton )
+
+       # self.setWidgetStyle()
 
 
     # Remove button click event: removes the ImagePreview object the btn is attached to from the GridLayout
-    def remove_self( self ):
+    def removeSelf( self ):
         # Remove this ImagePreview from its parent layout and delete it
-        parent_layout = self.parent().layout()
-        layout_item = parent_layout.itemAt( parent_layout.indexOf( self ) )
-        parent_layout.removeItem( layout_item )
+        parentLayout = self.parent().layout()
+        layoutItem = parentLayout.itemAt( parentLayout.indexOf( self ) )
+        parentLayout.removeItem( layoutItem )
 
         # Get up to the ImageUploader object
         imageUploaderContainer = self.parent().parent().parent().parent()
 
-        imageUploaderContainer.image_paths.remove( self.image_path )
+        # Remove image from the imagePaths list
+        imageUploaderContainer.imagePaths.remove( self.imagePath )
 
-        imageUploaderContainer.update_total_image_count()
+        print( "Removing uploaded file from path: {}".format( self.imagePath ) )
+
+        # Update total image count label
+        imageUploaderContainer.updateTotalImagesCount()
+
+        # Update ldr_paths variable
+        imageUploaderContainer.updatePathsLDR()
 
         self.deleteLater()
+
+        return
+    
+
+    # Sets the style of widgets based on the region having a file or not
+    def setWidgetStyle( self ):
+        # Apply style
+        with open( self.imagePreviewStylePath, "r" ) as stylesheet:
+            self.imageLabel.setStyleSheet( stylesheet.read() )
+        
+            # Labels
+            self.filenameLabel.setStyleSheet( stylesheet.read() )
+
+            # Buttons
+            self.removeButton.setStyleSheet( stylesheet.read() )
 
         return
