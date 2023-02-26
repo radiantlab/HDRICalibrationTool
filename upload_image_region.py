@@ -26,10 +26,10 @@ class UploadImageRegion( QWidget ):
         self.regionHeight = regionSize[1]
 
         # Style path
-        self.region_style_path = "./styles/upload_image_region_styles.css"
+        self.regionStylePath = "./styles/upload_image_region_styles.css"
 
         # Visible region background
-        self.uploadRegion = QLabel( self )
+        self.uploadRegion = QWidget( self )
 
         # Spacers for QVBox/QHBox layouts
         self.regionSpacer = QLabel( self )
@@ -198,7 +198,7 @@ class UploadImageRegion( QWidget ):
             self.fileUploadedEvent( filepath )
 
 
-        print( "self.parent().image_paths: {}".format( self.parent().image_paths ) )
+        print( "self.parent().imagePaths: {}".format( self.parent().imagePaths ) )
 
         event.acceptProposedAction()
 
@@ -206,16 +206,16 @@ class UploadImageRegion( QWidget ):
     # Open file dialog box to browse for calibration .cal files
     def browseFiles( self ):
         # Show file dialog to select images
-        file_dialog = QtWidgets.QFileDialog()
-        file_dialog.setFileMode( QtWidgets.QFileDialog.ExistingFiles )
-        file_dialog.setNameFilter( "Image files (*.jpg *.png)" )
+        fileDialog = QtWidgets.QFileDialog()
+        fileDialog.setFileMode( QtWidgets.QFileDialog.ExistingFiles )
+        fileDialog.setNameFilter( "Image files (*.jpg *.png)" )
 
-        if file_dialog.exec_():
-            filenames = file_dialog.selectedFiles()
+        if fileDialog.exec_():
+            filenames = fileDialog.selectedFiles()
             for filename in filenames:
                 self.fileUploadedEvent( filename )
 
-        print( "self.image_paths: {}".format( self.parent().image_paths ) )
+        print( "self.imagePaths: {}".format( self.parent().imagePaths ) )
 
         return
 
@@ -223,12 +223,12 @@ class UploadImageRegion( QWidget ):
     # Function to handle an uploaded file from any method (drag+drop, click-to-browse) and adjust styling and visibility
     def fileUploadedEvent( self, filename ):
         # Check if file with this name is already uploaded
-        if filename not in self.parent().image_paths:
+        if ( filename not in self.parent().imagePaths ):
             # Add image path to list of all uploaded images
-            self.parent().image_paths.append( filename )
+            self.parent().imagePaths.append( filename )
 
             # Create a ImagePreview object to add to ScrollBox list
-            self.parent().add_image_to_list( filename )
+            self.parent().addImageToList( filename )
     
         return
 
@@ -246,12 +246,14 @@ class UploadImageRegion( QWidget ):
 
         # Show Browse button
         self.browseBtn.show()
+
+        return
     
 
     # Sets the style of widgets based on the region having a file or not
     def setWidgetStyle( self ):
         # Apply style
-        with open( self.region_style_path, "r" ) as stylesheet:
+        with open( self.regionStylePath, "r" ) as stylesheet:
             self.uploadRegion.setStyleSheet( stylesheet.read() )
             self.regionSpacer.setStyleSheet( stylesheet.read() )
 
@@ -265,6 +267,8 @@ class UploadImageRegion( QWidget ):
 
             # Buttons
             self.browseBtn.setStyleSheet( stylesheet.read() )
+        
+        return
 
 
     # Sets the state of the region's widgets
@@ -274,3 +278,5 @@ class UploadImageRegion( QWidget ):
 
         # Set widget style
         self.setWidgetStyle()   
+
+        return
