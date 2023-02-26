@@ -81,11 +81,12 @@ QLabel#dragTextLabel, QLabel#orTextLabel
 
 
 /* The visible portion of the upload region, including placeholder spacers */
-QLabel[hasFile="true"]
+
+QWidget[hasFile="true"]
 {
 	background-color: white;
 }
-QLabel[hasFile="false"]
+QWidget[hasFile="false"]
 {
 	background-color: #CBEEB0;
 }

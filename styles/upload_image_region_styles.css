@@ -47,7 +47,7 @@ QLabel#dragTextLabel, QLabel#orTextLabel
 
 
 /* The visible portion of the upload region, including placeholder spacers */
-QLabel
+QWidget
 {
 	background-color: #CBEEB0;
 }

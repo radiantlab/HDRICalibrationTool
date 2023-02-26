@@ -31,7 +31,7 @@ class UploadFileRegion( QWidget ):
         self.region_style_path = "./styles/upload_file_region_styles.css"
 
         # Visible region background
-        self.uploadRegion = QLabel( self )
+        self.uploadRegion = QWidget( self )
 
         # Spacers for QVBox/QHBox layouts
         self.regionSpacer = QLabel( self )
@@ -249,6 +249,8 @@ class UploadFileRegion( QWidget ):
         # Set widget states
         self.setWidgetStates()
 
+        return
+
 
     # Get the filename from the path
     def getFilenameFromPath( self, path ):
@@ -287,6 +289,8 @@ class UploadFileRegion( QWidget ):
         else:
             print( "User clicked cancel on browse dialog" )
 
+        return
+
 
     # Function to handle an uploaded file from any method (drag+drop, click-to-browse) and adjust styling and visibility
     def fileUploadedEvent( self ):
@@ -300,7 +304,7 @@ class UploadFileRegion( QWidget ):
         else:
             print( "{} has no file!".format( self.regionName ) )
             
-            return
+        return
 
 
     # Sets the visibility of widgets based on the region having a file or not
@@ -347,6 +351,8 @@ class UploadFileRegion( QWidget ):
 
             # Show Browse button
             self.browseBtn.show()
+
+        return
     
 
     # Sets the style of widgets based on the region having a file or not
@@ -384,6 +390,8 @@ class UploadFileRegion( QWidget ):
             # Buttons
             self.removeBtn.setStyleSheet( stylesheet.read() )
             self.browseBtn.setStyleSheet( stylesheet.read() )
+        
+        return
 
 
     # Sets the state of the region's widgets
@@ -392,7 +400,9 @@ class UploadFileRegion( QWidget ):
         self.setWidgetVisibility()
 
         # Set widget style
-        self.setWidgetStyle()   
+        self.setWidgetStyle()
+
+        return
 
 
     # Uploaded file validation. Ensures file is not empty.
@@ -463,6 +473,8 @@ class UploadFileRegion( QWidget ):
 
             else:
                 print( "Upload region is unknown. self.uploadRegion.objectName(): {}".format( self.uploadRegion.objectName() ) )
+
+        return
 
 
     # Basic vignetting calibration (vc) file validation
