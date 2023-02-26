@@ -173,10 +173,6 @@ class UploadImageRegion( QWidget ):
         # Get file path from file
         filepath = event.mimeData().text()
 
-        # Remove 'file:///' if it exists after uploading file
-        if ( filepath.startswith( "file:///" ) ):
-            filepath = filepath[8:]
-
         # Selecting multiple files to drag+drop concatentates all filepaths into a list, '\n' newline-delimited.
         # Upload each uploaded file
         if ( filepath.find("\n") != -1 ):
@@ -193,17 +189,18 @@ class UploadImageRegion( QWidget ):
 
                 self.fileUploadedEvent( filename )
 
+        # Single file drag+drop upload
         else:
+            # Remove 'file:///' if it exists after uploading file
+            if ( filepath.startswith( "file:///" ) ):
+                filepath = filepath[8:]
+
             self.fileUploadedEvent( filepath )
+
 
         print( "self.parent().image_paths: {}".format( self.parent().image_paths ) )
 
         event.acceptProposedAction()
-        # Clear file path labels' text
-        self.filePathLabel.setText("")
-
-        # Set widget states
-        self.setWidgetStates()
 
 
     # Open file dialog box to browse for calibration .cal files
@@ -225,6 +222,7 @@ class UploadImageRegion( QWidget ):
 
     # Function to handle an uploaded file from any method (drag+drop, click-to-browse) and adjust styling and visibility
     def fileUploadedEvent( self, filename ):
+        # Check if file with this name is already uploaded
         if filename not in self.parent().image_paths:
             # Add image path to list of all uploaded images
             self.parent().image_paths.append( filename )

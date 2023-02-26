@@ -28,6 +28,7 @@ class ImagePreview( QtWidgets.QWidget ):
         self.layout.addWidget( remove_button )
 
 
+    # Remove button click event: removes the ImagePreview object the btn is attached to from the GridLayout
     def remove_self( self ):
         # Remove this ImagePreview from its parent layout and delete it
         parent_layout = self.parent().layout()
@@ -36,7 +37,7 @@ class ImagePreview( QtWidgets.QWidget ):
 
         # Get up to the ImageUploader object
         imageUploaderContainer = self.parent().parent().parent().parent()
-        
+
         imageUploaderContainer.image_paths.remove( self.image_path )
 
         imageUploaderContainer.update_total_image_count()
