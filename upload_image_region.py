@@ -4,7 +4,7 @@ from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLa
 from PySide2.QtGui import QPixmap
 from PySide2.QtCore import Qt, QRect
 
-from PyQt5.QtWidgets import QFileDialog
+from PyQt5 import QtWidgets
 
 # For file name extraction
 import ntpath
@@ -38,22 +38,12 @@ class UploadImageRegion( QWidget ):
         regionNameWithSpaces = re.sub(r"(\w)([A-Z])", r"\1 \2", regionName)
         self.regionLabel = QLabel( regionNameWithSpaces, self )
         
-        # # File icon pixmap
-        # self.fileIcon = QLabel( self )
-        # self.fileIconPixmap = QPixmap( './assets/icons/blank-file-128.ico' )
-
         # Upload file icon pixmap
         self.uploadFileIcon = QLabel( self )
         self.uploadFileIconPixmap = QPixmap( './assets/icons/upload-file-multi.ico' )
 
         # File path label
         self.filePathLabel = QLabel( self )
-
-        # # File name label
-        # self.fileNameLabel = QLabel( self )
-
-        # # Create remove button for an uploaded file
-        # self.removeBtn = QPushButton( "Remove", self )
 
         # Browse file button
         self.browseBtn = QPushButton( "Browse", self )
@@ -64,9 +54,6 @@ class UploadImageRegion( QWidget ):
 
         # Allow dropping files in this region
         self.setAcceptDrops( True )
-
-        # # Init. flag that stores if region has an uploaded file.
-        # self.hasFile = False
 
         # Adjust elements of object
         self.create()
@@ -88,25 +75,9 @@ class UploadImageRegion( QWidget ):
         self.regionLabel.setObjectName( "regionLabel" )
 
 
-        # # File Icon
-        # self.fileIcon.setObjectName( "fileIcon" )
-        # # Set pixmap
-        # self.fileIcon.setPixmap( self.fileIconPixmap )
-
-
         # File Path Label
         self.filePathLabel.setObjectName( "filePathLabel" )
         self.filePathLabel.setText( "" )
-
-
-        # # File Name Label
-        # self.fileNameLabel.setObjectName( "fileNameLabel" )
-
-
-        # # Remove Button
-        # self.removeBtn.setObjectName( "removeButton" )
-        # # Connect event to signal
-        # self.removeBtn.clicked.connect( self.removeBtnClicked )
 
 
         # Upload File Icon
@@ -156,14 +127,12 @@ class UploadImageRegion( QWidget ):
         self.uploadIconHLayout = QHBoxLayout()
 
         # Add widgets and layouts
-       # self.lowerHLayout.addWidget( self.fileIcon, stretch=1 )
         self.lowerHLayout.addLayout( self.innerVLayout, stretch=6 )
 
         self.baseVLayout.addLayout( self.upperHLayout, stretch=1 )
         self.baseVLayout.addLayout( self.lowerHLayout, stretch=4 )
 
         self.innerVLayout.addLayout( self.uploadHLayout, stretch=3 )
-        #self.innerVLayout.addWidget( self.fileNameLabel, stretch=1 )
 
         self.uploadHLayout.addLayout( self.textVLayout, stretch=7 )
         self.uploadHLayout.addLayout( self.uploadIconVLayout, stretch=4 )
@@ -186,7 +155,6 @@ class UploadImageRegion( QWidget ):
 
         self.upperHLayout.addWidget( self.regionLabel, stretch=6 )
         self.upperHLayout.addWidget( self.regionSpacer, stretch=1 )
-       # self.upperHLayout.addWidget( self.removeBtn, stretch=1 )
 
         # Add all inner layouts to the base layout for the region
         self.uploadRegion.setLayout( self.baseVLayout )
@@ -202,39 +170,35 @@ class UploadImageRegion( QWidget ):
 
     # On image/text file drop event
     def dropEvent( self, event ):
-        # Set hasFile flag
-        self.hasFile = True
-
         # Get file path from file
         filepath = event.mimeData().text()
 
-        # Remove 'file:///' if it exists after uploadinf file
+        # Remove 'file:///' if it exists after uploading file
         if ( filepath.startswith( "file:///" ) ):
             filepath = filepath[8:]
 
-        # Set filePathLabel
-        self.filePathLabel.setText( filepath )
+        # Selecting multiple files to drag+drop concatentates all filepaths into a list, '\n' newline-delimited.
+        # Upload each uploaded file
+        if ( filepath.find("\n") != -1 ):
+            filepath = filepath.split("\n")
 
-        # Set fileNameLabel and show
-        filename = self.getFilenameFromPath( filepath )
-        self.fileNameLabel.setText( filename )
+            for filename in filepath:
+                # Remove 'file:///' if it exists after uploadinf file
+                if ( filename.startswith( "file:///" ) ):
+                    filename = filename[8:]
+                
+                # If filename is empty, don't add (Selecting multiple files will newline-delimit a list, and last entry is a '\n')
+                if ( filename == "" ):
+                    continue
 
-        
-        self.fileUploadedEvent()
+                self.fileUploadedEvent( filename )
 
+        else:
+            self.fileUploadedEvent( filepath )
+
+        print( "self.parent().image_paths: {}".format( self.parent().image_paths ) )
 
         event.acceptProposedAction()
-
-
-    # # Remove button click event
-    # def removeBtnClicked( self ):
-    #     print( "Removing uploaded file: {} from path: {}".format( self.fileNameLabel.text(), self.filePathLabel.text() ) )
-
-    #     self.resetWidgetState()
-
-   
-    # Reset the widget to the default state
-    def resetWidgetState( self ):
         # Clear file path labels' text
         self.filePathLabel.setText("")
 
@@ -242,57 +206,33 @@ class UploadImageRegion( QWidget ):
         self.setWidgetStates()
 
 
-    # Get the filename from the path
-    def getFilenameFromPath( self, path ):
-        head, tail = ntpath.split(path)
-        return tail or ntpath.basename(head)
-    
-
     # Open file dialog box to browse for calibration .cal files
     def browseFiles( self ):
-        # # Restrict to .cal file upload
-        # if ( self.fileType == 1 ):
-        #     inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "", "Calibration File (*.cal)" )
-        
-        # # Restrict to .rsp file upload
-        # elif ( self.fileType == 2 ):
-        #     inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "", "Response Function File (*.rsp)" )
+        # Show file dialog to select images
+        file_dialog = QtWidgets.QFileDialog()
+        file_dialog.setFileMode( QtWidgets.QFileDialog.ExistingFiles )
+        file_dialog.setNameFilter( "Image files (*.jpg *.png)" )
 
-        # # Allow any file to upload
-        # else:
-        inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "Image Files (*.jpg, *.png)" )
+        if file_dialog.exec_():
+            filenames = file_dialog.selectedFiles()
+            for filename in filenames:
+                self.fileUploadedEvent( filename )
 
-        # Clicking 'cancel' button in dialog box will return empty string, so don't set attribute values in this case
-        if (inputFileName[0] != ""):
-            # Set file flag
-            self.hasFile = True
+        print( "self.image_paths: {}".format( self.parent().image_paths ) )
 
-            print( "Click-to-Browse got this filename: {}".format( inputFileName[0] ) )
-
-            self.filePathLabel.setText( inputFileName[0] )
-
-            filename = self.getFilenameFromPath( inputFileName[0] )
-            self.fileNameLabel.setText( filename )
-
-            self.fileUploadedEvent()
-
-        else:
-            print( "User clicked cancel on browse dialog" )
+        return
 
 
     # Function to handle an uploaded file from any method (drag+drop, click-to-browse) and adjust styling and visibility
-    def fileUploadedEvent( self ):
-        if ( self.hasFile ):
-            print( "self.filePathLabel: {}".format( self.filePathLabel.text() ) )
+    def fileUploadedEvent( self, filename ):
+        if filename not in self.parent().image_paths:
+            # Add image path to list of all uploaded images
+            self.parent().image_paths.append( filename )
 
-            self.validateFile()
-
-            self.setWidgetStates()
-        
-        else:
-            print( "{} has no file!".format( self.regionName ) )
-            
-            return
+            # Create a ImagePreview object to add to ScrollBox list
+            self.parent().add_image_to_list( filename )
+    
+        return
 
 
     # Sets the visibility of widgets based on the region having a file or not
@@ -318,17 +258,14 @@ class UploadImageRegion( QWidget ):
             self.regionSpacer.setStyleSheet( stylesheet.read() )
 
             # Icons
-          #  self.fileIcon.setStyleSheet( stylesheet.read() )
             self.uploadFileIcon.setStyleSheet( stylesheet.read() )
 
             # Labels
-          #  self.fileNameLabel.setStyleSheet( stylesheet.read() )
             self.regionLabel.setStyleSheet( stylesheet.read() )
             self.orTextLabel.setStyleSheet( stylesheet.read() )
             self.dragTextLabel.setStyleSheet( stylesheet.read() )
 
             # Buttons
-           # self.removeBtn.setStyleSheet( stylesheet.read() )
             self.browseBtn.setStyleSheet( stylesheet.read() )
 
 
