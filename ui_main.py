@@ -243,13 +243,15 @@ class Ui_MainWindow(object):
         # Page 2 Setup
         self.page_2 = QWidget()
         self.page_2.setObjectName(u"page_2")
-        self.verticalLayout_6 = QVBoxLayout(self.page_2)
-        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
+        self.page_2_Vlayout = QVBoxLayout(self.page_2)
+        self.page_2_Vlayout.setObjectName(u"page_2_Vlayout")
+        self.page_2_Vlayout.setSpacing(0)
+        self.page_2_Vlayout.setContentsMargins(0, 0, 0, 0)
         
         uploader = ImageUploader()
 
 
-        self.verticalLayout_6.addWidget( uploader )
+        self.page_2_Vlayout.addWidget( uploader, stretch=1 )
         
         # -------------------------------------------------------------------------------------------------
 
