@@ -370,7 +370,7 @@ class Ui_MainWindow(object):
         self.label_md14 = QLabel(self.mdiArea)
         self.label_md14.setAlignment(Qt.AlignLeft)
         self.label_md14.setText("X Crop Offset")
-        self.label_md14.setStyleSheet("background-color: #a0a0a0"）
+        self.label_md14.setStyleSheet("background-color: #a0a0a0")
         self.label_md14.move(500,70)
 
         self.inputField_xCropOffset = QLineEdit(self.mdiArea)
