@@ -73,4 +73,9 @@ class ImageUploader( QtWidgets.QWidget ):
 
     # Updates the paths_ldr variable for the Radiance object
     def updatePathsLDR( self ):
-        paths_ldr = self.imagePaths
+        # Reach Ui_MainWindow object
+        uiObject = self.parent().parent().parent().parent().parent().parent().ui
+
+        uiObject.paths_ldr = self.imagePaths
+
+        return

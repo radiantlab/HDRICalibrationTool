@@ -1,20 +1,13 @@
-# -*- coding: utf-8 -*-
-
-################################################################################
-## Form generated from reading UI file 'ui_mainrvpJdh.ui'
-##
-## Created by: Qt User Interface Compiler version 5.14.1
-##
-## WARNING! All changes made in this file will be lost when recompiling UI file!
-################################################################################
-
-from PySide2.QtCore import (QCoreApplication, QMetaObject, QRect, QSize, Qt,)
-from PySide2.QtGui import ( QFont, QIcon, QPixmap, )
+from PySide2.QtCore import ( QCoreApplication, QMetaObject, QSize, Qt )
+from PySide2.QtGui import ( QFont, QIcon, QPixmap)
 from PySide2.QtWidgets import *
 
 from upload_file_region import UploadFileRegion
 
 from image_uploader import ImageUploader
+
+from radiance_pipeline.radiance_data import RadianceData
+from radiance_pipeline.radiance_pipeline import radiance_pipeline
 
 appVersion = "0.6"
 
@@ -22,6 +15,22 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
+
+        # Radiance Data vars
+        self.diameter = 0
+        self.crop_x_left = 0
+        self.crop_y_down = 0
+        self.view_angle_vertical = 0
+        self.view_angle_horizontal = 0
+        self.target_x_resolution = 0
+        self.target_y_resolution = 0
+        self.paths_ldr = [""]
+        self.path_temp = "",
+        self.path_rsp_fn = ""
+        self.path_vignetting = ""
+        self.path_fisheye = ""
+        self.path_ndfilter = ""
+        self.path_calfact = ""
 
         # Main Window stylesheet path
         self.main_styles_path = "./styles/main_styles.css"
@@ -139,7 +148,10 @@ class Ui_MainWindow(object):
         self.btn_page_4.clicked.connect( lambda: self.setActivePage( self.btn_page_4 ) )
         
         self.btn_start_pipeline.clicked.connect( lambda: self.setActivePage( self.btn_start_pipeline ) )
+        self.btn_start_pipeline.clicked.connect( self.goButtonClicked )
+
         self.btn_help.clicked.connect( lambda: self.setActivePage( self.btn_help ) )
+        
         # Add page-routing buttons to sidebar
         self.sidebarMenuVLayout.addWidget( self.btn_page_1, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_page_2, stretch=1 )
@@ -310,18 +322,20 @@ class Ui_MainWindow(object):
         self.label_OID.raise_()
 
 
-        #mdi area 1 line edits 
-        self.lineEdit_md11 = QLineEdit(self.mdiArea)
-        self.lineEdit_md11.setText("")
-        self.lineEdit_md11.setObjectName("lineEdit_md11")
-        self.lineEdit_md11.move(10,100)
+        # Cropping Dimension section
 
+        # Input Image Resolution fields
+        self.label_iir = QLabel(self.mdiArea)
+        self.label_iir.setAlignment(Qt.AlignLeft)
+        self.label_iir.setText("Input Image Resolution")
+        self.label_iir.setStyleSheet("background-color: #a0a0a0")
+        self.label_iir.move(10,70)
 
-        self.lineEdit_md12 = QLineEdit(self.mdiArea)
-        self.lineEdit_md12.setText("")
-        self.lineEdit_md12.setObjectName("lineEdit_md12")
-        self.lineEdit_md12.move(160,100)
-
+        # Input Image X Resolution field
+        self.inputField_inputImageResX = QLineEdit(self.mdiArea)
+        self.inputField_inputImageResX.setText("")
+        self.inputField_inputImageResX.setObjectName("inputField_inputImageResX")
+        self.inputField_inputImageResX.move(10,100)
 
         self.label_md11 = QLabel(self.mdiArea)
         self.label_md11.setAlignment(Qt.AlignLeft)
@@ -329,6 +343,11 @@ class Ui_MainWindow(object):
         self.label_md11.setStyleSheet("background-color: #a0a0a0")
         self.label_md11.move(149,102)
 
+        # Input Image Y Resolution field
+        self.inputField_inputImageResY = QLineEdit(self.mdiArea)
+        self.inputField_inputImageResY.setText("")
+        self.inputField_inputImageResY.setObjectName("inputField_inputImageResY")
+        self.inputField_inputImageResY.move(160,100)
 
         self.label_iir = QLabel(self.mdiArea)
         self.label_iir.setAlignment(Qt.AlignLeft)
@@ -347,69 +366,98 @@ class Ui_MainWindow(object):
         self.label_md13.setStyleSheet("background-color: #a0a0a0")
         self.label_md13.move(10,140)
 
+        # X Crop Offset field
         self.label_md14 = QLabel(self.mdiArea)
         self.label_md14.setAlignment(Qt.AlignLeft)
         self.label_md14.setText("X Crop Offset")
-        self.label_md14.setStyleSheet("background-color: #a0a0a0")
+        self.label_md14.setStyleSheet("background-color: #a0a0a0"）
         self.label_md14.move(500,70)
 
-        self.lineEdit_md14 = QLineEdit(self.mdiArea)
-        self.lineEdit_md14.setText("")
-        self.lineEdit_md14.setObjectName("lineEdit_md14")
-        self.lineEdit_md14.move(500,100)
+        self.inputField_xCropOffset = QLineEdit(self.mdiArea)
+        self.inputField_xCropOffset.setText("")
+        self.inputField_xCropOffset.setObjectName("inputField_xCropOffset")
+        self.inputField_xCropOffset.move(500,100)
 
+
+        # Fisheye View Diameter field
+        self.label_md13 = QLabel(self.mdiArea)
+        self.label_md13.setAlignment(Qt.AlignLeft)
+        self.label_md13.setText("Fisheye View Diameter")
+        self.label_md13.setStyleSheet("background-color: #a0a0a0")
+        self.label_md13.move(10,180)
+
+        self.inputField_fisheyeViewDiameter = QLineEdit(self.mdiArea)
+        self.inputField_fisheyeViewDiameter.setText("")
+        self.inputField_fisheyeViewDiameter.setObjectName("inputField_fisheyeViewDiameter")
+        self.inputField_fisheyeViewDiameter.move(10,200)
+
+
+        # Y Crop Offset field
         self.label_md15 = QLabel(self.mdiArea)
         self.label_md15.setAlignment(Qt.AlignLeft)
         self.label_md15.setText("Y Crop Offset")
         self.label_md15.setStyleSheet("background-color: #a0a0a0")
         self.label_md15.move(500,140)
 
-        self.lineEdit_md15 = QLineEdit(self.mdiArea)
-        self.lineEdit_md15.setText("")
-        self.lineEdit_md15.setObjectName("lineEdit_md15")
-        self.lineEdit_md15.move(500,160)
+        self.inputField_yCropOffset = QLineEdit(self.mdiArea)
+        self.inputField_yCropOffset.setText("")
+        self.inputField_yCropOffset.setObjectName("inputField_yCropOffset")
+        self.inputField_yCropOffset.move(500,160)
 
+
+        # Submit form button
         self.area1button = QPushButton('Enter', self.mdiArea)
         self.area1button.move(750,160)
+        self.area1button.clicked.connect( self.setCroppingValues )
         #area1button.clicked.connect(self.on_click)
 
-        #area 2 edit 
-        self.lineEdit_md21 = QLineEdit(self.mdiArea_2)
-        self.lineEdit_md21.setText("")
-        self.lineEdit_md21.setObjectName("lineEdit_md21")
-        self.lineEdit_md21.move(10,90)
 
+        # Lens Viewing Angle section
+        
+        # View Angle Vertical field
         self.label_md21 = QLabel(self.mdiArea_2)
         self.label_md21.setAlignment(Qt.AlignLeft)
         self.label_md21.setText("View Angle Vertical")
         self.label_md21.setStyleSheet("background-color: #a0a0a0")
         self.label_md21.move(10,70)
 
+        self.inputField_viewAngleVertical = QLineEdit(self.mdiArea_2)
+        self.inputField_viewAngleVertical.setText("")
+        self.inputField_viewAngleVertical.setObjectName("inputField_viewAngleVertical")
+        self.inputField_viewAngleVertical.move(10,90)
+
+        # View Angle Horizontal field
         self.label_md22 = QLabel(self.mdiArea_2)
         self.label_md22.setAlignment(Qt.AlignLeft)
         self.label_md22.setText("View Angle Horizontal")
         self.label_md22.setStyleSheet("background-color: #a0a0a0")
         self.label_md22.move(250,70)
 
-        self.lineEdit_md22 = QLineEdit(self.mdiArea_2)
-        self.lineEdit_md22.setText("")
-        self.lineEdit_md22.setObjectName("lineEdit_md22")
-        self.lineEdit_md22.move(250,90)
+        self.inputField_viewAngleHorizontal = QLineEdit(self.mdiArea_2)
+        self.inputField_viewAngleHorizontal.setText("")
+        self.inputField_viewAngleHorizontal.setObjectName("inputField_viewAngleHorizontal")
+        self.inputField_viewAngleHorizontal.move(250,90)
 
+        # Submit form button
         self.area2button = QPushButton('Enter', self.mdiArea_2)
         self.area2button.move(750,160)
+        self.area2button.clicked.connect( self.setLensValues )
 
-        #area 3 edit
+
+        # Output Image Dimensions section
+
+        # Output Resolution fields
         self.label_md31 = QLabel(self.mdiArea_3)
         self.label_md31.setAlignment(Qt.AlignLeft)
         self.label_md31.setText("HDR Image Output Resolution")
         self.label_md31.setStyleSheet("background-color: #a0a0a0")
         self.label_md31.move(10,70)
 
-        self.lineEdit_md31 = QLineEdit(self.mdiArea_3)
-        self.lineEdit_md31.setText("")
-        self.lineEdit_md31.setObjectName("lineEdit_md31")
-        self.lineEdit_md31.move(10,90)
+        # Output X Resolution
+        self.inputField_outputXRes = QLineEdit(self.mdiArea_3)
+        self.inputField_outputXRes.setText("")
+        self.inputField_outputXRes.setObjectName("inputField_outputXRes")
+        self.inputField_outputXRes.move(10,90)
 
         self.label_md31x = QLabel(self.mdiArea_3)
         self.label_md31x.setAlignment(Qt.AlignLeft)
@@ -417,13 +465,16 @@ class Ui_MainWindow(object):
         self.label_md31x.setStyleSheet("background-color: #a0a0a0")
         self.label_md31x.move(149,92)
 
-        self.lineEdit_md32 = QLineEdit(self.mdiArea_3)
-        self.lineEdit_md32.setText("")
-        self.lineEdit_md32.setObjectName("lineEdit_md32")
-        self.lineEdit_md32.move(160,90)
+        # Output Y Resolution
+        self.inputField_outputYRes = QLineEdit(self.mdiArea_3)
+        self.inputField_outputYRes.setText("")
+        self.inputField_outputYRes.setObjectName("inputField_outputYRes")
+        self.inputField_outputYRes.move(160,90)
 
+        # Submit form button
         self.area3button = QPushButton('Enter', self.mdiArea_3)
         self.area3button.move(750,160)
+        self.area3button.clicked.connect( self.setOutputDimensionValues )
 
         # Area 4 upload .rsp file region
         rsp_uploadarea = UploadFileRegion("CameraResponseFileUpload", [900, 200], fileType=2 )
@@ -490,19 +541,13 @@ class Ui_MainWindow(object):
 
         self.page_5 = QWidget()
         self.page_5.setObjectName(u"page_5")
+
         self.verticalLayout_10 = QVBoxLayout(self.page_5)
         self.verticalLayout_10.setObjectName(u"verticalLayout_10")
-        self.label_5 = QLabel(self.page_5)
-        self.label_5.setObjectName(u"label_5")
-        self.label_5.setFont(font)
-        self.label_5.setStyleSheet(u"color: #000;")
-        self.label_5.setAlignment(Qt.AlignCenter)
 
         # -------------------------------------------------------------------------------------------------
 
 
-
-        self.verticalLayout_10.addWidget(self.label_5)
 
         # Add pages to multi-page view stackedWidget
         self.stackedWidget.addWidget(self.page_1)
@@ -537,8 +582,6 @@ class Ui_MainWindow(object):
         self.btn_help.setText(QCoreApplication.translate("MainWindow", u"Help", None))
         self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
         self.label_1.setAlignment(Qt.AlignHCenter)
-       # self.label_2.setText(QCoreApplication.translate("MainWindow", u"LDR Image Upload Page", None))
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"Processing...", None))
 
 
     # Sets the active page based on sidebar menu button clicks
@@ -582,3 +625,89 @@ class Ui_MainWindow(object):
             self.btn_page_4.setStyleSheet( stylesheet.read() )
         with open( self.main_styles_path, "r" ) as stylesheet:
             self.btn_start_pipeline.setStyleSheet( stylesheet.read() )
+
+    
+    def setCroppingValues( self ):
+        print( "self.inputField_fisheyeViewDiameter.text(): {}".format(self.inputField_fisheyeViewDiameter.text()))
+        print( "self.inputField_xCropOffset.text(): {}".format(self.inputField_xCropOffset.text()))
+        print( "self.inputField_yCropOffset.text(): {}".format(self.inputField_yCropOffset.text()))
+        
+        # Fill Radiance object attribute values from form
+        self.diameter = self.inputField_fisheyeViewDiameter.text()
+        self.crop_x_left = self.inputField_xCropOffset.text()
+        self.crop_y_down = self.inputField_yCropOffset.text()
+
+        return
+
+
+    def setLensValues( self ):
+        print( "self.inputField_viewAngleVertical.text(): {}".format(self.inputField_viewAngleVertical.text()))
+        print( "self.inputField_viewAngleHorizontal.text(): {}".format(self.inputField_viewAngleHorizontal.text()))
+
+        # Fill Radiance object attribute values from form
+        self.view_angle_vertical = self.inputField_viewAngleVertical.text()
+        self.view_angle_horizontal = self.inputField_viewAngleHorizontal.text()
+
+        return
+
+
+    def setOutputDimensionValues( self ):
+        print( "self.inputField_outputXRes.text(): {}".format(self.inputField_outputXRes.text()))
+        print( "self.inputField_outputYRes.text(): {}".format(self.inputField_outputYRes.text()))
+
+        # Fill Radiance object attribute values from form
+        self.target_x_resolution = self.inputField_outputXRes.text()
+        self.target_y_resolution = self.inputField_outputYRes.text()
+
+        return
+
+
+    def goButtonClicked( self ):
+        print("-----------------------------------------------------")
+        print("goBtnClicked, here is the RadianceData obj. being sent:\n")
+        print("self.diameter: {}".format( self.diameter ))
+        print("self.crop_x_left: {}".format( self.crop_x_left ))
+        print("self.crop_y_down: {}".format( self.crop_y_down ))
+        print("self.view_angle_vertical: {}".format( self.view_angle_vertical ))
+        print("self.view_angle_horizontal: {}".format( self.view_angle_horizontal ))
+        print("self.target_x_resolution: {}".format( self.target_x_resolution ))
+        print("self.target_y_resolution: {}".format( self.target_y_resolution ))
+        print("self.paths_ldr: {}".format( self.paths_ldr ))
+        print("self.path_rsp_fn: {}".format( self.path_rsp_fn ))
+        print("self.path_vignetting: {}".format( self.path_vignetting ))
+        print("self.path_fisheye: {}".format( self.path_fisheye ))
+        print("self.path_ndfilter: {}".format( self.path_ndfilter ))
+        print("self.path_calfact: {}".format( self.path_calfact ))
+        print("-----------------------------------------------------")
+
+        self.startRadiancePipeline()
+
+        return
+
+
+    def startRadiancePipeline( self ):
+        # Radiance data object init.
+        radianceDataObject = RadianceData(diameter = self.diameter,
+                                            crop_x_left = self.crop_x_left,
+                                            crop_y_down = self.crop_y_down,
+                                            view_angle_vertical = self.view_angle_vertical,
+                                            view_angle_horizontal = self.view_angle_horizontal,
+                                            target_x_resolution = self.target_x_resolution,
+                                            target_y_resolution = self.target_y_resolution,
+                                            paths_ldr = self.paths_ldr,
+                                            path_temp = self.path_temp,
+                                            path_rsp_fn = self.path_rsp_fn,
+                                            path_vignetting = self.path_vignetting,
+                                            path_fisheye = self.path_fisheye,
+                                            path_ndfilter = self.path_ndfilter,
+                                            path_calfact = self.path_calfact)
+        
+        # Do some basic validation here
+        # TODO
+        ## if radianceDataObject.attribute == (invalid value) then display error
+        
+        print("\n#########\nCALLING PIPELINE COMMAND\n#########\n")
+       # radiance_pipeline( radianceDataObject )
+    
+        return
+
