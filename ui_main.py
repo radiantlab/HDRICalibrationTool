@@ -324,74 +324,35 @@ class Ui_MainWindow(object):
         self.label_OID.raise_()
 
 
+        # To keep consistent spacing
+        x_column2 = 400
+
         # Cropping Dimension section
-
-        # Input Image Resolution fields
-        self.label_iir = QLabel(self.mdiArea)
-        self.label_iir.setAlignment(Qt.AlignLeft)
-        self.label_iir.setText("Input Image Resolution")
-        self.label_iir.setStyleSheet("background-color: #a0a0a0")
-        self.label_iir.move(10,70)
-
-        # Input Image X Resolution field
-        self.inputField_inputImageResX = QLineEdit(self.mdiArea)
-        self.inputField_inputImageResX.setText("")
-        self.inputField_inputImageResX.setObjectName("inputField_inputImageResX")
-        self.inputField_inputImageResX.move(10,100)
-
-        self.label_md11 = QLabel(self.mdiArea)
-        self.label_md11.setAlignment(Qt.AlignLeft)
-        self.label_md11.setText("x")
-        self.label_md11.setStyleSheet("background-color: #a0a0a0")
-        self.label_md11.move(149,102)
-
-        # Input Image Y Resolution field
-        self.inputField_inputImageResY = QLineEdit(self.mdiArea)
-        self.inputField_inputImageResY.setText("")
-        self.inputField_inputImageResY.setObjectName("inputField_inputImageResY")
-        self.inputField_inputImageResY.move(160,100)
-
-        self.label_iir = QLabel(self.mdiArea)
-        self.label_iir.setAlignment(Qt.AlignLeft)
-        self.label_iir.setText("Input Image Resolution")
-        self.label_iir.setStyleSheet("background-color: #a0a0a0")
-        self.label_iir.move(10,70)
-
-        self.lineEdit_md13 = QLineEdit(self.mdiArea)
-        self.lineEdit_md13.setText("")
-        self.lineEdit_md13.setObjectName("lineEdit_md13")
-        self.lineEdit_md13.move(10,160)
-
-        self.label_md13 = QLabel(self.mdiArea)
-        self.label_md13.setAlignment(Qt.AlignLeft)
-        self.label_md13.setText("Fisheye View Diameter")
-        self.label_md13.setStyleSheet("background-color: #a0a0a0")
-        self.label_md13.move(10,140)
-
-        # X Crop Offset field
-        self.label_md14 = QLabel(self.mdiArea)
-        self.label_md14.setAlignment(Qt.AlignLeft)
-        self.label_md14.setText("X Crop Offset")
-        self.label_md14.setStyleSheet("background-color: #a0a0a0")
-        self.label_md14.move(500,70)
-
-        self.inputField_xCropOffset = QLineEdit(self.mdiArea)
-        self.inputField_xCropOffset.setText("")
-        self.inputField_xCropOffset.setObjectName("inputField_xCropOffset")
-        self.inputField_xCropOffset.move(500,100)
-
 
         # Fisheye View Diameter field
         self.label_md13 = QLabel(self.mdiArea)
         self.label_md13.setAlignment(Qt.AlignLeft)
         self.label_md13.setText("Fisheye View Diameter")
         self.label_md13.setStyleSheet("background-color: #a0a0a0")
-        self.label_md13.move(10,180)
+        self.label_md13.move(10,70)
 
-        self.inputField_fisheyeViewDiameter = QLineEdit(self.mdiArea)
-        self.inputField_fisheyeViewDiameter.setText("")
-        self.inputField_fisheyeViewDiameter.setObjectName("inputField_fisheyeViewDiameter")
-        self.inputField_fisheyeViewDiameter.move(10,200)
+        self.lineEdit_md13 = QLineEdit(self.mdiArea)
+        self.lineEdit_md13.setText("")
+        self.lineEdit_md13.setObjectName("lineEdit_md13")
+        self.lineEdit_md13.move(10,100)
+
+
+        # X Crop Offset field
+        self.label_md14 = QLabel(self.mdiArea)
+        self.label_md14.setAlignment(Qt.AlignLeft)
+        self.label_md14.setText("X Crop Offset")
+        self.label_md14.setStyleSheet("background-color: #a0a0a0")
+        self.label_md14.move(x_column2,70)
+
+        self.inputField_xCropOffset = QLineEdit(self.mdiArea)
+        self.inputField_xCropOffset.setText("")
+        self.inputField_xCropOffset.setObjectName("inputField_xCropOffset")
+        self.inputField_xCropOffset.move(x_column2,100)
 
 
         # Y Crop Offset field
@@ -399,12 +360,12 @@ class Ui_MainWindow(object):
         self.label_md15.setAlignment(Qt.AlignLeft)
         self.label_md15.setText("Y Crop Offset")
         self.label_md15.setStyleSheet("background-color: #a0a0a0")
-        self.label_md15.move(500,140)
+        self.label_md15.move(x_column2,140)
 
         self.inputField_yCropOffset = QLineEdit(self.mdiArea)
         self.inputField_yCropOffset.setText("")
         self.inputField_yCropOffset.setObjectName("inputField_yCropOffset")
-        self.inputField_yCropOffset.move(500,160)
+        self.inputField_yCropOffset.move(x_column2,160)
 
 
         # Submit form button
@@ -433,12 +394,12 @@ class Ui_MainWindow(object):
         self.label_md22.setAlignment(Qt.AlignLeft)
         self.label_md22.setText("View Angle Horizontal")
         self.label_md22.setStyleSheet("background-color: #a0a0a0")
-        self.label_md22.move(250,70)
+        self.label_md22.move(x_column2,70)
 
         self.inputField_viewAngleHorizontal = QLineEdit(self.mdiArea_2)
         self.inputField_viewAngleHorizontal.setText("")
         self.inputField_viewAngleHorizontal.setObjectName("inputField_viewAngleHorizontal")
-        self.inputField_viewAngleHorizontal.move(250,90)
+        self.inputField_viewAngleHorizontal.move(x_column2,90)
 
         # Submit form button
         self.area2button = QPushButton('Enter', self.mdiArea_2)
@@ -580,7 +541,7 @@ class Ui_MainWindow(object):
         self.btn_page_2.setText(QCoreApplication.translate("MainWindow", u"Upload LDR images", None))
         self.btn_page_3.setText(QCoreApplication.translate("MainWindow", u"Camera Settings", None))
         self.btn_page_4.setText(QCoreApplication.translate("MainWindow", u"Upload Calibration", None))
-        self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO!", None))
+        self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO", None))
         self.btn_help.setText(QCoreApplication.translate("MainWindow", u"Help", None))
         self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
         self.label_1.setAlignment(Qt.AlignHCenter)
