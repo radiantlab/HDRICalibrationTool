@@ -46,25 +46,28 @@ QPushButton#btn_page_1:pressed,
 /* "Go" button in menu sidebar that begins the Radiance pipeline process */
 QPushButton#btn_start_pipeline
 {
-	color: white;
+	color: black;
     background-color: #72B170;
     border: 2px solid;
     border-color: white;
 	font-weight: bold;
+	font-size: 22px;
 }
 QPushButton#btn_start_pipeline:hover
 {
+	color: white;
 	background-color: #476F46;
 	font-weight: bold;
 }
 QPushButton#btn_start_pipeline:pressed
 {
+	color: white;
 	background-color: #395838;
 	font-weight: bold;
 }
 QPushButton#btn_start_pipeline:disabled
 {
-	color: black;
+	color: 2B2B2B;
     background-color: #8EA58D;
 }
 
