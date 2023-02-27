@@ -132,7 +132,6 @@ class Ui_MainWindow(object):
         self.btn_help = QPushButton(self.sidebarMenuFrame)
         self.btn_help.setObjectName(u"btn_help")
         self.btn_help.move(0,1000)
-        self.btn_help.setStyleSheet("background-color: #2E8BC0")
         self.btn_help.setMinimumSize(QSize(0, 40))
         self.btn_help.setIcon( QIcon("./assets/icons/help-icon.png") )
         
@@ -158,15 +157,18 @@ class Ui_MainWindow(object):
         self.sidebarMenuVLayout.addWidget( self.btn_page_3, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_page_4, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_start_pipeline, stretch=1 )
-        self.sidebarMenuVLayout.addWidget( self.btn_help, stretch=1 )
 
-        settingsBtn = QPushButton( "Settings", self.sidebarMenuFrame)
-        settingsBtn.setMinimumSize( QSize( 0, 52 ) )
-        settingsBtn.setGeometry(0,0, 200, 30)
-        settingsBtn.setStyleSheet( "background-color: #D9D9D9;" )
-        settingsBtn.setIcon( QIcon("./assets/icons/settings-icon.png") )
+        self.sidebarMenuVLayout.addWidget( QWidget(), stretch=20 )
 
-        self.sidebarMenuVLayout.addWidget( settingsBtn, stretch=2 )
+        self.sidebarMenuVLayout.addWidget( self.btn_help, stretch=1, alignment=Qt.AlignBottom )
+
+        self.btn_settings = QPushButton( "Settings", self.sidebarMenuFrame)
+        self.btn_settings.setObjectName( "btn_settings" )
+        self.btn_settings.setMinimumSize( QSize( 0, 52 ) )
+        self.btn_settings.setGeometry(0,0, 200, 30)
+        self.btn_settings.setIcon( QIcon("./assets/icons/settings-icon.png") )
+
+        self.sidebarMenuVLayout.addWidget( self.btn_settings, stretch=2, alignment=Qt.AlignBottom )
 
         appVersionLabel = "Version: {}".format( appVersion )
         self.versionLabel = QLabel( appVersionLabel )
@@ -605,8 +607,6 @@ class Ui_MainWindow(object):
             self.btn_page_4.setProperty( "isActivePage", True )
         elif  ( newActiveBtn.objectName() == "btn_start_pipeline" ):
             self.btn_start_pipeline.setProperty( "isActivePage", True )
-        else:
-            print( "newActiveBtn: {}".format( newActiveBtn.objectName() ) )
 
         self.setButtonStyling()
 
@@ -625,6 +625,10 @@ class Ui_MainWindow(object):
             self.btn_page_4.setStyleSheet( stylesheet.read() )
         with open( self.main_styles_path, "r" ) as stylesheet:
             self.btn_start_pipeline.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_help.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_settings.setStyleSheet( stylesheet.read() )
 
     
     def setCroppingValues( self ):
@@ -707,7 +711,7 @@ class Ui_MainWindow(object):
         ## if radianceDataObject.attribute == (invalid value) then display error
         
         print("\n#########\nCALLING PIPELINE COMMAND\n#########\n")
-       # radiance_pipeline( radianceDataObject )
+        radiance_pipeline( radianceDataObject )
     
         return
 

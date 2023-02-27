@@ -54,36 +54,57 @@ QPushButton#btn_start_pipeline
 }
 QPushButton#btn_start_pipeline:hover
 {
-	background-color: #669F64;
+	background-color: #476F46;
 	font-weight: bold;
 }
 QPushButton#btn_start_pipeline:pressed
 {
-	background-color: #476F46;
+	background-color: #395838;
 	font-weight: bold;
 }
 QPushButton#btn_start_pipeline:disabled
 {
 	color: black;
-    background-color: #B2CFB1;
+    background-color: #8EA58D;
 }
 
 
 /* "Settings" button in menu sidebar that opens the Settings dialog window */
-QPushButton#settingsBtn
+QPushButton#btn_settings
 {
-	color: white;
+	color: black;
     background-color: #D9D9D9;
     border: 2px solid;
-    border-color: white;
+    border-color: black;
 	font-weight: bold;
 }
-QPushButton#settingsBtn:hover
+QPushButton#btn_settings:hover
 {
 	background-color: #C3C3C3;
 	font-weight: bold;
 }
-QPushButton#settingsBtn:pressed
+QPushButton#btn_settings:pressed
+{
+	background-color: #ADADAD;
+	font-weight: bold;
+}
+
+
+/* "Help" button in menu sidebar */
+QPushButton#btn_help
+{
+	color: black;
+    background-color: #D9D9D9;
+    border: 2px solid;
+    border-color: black;
+	font-weight: bold;
+}
+QPushButton#btn_help:hover
+{
+	background-color: #C3C3C3;
+	font-weight: bold;
+}
+QPushButton#btn_help:pressed
 {
 	background-color: #ADADAD;
 	font-weight: bold;
