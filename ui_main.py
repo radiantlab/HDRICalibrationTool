@@ -113,11 +113,6 @@ class Ui_MainWindow(object):
         self.btn_start_pipeline.setProperty( "isActivePage", False )
         self.btn_start_pipeline.setMinimumSize( QSize( 0, 64 ) )
         
-        '''
-        self.btn_help = QPushButton( self.sidebarMenuFrame )
-        self.btn_help.setObjectName( "btn_help" )
-        self.btn_help.setProperty( "isActivePage", False )
-        self.btn_help.setMinimumSize( QSize( 0, 48 ) )'''
         # TODO
         # Add spacer here after GO btn
         # Then add button for Settings page
@@ -126,9 +121,13 @@ class Ui_MainWindow(object):
 
         
         self.btn_help = QPushButton(self.sidebarMenuFrame)
-        self.btn_help.setObjectName(u"btn_start_pipeline")
+        self.btn_help.setObjectName(u"btn_help")
+        self.btn_help.move(0,1000)
+        self.btn_help.setStyleSheet("background-color: #2E8BC0")
         self.btn_help.setMinimumSize(QSize(0, 40))
-        #self.btn_help(self.style().standardIcon(getattr(QStyle, SP_TitleBarContextHelpButton)))
+        self.btn_help.setIcon( QIcon("./assets/icons/help-icon.png") )
+        
+        
         
 
         # Default active page
@@ -340,13 +339,13 @@ class Ui_MainWindow(object):
         self.lineEdit_md13 = QLineEdit(self.mdiArea)
         self.lineEdit_md13.setText("")
         self.lineEdit_md13.setObjectName("lineEdit_md13")
-        self.lineEdit_md13.move(10,200)
+        self.lineEdit_md13.move(10,160)
 
         self.label_md13 = QLabel(self.mdiArea)
         self.label_md13.setAlignment(Qt.AlignLeft)
         self.label_md13.setText("Fisheye View Diameter")
         self.label_md13.setStyleSheet("background-color: #a0a0a0")
-        self.label_md13.move(10,180)
+        self.label_md13.move(10,140)
 
         self.label_md14 = QLabel(self.mdiArea)
         self.label_md14.setAlignment(Qt.AlignLeft)
@@ -363,15 +362,15 @@ class Ui_MainWindow(object):
         self.label_md15.setAlignment(Qt.AlignLeft)
         self.label_md15.setText("Y Crop Offset")
         self.label_md15.setStyleSheet("background-color: #a0a0a0")
-        self.label_md15.move(500,180)
+        self.label_md15.move(500,140)
 
         self.lineEdit_md15 = QLineEdit(self.mdiArea)
         self.lineEdit_md15.setText("")
         self.lineEdit_md15.setObjectName("lineEdit_md15")
-        self.lineEdit_md15.move(500,200)
+        self.lineEdit_md15.move(500,160)
 
         self.area1button = QPushButton('Enter', self.mdiArea)
-        self.area1button.move(750,200)
+        self.area1button.move(750,160)
         #area1button.clicked.connect(self.on_click)
 
         #area 2 edit 
@@ -398,7 +397,7 @@ class Ui_MainWindow(object):
         self.lineEdit_md22.move(250,90)
 
         self.area2button = QPushButton('Enter', self.mdiArea_2)
-        self.area2button.move(750,200)
+        self.area2button.move(750,160)
 
         #area 3 edit
         self.label_md31 = QLabel(self.mdiArea_3)
@@ -424,7 +423,7 @@ class Ui_MainWindow(object):
         self.lineEdit_md32.move(160,90)
 
         self.area3button = QPushButton('Enter', self.mdiArea_3)
-        self.area3button.move(750,200)
+        self.area3button.move(750,160)
 
         # Area 4 upload .rsp file region
         rsp_uploadarea = UploadFileRegion("CameraResponseFileUpload", [900, 200], fileType=2 )
@@ -539,7 +538,7 @@ class Ui_MainWindow(object):
         self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
         self.label_1.setAlignment(Qt.AlignHCenter)
        # self.label_2.setText(QCoreApplication.translate("MainWindow", u"LDR Image Upload Page", None))
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"Processing", None))
+        self.label_5.setText(QCoreApplication.translate("MainWindow", u"Processing...", None))
 
 
     # Sets the active page based on sidebar menu button clicks
