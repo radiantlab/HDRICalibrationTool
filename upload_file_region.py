@@ -421,15 +421,18 @@ class UploadFileRegion( QWidget ):
         else:
             print( "File: \"{}\" at location {} has size: {} bytes.".format( self.filePathLabel.text(), self.fileNameLabel.text(), fileSize ) )
 
+            # Reach Ui_MainWindow object
+            uiObject = self.parent().parent().parent().parent().parent().parent().ui
+
             # Upload region is for Vignetting
             if ( self.uploadRegion.objectName() == "uploadFileRegion_Vignetting" ):
                 print( "Upload region is for vignetting. Validating..." )
 
                 # Set RadianceData object path_vignetting here when valid vc file
                 if ( self.vc_validation() == True ):
-                    path_vignetting = self.filePathLabel.text()
-                    print( "Set path_vignetting to path: {}".format( path_vignetting ) )
-                    #TODO: reference obj. name
+                    uiObject.path_vignetting = self.filePathLabel.text()
+                    print( "Set path_vignetting to path: {}".format( self.filePathLabel.text() ) )
+
 
             # Upload region is for Fisheye Correction
             elif ( self.uploadRegion.objectName() == "uploadFileRegion_FisheyeCorrection" ):
@@ -437,9 +440,9 @@ class UploadFileRegion( QWidget ):
                 
                 # Set RadianceData object path_fisheye here when valid fc file
                 if ( self.fc_validation() == True ):
-                    path_fisheye = self.filePathLabel.text()
-                    print( "Set path_fisheye to path: {}".format( path_fisheye ) )
-                    #TODO: reference obj. name
+                    uiObject.path_fisheye = self.filePathLabel.text()
+                    print( "Set path_fisheye to path: {}".format( self.filePathLabel.text() ) )
+
 
             # Upload region is for Camera Factor
             elif ( self.uploadRegion.objectName() == "uploadFileRegion_CameraFactor" ):
@@ -447,9 +450,9 @@ class UploadFileRegion( QWidget ):
 
                 # Set RadianceData object path_calfact here when valid cf file
                 if ( self.cf_validation() == True ):
-                    path_calfact = self.filePathLabel.text()
-                    print( "Set path_calfact to path: {}".format( path_calfact ) )
-                    #TODO: reference obj. name
+                    uiObject.path_calfact = self.filePathLabel.text()
+                    print( "Set path_calfact to path: {}".format( self.filePathLabel.text() ) )
+
 
             # Upload region is for ND Filter
             elif ( self.uploadRegion.objectName() == "uploadFileRegion_NeutralDensityFilter" ):
@@ -457,8 +460,8 @@ class UploadFileRegion( QWidget ):
                 
                 # Set RadianceData object path_ndfilter here when valid nd file
                 if ( self.nd_validation() == True ):
-                    path_ndfilter = self.filePathLabel.text()
-                    print( "Set path_ndfilter to path: {}".format( path_ndfilter ) )
+                    uiObject.path_ndfilter = self.filePathLabel.text()
+                    print( "Set path_ndfilter to path: {}".format( self.filePathLabel.text() ) )
                     #TODO: reference obj. name
 
             # Upload region is for camera response function file (.rsp for camera settings page)
@@ -467,9 +470,9 @@ class UploadFileRegion( QWidget ):
                 
                 # Set RadianceData object path_rsp_fn here when valid rsp file
                 if ( self.rsp_validation() == True ):
-                    path_rsp_fn = self.filePathLabel.text()
-                    print( "Set path_rsp_fn to path: {}".format( path_rsp_fn ) )
-                    #TODO: reference obj. name
+                    uiObject.path_rsp_fn = self.filePathLabel.text()
+                    print( "Set path_rsp_fn to path: {}".format( self.filePathLabel.text() ) )
+
 
             else:
                 print( "Upload region is unknown. self.uploadRegion.objectName(): {}".format( self.uploadRegion.objectName() ) )
