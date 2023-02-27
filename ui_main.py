@@ -122,20 +122,23 @@ class Ui_MainWindow(object):
         self.btn_start_pipeline.setProperty( "isActivePage", False )
         self.btn_start_pipeline.setMinimumSize( QSize( 0, 64 ) )
         
-
+        '''
+        self.btn_help = QPushButton( self.sidebarMenuFrame )
+        self.btn_help.setObjectName( "btn_help" )
+        self.btn_help.setProperty( "isActivePage", False )
+        self.btn_help.setMinimumSize( QSize( 0, 48 ) )'''
         # TODO
         # Add spacer here after GO btn
         # Then add button for Settings page
         # Then add Help Button
         # Then add QLabel for where we put version number
 
-
-        '''
+        
         self.btn_help = QPushButton(self.sidebarMenuFrame)
         self.btn_help.setObjectName(u"btn_start_pipeline")
         self.btn_help.setMinimumSize(QSize(0, 40))
-        self.btn_help(self.style().standardIcon(getattr(QStyle, SP_TitleBarContextHelpButton)))
-        '''
+        #self.btn_help(self.style().standardIcon(getattr(QStyle, SP_TitleBarContextHelpButton)))
+        
 
         # Default active page
         self.activePage = self.btn_page_1
@@ -144,15 +147,19 @@ class Ui_MainWindow(object):
         self.btn_page_2.clicked.connect( lambda: self.setActivePage( self.btn_page_2 ) )
         self.btn_page_3.clicked.connect( lambda: self.setActivePage( self.btn_page_3 ) )
         self.btn_page_4.clicked.connect( lambda: self.setActivePage( self.btn_page_4 ) )
+        
         self.btn_start_pipeline.clicked.connect( lambda: self.setActivePage( self.btn_start_pipeline ) )
         self.btn_start_pipeline.clicked.connect( self.goButtonClicked )
 
+        self.btn_help.clicked.connect( lambda: self.setActivePage( self.btn_help ) )
+        
         # Add page-routing buttons to sidebar
         self.sidebarMenuVLayout.addWidget( self.btn_page_1, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_page_2, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_page_3, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_page_4, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_start_pipeline, stretch=1 )
+        self.sidebarMenuVLayout.addWidget( self.btn_help, stretch=1 )
 
         settingsBtn = QPushButton( "Settings", self.sidebarMenuFrame)
         settingsBtn.setMinimumSize( QSize( 0, 52 ) )
@@ -164,7 +171,7 @@ class Ui_MainWindow(object):
 
         appVersionLabel = "Version: {}".format( appVersion )
         self.versionLabel = QLabel( appVersionLabel )
-        self.sidebarMenuVLayout.addWidget( self.versionLabel, stretch=1, alignment=Qt.AlignRight )
+        self.sidebarMenuVLayout.addWidget( self.versionLabel, stretch=1, alignment=Qt.AlignBottom )
 
         # Set style of sidebar menu buttons
         self.setButtonStyling()
@@ -557,6 +564,7 @@ class Ui_MainWindow(object):
         self.btn_page_3.setText(QCoreApplication.translate("MainWindow", u"Camera Settings", None))
         self.btn_page_4.setText(QCoreApplication.translate("MainWindow", u"Upload Calibration", None))
         self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO!", None))
+        self.btn_help.setText(QCoreApplication.translate("MainWindow", u"Help", None))
         self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
         self.label_1.setAlignment(Qt.AlignHCenter)
 
