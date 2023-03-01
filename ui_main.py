@@ -9,7 +9,7 @@ from image_uploader import ImageUploader
 from radiance_pipeline.radiance_data import RadianceData
 from radiance_pipeline.radiance_pipeline import radiance_pipeline
 
-appVersion = "0.6"
+appVersion = "0.9"
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
