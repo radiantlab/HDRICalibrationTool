@@ -1,10 +1,12 @@
-import os
+#import os
 
 from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
 from PySide2.QtGui import QPixmap
 from PySide2.QtCore import Qt, QRect
 
-from PyQt5 import QtWidgets
+#from PyQt5 import QtWidgets
+
+from PyQt5.QtWidgets import QFileDialog
 
 # For file name extraction
 import ntpath
@@ -203,19 +205,31 @@ class UploadImageRegion( QWidget ):
         event.acceptProposedAction()
 
 
+    # Get the filename from the path
+    def getFilenameFromPath( self, path ):
+        head, tail = ntpath.split(path)
+        return tail or ntpath.basename(head)
+
+
     # Open file dialog box to browse for calibration .cal files
     def browseFiles( self ):
-        # Show file dialog to select images
-        fileDialog = QtWidgets.QFileDialog()
-        fileDialog.setFileMode( QtWidgets.QFileDialog.ExistingFiles )
-        fileDialog.setNameFilter( "Image files (*.jpg *.png)" )
+        # # Show file dialog to select images
+        # fileDialog = QtWidgets.QFileDialog()
+        # fileDialog.setFileMode( QtWidgets.QFileDialog.ExistingFiles )
+        # fileDialog.setNameFilter( "Image files (*.jpg *.png)" )
 
-        if fileDialog.exec_():
-            filenames = fileDialog.selectedFiles()
-            for filename in filenames:
-                self.fileUploadedEvent( filename )
+        # if fileDialog.exec_():
+        #     filenames = fileDialog.selectedFiles()
+        #     for filename in filenames:
+        #         self.fileUploadedEvent( filename )
 
-        print( "self.imagePaths: {}".format( self.parent().imagePaths ) )
+        # Restrict to image file upload
+        inputFileNames = QFileDialog.getOpenFileNames( None, "Upload Image(s)", "", "Image files (*.jpg *.png)" )
+
+        for filename in inputFileNames[0]:
+            self.fileUploadedEvent( filename )
+
+        print( "self.parent().imagePaths: {}".format( self.parent().imagePaths ) )
 
         return
 
