@@ -25,7 +25,7 @@ class Ui_MainWindow(object):
         self.target_x_resolution = 0
         self.target_y_resolution = 0
         self.paths_ldr = [""]
-        self.path_temp = "",
+        self.path_temp = "temp",
         self.path_rsp_fn = ""
         self.path_vignetting = ""
         self.path_fisheye = ""
@@ -660,7 +660,7 @@ class Ui_MainWindow(object):
                                             target_x_resolution = self.target_x_resolution,
                                             target_y_resolution = self.target_y_resolution,
                                             paths_ldr = self.paths_ldr,
-                                            path_temp = self.path_temp,
+                                            path_temp = "/home/lpz/school/HDRICalibrationTool/temp",
                                             path_rsp_fn = self.path_rsp_fn,
                                             path_vignetting = self.path_vignetting,
                                             path_fisheye = self.path_fisheye,

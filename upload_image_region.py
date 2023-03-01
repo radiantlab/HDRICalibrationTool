@@ -224,7 +224,7 @@ class UploadImageRegion( QWidget ):
         #         self.fileUploadedEvent( filename )
 
         # Restrict to image file upload
-        inputFileNames = QFileDialog.getOpenFileNames( None, "Upload Image(s)", "", "Image files (*.jpg *.png)" )
+        inputFileNames = QFileDialog.getOpenFileNames( None, "Upload Image(s)", "", "Image files (*.jpg *.png *.JPG)" )
 
         for filename in inputFileNames[0]:
             self.fileUploadedEvent( filename )
