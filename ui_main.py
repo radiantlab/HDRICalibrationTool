@@ -336,10 +336,10 @@ class Ui_MainWindow(object):
         self.label_md13.setStyleSheet("background-color: #a0a0a0")
         self.label_md13.move(10,70)
 
-        self.lineEdit_md13 = QLineEdit(self.mdiArea)
-        self.lineEdit_md13.setText("")
-        self.lineEdit_md13.setObjectName("lineEdit_md13")
-        self.lineEdit_md13.move(10,100)
+        self.inputField_fisheyeViewDiameter = QLineEdit(self.mdiArea)
+        self.inputField_fisheyeViewDiameter.setText("")
+        self.inputField_fisheyeViewDiameter.setObjectName("inputField_fisheyeViewDiameter")
+        self.inputField_fisheyeViewDiameter.move(10,100)
 
 
         # X Crop Offset field
