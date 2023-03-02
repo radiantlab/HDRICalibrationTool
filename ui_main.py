@@ -6,8 +6,10 @@ from upload_file_region import UploadFileRegion
 
 from image_uploader import ImageUploader
 
-from radiance_pipeline.radiance_data import RadianceData
-from radiance_pipeline.radiance_pipeline import radiance_pipeline
+from progress_window import ProgressWindow
+
+# from radiance_pipeline.radiance_data import RadianceData
+# from radiance_pipeline.radiance_pipeline import radiance_pipeline
 
 appVersion = "0.9"
 
@@ -645,34 +647,40 @@ class Ui_MainWindow(object):
         print("self.path_calfact: {}".format( self.path_calfact ))
         print("-----------------------------------------------------")
 
-        self.startRadiancePipeline()
+        self.openProgressWindow()
+
+        #self.startRadiancePipeline()
 
         return
-
-
-    def startRadiancePipeline( self ):
-        # Radiance data object init.
-        radianceDataObject = RadianceData(diameter = self.diameter,
-                                            crop_x_left = self.crop_x_left,
-                                            crop_y_down = self.crop_y_down,
-                                            view_angle_vertical = self.view_angle_vertical,
-                                            view_angle_horizontal = self.view_angle_horizontal,
-                                            target_x_resolution = self.target_x_resolution,
-                                            target_y_resolution = self.target_y_resolution,
-                                            paths_ldr = self.paths_ldr,
-                                            path_temp = "/home/lpz/school/HDRICalibrationTool/temp",
-                                            path_rsp_fn = self.path_rsp_fn,
-                                            path_vignetting = self.path_vignetting,
-                                            path_fisheye = self.path_fisheye,
-                                            path_ndfilter = self.path_ndfilter,
-                                            path_calfact = self.path_calfact)
-        
-        # Do some basic validation here
-        # TODO
-        ## if radianceDataObject.attribute == (invalid value) then display error
-        
-        print("\n#########\nCALLING PIPELINE COMMAND\n#########\n")
-        radiance_pipeline( radianceDataObject )
     
-        return
+
+    def openProgressWindow( self ):
+        self.progressWindow = ProgressWindow( self )
+
+
+    # def startRadiancePipeline( self ):
+    #     # Radiance data object init.
+    #     radianceDataObject = RadianceData(diameter = self.diameter,
+    #                                         crop_x_left = self.crop_x_left,
+    #                                         crop_y_down = self.crop_y_down,
+    #                                         view_angle_vertical = self.view_angle_vertical,
+    #                                         view_angle_horizontal = self.view_angle_horizontal,
+    #                                         target_x_resolution = self.target_x_resolution,
+    #                                         target_y_resolution = self.target_y_resolution,
+    #                                         paths_ldr = self.paths_ldr,
+    #                                         path_temp = "/home/lpz/school/HDRICalibrationTool/temp",
+    #                                         path_rsp_fn = self.path_rsp_fn,
+    #                                         path_vignetting = self.path_vignetting,
+    #                                         path_fisheye = self.path_fisheye,
+    #                                         path_ndfilter = self.path_ndfilter,
+    #                                         path_calfact = self.path_calfact)
+        
+    #     # Do some basic validation here
+    #     # TODO
+    #     ## if radianceDataObject.attribute == (invalid value) then display error
+        
+    #     print("\n#########\nCALLING PIPELINE COMMAND\n#########\n")
+    #     radiance_pipeline( radianceDataObject )
+    
+    #     return
 
