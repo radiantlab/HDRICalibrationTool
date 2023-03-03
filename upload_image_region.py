@@ -4,8 +4,6 @@ from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLa
 from PySide2.QtGui import QPixmap
 from PySide2.QtCore import Qt, QRect
 
-#from PyQt5 import QtWidgets
-
 from PyQt5.QtWidgets import QFileDialog
 
 # For file name extraction
