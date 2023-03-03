@@ -1,6 +1,7 @@
 import sys
 import time
-from PyQt5.QtCore import QThread, pyqtSignal, QObject, pyqtSlot
+from PyQt5 import QtCore
+from PyQt5.QtCore import QThread, pyqtSignal, QObject, pyqtSlot, Qt
 from PyQt5.QtWidgets import QApplication, QPushButton, QWidget, QHBoxLayout, QProgressBar, QVBoxLayout
 
 from radiance_pipeline.radiance_data import RadianceData
@@ -9,13 +10,20 @@ from radiance_pipeline.radiance_pipeline import radiance_pipeline
 from PyQt5.QtWidgets import QWidget
 
 class ProgressWindow( QWidget ):
-    def __init__( self ):
+    def __init__( self, MainWindow ):
         QWidget.__init__( self )
 
-        print("self: {}".format(self))
-        print("self.parent(): {}".format( self.parent() ))
-        print("self.parent().parent(): {}".format(self.parent().parent()))
-        print("self.parent().parent().parent(): {}".format(self.parent().parent().parent()))
+        # self.setWindowFlags(self.windowFlags() # reuse initial flags
+        #     #& ~QtCore.Qt.WindowContextHelpButtonHint # negate the flag you want to unset
+        #     & QtCore.Qt.Window # negate the flag you want to unset
+        #    # & QtCore.Qt.CustomizeWindowHint # negate the flag you want to unset
+        #     )
+
+        #print("self: {}".format(self))
+        #print("parent: {}".format(parent))
+        #print("self.parent(): {}".format( self.parent() ))
+        # print("self.parent().parent(): {}".format(self.parent().parent()))
+        # print("self.parent().parent().parent(): {}".format(self.parent().parent().parent()))
 
         self.progressBar = QProgressBar(self)
         self.progressBar.setGeometry(30, 40, 500, 75)
@@ -35,7 +43,7 @@ class ProgressWindow( QWidget ):
         self.show()
 
         # Start the Radiance pipeline
-        self.startRadiancePipeline()
+        self.startRadiancePipeline( MainWindow )
 
         # self.obj = self.parent()
         # self.thread = QThread()
@@ -52,39 +60,42 @@ class ProgressWindow( QWidget ):
 
     
     def increaseProgress( self ):
-        
-
         # Temp. increment value for progress bar
         incrementValue = 10
 
         # Calculate new progress bar value
         newProgressValue = self.progressValue + incrementValue
 
+        # Update property that stores progress value
+        self.progressValue = newProgressValue
+
         # Update progress bar visually
         self.progressBar.setValue( newProgressValue )
 
     
-    def startRadiancePipeline( self ):
+    def startRadiancePipeline( self, MainWindow ):
         # print("self: {}".format(self))
         # print("self.parent(): {}".format( self.parent() ))
         # print("self.parent().parent(): {}".format(self.parent().parent()))
         # print("self.parent().parent().parent(): {}".format(self.parent().parent().parent()))
 
         # Radiance data object init.
-        radianceDataObject = RadianceData(diameter = self.parent().diameter,
-                                            crop_x_left = self.crop_x_left,
-                                            crop_y_down = self.crop_y_down,
-                                            view_angle_vertical = self.view_angle_vertical,
-                                            view_angle_horizontal = self.view_angle_horizontal,
-                                            target_x_resolution = self.target_x_resolution,
-                                            target_y_resolution = self.target_y_resolution,
-                                            paths_ldr = self.paths_ldr,
-                                            path_temp = "/home/lpz/school/HDRICalibrationTool/temp",
-                                            path_rsp_fn = self.path_rsp_fn,
-                                            path_vignetting = self.path_vignetting,
-                                            path_fisheye = self.path_fisheye,
-                                            path_ndfilter = self.path_ndfilter,
-                                            path_calfact = self.path_calfact)
+        radianceDataObject = RadianceData(diameter = MainWindow.diameter,
+                                            crop_x_left = MainWindow.crop_x_left,
+                                            crop_y_down = MainWindow.crop_y_down,
+                                            view_angle_vertical = MainWindow.view_angle_vertical,
+                                            view_angle_horizontal = MainWindow.view_angle_horizontal,
+                                            target_x_resolution = MainWindow.target_x_resolution,
+                                            target_y_resolution = MainWindow.target_y_resolution,
+                                            paths_ldr = MainWindow.paths_ldr,
+                                            path_temp = MainWindow.path_temp,
+                                            path_rsp_fn = MainWindow.path_rsp_fn,
+                                            path_vignetting = MainWindow.path_vignetting,
+                                            path_fisheye = MainWindow.path_fisheye,
+                                            path_ndfilter = MainWindow.path_ndfilter,
+                                            path_calfact = MainWindow.path_calfact)
+        
+        print( "MainWindow.path_temp: {}".format( MainWindow.path_temp ) )
         
         # Do some basic validation here
         # TODO
