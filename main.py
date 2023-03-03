@@ -37,7 +37,6 @@ class MainWindow(QMainWindow):
         # PAGE 5 
         self.ui.btn_start_pipeline.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_5))
 
-        ## SHOW ==> MAIN WINDOW
         ########################################################################
 
         self.show()
