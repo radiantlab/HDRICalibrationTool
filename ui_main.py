@@ -8,9 +8,6 @@ from image_uploader import ImageUploader
 
 from progress_window import ProgressWindow
 
-# from radiance_pipeline.radiance_data import RadianceData
-# from radiance_pipeline.radiance_pipeline import radiance_pipeline
-
 appVersion = "0.9"
 
 class Ui_MainWindow(object):
@@ -33,6 +30,7 @@ class Ui_MainWindow(object):
         self.path_fisheye = ""
         self.path_ndfilter = ""
         self.path_calfact = ""
+        
 
         # Main Window stylesheet path
         self.main_styles_path = "./styles/main_styles.css"
@@ -49,21 +47,6 @@ class Ui_MainWindow(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
 
-        # self.Top_Bar = QFrame(self.centralwidget)
-        # self.Top_Bar.setObjectName(u"Top_Bar")
-        # self.Top_Bar.setMaximumSize(QSize(16777215, 40))
-        # self.Top_Bar.setStyleSheet(u"background-color: rgb(35, 35, 35);")
-        # self.Top_Bar.setFrameShape(QFrame.NoFrame)
-        # self.Top_Bar.setFrameShadow(QFrame.Raised)
-
-        # self.horizontalLayout = QHBoxLayout(self.centralwidget)
-        # self.horizontalLayout.setObjectName(u"horizontalLayout")
-        # self.horizontalLayout.setSpacing(0)
-        # self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-
-        #self.verticalLayout.addWidget(self.Top_Bar)
-
-
         self.Content = QFrame(self.centralwidget)
         self.Content.setObjectName(u"Content")
         self.Content.setFrameShape(QFrame.NoFrame)
@@ -78,11 +61,7 @@ class Ui_MainWindow(object):
         # Sidebar menu layout setup
         self.sidebarMenuFrame = QFrame( self.Content )
         self.sidebarMenuFrame.setObjectName(u"sidebarMenuFrame")
-        # self.sidebarMenuFrame.setMinimumSize(QSize(220, 0))
-        # self.sidebarMenuFrame.setMaximumSize(QSize(250, 4000))
         self.sidebarMenuFrame.setStyleSheet(u"background-color: #A5A5A5;")
-        # self.sidebarMenuFrame.setFrameShape(QFrame.StyledPanel)
-        # self.sidebarMenuFrame.setFrameShadow(QFrame.Raised)
 
         self.sidebarMenuVLayout = QVBoxLayout( self.sidebarMenuFrame )
         self.sidebarMenuVLayout.setObjectName( "sidebarMenuVLayout" )
@@ -123,22 +102,14 @@ class Ui_MainWindow(object):
         self.btn_start_pipeline.setObjectName( "btn_start_pipeline" )
         self.btn_start_pipeline.setProperty( "isActivePage", False )
         self.btn_start_pipeline.setMinimumSize( QSize( 0, 64 ) )
-        
-        # TODO
-        # Add spacer here after GO btn
-        # Then add button for Settings page
-        # Then add Help Button
-        # Then add QLabel for where we put version number
 
-        
+        # Help button
         self.btn_help = QPushButton(self.sidebarMenuFrame)
         self.btn_help.setObjectName(u"btn_help")
         self.btn_help.move(0,1000)
         self.btn_help.setMinimumSize(QSize(0, 40))
         self.btn_help.setIcon( QIcon("./assets/icons/help-icon.png") )
-        
-        
-        
+
 
         # Default active page
         self.activePage = self.btn_page_1
@@ -281,7 +252,6 @@ class Ui_MainWindow(object):
         
         # Cropping Area mdiArea
         self.mdiArea = QMdiArea(self.page_3)
-        #self.mdiArea.setGeometry(QRect(10, 10, 970, 250))
         self.mdiArea.setObjectName("mdiArea_2")
 
         self.label_cd = QLabel(self.mdiArea)
@@ -296,7 +266,6 @@ class Ui_MainWindow(object):
 
         # Viewing angles mdiArea
         self.mdiArea_2 = QMdiArea(self.page_3)
-        #self.mdiArea_2.setGeometry(QRect(10, 290, 970, 140))
         self.mdiArea_2.setObjectName("mdiArea_2")
 
         self.label_LVA = QLabel(self.mdiArea_2)
@@ -312,7 +281,6 @@ class Ui_MainWindow(object):
 
         # Output Dimensions mdiArea
         self.mdiArea_3 = QMdiArea(self.page_3)
-        #self.mdiArea_3.setGeometry(QRect(10, 460, 970, 140))
         self.mdiArea_3.setObjectName("mdiArea_3")
 
         self.label_OID = QLabel(self.mdiArea_3)
@@ -374,7 +342,6 @@ class Ui_MainWindow(object):
         self.area1button = QPushButton('Enter', self.mdiArea)
         self.area1button.move(750,160)
         self.area1button.clicked.connect( self.setCroppingValues )
-        #area1button.clicked.connect(self.on_click)
 
 
         # Lens Viewing Angle section
@@ -523,8 +490,6 @@ class Ui_MainWindow(object):
 
 
         self.verticalLayout_5.addWidget(self.stackedWidget)
-        
-        # self.mainWindowHLayout.addWidget(self.frame_pages)
 
         self.verticalLayout.addWidget(self.Content)
 
@@ -594,6 +559,7 @@ class Ui_MainWindow(object):
             self.btn_settings.setStyleSheet( stylesheet.read() )
 
     
+    # Sets the RadianceObject properties from the cropping values inputsection
     def setCroppingValues( self ):
         print( "self.inputField_fisheyeViewDiameter.text(): {}".format(self.inputField_fisheyeViewDiameter.text()))
         print( "self.inputField_xCropOffset.text(): {}".format(self.inputField_xCropOffset.text()))
@@ -607,6 +573,7 @@ class Ui_MainWindow(object):
         return
 
 
+    # Sets the RadianceObject properties from the lens values inputsection
     def setLensValues( self ):
         print( "self.inputField_viewAngleVertical.text(): {}".format(self.inputField_viewAngleVertical.text()))
         print( "self.inputField_viewAngleHorizontal.text(): {}".format(self.inputField_viewAngleHorizontal.text()))
@@ -618,6 +585,7 @@ class Ui_MainWindow(object):
         return
 
 
+    # Sets the RadianceObject properties from the output dimensions inputsection
     def setOutputDimensionValues( self ):
         print( "self.inputField_outputXRes.text(): {}".format(self.inputField_outputXRes.text()))
         print( "self.inputField_outputYRes.text(): {}".format(self.inputField_outputYRes.text()))
@@ -629,6 +597,7 @@ class Ui_MainWindow(object):
         return
 
 
+    # Click event function for the GO button
     def goButtonClicked( self ):
         print("-----------------------------------------------------")
         print("goBtnClicked, here is the RadianceData obj. being sent:\n")
@@ -649,38 +618,9 @@ class Ui_MainWindow(object):
 
         self.openProgressWindow()
 
-        #self.startRadiancePipeline()
-
         return
     
 
+    # Creates a ProgressWindow object to start pipeline process
     def openProgressWindow( self ):
         self.progressWindow = ProgressWindow( self )
-
-
-    # def startRadiancePipeline( self ):
-    #     # Radiance data object init.
-    #     radianceDataObject = RadianceData(diameter = self.diameter,
-    #                                         crop_x_left = self.crop_x_left,
-    #                                         crop_y_down = self.crop_y_down,
-    #                                         view_angle_vertical = self.view_angle_vertical,
-    #                                         view_angle_horizontal = self.view_angle_horizontal,
-    #                                         target_x_resolution = self.target_x_resolution,
-    #                                         target_y_resolution = self.target_y_resolution,
-    #                                         paths_ldr = self.paths_ldr,
-    #                                         path_temp = "/home/lpz/school/HDRICalibrationTool/temp",
-    #                                         path_rsp_fn = self.path_rsp_fn,
-    #                                         path_vignetting = self.path_vignetting,
-    #                                         path_fisheye = self.path_fisheye,
-    #                                         path_ndfilter = self.path_ndfilter,
-    #                                         path_calfact = self.path_calfact)
-        
-    #     # Do some basic validation here
-    #     # TODO
-    #     ## if radianceDataObject.attribute == (invalid value) then display error
-        
-    #     print("\n#########\nCALLING PIPELINE COMMAND\n#########\n")
-    #     radiance_pipeline( radianceDataObject )
-    
-    #     return
-
