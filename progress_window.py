@@ -13,18 +13,6 @@ class ProgressWindow( QWidget ):
     def __init__( self, MainWindow ):
         QWidget.__init__( self )
 
-        # self.setWindowFlags(self.windowFlags() # reuse initial flags
-        #     #& ~QtCore.Qt.WindowContextHelpButtonHint # negate the flag you want to unset
-        #     & QtCore.Qt.Window # negate the flag you want to unset
-        #    # & QtCore.Qt.CustomizeWindowHint # negate the flag you want to unset
-        #     )
-
-        #print("self: {}".format(self))
-        #print("parent: {}".format(parent))
-        #print("self.parent(): {}".format( self.parent() ))
-        # print("self.parent().parent(): {}".format(self.parent().parent()))
-        # print("self.parent().parent().parent(): {}".format(self.parent().parent().parent()))
-
         self.progressBar = QProgressBar(self)
         self.progressBar.setGeometry(30, 40, 500, 75)
 
@@ -89,6 +77,8 @@ class ProgressWindow( QWidget ):
                                             target_y_resolution = MainWindow.target_y_resolution,
                                             paths_ldr = MainWindow.paths_ldr,
                                             path_temp = MainWindow.path_temp,
+                                            path_errors= MainWindow.path_errors,
+                                            path_logs= MainWindow.path_logs,
                                             path_rsp_fn = MainWindow.path_rsp_fn,
                                             path_vignetting = MainWindow.path_vignetting,
                                             path_fisheye = MainWindow.path_fisheye,
