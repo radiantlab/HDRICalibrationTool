@@ -9,3 +9,8 @@ __pycache__/
 
 # Ignore hdr files
 *.hdr
+
+# Ignore temp, errors, logs directories
+temp/
+errors/
+logs/
