@@ -1,3 +1,6 @@
+import os
+from os.path import abspath
+
 from PySide2.QtCore import ( QCoreApplication, QMetaObject, QSize, Qt )
 from PySide2.QtGui import ( QFont, QIcon, QPixmap)
 from PySide2.QtWidgets import *
@@ -24,7 +27,9 @@ class Ui_MainWindow(object):
         self.target_x_resolution = 0
         self.target_y_resolution = 0
         self.paths_ldr = [""]
-        self.path_temp = "temp",
+        self.path_temp = os.path.abspath("./temp")
+        self.path_errors = os.path.abspath("./errors")
+        self.path_logs = os.path.abspath("./logs")
         self.path_rsp_fn = ""
         self.path_vignetting = ""
         self.path_fisheye = ""
