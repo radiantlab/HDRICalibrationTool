@@ -9,6 +9,7 @@ from radiance_pipeline.radiance_pipeline import radiance_pipeline
 
 from PyQt5.QtWidgets import QWidget
 
+
 class ProgressWindow( QWidget ):
     def __init__( self, MainWindow ):
         QWidget.__init__( self )
@@ -46,7 +47,11 @@ class ProgressWindow( QWidget ):
     def on_count_changed(self, value):
         self.progressBar.setValue(value)
 
+        return
+
     
+    # This function increases the progress bar by a fixed amount.
+    # TODO: Update so it pulls from radiance_pipeline script
     def increaseProgress( self ):
         # Temp. increment value for progress bar
         incrementValue = 10
@@ -60,13 +65,10 @@ class ProgressWindow( QWidget ):
         # Update progress bar visually
         self.progressBar.setValue( newProgressValue )
 
+        return
+
     
     def startRadiancePipeline( self, MainWindow ):
-        # print("self: {}".format(self))
-        # print("self.parent(): {}".format( self.parent() ))
-        # print("self.parent().parent(): {}".format(self.parent().parent()))
-        # print("self.parent().parent().parent(): {}".format(self.parent().parent().parent()))
-
         # Radiance data object init.
         radianceDataObject = RadianceData(diameter = MainWindow.diameter,
                                             crop_x_left = MainWindow.crop_x_left,
