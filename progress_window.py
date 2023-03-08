@@ -3,12 +3,22 @@ import time
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread, pyqtSignal, QObject, pyqtSlot, Qt
 from PyQt5.QtWidgets import QApplication, QPushButton, QWidget, QHBoxLayout, QProgressBar, QVBoxLayout
-
-from radiance_pipeline.radiance_data import RadianceData
-from radiance_pipeline.radiance_pipeline import radiance_pipeline
-
 from PyQt5.QtWidgets import QWidget
 
+import radiance_pipeline.radiance_pipeline as rp
+from radiance_pipeline.radiance_data import RadianceData
+
+import threading
+from threading import Timer
+import time
+import asyncio
+import atexit
+
+class Repeat_Timer(Timer):
+# https://stackoverflow.com/questions/12435211/threading-timer-repeat-function-every-n-seconds
+    def run(self):
+        while not self.finished.wait(self.interval):
+            self.function(*self.args, **self.kwargs)
 
 class ProgressWindow( QWidget ):
     def __init__( self, MainWindow ):
@@ -24,46 +34,19 @@ class ProgressWindow( QWidget ):
         self.setLayout(self.layout)
         self.setGeometry(300, 300, 550, 100)
         self.setWindowTitle('Progress Bar')
-
+        
+        '''
         self.btn = QPushButton( "temp progress increase", self )
         self.btn.clicked.connect( self.increaseProgress )
         self.btn.show()
-
+        '''
         self.show()
 
         # Start the Radiance pipeline
         self.startRadiancePipeline( MainWindow )
 
-        # self.obj = self.parent()
-        # self.thread = QThread()
-        # self.obj.intReady.connect( self.on_count_changed )
-        # self.obj.moveToThread( self.thread )
-        # self.obj.finished.connect( self.thread.quit )
-
-        # self.thread.started.connect(self.obj.proc_counter)
-        # self.thread.start()
-
-
     def on_count_changed(self, value):
         self.progressBar.setValue(value)
-
-        return
-
-    
-    # This function increases the progress bar by a fixed amount.
-    # TODO: Update so it pulls from radiance_pipeline script
-    def increaseProgress( self ):
-        # Temp. increment value for progress bar
-        incrementValue = 10
-
-        # Calculate new progress bar value
-        newProgressValue = self.progressValue + incrementValue
-
-        # Update property that stores progress value
-        self.progressValue = newProgressValue
-
-        # Update progress bar visually
-        self.progressBar.setValue( newProgressValue )
 
         return
 
@@ -94,6 +77,39 @@ class ProgressWindow( QWidget ):
         ## if radianceDataObject.attribute == (invalid value) then display error
         
         print("\n#########\nCALLING PIPELINE COMMAND\n#########\n")
-        radiance_pipeline( radianceDataObject )
-    
+        t_rp = threading.Thread(target=rp.radiance_pipeline, args=[radianceDataObject])
+        t_rp.start()
+        
+        def update(self):
+            self.progressValue = rp.radiance_pipeline_get_percent()
+            self.progressBar.setValue(rp.radiance_pipeline_get_percent())
+            print(rp.radiance_pipeline_get_percent())
+
+            
+        progress_bar_update_timer = Repeat_Timer(1, update, [self])
+        progress_bar_update_timer.start() 
+        
+        atexit.register(progress_bar_update_timer.cancel)
+        # todo: threading is still a little funny
         return
+
+
+
+''' 
+    # This function increases the progress bar by a fixed amount.
+    # TODO: Update so it pulls from radiance_pipeline script
+    def increaseProgress( self ):
+        # Temp. increment value for progress bar
+        incrementValue = 10
+
+        # Calculate new progress bar value
+        newProgressValue = self.progressValue + incrementValue
+
+        # Update property that stores progress value
+        self.progressValue = newProgressValue
+
+        # Update progress bar visually
+        self.progressBar.setValue( newProgressValue )
+
+        return
+'''
