@@ -35,11 +35,6 @@ class ProgressWindow( QWidget ):
         self.setGeometry(300, 300, 550, 100)
         self.setWindowTitle('Progress Bar')
         
-        '''
-        self.btn = QPushButton( "temp progress increase", self )
-        self.btn.clicked.connect( self.increaseProgress )
-        self.btn.show()
-        '''
         self.show()
 
         # Start the Radiance pipeline
@@ -92,24 +87,3 @@ class ProgressWindow( QWidget ):
         atexit.register(progress_bar_update_timer.cancel)
         # todo: threading is still a little funny
         return
-
-
-
-''' 
-    # This function increases the progress bar by a fixed amount.
-    # TODO: Update so it pulls from radiance_pipeline script
-    def increaseProgress( self ):
-        # Temp. increment value for progress bar
-        incrementValue = 10
-
-        # Calculate new progress bar value
-        newProgressValue = self.progressValue + incrementValue
-
-        # Update property that stores progress value
-        self.progressValue = newProgressValue
-
-        # Update progress bar visually
-        self.progressBar.setValue( newProgressValue )
-
-        return
-'''
