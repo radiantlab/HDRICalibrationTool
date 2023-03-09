@@ -6,3 +6,11 @@ __pycache__/
 
 # Ignores files in the ./.vscode directory
 .vscode/
+
+# Ignore hdr files
+*.hdr
+
+# Ignore temp, errors, logs directories
+temp/
+errors/
+logs/

@@ -1,400 +1,44 @@
-# -*- coding: utf-8 -*-
-
-################################################################################
-## Form generated from reading UI file 'ui_mainrvpJdh.ui'
-##
-## Created by: Qt User Interface Compiler version 5.14.1
-##
-## WARNING! All changes made in this file will be lost when recompiling UI file!
-################################################################################
-
-from PySide2.QtCore import (QCoreApplication, QMetaObject, QObject, QPoint,
-    QRect, QSize, QUrl, Qt)
-from PySide2.QtGui import (QBrush, QColor, QConicalGradient, QCursor, QFont,
-    QFontDatabase, QIcon, QLinearGradient, QPalette, QPixmap,
-    QRadialGradient)
-from PySide2.QtWidgets import *
-from PyQt5 import QtWidgets
-from PyQt5 import QtCore, QtGui
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
-import sys
 import os
+from os.path import abspath
 
-# For file name extraction
-import ntpath
+from PySide2.QtCore import ( QCoreApplication, QMetaObject, QSize, Qt )
+from PySide2.QtGui import ( QFont, QIcon, QPixmap)
+from PySide2.QtWidgets import *
 
-# For regular expressions
-import re
+from upload_file_region import UploadFileRegion
 
-# Creates a region to upload a file to, given input coords, region size, and a region color.
-class UploadFileRegion( QWidget ):
-    # regionCoords[0]: x
-    # regionCoords[1]: y
-    # regionSize[0]: width
-    # regionSize[1]: height
-    def __init__( self, regionName="DefaultLabel", regionCoords=[0,0], regionSize=[128, 128] ):
-        QWidget.__init__(self)
+from image_uploader import ImageUploader
 
-        # Store input parameters as class attributes
-        self.regionName = regionName
-        self.regionXPosition = regionCoords[0]
-        self.regionYPosition = regionCoords[1]
-        self.regionWidth = regionSize[0]
-        self.regionHeight = regionSize[1]
+from progress_window import ProgressWindow
 
-        # Visible region background
-        self.uploadRegion = QLabel( self )
-
-        # Spacers for QVBox/QHBox layouts
-        self.regionSpacer = QLabel( self )
-
-        # Region label
-        regionNameWithSpaces = re.sub(r"(\w)([A-Z])", r"\1 \2", regionName)
-        self.regionLabel = QLabel( regionNameWithSpaces, self )
-        
-        # File icon pixmap
-        self.fileIcon = QLabel( self )
-        self.pixmap = QPixmap( './assets/blank-file-128.ico' )
-
-        # File path label
-        self.filePathLabel = QLabel( self )
-
-        # File name label
-        self.fileNameLabel = QLabel( self )
-
-        # Create remove button for an uploaded file
-        self.removeBtn = QPushButton( "Remove", self )
-
-
-        # Allow dropping files in this region
-        self.setAcceptDrops( True )
-
-        # Init. flag that stores if region has an uploaded file.
-        self.hasFile = False
-
-        # Adjust elements of object
-        self.create()
-
-
-    def create( self ):
-        # Stylesheet path
-        stylesheetPath = "./styles/upload_file_region_styles.css"
-
-        # -------------------------------------------------------------------------------------
-        # Upload Region
-
-        # Set object name
-        self.uploadRegion.setObjectName( "UploadFileRegion_{}".format( self.regionName ) )
-
-        # Set style
-        self.uploadRegion.setProperty( "hasFile", self.hasFile )
-
-        with open(stylesheetPath, "r") as stylesheet:
-            self.uploadRegion.setStyleSheet( stylesheet.read() )
-
-        # Set size
-        self.uploadRegion.setGeometry( QRect( self.regionXPosition, self.regionYPosition, self.regionWidth, self.regionHeight ) )
-
-        # -------------------------------------------------------------------------------------
-        # Region Spacer Region
-
-        # Set object name
-        self.regionSpacer.setObjectName( "regionSpacer" )
-
-        # Set style
-        self.regionSpacer.setProperty( "hasFile", self.hasFile )
-
-        with open(stylesheetPath, "r") as stylesheet:
-            self.regionSpacer.setStyleSheet( stylesheet.read() )
-
-        # -------------------------------------------------------------------------------------
-        # Region Label
-
-        # Set object name
-        self.regionLabel.setObjectName( "UploadFileRegionLabel" )
-
-        # Set style
-        self.regionLabel.setProperty( "hasFile", self.hasFile )
-
-        with open(stylesheetPath, "r") as stylesheet:
-            self.regionLabel.setStyleSheet( stylesheet.read() )
-
-        # Adjusting font
-        regionFont = QFont()
-        regionFont.setPointSize( 28 )
-        self.regionLabel.setFont( regionFont )
-
-        # -------------------------------------------------------------------------------------
-        # File Icon
-
-        # Set object name
-        self.fileIcon.setObjectName( "FileIcon" )
-
-        # Set style
-        self.fileIcon.setProperty( "hasFile", self.hasFile )
-
-        with open(stylesheetPath, "r") as stylesheet:
-            self.fileIcon.setStyleSheet( stylesheet.read() )
-
-        # Visibility
-        self.fileIcon.hide()
-
-        # Resize and set pixmap : https://stackoverflow.com/questions/21802868/python-how-to-resize-raster-image-with-pyqt
-        self.pixmap = self.pixmap.scaledToHeight( self.regionHeight - self.regionLabel.height() - 32 )
-        self.fileIcon.setPixmap( self.pixmap )
-
-        # -------------------------------------------------------------------------------------
-        # File Path Label (Hidden)
-
-        # Set object name
-        self.filePathLabel.setObjectName( "UploadedFilePathLabel" )
-
-        # Set text
-        self.filePathLabel.setText( "" )
-
-        # Visibility
-        self.filePathLabel.hide()
-
-        # -------------------------------------------------------------------------------------
-        # File Name Label
-
-        # Set object name
-        self.fileNameLabel.setObjectName( "UploadFileNameLabel" )
-
-        # Set style
-        self.fileNameLabel.setProperty( "hasFile", self.hasFile )
-
-        with open(stylesheetPath, "r") as stylesheet:
-            self.fileNameLabel.setStyleSheet( stylesheet.read() )
-
-        # Visibility
-        self.fileNameLabel.hide()
-
-        # Adjusting font
-        labelFont = QFont()
-        labelFont.setPointSize( 16 )
-        self.fileNameLabel.setFont( labelFont )
-
-        # -------------------------------------------------------------------------------------
-        # Remove Button
-
-        # Set object name
-        self.removeBtn.setObjectName( "UploadFileRemoveButton" )
-
-        # Set style
-        with open(stylesheetPath, "r") as stylesheet:
-            self.removeBtn.setStyleSheet( stylesheet.read() )
-
-        # Connect event to signal
-        self.removeBtn.clicked.connect( self.removeBtnClicked )
-
-        # Visibility
-        self.removeBtn.hide()
-
-        # -------------------------------------------------------------------------------------
-
-
-        # Layout creation
-        self.baseVLayout = QVBoxLayout()
-
-        self.upperHLayout = QHBoxLayout()
-        self.lowerHLayout = QHBoxLayout()
-
-        self.innerVLayout = QVBoxLayout()
-
-        self.lowerHLayout.addWidget( self.fileIcon, stretch=1 )
-        self.lowerHLayout.addLayout( self.innerVLayout, stretch=6 )
-
-        self.baseVLayout.addLayout( self.upperHLayout, stretch=1 )
-        self.baseVLayout.addLayout( self.lowerHLayout, stretch=4 )
-
-        self.innerVLayout.addWidget( self.regionSpacer, stretch=3 )
-        self.innerVLayout.addWidget( self.fileNameLabel, stretch=1 )
-
-        self.upperHLayout.addWidget( self.regionLabel, stretch=6 )
-        self.upperHLayout.addWidget( self.regionSpacer, stretch=1 )
-        self.upperHLayout.addWidget( self.removeBtn, stretch=1 )
-
-        self.uploadRegion.setLayout( self.baseVLayout )
-
-
-        return
-        
-
-    # Allow the dragging of image/text files onto region.
-    def dragEnterEvent( self, event ):
-        # Only accept dragEnterEvents if region does not have a file already
-        if (self.hasFile == False):
-            if event.mimeData().hasText():
-                event.acceptProposedAction()
-
-
-    # On image/text file drop event
-    def dropEvent(self, event):
-        # Set hasFile flag
-        self.hasFile = True
-
-        # Get file path from file
-        filepath = event.mimeData().text()
-
-        # Remove 'file:///' if it exists after uploadinf file
-        if ( filepath.startswith( "file:///" ) ):
-            filepath = filepath[8:]
-
-        # Set filePathLabel
-        self.filePathLabel.setText( filepath )
-
-        # Set fileNameLabel and show
-        filename = self.getFilenameFromPath( filepath )
-        self.fileNameLabel.setText( filename )
-        self.fileNameLabel.show()
-
-        # Show file icon
-        self.fileIcon.show()
-
-        # Show removeBtn
-        self.removeBtn.show()
-
-
-        # Adjust styling
-        # Stylesheet path
-        stylesheetPath = "./styles/upload_file_region_styles.css"
-
-        # Set property for stylsheet to apply correct style
-        self.uploadRegion.setProperty( "hasFile", self.hasFile )
-        self.regionSpacer.setProperty( "hasFile", self.hasFile )
-        self.regionLabel.setProperty( "hasFile", self.hasFile )
-        self.fileIcon.setProperty( "hasFile", self.hasFile )
-        self.fileNameLabel.setProperty( "hasFile", self.hasFile )
-
-        # Apply style
-        with open(stylesheetPath, "r") as stylesheet:
-            self.uploadRegion.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
-            self.regionSpacer.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
-            self.regionLabel.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
-            self.fileIcon.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
-            self.fileNameLabel.setStyleSheet( stylesheet.read() )
-
-        # ----------------------------------------------------------------------------------------
-        # Basic validation
-
-        # Check file size
-        fileSize = os.stat(self.filePathLabel.text()).st_size
-
-        if ( fileSize == 0 ):
-            print( "File: \"{}\" at location {} is empty.".format( self.filePathLabel.text(), self.fileNameLabel.text() ) )
-
-            # Display empty error in this case
-        
-        else:
-            print( "File: \"{}\" at location {} has size: {} bytes.".format( self.filePathLabel.text(), self.fileNameLabel.text(), fileSize ) )
-
-            # In this case, file is not empty so check for variable definitions and initializations (varies by calibration file)
-            if (self.uploadRegion.objectName() == "UploadFileRegion_Vignetting"):
-                print( "Upload region is for vignetting. Validating..." )
-                self.vc_validation()
-
-            elif (self.uploadRegion.objectName() == "UploadFileRegion_FisheyeCorrection"):
-                print( "Upload region is for fisheye correction. Validating..." )
-                self.fc_validation()
-
-            elif (self.uploadRegion.objectName() == "UploadFileRegion_CameraFactor"):
-                print( "Upload region is for camera factor adjustment. Validating..." )
-                self.cf_validation()
-
-            elif (self.uploadRegion.objectName() == "UploadFileRegion_NeutralDensityFilter"):
-                print( "Upload region is for neutral density filter adjustment. Validating..." )
-                self.nd_validation()
-
-            else:
-                print( "Upload region is unknown. self.uploadRegion.objectName(): {}".format( self.uploadRegion.objectName() ) )
-
-        # ----------------------------------------------------------------------------------------
-
-
-        event.acceptProposedAction()
-
-
-    # Remove button click event
-    def removeBtnClicked( self ):
-        # Set hasFile flag
-        self.hasFile = False
-
-        # Clear file name/path labels' text
-        self.fileNameLabel.setText("")
-        self.filePathLabel.setText("")
-
-        # Hide file name label
-        self.fileNameLabel.hide()
-
-        # Hide file icon
-        self.fileIcon.hide()
-
-        # Hide removeBtn
-        self.removeBtn.hide()
-
-
-        # Adjust styling
-        # Stylesheet path
-        stylesheetPath = "./styles/upload_file_region_styles.css"
-
-        # Set property for stylsheet to apply correct style
-        self.uploadRegion.setProperty( "hasFile", self.hasFile )
-        self.regionSpacer.setProperty( "hasFile", self.hasFile )
-        self.regionLabel.setProperty( "hasFile", self.hasFile )
-        self.fileIcon.setProperty( "hasFile", self.hasFile )
-        self.fileNameLabel.setProperty( "hasFile", self.hasFile )
-
-        # Apply style
-        with open(stylesheetPath, "r") as stylesheet:
-            self.uploadRegion.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
-            self.regionSpacer.setStyleSheet( stylesheet.read() )    
-        with open(stylesheetPath, "r") as stylesheet:
-            self.regionLabel.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
-            self.fileIcon.setStyleSheet( stylesheet.read() )
-        with open(stylesheetPath, "r") as stylesheet:
-            self.fileNameLabel.setStyleSheet( stylesheet.read() )
-
-
-    # Get the filename from the path
-    def getFilenameFromPath( self, path ):
-        head, tail = ntpath.split(path)
-        return tail or ntpath.basename(head)
-    
-
-    # Basic vignetting calibration (vc) file validation
-    def vc_validation( self ):
-        
-
-        return
-    
-
-    # Basic fisheye correction calibration (fc) file validation
-    def fc_validation( self ):
-        return
-    
-
-    # Basic calibration factor calibration (cf) file validation
-    def cf_validation( self ):
-        return
-    
-
-    # Basic neutral density filter calibration (nd) file validation
-    def nd_validation( self ):
-        return
-
-
+appVersion = "0.9"
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
+
+        # Radiance Data vars
+        self.diameter = 0
+        self.crop_x_left = 0
+        self.crop_y_down = 0
+        self.view_angle_vertical = 0
+        self.view_angle_horizontal = 0
+        self.target_x_resolution = 0
+        self.target_y_resolution = 0
+        self.paths_ldr = [""]
+        self.path_temp = os.path.abspath("./temp")
+        self.path_errors = os.path.abspath("./errors")
+        self.path_logs = os.path.abspath("./logs")
+        self.path_rsp_fn = ""
+        self.path_vignetting = ""
+        self.path_fisheye = ""
+        self.path_ndfilter = ""
+        self.path_calfact = ""
+        
+
+        # Main Window stylesheet path
+        self.main_styles_path = "./styles/main_styles.css"
 
         MainWindow.resize(1150, 840)
         MainWindow.setMinimumSize(QSize(1000, 500))
@@ -408,142 +52,133 @@ class Ui_MainWindow(object):
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
 
-        self.Top_Bar = QFrame(self.centralwidget)
-        self.Top_Bar.setObjectName(u"Top_Bar")
-        self.Top_Bar.setMaximumSize(QSize(16777215, 40))
-        self.Top_Bar.setStyleSheet(u"background-color: rgb(35, 35, 35);")
-        self.Top_Bar.setFrameShape(QFrame.NoFrame)
-        self.Top_Bar.setFrameShadow(QFrame.Raised)
-
-        self.horizontalLayout = QHBoxLayout(self.Top_Bar)
-        self.horizontalLayout.setObjectName(u"horizontalLayout")
-        self.horizontalLayout.setSpacing(0)
-        self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
-
-        self.verticalLayout.addWidget(self.Top_Bar)
-
-
         self.Content = QFrame(self.centralwidget)
         self.Content.setObjectName(u"Content")
         self.Content.setFrameShape(QFrame.NoFrame)
         self.Content.setFrameShadow(QFrame.Raised)
-        self.horizontalLayout_2 = QHBoxLayout(self.Content)
-        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
-        self.horizontalLayout_2.setSpacing(0)
-        self.horizontalLayout_2.setContentsMargins(0, 0, 0, 0)
 
-        self.sidebar_menu = QFrame(self.Content)
-        self.sidebar_menu.setObjectName(u"sidebar_menu")
-        self.sidebar_menu.setMinimumSize(QSize(220, 0))
-        self.sidebar_menu.setMaximumSize(QSize(250, 4000))
-        self.sidebar_menu.setStyleSheet(u"background-color: #A5A5A5;")
-        self.sidebar_menu.setFrameShape(QFrame.StyledPanel)
-        self.sidebar_menu.setFrameShadow(QFrame.Raised)
-        
-        self.sidebar_menu_v_layout = QVBoxLayout(self.sidebar_menu)
-        self.sidebar_menu_v_layout.setObjectName(u"sidebar_menu_v_layout")
-        self.sidebar_menu_v_layout.setContentsMargins(0, 0, 0, 0)
+        self.mainWindowHLayout = QHBoxLayout( self.Content )
+        self.mainWindowHLayout.setObjectName(u"mainWindowHLayout")
+        self.mainWindowHLayout.setSpacing(0)
+        self.mainWindowHLayout.setContentsMargins(0, 0, 0, 0)
 
-        self.frame_top_menus = QFrame(self.sidebar_menu)
-        self.frame_top_menus.setObjectName(u"frame_top_menus")
-        self.frame_top_menus.setFrameShape(QFrame.NoFrame)
-        self.frame_top_menus.setFrameShadow(QFrame.Raised)
 
-        self.verticalLayout_4 = QVBoxLayout(self.frame_top_menus)
-        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
-        self.verticalLayout_4.setSpacing( 8 )
-        self.verticalLayout_4.setContentsMargins(0, 0, 0, 0)
+        # Sidebar menu layout setup
+        self.sidebarMenuFrame = QFrame( self.Content )
+        self.sidebarMenuFrame.setObjectName(u"sidebarMenuFrame")
+        self.sidebarMenuFrame.setStyleSheet(u"background-color: #A5A5A5;")
+
+        self.sidebarMenuVLayout = QVBoxLayout( self.sidebarMenuFrame )
+        self.sidebarMenuVLayout.setObjectName( "sidebarMenuVLayout" )
+        self.sidebarMenuVLayout.setSpacing( 8 )
+        self.sidebarMenuVLayout.setContentsMargins( 2, 2, 2, 2 )
 
 
 
         # ---------------------------------------------------------------------------------------
         # Setting up page-routing buttons in menu sidebar
 
-        # Stylesheet path
-        stylesheetPath = "./styles/main_styles.css"
-
-        # Page 1 (Welcome landing page)
-        self.btn_page_1 = QPushButton(self.frame_top_menus)
-        self.btn_page_1.setObjectName(u"btn_page_1")
-        self.btn_page_1.setMinimumSize(QSize(0, 40))
-
-        # Set button styling
-        with open(stylesheetPath, "r") as stylesheet:
-            self.btn_page_1.setStyleSheet( stylesheet.read() )
-
+        # Page 1 (Welcome landing page, isActive on app launch)
+        self.btn_page_1 = QPushButton( self.sidebarMenuFrame )
+        self.btn_page_1.setObjectName( "btn_page_1" )
+        self.btn_page_1.setProperty( "isActivePage", True )
+        self.btn_page_1.setMinimumSize( QSize( 0, 48 ) )
 
         # Page 2 (Upload LDR images)
-        self.btn_page_2 = QPushButton(self.frame_top_menus)
-        self.btn_page_2.setObjectName(u"btn_page_2")
-        self.btn_page_2.setMinimumSize(QSize(0, 40))
-       
-        # Set button styling
-        with open(stylesheetPath, "r") as stylesheet:
-            self.btn_page_2.setStyleSheet( stylesheet.read() )
-
+        self.btn_page_2 = QPushButton( self.sidebarMenuFrame )
+        self.btn_page_2.setObjectName( "btn_page_2" )
+        self.btn_page_2.setProperty( "isActivePage", False )
+        self.btn_page_2.setMinimumSize( QSize( 0, 48 ) )
 
         # Page 3 (Adjust camera settings)
-        self.btn_page_3 = QPushButton(self.frame_top_menus)
-        self.btn_page_3.setObjectName(u"btn_page_3")
-        self.btn_page_3.setMinimumSize(QSize(0, 40))
-
-        # Set button styling
-        with open(stylesheetPath, "r") as stylesheet:
-            self.btn_page_3.setStyleSheet( stylesheet.read() )
-
+        self.btn_page_3 = QPushButton( self.sidebarMenuFrame )
+        self.btn_page_3.setObjectName( "btn_page_3" )
+        self.btn_page_2.setProperty( "isActivePage", False )
+        self.btn_page_3.setMinimumSize( QSize( 0, 48 ) )
 
         # Page 4 (Adjust calibration settings)
-        self.btn_page_4 = QPushButton(self.frame_top_menus)
-        self.btn_page_4.setObjectName(u"btn_page_4")
-        self.btn_page_4.setMinimumSize(QSize(0, 40))
-
-        # Set button styling
-        with open(stylesheetPath, "r") as stylesheet:
-            self.btn_page_4.setStyleSheet( stylesheet.read() )
-
+        self.btn_page_4 = QPushButton( self.sidebarMenuFrame )
+        self.btn_page_4.setObjectName( "btn_page_4" )
+        self.btn_page_4.setProperty( "isActivePage", False )
+        self.btn_page_4.setMinimumSize( QSize( 0, 48 ) )
 
         # Go button - Starts Radiance pipeline process
-        self.btn_start_pipeline = QPushButton(self.frame_top_menus)
-        self.btn_start_pipeline.setObjectName(u"btn_start_pipeline")
-        self.btn_start_pipeline.setMinimumSize(QSize(0, 40))
+        self.btn_start_pipeline = QPushButton( self.sidebarMenuFrame )
+        self.btn_start_pipeline.setObjectName( "btn_start_pipeline" )
+        self.btn_start_pipeline.setProperty( "isActivePage", False )
+        self.btn_start_pipeline.setMinimumSize( QSize( 0, 64 ) )
+
+        # Help button
+        self.btn_help = QPushButton(self.sidebarMenuFrame)
+        self.btn_help.setObjectName(u"btn_help")
+        self.btn_help.move(0,1000)
+        self.btn_help.setMinimumSize(QSize(0, 40))
+        self.btn_help.setIcon( QIcon("./assets/icons/help-icon.png") )
+
+
+        # Default active page
+        self.activePage = self.btn_page_1
+
+        self.btn_page_1.clicked.connect( lambda: self.setActivePage( self.btn_page_1 ) )
+        self.btn_page_2.clicked.connect( lambda: self.setActivePage( self.btn_page_2 ) )
+        self.btn_page_3.clicked.connect( lambda: self.setActivePage( self.btn_page_3 ) )
+        self.btn_page_4.clicked.connect( lambda: self.setActivePage( self.btn_page_4 ) )
         
-        # Set button styling
-        with open(stylesheetPath, "r") as stylesheet:
-            self.btn_start_pipeline.setStyleSheet( stylesheet.read() )
+        self.btn_start_pipeline.clicked.connect( lambda: self.setActivePage( self.btn_start_pipeline ) )
+        self.btn_start_pipeline.clicked.connect( self.goButtonClicked )
 
+        self.btn_help.clicked.connect( lambda: self.setActivePage( self.btn_help ) )
+        
+        # Add page-routing buttons to sidebar
+        self.sidebarMenuVLayout.addWidget( self.btn_page_1, stretch=1 )
+        self.sidebarMenuVLayout.addWidget( self.btn_page_2, stretch=1 )
+        self.sidebarMenuVLayout.addWidget( self.btn_page_3, stretch=1 )
+        self.sidebarMenuVLayout.addWidget( self.btn_page_4, stretch=1 )
+        self.sidebarMenuVLayout.addWidget( self.btn_start_pipeline, stretch=1 )
 
-        # Add Page 1-routing button to sidebar
-        self.verticalLayout_4.addWidget(self.btn_page_1)
+        self.sidebarMenuVLayout.addWidget( QWidget(), stretch=20 )
 
-        # Add Page 2-routing button to sidebar
-        self.verticalLayout_4.addWidget(self.btn_page_2)
+        self.sidebarMenuVLayout.addWidget( self.btn_help, stretch=1, alignment=Qt.AlignBottom )
 
-        # Add Page 3-routing button to sidebar
-        self.verticalLayout_4.addWidget(self.btn_page_3)
+        self.btn_settings = QPushButton( "Settings", self.sidebarMenuFrame)
+        self.btn_settings.setObjectName( "btn_settings" )
+        self.btn_settings.setMinimumSize( QSize( 0, 52 ) )
+        self.btn_settings.setGeometry(0,0, 200, 30)
+        self.btn_settings.setIcon( QIcon("./assets/icons/settings-icon.png") )
 
-        # Add Page 4-routing button to sidebar
-        self.verticalLayout_4.addWidget(self.btn_page_4)
+        self.sidebarMenuVLayout.addWidget( self.btn_settings, stretch=2, alignment=Qt.AlignBottom )
 
-        # Add Go button to sidebar
-        self.verticalLayout_4.addWidget(self.btn_start_pipeline)
+        appVersionLabel = "Version: {}".format( appVersion )
+        self.versionLabel = QLabel( appVersionLabel )
+        self.sidebarMenuVLayout.addWidget( self.versionLabel, stretch=1, alignment=Qt.AlignBottom )
+
+        # Set style of sidebar menu buttons
+        self.setButtonStyling()
 
         # ---------------------------------------------------------------------------------------
 
-
-
-        self.sidebar_menu_v_layout.addWidget(self.frame_top_menus, 0, Qt.AlignTop)
-
-
-        self.horizontalLayout_2.addWidget(self.sidebar_menu)
+        
 
         self.frame_pages = QFrame(self.Content)
         self.frame_pages.setObjectName(u"frame_pages")
         self.frame_pages.setFrameShape(QFrame.StyledPanel)
         self.frame_pages.setFrameShadow(QFrame.Raised)
+
         self.verticalLayout_5 = QVBoxLayout(self.frame_pages)
         self.verticalLayout_5.setObjectName(u"verticalLayout_5")
+
         self.stackedWidget = QStackedWidget(self.frame_pages)
         self.stackedWidget.setObjectName(u"stackedWidget")
+
+
+        self.mainWindowHLayout.addWidget( self.sidebarMenuFrame, stretch=2 )
+        self.mainWindowHLayout.addWidget( self.frame_pages, stretch=9 )
+
+        self.Content.setLayout( self.mainWindowHLayout )
+
+
+        # -------------------------------------------------------------------------------------------------
+        # Page 1 Setup
         self.page_1 = QWidget()
         self.page_1.setObjectName(u"page_1")
         self.verticalLayout_7 = QVBoxLayout(self.page_1)
@@ -557,73 +192,251 @@ class Ui_MainWindow(object):
         self.label_1.setFont(font)
         self.label_1.setStyleSheet(u"color: #000;")
         self.label_1.setAlignment(Qt.AlignCenter)
-
         self.verticalLayout_7.addWidget(self.label_1)
+        
 
-        self.stackedWidget.addWidget(self.page_1)
+
+        self.label_p1 = QLabel(self.page_1)
+        self.welcomeImagePixmap = QPixmap('./assets/images/officeteamstock.jpg')
+
+        self.label_p1.setPixmap(self.welcomeImagePixmap)
+        self.label_p1.setAlignment(Qt.AlignCenter)
+        self.label_p1.resize(self.welcomeImagePixmap.width(), self.welcomeImagePixmap.height())
+
+        self.label_p1.move(130,300)
+        
+        self.label_p1_title = QLabel(self.page_1)
+        self.label_p1_title.setText("Meet The Team!")
+        self.label_p1_title.setStyleSheet("font: 16pt \".AppleSystemUIFont\";")
+        self.label_p1_title.adjustSize()
+        self.label_p1_title.move(350,720)
+        
+        self.label_p1.show()
+
+        self.intro_para = QLabel(self.page_1)
+        self.intro_para.setAlignment(Qt.AlignHCenter)
+        self.intro_para.setText("The HDRI Lighting Calibration Tool is a free, open-source \n application developed by a small team of students \n from Oregon State Univeristy.")
+        self.intro_para.setFont(labelfont)
+        self.intro_para.adjustSize()
+        self.intro_para.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.intro_para.move(20,20)
+        self.intro_para.move(100,100)
+
+        # -------------------------------------------------------------------------------------------------
+
+
+        
+        # ------------------------------------------------------------------------------------------------------------
+        # Page 2 Setup
         self.page_2 = QWidget()
         self.page_2.setObjectName(u"page_2")
-        self.verticalLayout_6 = QVBoxLayout(self.page_2)
-        self.verticalLayout_6.setObjectName(u"verticalLayout_6")
-
-        #uploading file setup begin -------
-        def upload_response(self,fileName):
-            self.label.setText(fileName)
-            self.update()
-        def update(self):
-            self.label.adjustSize()
-        def openFileNameDialog(self):
-            options = QFileDialog.Options()
-            options |= QFileDialog.DontUseNativeDialog
-            fileName, _ = QFileDialog.getOpenFileName(self,"choose the desired .cal file", "",".Cal Files (*.cal)", options=options)
-            file_list = []
-            if fileName:
-                print("file path imported: " + fileName)
-                file_list += [fileName]
-                self.file_label.setText(os.path.basename(fileName))
-            list_val = []
-            list_val = readFile(fileName)
-            checkVal(list_val) 
-       
-        #self.uploadfilebutton = QtWidgets.QPushButton(self.page_4)
+        self.page_2_Vlayout = QVBoxLayout(self.page_2)
+        self.page_2_Vlayout.setObjectName(u"page_2_Vlayout")
+        self.page_2_Vlayout.setSpacing(0)
+        self.page_2_Vlayout.setContentsMargins(0, 0, 0, 0)
         
-        #uploading file setup end --------
+        uploader = ImageUploader()
+
+        self.page_2_Vlayout.addWidget( uploader, stretch=1 )
         
+        # -------------------------------------------------------------------------------------------------
 
-        self.label_2 = QLabel(self.page_2)
-        self.label_2.setObjectName(u"label_2")
-        self.label_2.setFont(font)
-        self.label_2.setStyleSheet(u"color: #000;")
-        self.label_2.setAlignment(Qt.AlignCenter)
 
-        self.verticalLayout_6.addWidget(self.label_2)
 
-        self.stackedWidget.addWidget(self.page_2)
+        # ----------------------------------------------------------------------------------------
+        # Page 3 setup
         self.page_3 = QWidget()
         self.page_3.setObjectName(u"page_3")
-        self.verticalLayout_8 = QVBoxLayout(self.page_3)
-        self.verticalLayout_8.setObjectName(u"verticalLayout_8")
-        self.label_3 = QLabel(self.page_3)
-        self.label_3.setObjectName(u"label_3")
-        self.label_3.setFont(font)
-        self.label_3.setStyleSheet(u"color: #000;")
-        self.label_3.setAlignment(Qt.AlignCenter)
+
+        self.cameraSettingsPage = QVBoxLayout(self.page_3)
+        self.cameraSettingsPage.setObjectName(u"cameraSettingsPage")
+        self.cameraSettingsPage.setContentsMargins( 0, 0, 0, 0 )
+        self.cameraSettingsPage.setSpacing( 4 )
+        self.cameraSettingsPage.setMargin( 0 )
+
         
-        #camera settings (page 3)
+        # Cropping Area mdiArea
         self.mdiArea = QMdiArea(self.page_3)
-        self.mdiArea.setGeometry(QRect(10, 10, 770, 250))
-        self.mdiArea.setObjectName("mdiArea")
+        self.mdiArea.setObjectName("mdiArea_2")
+
+        self.label_cd = QLabel(self.mdiArea)
+        self.label_cd.setAlignment(Qt.AlignLeft)
+        self.label_cd.setText("Cropping Dimensions")
+        self.label_cd.setFont(labelfont)
+        self.label_cd.adjustSize()
+        self.label_cd.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.label_cd.setStyleSheet("background-color: #a0a0a0")
+        self.label_cd.move(10,10)
+
+
+        # Viewing angles mdiArea
+        self.mdiArea_2 = QMdiArea(self.page_3)
+        self.mdiArea_2.setObjectName("mdiArea_2")
+
+        self.label_LVA = QLabel(self.mdiArea_2)
+        self.label_LVA.setAlignment(Qt.AlignLeft)
+        self.label_LVA.setText("Lens Viewing Angle")
+        self.label_LVA.setFont(labelfont)
+        self.label_LVA.adjustSize()
+        self.label_LVA.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.label_LVA.setStyleSheet("background-color: #a0a0a0")
+        self.label_LVA.move(10,10)
+        self.label_LVA.raise_()
+
+
+        # Output Dimensions mdiArea
+        self.mdiArea_3 = QMdiArea(self.page_3)
+        self.mdiArea_3.setObjectName("mdiArea_3")
+
+        self.label_OID = QLabel(self.mdiArea_3)
+        self.label_OID.setAlignment(Qt.AlignLeft)
+        self.label_OID.setText("Output Image Dimensions")
+        self.label_OID.setFont(labelfont)
+        self.label_OID.adjustSize()
+        self.label_OID.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
+        self.label_OID.setStyleSheet("background-color: #a0a0a0")
+        self.label_OID.move(10,10)
+        self.label_OID.raise_()
+
+
+        # To keep consistent spacing
+        x_column2 = 400
+
+        # Cropping Dimension section
+
+        # Fisheye View Diameter field
+        self.label_md13 = QLabel(self.mdiArea)
+        self.label_md13.setAlignment(Qt.AlignLeft)
+        self.label_md13.setText("Fisheye View Diameter")
+        self.label_md13.setStyleSheet("background-color: #a0a0a0")
+        self.label_md13.move(10,70)
+
+        self.inputField_fisheyeViewDiameter = QLineEdit(self.mdiArea)
+        self.inputField_fisheyeViewDiameter.setText("")
+        self.inputField_fisheyeViewDiameter.setObjectName("inputField_fisheyeViewDiameter")
+        self.inputField_fisheyeViewDiameter.move(10,100)
+
+
+        # X Crop Offset field
+        self.label_md14 = QLabel(self.mdiArea)
+        self.label_md14.setAlignment(Qt.AlignLeft)
+        self.label_md14.setText("X Crop Offset")
+        self.label_md14.setStyleSheet("background-color: #a0a0a0")
+        self.label_md14.move(x_column2,70)
+
+        self.inputField_xCropOffset = QLineEdit(self.mdiArea)
+        self.inputField_xCropOffset.setText("")
+        self.inputField_xCropOffset.setObjectName("inputField_xCropOffset")
+        self.inputField_xCropOffset.move(x_column2,100)
+
+
+        # Y Crop Offset field
+        self.label_md15 = QLabel(self.mdiArea)
+        self.label_md15.setAlignment(Qt.AlignLeft)
+        self.label_md15.setText("Y Crop Offset")
+        self.label_md15.setStyleSheet("background-color: #a0a0a0")
+        self.label_md15.move(x_column2,140)
+
+        self.inputField_yCropOffset = QLineEdit(self.mdiArea)
+        self.inputField_yCropOffset.setText("")
+        self.inputField_yCropOffset.setObjectName("inputField_yCropOffset")
+        self.inputField_yCropOffset.move(x_column2,160)
+
+
+        # Submit form button
+        self.area1button = QPushButton('Enter', self.mdiArea)
+        self.area1button.move(750,160)
+        self.area1button.clicked.connect( self.setCroppingValues )
+
+
+        # Lens Viewing Angle section
+        
+        # View Angle Vertical field
+        self.label_md21 = QLabel(self.mdiArea_2)
+        self.label_md21.setAlignment(Qt.AlignLeft)
+        self.label_md21.setText("View Angle Vertical")
+        self.label_md21.setStyleSheet("background-color: #a0a0a0")
+        self.label_md21.move(10,70)
+
+        self.inputField_viewAngleVertical = QLineEdit(self.mdiArea_2)
+        self.inputField_viewAngleVertical.setText("")
+        self.inputField_viewAngleVertical.setObjectName("inputField_viewAngleVertical")
+        self.inputField_viewAngleVertical.move(10,90)
+
+        # View Angle Horizontal field
+        self.label_md22 = QLabel(self.mdiArea_2)
+        self.label_md22.setAlignment(Qt.AlignLeft)
+        self.label_md22.setText("View Angle Horizontal")
+        self.label_md22.setStyleSheet("background-color: #a0a0a0")
+        self.label_md22.move(x_column2,70)
+
+        self.inputField_viewAngleHorizontal = QLineEdit(self.mdiArea_2)
+        self.inputField_viewAngleHorizontal.setText("")
+        self.inputField_viewAngleHorizontal.setObjectName("inputField_viewAngleHorizontal")
+        self.inputField_viewAngleHorizontal.move(x_column2,90)
+
+        # Submit form button
+        self.area2button = QPushButton('Enter', self.mdiArea_2)
+        self.area2button.move(750,160)
+        self.area2button.clicked.connect( self.setLensValues )
+
+
+        # Output Image Dimensions section
+
+        # Output Resolution fields
+        self.label_md31 = QLabel(self.mdiArea_3)
+        self.label_md31.setAlignment(Qt.AlignLeft)
+        self.label_md31.setText("HDR Image Output Resolution")
+        self.label_md31.setStyleSheet("background-color: #a0a0a0")
+        self.label_md31.move(10,70)
+
+        # Output X Resolution
+        self.inputField_outputXRes = QLineEdit(self.mdiArea_3)
+        self.inputField_outputXRes.setText("")
+        self.inputField_outputXRes.setObjectName("inputField_outputXRes")
+        self.inputField_outputXRes.move(10,90)
+
+        self.label_md31x = QLabel(self.mdiArea_3)
+        self.label_md31x.setAlignment(Qt.AlignLeft)
+        self.label_md31x.setText("x")
+        self.label_md31x.setStyleSheet("background-color: #a0a0a0")
+        self.label_md31x.move(149,92)
+
+        # Output Y Resolution
+        self.inputField_outputYRes = QLineEdit(self.mdiArea_3)
+        self.inputField_outputYRes.setText("")
+        self.inputField_outputYRes.setObjectName("inputField_outputYRes")
+        self.inputField_outputYRes.move(160,90)
+
+        # Submit form button
+        self.area3button = QPushButton('Enter', self.mdiArea_3)
+        self.area3button.move(750,160)
+        self.area3button.clicked.connect( self.setOutputDimensionValues )
+
+        # Area 4 upload .rsp file region
+        rsp_uploadarea = UploadFileRegion("CameraResponseFileUpload", [900, 200], fileType=2 )
+
+
+        # Add widgets to Layout
+        self.cameraSettingsPage.addWidget( self.mdiArea, stretch=1 )
+        self.cameraSettingsPage.addWidget( self.mdiArea_2, stretch=1 )
+        self.cameraSettingsPage.addWidget( self.mdiArea_3, stretch=1 )
+        self.cameraSettingsPage.addWidget( rsp_uploadarea, stretch=1 )
+        
+        # -------------------------------------------------------------------------------------------------
 
 
 
-        # Adding page_4 QWidget
+        # -------------------------------------------------------------------------------------------------
+        # Page 4 Setup
         self.page_4 = QWidget()
         self.page_4.setObjectName(u"page_4")
 
-        # -------------------------------------------------------------------------------------------------
+
         # Upload file regions
         # Create new layout for self.page_4
         self.calibrationPage = QVBoxLayout( self.page_4 )
+        self.calibrationPage.setObjectName( "calibrationPage" )
         self.calibrationPage.setContentsMargins( 0, 0, 0, 0 )
         self.calibrationPage.setSpacing( 4 )
         self.calibrationPage.setMargin( 0 )
@@ -631,59 +444,57 @@ class Ui_MainWindow(object):
 
         # Vignetting region
         # Add widget: UploadFileRegionObject class object
-        vc_UploadRegion = UploadFileRegion( "Vignetting", [0, 0], [900, 200] )
+        vc_UploadRegion = UploadFileRegion( "Vignetting", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( vc_UploadRegion, 25 )
+        self.calibrationPage.addWidget( vc_UploadRegion )
 
         # Fisheye correction region
         # Add widget: UploadFileRegionObject class object
-        fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [0, 0], [900, 200] )
+        fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( fc_UploadRegion, 25 )
+        self.calibrationPage.addWidget( fc_UploadRegion )
 
         # Camera factor region
         # Add widget: UploadFileRegionObject class object
-        cf_UploadRegion = UploadFileRegion( "CameraFactor", [0, 0], [900, 200] )
+        cf_UploadRegion = UploadFileRegion( "CameraFactor", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( cf_UploadRegion, 25 )
+        self.calibrationPage.addWidget( cf_UploadRegion )
 
         # Neutral Density Filter region
         # Add widget: UploadFileRegionObject class object
-        nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [0, 0], [900, 200] )
+        nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( nd_UploadRegion, 25 )
+        self.calibrationPage.addWidget( nd_UploadRegion )
+
+        # -------------------------------------------------------------------------------------------------
+
+
+        # -------------------------------------------------------------------------------------------------
+        # Page 5 setup
+
+        self.page_5 = QWidget()
+        self.page_5.setObjectName(u"page_5")
+
+        self.verticalLayout_10 = QVBoxLayout(self.page_5)
+        self.verticalLayout_10.setObjectName(u"verticalLayout_10")
 
         # -------------------------------------------------------------------------------------------------
 
 
 
-        #adding page 5 element
-        self.page_5 = QWidget()
-        self.page_5.setObjectName(u"page_5")
-        self.verticalLayout_10 = QVBoxLayout(self.page_5)
-        self.verticalLayout_10.setObjectName(u"verticalLayout_10")
-        self.label_5 = QLabel(self.page_5)
-        self.label_5.setObjectName(u"label_5")
-        self.label_5.setFont(font)
-        self.label_5.setStyleSheet(u"color: #000;")
-        self.label_5.setAlignment(Qt.AlignCenter)
-        #adding page 5 element end 
-
-        self.verticalLayout_8.addWidget(self.label_3)
-        self.verticalLayout_10.addWidget(self.label_5)
+        # Add pages to multi-page view stackedWidget
+        self.stackedWidget.addWidget(self.page_1)
+        self.stackedWidget.addWidget(self.page_2)
         self.stackedWidget.addWidget(self.page_3)
         self.stackedWidget.addWidget(self.page_4)
         self.stackedWidget.addWidget(self.page_5)
 
+
         self.verticalLayout_5.addWidget(self.stackedWidget)
-
-
-        self.horizontalLayout_2.addWidget(self.frame_pages)
-
 
         self.verticalLayout.addWidget(self.Content)
 
@@ -693,9 +504,8 @@ class Ui_MainWindow(object):
 
         self.stackedWidget.setCurrentIndex(0)
 
-
         QMetaObject.connectSlotsByName(MainWindow)
-    # setupUi
+    
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"HDRI Calibration Tool", None))
@@ -703,54 +513,119 @@ class Ui_MainWindow(object):
         self.btn_page_2.setText(QCoreApplication.translate("MainWindow", u"Upload LDR images", None))
         self.btn_page_3.setText(QCoreApplication.translate("MainWindow", u"Camera Settings", None))
         self.btn_page_4.setText(QCoreApplication.translate("MainWindow", u"Upload Calibration", None))
-        self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO!", None))
-        self.label_1.setText(QCoreApplication.translate("MainWindow", u"PAGE 1", None))
-        #self.label_2.setText(QCoreApplication.translate("MainWindow", u"PAGE 2", None))
-        #self.label_3.setText(QCoreApplication.translate("MainWindow", u"PAGE 3", None))
-        self.label_4.setText(QCoreApplication.translate("MainWindow", u"", None))
-        self.label_5.setText(QCoreApplication.translate("MainWindow", u"PAGE 5", None))
+        self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO", None))
+        self.btn_help.setText(QCoreApplication.translate("MainWindow", u"Help", None))
+        self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
+        self.label_1.setAlignment(Qt.AlignHCenter)
 
 
+    # Sets the active page based on sidebar menu button clicks
+    def setActivePage( self, newActiveBtn ):
+        # Set attribute
+        self.activePage = newActiveBtn
 
-def checkVal(list_val): #checking values of .cal files
-    print(" (checkVal function running) ")#compare value
-    if list_val[0] == "this": #placeholder
-        print("correct")
+        self.btn_page_1.setProperty( "isActivePage", False )
+        self.btn_page_2.setProperty( "isActivePage", False )
+        self.btn_page_3.setProperty( "isActivePage", False )
+        self.btn_page_4.setProperty( "isActivePage", False )
+        self.btn_start_pipeline.setProperty( "isActivePage", False )
+
+        if ( newActiveBtn.objectName() == "btn_page_1" ):
+            self.btn_page_1.setProperty( "isActivePage", True )
+        elif  ( newActiveBtn.objectName() == "btn_page_2" ):
+            self.btn_page_2.setProperty( "isActivePage", True )
+        elif  ( newActiveBtn.objectName() == "btn_page_3" ):
+            self.btn_page_3.setProperty( "isActivePage", True )
+        elif  ( newActiveBtn.objectName() == "btn_page_4" ):
+            self.btn_page_4.setProperty( "isActivePage", True )
+        elif  ( newActiveBtn.objectName() == "btn_start_pipeline" ):
+            self.btn_start_pipeline.setProperty( "isActivePage", True )
+
+        self.setButtonStyling()
+
+        return
+
+    
+    # Set sidebar menu button styling
+    def setButtonStyling( self ):
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_page_1.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_page_2.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_page_3.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_page_4.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_start_pipeline.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_help.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.btn_settings.setStyleSheet( stylesheet.read() )
+
+    
+    # Sets the RadianceObject properties from the cropping values inputsection
+    def setCroppingValues( self ):
+        print( "self.inputField_fisheyeViewDiameter.text(): {}".format(self.inputField_fisheyeViewDiameter.text()))
+        print( "self.inputField_xCropOffset.text(): {}".format(self.inputField_xCropOffset.text()))
+        print( "self.inputField_yCropOffset.text(): {}".format(self.inputField_yCropOffset.text()))
+        
+        # Fill Radiance object attribute values from form
+        self.diameter = self.inputField_fisheyeViewDiameter.text()
+        self.crop_x_left = self.inputField_xCropOffset.text()
+        self.crop_y_down = self.inputField_yCropOffset.text()
+
+        return
 
 
+    # Sets the RadianceObject properties from the lens values inputsection
+    def setLensValues( self ):
+        print( "self.inputField_viewAngleVertical.text(): {}".format(self.inputField_viewAngleVertical.text()))
+        print( "self.inputField_viewAngleHorizontal.text(): {}".format(self.inputField_viewAngleHorizontal.text()))
 
-def readFile(fileName):
-    f = open(fileName,"r")
-    list_val = []
-    lines = f.readlines()
-    print(lines)
-    for i in lines:
-        list_val.append (i.replace(";\n",""))
-    print(list_val)
-    return list_val
+        # Fill Radiance object attribute values from form
+        self.view_angle_vertical = self.inputField_viewAngleVertical.text()
+        self.view_angle_horizontal = self.inputField_viewAngleHorizontal.text()
 
-
-
-def upload_response(self,fileName):
-    self.label.setText(fileName)
-    self.update()
+        return
 
 
+    # Sets the RadianceObject properties from the output dimensions inputsection
+    def setOutputDimensionValues( self ):
+        print( "self.inputField_outputXRes.text(): {}".format(self.inputField_outputXRes.text()))
+        print( "self.inputField_outputYRes.text(): {}".format(self.inputField_outputYRes.text()))
 
-def update(self):
-    self.label.adjustSize()
+        # Fill Radiance object attribute values from form
+        self.target_x_resolution = self.inputField_outputXRes.text()
+        self.target_y_resolution = self.inputField_outputYRes.text()
+
+        return
 
 
+    # Click event function for the GO button
+    def goButtonClicked( self ):
+        print("-----------------------------------------------------")
+        print("goBtnClicked, here is the RadianceData obj. being sent:\n")
+        print("self.diameter: {}".format( self.diameter ))
+        print("self.crop_x_left: {}".format( self.crop_x_left ))
+        print("self.crop_y_down: {}".format( self.crop_y_down ))
+        print("self.view_angle_vertical: {}".format( self.view_angle_vertical ))
+        print("self.view_angle_horizontal: {}".format( self.view_angle_horizontal ))
+        print("self.target_x_resolution: {}".format( self.target_x_resolution ))
+        print("self.target_y_resolution: {}".format( self.target_y_resolution ))
+        print("self.paths_ldr: {}".format( self.paths_ldr ))
+        print("self.path_rsp_fn: {}".format( self.path_rsp_fn ))
+        print("self.path_vignetting: {}".format( self.path_vignetting ))
+        print("self.path_fisheye: {}".format( self.path_fisheye ))
+        print("self.path_ndfilter: {}".format( self.path_ndfilter ))
+        print("self.path_calfact: {}".format( self.path_calfact ))
+        print("-----------------------------------------------------")
 
-def openFileNameDialog(self):
-    options = QFileDialog.Options()
-    options |= QFileDialog.DontUseNativeDialog
-    fileName, _ = QFileDialog.getOpenFileName(self,"choose the desired .cal file", "",".Cal Files (*.cal)", options=options)
-    file_list = []
-    if fileName:
-        print("file path imported: " + fileName)
-        file_list += [fileName]
-        self.file_label.setText(os.path.basename(fileName))
-    list_val = []
-    list_val = readFile(fileName)
-    checkVal(list_val) 
+        self.openProgressWindow()
+
+        return
+    
+
+    # Creates a ProgressWindow object to start pipeline process
+    def openProgressWindow( self ):
+        self.progressWindow = ProgressWindow( self )

@@ -1,54 +1,20 @@
-/* Styling document for the UploadFileRegion class. */
+/* Styling document for the UploadImageRegion class. */
 
 
 /* The label for the upload region */
-QLabel[hasFile="true"]#regionLabel
-{
-	background-color: white;
-	color: black;
-	font-weight: bold;
-	font-size: 28px;
-}
-QLabel[hasFile="false"]#regionLabel
+QLabel#regionLabel
 {
 	background-color: #CBEEB0;
 	color: black;
 	font-weight: bold;
 	font-size: 28px;
-}
-
-
-/* The file name label */
-QLabel[hasFile="true"]#fileNameLabel
-{
-	background-color: white;
-	color: black;
-	font-weight: bold;
-	font-size: 20px;
-}
-QLabel[hasFile="false"]#fileNameLabel
-{
-	background-color: #CBEEB0;
 }
 
 
 /* The file icon */
-QLabel[hasFile="true"]#fileIcon
-{
-	background-color: white;
-}
-QLabel[hasFile="false"]#fileIcon
+QLabel#fileIcon
 {
 	background-color: #CBEEB0;
-}
-
-
-/* The remove button */
-QPushButton#removeButton
-{
-	background-color: #FF8C8C;
-	color: white;
-	font-weight: bold;
 }
 
 
@@ -81,12 +47,7 @@ QLabel#dragTextLabel, QLabel#orTextLabel
 
 
 /* The visible portion of the upload region, including placeholder spacers */
-
-QWidget[hasFile="true"]
-{
-	background-color: white;
-}
-QWidget[hasFile="false"]
+QWidget
 {
 	background-color: #CBEEB0;
 }
