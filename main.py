@@ -37,6 +37,12 @@ class MainWindow(QMainWindow):
         # PAGE 5 
         self.ui.btn_start_pipeline.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_5))
 
+        # PAGE HELP
+        self.ui.btn_help.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_h))
+
+        # PAGE SETTINGS
+        self.ui.btn_settings.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_s))
+
         ########################################################################
 
         self.show()

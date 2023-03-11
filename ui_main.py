@@ -111,10 +111,19 @@ class Ui_MainWindow(object):
         # Help button
         self.btn_help = QPushButton(self.sidebarMenuFrame)
         self.btn_help.setObjectName(u"btn_help")
+        self.btn_help.setProperty( "isActivePage", False )
         self.btn_help.move(0,1000)
         self.btn_help.setMinimumSize(QSize(0, 40))
         self.btn_help.setIcon( QIcon("./assets/icons/help-icon.png") )
 
+        #settings button
+        self.btn_settings = QPushButton( "Settings", self.sidebarMenuFrame)
+        self.btn_settings.setObjectName( u"btn_settings" )
+        self.btn_settings.setProperty( "isActivePage", False )
+        self.btn_settings.setMinimumSize( QSize( 0, 52 ) )
+        self.btn_settings.setGeometry(0,0, 200, 30)
+        self.btn_settings.setIcon( QIcon("./assets/icons/settings-icon.png") )
+        
 
         # Default active page
         self.activePage = self.btn_page_1
@@ -128,6 +137,7 @@ class Ui_MainWindow(object):
         self.btn_start_pipeline.clicked.connect( self.goButtonClicked )
 
         self.btn_help.clicked.connect( lambda: self.setActivePage( self.btn_help ) )
+        self.btn_settings.clicked.connect( lambda: self.setActivePage( self.btn_settings ) )
         
         # Add page-routing buttons to sidebar
         self.sidebarMenuVLayout.addWidget( self.btn_page_1, stretch=1 )
@@ -135,19 +145,11 @@ class Ui_MainWindow(object):
         self.sidebarMenuVLayout.addWidget( self.btn_page_3, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_page_4, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_start_pipeline, stretch=1 )
-
         self.sidebarMenuVLayout.addWidget( QWidget(), stretch=20 )
-
         self.sidebarMenuVLayout.addWidget( self.btn_help, stretch=1, alignment=Qt.AlignBottom )
-
-        self.btn_settings = QPushButton( "Settings", self.sidebarMenuFrame)
-        self.btn_settings.setObjectName( "btn_settings" )
-        self.btn_settings.setMinimumSize( QSize( 0, 52 ) )
-        self.btn_settings.setGeometry(0,0, 200, 30)
-        self.btn_settings.setIcon( QIcon("./assets/icons/settings-icon.png") )
-
         self.sidebarMenuVLayout.addWidget( self.btn_settings, stretch=2, alignment=Qt.AlignBottom )
 
+        #displays curr app version in the left bottom corner
         appVersionLabel = "Version: {}".format( appVersion )
         self.versionLabel = QLabel( appVersionLabel )
         self.sidebarMenuVLayout.addWidget( self.versionLabel, stretch=1, alignment=Qt.AlignBottom )
@@ -196,32 +198,59 @@ class Ui_MainWindow(object):
         
 
 
-        self.label_p1 = QLabel(self.page_1)
-        self.welcomeImagePixmap = QPixmap('./assets/images/officeteamstock.jpg')
-
-        self.label_p1.setPixmap(self.welcomeImagePixmap)
-        self.label_p1.setAlignment(Qt.AlignCenter)
-        self.label_p1.resize(self.welcomeImagePixmap.width(), self.welcomeImagePixmap.height())
-
-        self.label_p1.move(130,300)
-        
-        self.label_p1_title = QLabel(self.page_1)
-        self.label_p1_title.setText("Meet The Team!")
-        self.label_p1_title.setStyleSheet("font: 16pt \".AppleSystemUIFont\";")
-        self.label_p1_title.adjustSize()
-        self.label_p1_title.move(350,720)
-        
-        self.label_p1.show()
+        #self.label_p1 = QLabel(self.page_1)
+        #self.welcomeImagePixmap = QPixmap('./assets/images/officeteamstock.jpg')
+        #self.label_p1.setPixmap(self.welcomeImagePixmap)
+        #self.label_p1.setAlignment(Qt.AlignCenter)
+        #self.label_p1.resize(self.welcomeImagePixmap.width(), self.welcomeImagePixmap.height())
+        #self.label_p1.move(130,300)
+        #self.label_p1.show()
 
         self.intro_para = QLabel(self.page_1)
-        self.intro_para.setAlignment(Qt.AlignHCenter)
-        self.intro_para.setText("The HDRI Lighting Calibration Tool is a free, open-source \n application developed by a small team of students \n from Oregon State Univeristy.")
+        self.intro_para.setAlignment(Qt.AlignTop)
+        self.intro_para.setText("This tool was designed to automate the process of merging \n multiple LDR images together and generating an HDR image.")
         self.intro_para.setFont(labelfont)
         self.intro_para.adjustSize()
-        self.intro_para.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.intro_para.move(20,20)
-        self.intro_para.move(100,100)
+        self.intro_para.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
+        #self.intro_para.move(20,20)
+        self.intro_para.move(40,100)
 
+        #to read more paragraph
+        paperUrl = "<a href = \"https://drive.google.com/file/d/1qsz_XRwYatku_1YtNC-kbFxNRNs4Izno/view?usp=sharing\">here.</a>"
+        self.intro_para_2 = QLabel(self.page_1)
+        self.paper_label_url = QLabel(self.page_1)
+        self.paper_label_url.setOpenExternalLinks(True)
+        self.paper_label_url.setText(paperUrl)
+        self.paper_label_url.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
+        self.paper_label_url.move(590,230)
+        self.intro_para_2.setAlignment(Qt.AlignTop)
+        self.intro_para_2.setText("To read more about the process of generating an HDR image from LDR image input, \n see the research paper by Clotilde Pierson ")
+        self.intro_para_2.setFont(labelfont)
+        self.intro_para_2.adjustSize()
+        self.intro_para_2.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
+        #self.intro_para_2.move(20,20)
+        self.intro_para_2.move(40,200)
+
+
+        #app version and feature paragraph
+        self.intro_para_3 = QLabel(self.page_1)
+        self.intro_para_3.setAlignment(Qt.AlignTop)
+        self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]: \n -   This application assumes that the user already knows \n      the settings of the camera that took the LDR images beforehand.\n -   This application performs no calculations to cull the LDR images based on exposure. ")
+        self.intro_para_3.setFont(labelfont)
+        self.intro_para_3.adjustSize()
+        self.intro_para_3.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
+        #self.intro_para_3.move(20,20)
+        self.intro_para_3.move(40,300)
+        
+        #if you need help paragraph
+        self.intro_para_4 = QLabel(self.page_1)
+        self.intro_para_4.setAlignment(Qt.AlignTop)
+        self.intro_para_4.setText("If you need any help with using this app \n please try the help page.")
+        self.intro_para_4.setFont(labelfont)
+        self.intro_para_4.adjustSize()
+        self.intro_para_4.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
+        #self.intro_para.move(20,20)
+        self.intro_para_4.move(40,450)
         # -------------------------------------------------------------------------------------------------
 
 
@@ -484,7 +513,16 @@ class Ui_MainWindow(object):
 
         # -------------------------------------------------------------------------------------------------
 
-
+        #help page
+        self.page_h = QWidget()
+        self.page_h.setObjectName(u"page_h")
+        self.verticalLayout_11 = QVBoxLayout(self.page_h)
+        self.verticalLayout_11.setObjectName(u"verticalLayout_11")
+        #settings page
+        self.page_s = QWidget()
+        self.page_s.setObjectName(u"page_s")
+        self.verticalLayout_12 = QVBoxLayout(self.page_s)
+        self.verticalLayout_12.setObjectName(u"verticalLayout_12")
 
         # Add pages to multi-page view stackedWidget
         self.stackedWidget.addWidget(self.page_1)
@@ -492,10 +530,11 @@ class Ui_MainWindow(object):
         self.stackedWidget.addWidget(self.page_3)
         self.stackedWidget.addWidget(self.page_4)
         self.stackedWidget.addWidget(self.page_5)
+        self.stackedWidget.addWidget(self.page_h)
+        self.stackedWidget.addWidget(self.page_s)
 
 
         self.verticalLayout_5.addWidget(self.stackedWidget)
-
         self.verticalLayout.addWidget(self.Content)
 
         MainWindow.setCentralWidget(self.centralwidget)
@@ -515,6 +554,7 @@ class Ui_MainWindow(object):
         self.btn_page_4.setText(QCoreApplication.translate("MainWindow", u"Upload Calibration", None))
         self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO", None))
         self.btn_help.setText(QCoreApplication.translate("MainWindow", u"Help", None))
+        self.btn_settings.setText(QCoreApplication.translate("MainWindow", u"Settings", None))
         self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
         self.label_1.setAlignment(Qt.AlignHCenter)
 
@@ -529,6 +569,8 @@ class Ui_MainWindow(object):
         self.btn_page_3.setProperty( "isActivePage", False )
         self.btn_page_4.setProperty( "isActivePage", False )
         self.btn_start_pipeline.setProperty( "isActivePage", False )
+        self.btn_help.setProperty( "isActivePage", False )
+        self.btn_settings.setProperty( "isActivePage", False )
 
         if ( newActiveBtn.objectName() == "btn_page_1" ):
             self.btn_page_1.setProperty( "isActivePage", True )
@@ -540,6 +582,11 @@ class Ui_MainWindow(object):
             self.btn_page_4.setProperty( "isActivePage", True )
         elif  ( newActiveBtn.objectName() == "btn_start_pipeline" ):
             self.btn_start_pipeline.setProperty( "isActivePage", True )
+        elif  ( newActiveBtn.objectName() == "btn_help" ):
+            self.btn_help.setProperty( "isActivePage", True )
+        elif  ( newActiveBtn.objectName() == "btn_settings" ):
+            self.btn_settings.setProperty( "isActivePage", True )
+        
 
         self.setButtonStyling()
 
