@@ -71,6 +71,13 @@ class ImageUploader( QtWidgets.QWidget ):
         return
     
 
+    # This function returns the count of total images uploaded to the region
+    def getTotalImagesCount( self ):
+        uploadedImageCount = int( self.gridLayout.count() )
+
+        return uploadedImageCount
+    
+
     # Updates the paths_ldr variable for the Radiance object
     def updatePathsLDR( self ):
         # Reach Ui_MainWindow object
