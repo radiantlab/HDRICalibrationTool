@@ -235,7 +235,12 @@ class Ui_MainWindow(object):
         #app version and feature paragraph
         self.intro_para_3 = QLabel(self.page_1)
         self.intro_para_3.setAlignment(Qt.AlignTop)
-        self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]: \n -   This application assumes that the user already knows \n      the settings of the camera that took the LDR images beforehand.\n -   This application performs no calculations to cull the LDR images based on exposure. ")
+        self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]: \n"
+                                  " -   This application assumes that the user already knows \n"
+                                  "      the settings of the camera that took the LDR images beforehand.\n"
+                                  " -   This application performs no calculations to cull the LDR images based on exposure.\n"
+                                  " -   Windows users must have the GNU package \"sed for windows\" installed and on the\n"
+                                  "     system PATH in order for view angles to be corrected.")
         self.intro_para_3.setFont(labelfont)
         self.intro_para_3.adjustSize()
         self.intro_para_3.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
@@ -245,12 +250,12 @@ class Ui_MainWindow(object):
         #if you need help paragraph
         self.intro_para_4 = QLabel(self.page_1)
         self.intro_para_4.setAlignment(Qt.AlignTop)
-        self.intro_para_4.setText("If you need any help with using this app \n please try the help page.")
+        self.intro_para_4.setText("If you need any help with using this app, \n please try the help page.")
         self.intro_para_4.setFont(labelfont)
         self.intro_para_4.adjustSize()
         self.intro_para_4.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
         #self.intro_para.move(20,20)
-        self.intro_para_4.move(40,450)
+        self.intro_para_4.move(40,550)
         # -------------------------------------------------------------------------------------------------
 
 
