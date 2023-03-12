@@ -1,11 +1,13 @@
 /* Styling document for the main UI widgets for the application */
 
 
-/* Page-routing buttons in menu sidebar */
+/* Page-routing, "Help", and "Settings" buttons in menu sidebar */
 QPushButton#btn_page_1[isActivePage="true"],
 		   #btn_page_2[isActivePage="true"],
 		   #btn_page_3[isActivePage="true"],
-		   #btn_page_4[isActivePage="true"]
+		   #btn_page_4[isActivePage="true"],
+		   #btn_settings[isActivePage="true"],
+		   #btn_help[isActivePage="true"]
 {
     color: white;
     background-color: #599CC1;
@@ -22,10 +24,21 @@ QPushButton#btn_page_1,
     border-color: black;
 	font-weight: bold;
 }
+QPushButton#btn_settings,
+		   #btn_help
+{
+	color: black;
+    background-color: #D9D9D9;
+	border: 2px solid;
+    border-color: black;
+	font-weight: bold;
+}
 QPushButton#btn_page_1:hover,
 		   #btn_page_2:hover,
 		   #btn_page_3:hover,
-		   #btn_page_4:hover
+		   #btn_page_4:hover,
+		   #btn_settings:hover,
+		   #btn_help:hover
 {
     color: white;
     background-color: #599CC1;
@@ -36,7 +49,9 @@ QPushButton#btn_page_1:hover,
 QPushButton#btn_page_1:pressed,
 		   #btn_page_2:pressed,
 		   #btn_page_3:pressed,
-		   #btn_page_4:pressed
+		   #btn_page_4:pressed,
+		   #btn_settings:pressed,
+		   #btn_help:pressed
 {
     background-color: #477C9A;
 	font-weight: bold;
@@ -69,46 +84,4 @@ QPushButton#btn_start_pipeline:disabled
 {
 	color: 2B2B2B;
     background-color: #8EA58D;
-}
-
-
-/* "Settings" button in menu sidebar that opens the Settings dialog window */
-QPushButton#btn_settings
-{
-	color: black;
-    background-color: #D9D9D9;
-    border: 2px solid;
-    border-color: black;
-	font-weight: bold;
-}
-QPushButton#btn_settings:hover
-{
-	background-color: #C3C3C3;
-	font-weight: bold;
-}
-QPushButton#btn_settings:pressed
-{
-	background-color: #ADADAD;
-	font-weight: bold;
-}
-
-
-/* "Help" button in menu sidebar */
-QPushButton#btn_help
-{
-	color: black;
-    background-color: #D9D9D9;
-    border: 2px solid;
-    border-color: black;
-	font-weight: bold;
-}
-QPushButton#btn_help:hover
-{
-	background-color: #C3C3C3;
-	font-weight: bold;
-}
-QPushButton#btn_help:pressed
-{
-	background-color: #ADADAD;
-	font-weight: bold;
 }
