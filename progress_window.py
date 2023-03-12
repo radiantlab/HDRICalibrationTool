@@ -12,7 +12,6 @@ import threading
 from threading import Timer
 import time
 import asyncio
-import atexit
 
 class Repeat_Timer(Timer):
 # https://stackoverflow.com/questions/12435211
@@ -75,19 +74,21 @@ class ProgressWindow( QWidget ):
         print("\n#########\nCALLING PIPELINE COMMAND\n#########\n")
         t_rp = threading.Thread(target=rp.radiance_pipeline, args=[radianceDataObject])
         t_rp.start()
-        
+       
+        # SET UP PROGRESS BAR UPDATE TIMER
         def update(self):
+        # Note: self refers to the progress window, not the timer.
             self.progressValue = rp.radiance_pipeline_get_percent()
             self.progressBar.setValue(rp.radiance_pipeline_get_percent())
             print(rp.radiance_pipeline_get_percent())
+            if(rp.radiance_pipeline_get_percent() == 100):
+                progress_bar_update_timer.cancel()
 
             
         progress_bar_update_timer = Repeat_Timer(1, update, [self])
-        progress_bar_update_timer.daemon = True
+        progress_bar_update_timer.daemon = True # Not entirely necessary since
+                                                # we expect it to exit at
+                                                # percent=100.
         progress_bar_update_timer.start() 
         
-        # todo: threading does not cause any serious problems, but is
-        # still a little funny. Could set up a way to make it kill
-        # when t_rp exits, but for now it is killed when the program
-        # exits, and does not negatively impact anything else.
         return
