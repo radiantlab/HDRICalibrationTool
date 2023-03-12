@@ -33,7 +33,7 @@ class ProgressWindow( QWidget ):
         self.layout.addWidget(self.progressBar)
         self.setLayout(self.layout)
         self.setGeometry(300, 300, 550, 100)
-        self.setWindowTitle('Progress Bar')
+        self.setWindowTitle('HDRI Calibration Pipeline Progress')
         
         self.show()
 
