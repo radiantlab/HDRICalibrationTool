@@ -269,9 +269,10 @@ class Ui_MainWindow(object):
         self.page_2_Vlayout.setSpacing(0)
         self.page_2_Vlayout.setContentsMargins(0, 0, 0, 0)
         
-        uploader = ImageUploader()
+        self.uploader = ImageUploader()
+        self.uploader.setObjectName("ImageUploader")
 
-        self.page_2_Vlayout.addWidget( uploader, stretch=1 )
+        self.page_2_Vlayout.addWidget( self.uploader, stretch=1 )
         
         # -------------------------------------------------------------------------------------------------
 
@@ -656,6 +657,16 @@ class Ui_MainWindow(object):
 
     # Click event function for the GO button
     def goButtonClicked( self ):
+        # Fill attributes from camera settings page
+        self.ingestCameraSettingsFormData()
+
+        # Do some basic validation here
+        # TODO
+
+        self.validateImages()
+        #self.validateCameraSettings()
+        #self.validateCalibration()
+
         print("-----------------------------------------------------")
         print("goBtnClicked, here is the RadianceData obj. being sent:\n")
         print("self.diameter: {}".format( self.diameter ))
@@ -681,3 +692,37 @@ class Ui_MainWindow(object):
     # Creates a ProgressWindow object to start pipeline process
     def openProgressWindow( self ):
         self.progressWindow = ProgressWindow( self )
+
+
+    # This function sets the RadianceDate object attributes that are taken as user input from the Camera Settings page form
+    def ingestCameraSettingsFormData( self ):
+        self.setCroppingValues()
+        self.setLensValues()
+        self.setOutputDimensionValues()
+
+        return
+    
+
+    # This function verifies that there is at least 1 image uploaded.
+    def validateImages( self ):
+        imageUploader = self.page_2_Vlayout.itemAt(0).widget()
+        uploadedImageCount = int( imageUploader.getTotalImagesCount() )
+
+        if ( uploadedImageCount < 1 ):
+            print( "Total images uploaded: {}".format( uploadedImageCount ) )
+
+        return
+
+    
+    # This function validates the camera settings page form input.
+    def validateCameraSettings( self ):
+        #TODO
+
+        return
+    
+
+    # This function validates the uploaded calibration files.
+    def validateCalibration( self ):
+        #TODO
+
+        return
