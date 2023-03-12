@@ -379,9 +379,9 @@ class Ui_MainWindow(object):
 
 
         # Submit form button
-        self.area1button = QPushButton('Enter', self.mdiArea)
-        self.area1button.move(750,160)
-        self.area1button.clicked.connect( self.setCroppingValues )
+        # self.area1button = QPushButton('Enter', self.mdiArea)
+        # self.area1button.move(750,160)
+       # self.area1button.clicked.connect( self.setCroppingValues )
 
 
         # Lens Viewing Angle section
@@ -411,9 +411,9 @@ class Ui_MainWindow(object):
         self.inputField_viewAngleHorizontal.move(x_column2,90)
 
         # Submit form button
-        self.area2button = QPushButton('Enter', self.mdiArea_2)
-        self.area2button.move(750,160)
-        self.area2button.clicked.connect( self.setLensValues )
+        # self.area2button = QPushButton('Enter', self.mdiArea_2)
+        # self.area2button.move(750,160)
+      #  self.area2button.clicked.connect( self.setLensValues )
 
 
         # Output Image Dimensions section
@@ -444,9 +444,9 @@ class Ui_MainWindow(object):
         self.inputField_outputYRes.move(160,90)
 
         # Submit form button
-        self.area3button = QPushButton('Enter', self.mdiArea_3)
-        self.area3button.move(750,160)
-        self.area3button.clicked.connect( self.setOutputDimensionValues )
+        # self.area3button = QPushButton('Enter', self.mdiArea_3)
+        # self.area3button.move(750,160)
+      #  self.area3button.clicked.connect( self.setOutputDimensionValues )
 
         # Area 4 upload .rsp file region
         rsp_uploadarea = UploadFileRegion("CameraResponseFileUpload", [900, 200], fileType=2 )
