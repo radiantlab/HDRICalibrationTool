@@ -67,10 +67,6 @@ class ProgressWindow( QWidget ):
         
         print( "MainWindow.path_temp: {}".format( MainWindow.path_temp ) )
         
-        # Do some basic validation here
-        # TODO
-        ## if radianceDataObject.attribute == (invalid value) then display error
-        
         print("\n#########\nCALLING PIPELINE COMMAND\n#########\n")
         t_rp = threading.Thread(target=rp.radiance_pipeline, args=[radianceDataObject])
         t_rp.start()
