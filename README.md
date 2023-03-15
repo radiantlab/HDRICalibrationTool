@@ -4,3 +4,5 @@ HDRI Calibration Tool was designed to automate the process of merging multiple L
 
 To read more about the process of generating an HDR image from LDR image input, see the research paper by Clotilde Pierson [here](https://drive.google.com/file/d/1qsz_XRwYatku_1YtNC-kbFxNRNs4Izno/view?usp=sharing).
 
+If you have diffulty interacting with the application, please check out our [github Wiki](https://github.com/XiangyuLijoey/HDRICalibrationTool/wiki) for more information. 
+
