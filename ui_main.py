@@ -378,12 +378,6 @@ class Ui_MainWindow(object):
         self.inputField_yCropOffset.move(x_column2,160)
 
 
-        # Submit form button
-        # self.area1button = QPushButton('Enter', self.mdiArea)
-        # self.area1button.move(750,160)
-       # self.area1button.clicked.connect( self.setCroppingValues )
-
-
         # Lens Viewing Angle section
         
         # View Angle Vertical field
@@ -409,11 +403,6 @@ class Ui_MainWindow(object):
         self.inputField_viewAngleHorizontal.setText("")
         self.inputField_viewAngleHorizontal.setObjectName("inputField_viewAngleHorizontal")
         self.inputField_viewAngleHorizontal.move(x_column2,90)
-
-        # Submit form button
-        # self.area2button = QPushButton('Enter', self.mdiArea_2)
-        # self.area2button.move(750,160)
-      #  self.area2button.clicked.connect( self.setLensValues )
 
 
         # Output Image Dimensions section
@@ -443,20 +432,16 @@ class Ui_MainWindow(object):
         self.inputField_outputYRes.setObjectName("inputField_outputYRes")
         self.inputField_outputYRes.move(160,90)
 
-        # Submit form button
-        # self.area3button = QPushButton('Enter', self.mdiArea_3)
-        # self.area3button.move(750,160)
-      #  self.area3button.clicked.connect( self.setOutputDimensionValues )
 
         # Area 4 upload .rsp file region
-        rsp_uploadarea = UploadFileRegion("CameraResponseFileUpload", [900, 200], fileType=2 )
+        self.rsp_uploadarea = UploadFileRegion("CameraResponseFileUpload", [900, 200], fileType=2 )
 
 
         # Add widgets to Layout
         self.cameraSettingsPage.addWidget( self.mdiArea, stretch=1 )
         self.cameraSettingsPage.addWidget( self.mdiArea_2, stretch=1 )
         self.cameraSettingsPage.addWidget( self.mdiArea_3, stretch=1 )
-        self.cameraSettingsPage.addWidget( rsp_uploadarea, stretch=1 )
+        self.cameraSettingsPage.addWidget( self.rsp_uploadarea, stretch=1 )
         
         # -------------------------------------------------------------------------------------------------
 
@@ -479,31 +464,31 @@ class Ui_MainWindow(object):
 
         # Vignetting region
         # Add widget: UploadFileRegionObject class object
-        vc_UploadRegion = UploadFileRegion( "Vignetting", [900, 200], fileType=1 )
+        self.vc_UploadRegion = UploadFileRegion( "Vignetting", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( vc_UploadRegion )
+        self.calibrationPage.addWidget( self.vc_UploadRegion )
 
         # Fisheye correction region
         # Add widget: UploadFileRegionObject class object
-        fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [900, 200], fileType=1 )
+        self.fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( fc_UploadRegion )
+        self.calibrationPage.addWidget( self.fc_UploadRegion )
 
         # Camera factor region
         # Add widget: UploadFileRegionObject class object
-        cf_UploadRegion = UploadFileRegion( "CameraFactor", [900, 200], fileType=1 )
+        self.cf_UploadRegion = UploadFileRegion( "CameraFactor", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( cf_UploadRegion )
+        self.calibrationPage.addWidget( self.cf_UploadRegion )
 
         # Neutral Density Filter region
         # Add widget: UploadFileRegionObject class object
-        nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [900, 200], fileType=1 )
+        self.nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( nd_UploadRegion )
+        self.calibrationPage.addWidget( self.nd_UploadRegion )
 
         # -------------------------------------------------------------------------------------------------
 
