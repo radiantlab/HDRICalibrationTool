@@ -690,13 +690,19 @@ class Ui_MainWindow(object):
 
     # This function verifies that there is at least 1 image uploaded.
     def validateImages( self ):
+        # Set flag to pass or not
+        imageValidationPass = False
+
         imageUploader = self.page_2_Vlayout.itemAt(0).widget()
         uploadedImageCount = int( imageUploader.getTotalImagesCount() )
 
-        if ( uploadedImageCount < 1 ):
-            print( "Total images uploaded: {}".format( uploadedImageCount ) )
+        print( "Total images uploaded: {}".format( uploadedImageCount ) )
 
-        return
+        # Let pass if more than 1 image uploaded
+        if ( uploadedImageCount > 1 ):     
+            imageValidationPass = True
+
+        return imageValidationPass
 
     
     # This function validates the camera settings page form input.
