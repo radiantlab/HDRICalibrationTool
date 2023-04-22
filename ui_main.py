@@ -482,6 +482,7 @@ class Ui_MainWindow(object):
         # -------------------------------------------------------------------------------------------------
 
 
+
         # -------------------------------------------------------------------------------------------------
         # Page 5 setup
 
@@ -493,16 +494,55 @@ class Ui_MainWindow(object):
 
         # -------------------------------------------------------------------------------------------------
 
-        #help page
-        self.page_h = QWidget()
-        self.page_h.setObjectName(u"page_h")
-        self.verticalLayout_11 = QVBoxLayout(self.page_h)
-        self.verticalLayout_11.setObjectName(u"verticalLayout_11")
-        #settings page
-        self.page_s = QWidget()
-        self.page_s.setObjectName(u"page_s")
-        self.verticalLayout_12 = QVBoxLayout(self.page_s)
-        self.verticalLayout_12.setObjectName(u"verticalLayout_12")
+
+
+        # -------------------------------------------------------------------------------------------------
+
+        # Help page
+        self.page_help_layout = QGridLayout()
+        self.page_help_layout.setObjectName("PageHelp_QGridLayout")
+
+        self.page_help = QWidget()
+        self.page_help.setObjectName( "page_help" )
+        self.page_help.setLayout( self.page_help_layout )
+
+        # Title label
+        self.page_help_title_label = QLabel( "Help", self.page_help )
+        self.page_help_title_label.setObjectName( "page_help_title_label" )
+        self.page_help_title_label.setStyleSheet( "font: 40pt; color: black;" )
+        self.page_help_title_label.setAlignment( Qt.AlignCenter )
+
+        # Add widgets and layouts
+        self.page_help_layout.addWidget( self.page_help_title_label )
+
+        # -------------------------------------------------------------------------------------------------
+
+
+
+        # -------------------------------------------------------------------------------------------------
+
+        # Settings page
+        self.page_settings_layout = QGridLayout()
+        self.page_settings_layout.setObjectName("PageSettings_QGridLayout")
+
+        self.page_settings = QWidget()
+        self.page_settings.setObjectName( "page_settings" )
+        self.page_settings.setLayout( self.page_settings_layout )
+
+        # Title label
+        self.page_settings_title_label = QLabel( "Settings", self.page_help )
+        self.page_settings_title_label.setObjectName( "page_settings_title_label" )
+        self.page_settings_title_label.setStyleSheet( "font: 40pt; color: black;" )
+        self.page_settings_title_label.setAlignment( Qt.AlignCenter )
+
+        # Add widgets and layouts
+        self.page_settings_layout.addWidget( self.page_settings_title_label )
+
+        # -------------------------------------------------------------------------------------------------
+
+
+
+        # -------------------------------------------------------------------------------------------------
 
         # Add pages to multi-page view stackedWidget
         self.stackedWidget.addWidget(self.page_1)
@@ -510,9 +550,8 @@ class Ui_MainWindow(object):
         self.stackedWidget.addWidget(self.page_3)
         self.stackedWidget.addWidget(self.page_4)
         self.stackedWidget.addWidget(self.page_5)
-        self.stackedWidget.addWidget(self.page_h)
-        self.stackedWidget.addWidget(self.page_s)
-
+        self.stackedWidget.addWidget(self.page_help)
+        self.stackedWidget.addWidget(self.page_settings)
 
         self.verticalLayout_5.addWidget(self.stackedWidget)
         self.verticalLayout.addWidget(self.Content)
@@ -524,6 +563,8 @@ class Ui_MainWindow(object):
         self.stackedWidget.setCurrentIndex(0)
 
         QMetaObject.connectSlotsByName(MainWindow)
+
+        return
     
 
     def retranslateUi(self, MainWindow):

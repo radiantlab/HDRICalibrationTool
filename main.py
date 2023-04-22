@@ -30,10 +30,10 @@ class MainWindow(QMainWindow):
         self.ui.btn_start_pipeline.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_5))
 
         # PAGE HELP
-        self.ui.btn_help.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_h))
+        self.ui.btn_help.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_help))
 
         # PAGE SETTINGS
-        self.ui.btn_settings.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_s))
+        self.ui.btn_settings.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_settings))
 
         ########################################################################
 
