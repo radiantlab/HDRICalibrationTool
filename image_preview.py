@@ -3,9 +3,11 @@
 # Retrieved 2.19.2023 from OpenAI's ChatGPT language model, which was last trained on 2021-09. URL: https://chat.openai.com/chat
 
 import os
-from PySide2 import QtWidgets, QtGui, QtCore
+from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QHBoxLayout
+from PySide2.QtGui import QPixmap
+from PySide2.QtCore import Qt
 
-class ImagePreview( QtWidgets.QWidget ):
+class ImagePreview( QWidget ):
     def __init__( self, imagePath ):
         super().__init__()
 
@@ -15,26 +17,28 @@ class ImagePreview( QtWidgets.QWidget ):
         self.imagePreviewStylePath = "./styles/image_preview_styles.css"
 
         # UI setup
-        self.layout = QtWidgets.QHBoxLayout()
+        self.layout = QHBoxLayout()
         self.setLayout( self.layout )
 
-        self.imageLabel = QtWidgets.QLabel()
+        self.imageLabel = QLabel()
         self.imageLabel.setObjectName( "imageLabel" )
 
-        self.imagePixmap = QtGui.QPixmap( self.imagePath )
-        self.imageLabel.setPixmap( self.imagePixmap.scaled( 150, 150, QtCore.Qt.KeepAspectRatio ) )
+        self.imagePixmap = QPixmap( self.imagePath )
+        self.imageLabel.setPixmap( self.imagePixmap.scaled( 150, 150, Qt.KeepAspectRatio ) )
         self.layout.addWidget( self.imageLabel )
 
-        self.filenameLabel = QtWidgets.QLabel( os.path.basename( self.imagePath ) )
+        self.filenameLabel = QLabel( os.path.basename( self.imagePath ) )
         self.filenameLabel.setObjectName( "filenameLabel" )
         self.layout.addWidget( self.filenameLabel )
 
-        self.removeButton = QtWidgets.QPushButton( "Remove" )
-        self.removeButton.setObjectName( "removeButton" )
-        self.removeButton.clicked.connect( self.removeSelf )
-        self.layout.addWidget( self.removeButton )
+        self.removeBtn = QPushButton( "Remove", self )
+        self.removeBtn.setObjectName( "removeButton" )
+        self.removeBtn.clicked.connect( self.removeSelf )
+        self.layout.addWidget( self.removeBtn )
 
-       # self.setWidgetStyle()
+        self.setWidgetStyle()
+
+        return
 
 
     # Remove button click event: removes the ImagePreview object the btn is attached to from the GridLayout
@@ -68,11 +72,9 @@ class ImagePreview( QtWidgets.QWidget ):
         # Apply style
         with open( self.imagePreviewStylePath, "r" ) as stylesheet:
             self.imageLabel.setStyleSheet( stylesheet.read() )
-        
-            # Labels
+        with open( self.imagePreviewStylePath, "r" ) as stylesheet:
             self.filenameLabel.setStyleSheet( stylesheet.read() )
-
-            # Buttons
-            self.removeButton.setStyleSheet( stylesheet.read() )
+        with open( self.imagePreviewStylePath, "r" ) as stylesheet:
+            self.removeBtn.setStyleSheet( stylesheet.read() )
 
         return
