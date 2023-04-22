@@ -1,0 +1,1 @@
+#This file allows this radiance_pipeline repository to be recognized as a git submodule.
