@@ -207,9 +207,12 @@ class UploadFileRegion( QWidget ):
     # Allow the dragging of image/text files onto region.
     def dragEnterEvent( self, event ):
         # Only accept dragEnterEvents if region does not have a file already
-        if (self.hasFile == False):
-            if event.mimeData().hasText():
-                event.acceptProposedAction()
+        if ( self.hasFile == False ):
+            mime_data = event.mimeData()
+            if ( mime_data.hasUrls() and len(mime_data.urls()) == 1 ):
+                file_path = mime_data.urls()[0].toLocalFile()
+                if file_path.endswith(('.txt', '.cal', '.rsp')):
+                    event.acceptProposedAction()
 
 
     # On image/text file drop event
