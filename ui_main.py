@@ -2,7 +2,7 @@ import os
 from os.path import abspath
 
 from PySide2.QtCore import ( QCoreApplication, QMetaObject, QSize, Qt )
-from PySide2.QtGui import ( QFont, QIcon, QPixmap)
+from PySide2.QtGui import ( QFont, QIcon)
 from PySide2.QtWidgets import *
 
 from upload_file_region import UploadFileRegion
@@ -181,81 +181,70 @@ class Ui_MainWindow(object):
 
         # -------------------------------------------------------------------------------------------------
         # Page 1 Setup
+
+        self.page_1_layout = QGridLayout()
+        self.page_1_layout.setObjectName("Page1_QGridLayout")
+
         self.page_1 = QWidget()
         self.page_1.setObjectName(u"page_1")
-        self.verticalLayout_7 = QVBoxLayout(self.page_1)
-        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
+        self.page_1.setLayout( self.page_1_layout )
+
+        # Welcome label
         self.label_1 = QLabel(self.page_1)
         self.label_1.setObjectName(u"label_1")
-        font = QFont()
-        font.setPointSize(40)
-        labelfont = QFont()
-        labelfont.setPointSize(20)
-        self.label_1.setFont(font)
-        self.label_1.setStyleSheet(u"color: #000;")
+        self.label_1.setStyleSheet(u"font: 40pt; color: #000;")
         self.label_1.setAlignment(Qt.AlignCenter)
-        self.verticalLayout_7.addWidget(self.label_1)
         
 
-
-        #self.label_p1 = QLabel(self.page_1)
-        #self.welcomeImagePixmap = QPixmap('./assets/images/officeteamstock.jpg')
-        #self.label_p1.setPixmap(self.welcomeImagePixmap)
-        #self.label_p1.setAlignment(Qt.AlignCenter)
-        #self.label_p1.resize(self.welcomeImagePixmap.width(), self.welcomeImagePixmap.height())
-        #self.label_p1.move(130,300)
-        #self.label_p1.show()
-
-        self.intro_para = QLabel(self.page_1)
+        # Body text
+        bodyTextFont = QFont()
+        bodyTextFont.setPointSize( 16 )
+       
+        self.intro_para = QLabel()
         self.intro_para.setAlignment(Qt.AlignTop)
-        self.intro_para.setText("This tool was designed to automate the process of merging \n multiple LDR images together and generating an HDR image.")
-        self.intro_para.setFont(labelfont)
+        self.intro_para.setText("This tool was designed to automate the process of merging multiple LDR images together and generating an HDR image.")
+        self.intro_para.setFont(bodyTextFont)
+        self.intro_para.setStyleSheet( "border-top: 3px solid #6495ED;" )
+        self.intro_para.setWordWrap( True )
         self.intro_para.adjustSize()
-        self.intro_para.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
-        #self.intro_para.move(20,20)
-        self.intro_para.move(40,100)
 
-        #to read more paragraph
-        paperUrl = "<a href = \"https://drive.google.com/file/d/1qsz_XRwYatku_1YtNC-kbFxNRNs4Izno/view?usp=sharing\">here.</a>"
-        self.intro_para_2 = QLabel(self.page_1)
-        self.paper_label_url = QLabel(self.page_1)
-        self.paper_label_url.setOpenExternalLinks(True)
-        self.paper_label_url.setText(paperUrl)
-        self.paper_label_url.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
-        self.paper_label_url.move(590,230)
+        self.intro_para_2 = QLabel()
+        self.intro_para_2.setOpenExternalLinks( True )
+        paragraphText_2 = 'To read more about the process of generating an HDR image from LDR image input, see the research paper by Clotilde Pierson <a href = \"https://doi.org/10.1080/15502724.2019.1684319\">here.</a>'
         self.intro_para_2.setAlignment(Qt.AlignTop)
-        self.intro_para_2.setText("To read more about the process of generating an HDR image from LDR image input, \n see the research paper by Clotilde Pierson ")
-        self.intro_para_2.setFont(labelfont)
+        self.intro_para_2.setText( paragraphText_2 )
+        self.intro_para_2.setFont(bodyTextFont)
+        self.intro_para_2.setStyleSheet( "border-top: 3px solid #6495ED;" )
+        self.intro_para_2.setWordWrap( True )
         self.intro_para_2.adjustSize()
-        self.intro_para_2.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
-        #self.intro_para_2.move(20,20)
-        self.intro_para_2.move(40,200)
-
-
-        #app version and feature paragraph
-        self.intro_para_3 = QLabel(self.page_1)
+        
+        self.intro_para_3 = QLabel()
         self.intro_para_3.setAlignment(Qt.AlignTop)
         self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]: \n"
-                                  " -   This application assumes that the user already knows \n"
-                                  "      the settings of the camera that took the LDR images beforehand.\n"
+                                  " -   This application requires that Radiance is on your PATH. \n"
+                                  " -   This application assumes that the user already knows the settings of the camera that took the LDR images beforehand.\n"
                                   " -   This application performs no calculations to cull the LDR images based on exposure.\n"
-                                  " -   Windows users must have the GNU package \"sed for windows\" installed and on the\n"
-                                  "     system PATH in order for view angles to be corrected.")
-        self.intro_para_3.setFont(labelfont)
+                                  " -   Windows users must have the GNU package \"sed for windows\" installed and on the system PATH in order for view angles to be corrected.")
+        self.intro_para_3.setFont(bodyTextFont)
+        self.intro_para_3.setStyleSheet( "border-top: 3px solid #6495ED;" )
+        self.intro_para_3.setWordWrap( True )
         self.intro_para_3.adjustSize()
-        self.intro_para_3.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
-        #self.intro_para_3.move(20,20)
-        self.intro_para_3.move(40,300)
-        
-        #if you need help paragraph
-        self.intro_para_4 = QLabel(self.page_1)
+
+        self.intro_para_4 = QLabel()
         self.intro_para_4.setAlignment(Qt.AlignTop)
-        self.intro_para_4.setText("If you need any help with using this app, \n please try the help page.")
-        self.intro_para_4.setFont(labelfont)
+        self.intro_para_4.setText("If you need any help with using this app, please see the help page.")
+        self.intro_para_4.setFont(bodyTextFont)
+        self.intro_para_4.setStyleSheet( "border-top: 3px solid #6495ED;" )
+        self.intro_para_4.setWordWrap( True )
         self.intro_para_4.adjustSize()
-        self.intro_para_4.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
-        #self.intro_para.move(20,20)
-        self.intro_para_4.move(40,550)
+
+
+        # Add text to layout
+        self.page_1_layout.addWidget( self.label_1 )
+        self.page_1_layout.addWidget( self.intro_para )
+        self.page_1_layout.addWidget( self.intro_para_2 )
+        self.page_1_layout.addWidget( self.intro_para_3 )
+        self.page_1_layout.addWidget( self.intro_para_4 )
         # -------------------------------------------------------------------------------------------------
 
 
@@ -297,7 +286,7 @@ class Ui_MainWindow(object):
         self.label_cd = QLabel(self.mdiArea)
         self.label_cd.setAlignment(Qt.AlignLeft)
         self.label_cd.setText("Cropping Dimensions")
-        self.label_cd.setFont(labelfont)
+        self.label_cd.setFont(bodyTextFont)
         self.label_cd.adjustSize()
         self.label_cd.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
         self.label_cd.setStyleSheet("background-color: #a0a0a0")
@@ -311,7 +300,7 @@ class Ui_MainWindow(object):
         self.label_LVA = QLabel(self.mdiArea_2)
         self.label_LVA.setAlignment(Qt.AlignLeft)
         self.label_LVA.setText("Lens Viewing Angle")
-        self.label_LVA.setFont(labelfont)
+        self.label_LVA.setFont(bodyTextFont)
         self.label_LVA.adjustSize()
         self.label_LVA.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
         self.label_LVA.setStyleSheet("background-color: #a0a0a0")
@@ -326,7 +315,7 @@ class Ui_MainWindow(object):
         self.label_OID = QLabel(self.mdiArea_3)
         self.label_OID.setAlignment(Qt.AlignLeft)
         self.label_OID.setText("Output Image Dimensions")
-        self.label_OID.setFont(labelfont)
+        self.label_OID.setFont(bodyTextFont)
         self.label_OID.adjustSize()
         self.label_OID.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
         self.label_OID.setStyleSheet("background-color: #a0a0a0")
