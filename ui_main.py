@@ -645,12 +645,35 @@ class Ui_MainWindow(object):
         # Fill attributes from camera settings page
         self.ingestCameraSettingsFormData()
 
+        # If any of the calibration file uploads were disabled, set the filepath to None
+        if ( self.vc_UploadRegion.isEnabled == False ):
+            print( "vc enabled=false")
+            self.path_vignetting = None
+
+        if ( self.cf_UploadRegion.isEnabled == False ):
+            print( "cf enabled=false")
+            self.path_calfact = None
+
+        if ( self.fc_UploadRegion.isEnabled == False ):
+            print( "fc enabled=false")
+            self.path_fisheye = None
+
+        if ( self.nd_UploadRegion.isEnabled == False ):
+            print( "nd enabled=false")
+            self.path_ndfilter = None
+
         # Do some basic validation here
         # TODO
-
-        self.validateImages()
-        #self.validateCameraSettings()
-        #self.validateCalibration()
+        if ( self.validateImages() == False ):
+            print( "validateImages() failed!" )
+            return
+            # if ( self.validateCameraSettings() ):
+            #     print( "validateCameraSettings() failed!" )
+            #     return
+            
+            #     if ( self.validateCalibration() ):
+            #         print( "validateCalibration() failed!" )
+            #         return
 
         print("-----------------------------------------------------")
         print("goBtnClicked, here is the RadianceData obj. being sent:\n")
