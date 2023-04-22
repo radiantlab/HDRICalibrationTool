@@ -77,7 +77,7 @@ class UploadFileRegion( QWidget ):
         self.create()
 
 
-    # Setting widget object names and pixmaps
+    # Setting widget object names and pixmaps, connecting any click event function
     def create( self ):
         # -------------------------------------------------------------------------------------
         # Upload Region
@@ -141,7 +141,7 @@ class UploadFileRegion( QWidget ):
         # -------------------------------------------------------------------------------------
 
         # Set states of the created widgets (styles, visibility)
-        self.setWidgetStates()
+        self.setWidgetProperties()
 
         # Create layout and add widgets
         self.initRegionLayout()
@@ -271,8 +271,8 @@ class UploadFileRegion( QWidget ):
         self.fileNameLabel.setText("")
         self.filePathLabel.setText("")
 
-        # Set widget states
-        self.setWidgetStates()
+        # Set widget properties
+        self.setWidgetProperties()
 
         return
 
@@ -324,7 +324,7 @@ class UploadFileRegion( QWidget ):
 
             self.validateFile()
 
-            self.setWidgetStates()
+            self.setWidgetProperties()
         
         else:
             print( "{} has no file!".format( self.regionName ) )
@@ -441,10 +441,28 @@ class UploadFileRegion( QWidget ):
         return
 
 
-    # Sets the state of the region's widgets
+    # Sets the states of widgets
     def setWidgetStates( self ):
+        self.swapRegionInUseChkBox.setEnabled( True )
+
+        if ( self.isEnabled == True ):
+            self.browseBtn.setEnabled( True )
+            self.setAcceptDrops( True )
+
+        else:
+            self.browseBtn.setEnabled( False )
+            self.setAcceptDrops( False )
+
+        return
+
+
+    # Sets the visibility, state, and styling of the region's widgets
+    def setWidgetProperties( self ):
         # Set widget visibility
         self.setWidgetVisibility()
+
+        # Set widget states
+        self.setWidgetStates()
 
         # Set widget style
         self.setWidgetStyle()
