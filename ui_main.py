@@ -2,7 +2,7 @@ import os
 from os.path import abspath
 
 from PySide2.QtCore import ( QCoreApplication, QMetaObject, QSize, Qt )
-from PySide2.QtGui import ( QFont, QIcon )
+from PySide2.QtGui import ( QFont, QIcon)
 from PySide2.QtWidgets import *
 
 from upload_file_region import UploadFileRegion
@@ -227,12 +227,11 @@ class Ui_MainWindow(object):
 
         self.intro_para_3 = QLabel( self.container_widget )
         self.intro_para_3.setAlignment(Qt.AlignTop)
-        self.intro_para_3.setTextFormat(Qt.RichText)
-        self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]:\n<ul>"
-                                  "<li>This application requires that Radiance is on your PATH.</li>\n"
-                                  "<li>This application assumes that the user already knows the settings of the camera that took the LDR images beforehand.</li>\n"
-                                  "<li>This application performs no calculations to cull the LDR images based on exposure.</li>\n"
-                                  "<li>Windows users must have the GNU package \"sed for windows\" installed and on the system PATH in order for view angles to be corrected.</li>\n</ul>")
+        self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]:\n"
+                                  "\t- This application requires that Radiance is on your PATH.\n"
+                                  "\t- This application assumes that the user already knows the settings of the camera that took the LDR images beforehand.\n"
+                                  "\t- This application performs no calculations to cull the LDR images based on exposure.\n"
+                                  "\t- Windows users must have the GNU package \"sed for windows\" installed and on the system PATH in order for view angles to be corrected.\n")
         self.intro_para_3.setFont(bodyTextFont)
         self.intro_para_3.setStyleSheet( "border-top: 3px solid #6495ED;" )
         self.intro_para_3.setWordWrap( True )
