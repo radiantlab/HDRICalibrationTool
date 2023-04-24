@@ -254,10 +254,10 @@ class UploadFileRegion( QWidget ):
         self.isEnabled = not self.isEnabled
 
         if ( self.isEnabled == True ):
-            print( "Disabling upload file region: {}".format( self.regionLabel.text() ) )
+            print( "Enabling upload file region: {}".format( self.regionLabel.text() ) )
 
         else:
-            print( "Enabling upload file region: {}".format( self.regionLabel.text() ) )
+            print( "Disabling upload file region: {}".format( self.regionLabel.text() ) )
 
         self.setWidgetProperties()
         

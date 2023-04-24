@@ -2,7 +2,7 @@ import os
 from os.path import abspath
 
 from PySide2.QtCore import ( QCoreApplication, QMetaObject, QSize, Qt )
-from PySide2.QtGui import ( QFont, QIcon)
+from PySide2.QtGui import ( QFont, QIcon )
 from PySide2.QtWidgets import *
 
 from upload_file_region import UploadFileRegion
@@ -182,12 +182,19 @@ class Ui_MainWindow(object):
         # -------------------------------------------------------------------------------------------------
         # Page 1 Setup
 
-        self.page_1_layout = QGridLayout()
-        self.page_1_layout.setObjectName("Page1_QGridLayout")
+        self.page_1_layout = QVBoxLayout()
+        self.page_1_layout.setObjectName("Page1_QVBoxLayout")
 
-        self.page_1 = QWidget()
+        # Create a container widget to hold the labels
+        self.container_widget = QWidget()
+        self.container_widget.setObjectName(u"container_widget")
+        self.container_widget.setLayout(self.page_1_layout)
+
+        # Set the container widget as the widget of the scroll area
+        self.page_1 = QScrollArea()
         self.page_1.setObjectName(u"page_1")
-        self.page_1.setLayout( self.page_1_layout )
+        self.page_1.setWidget(self.container_widget)
+        self.page_1.setWidgetResizable(True)
 
         # Welcome label
         self.label_1 = QLabel(self.page_1)
@@ -200,7 +207,7 @@ class Ui_MainWindow(object):
         bodyTextFont = QFont()
         bodyTextFont.setPointSize( 16 )
        
-        self.intro_para = QLabel()
+        self.intro_para = QLabel( self.container_widget )
         self.intro_para.setAlignment(Qt.AlignTop)
         self.intro_para.setText("This tool was designed to automate the process of merging multiple LDR images together and generating an HDR image.")
         self.intro_para.setFont(bodyTextFont)
@@ -208,36 +215,37 @@ class Ui_MainWindow(object):
         self.intro_para.setWordWrap( True )
         self.intro_para.adjustSize()
 
-        self.intro_para_2 = QLabel()
+        self.intro_para_2 = QLabel( self.container_widget )
         self.intro_para_2.setOpenExternalLinks( True )
-        paragraphText_2 = 'To read more about the process of generating an HDR image from LDR image input, see the research paper by Clotilde Pierson <a href = \"https://doi.org/10.1080/15502724.2019.1684319\">here.</a>'
+        paragraphText_2 = 'To read more about the process of generating an HDR image from LDR image input, see the research paper by Clotilde Pierson <a href = \"https://doi.org/10.1080/15502724.2019.1684319\">here.</a><br>'
         self.intro_para_2.setAlignment(Qt.AlignTop)
         self.intro_para_2.setText( paragraphText_2 )
         self.intro_para_2.setFont(bodyTextFont)
         self.intro_para_2.setStyleSheet( "border-top: 3px solid #6495ED;" )
         self.intro_para_2.setWordWrap( True )
         self.intro_para_2.adjustSize()
-        
-        self.intro_para_3 = QLabel()
+
+        self.intro_para_3 = QLabel( self.container_widget )
         self.intro_para_3.setAlignment(Qt.AlignTop)
-        self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]: \n"
-                                  " -   This application requires that Radiance is on your PATH. \n"
-                                  " -   This application assumes that the user already knows the settings of the camera that took the LDR images beforehand.\n"
-                                  " -   This application performs no calculations to cull the LDR images based on exposure.\n"
-                                  " -   Windows users must have the GNU package \"sed for windows\" installed and on the system PATH in order for view angles to be corrected.")
+        self.intro_para_3.setTextFormat(Qt.RichText)
+        self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]:\n<ul>"
+                                  "<li>This application requires that Radiance is on your PATH.</li>\n"
+                                  "<li>This application assumes that the user already knows the settings of the camera that took the LDR images beforehand.</li>\n"
+                                  "<li>This application performs no calculations to cull the LDR images based on exposure.</li>\n"
+                                  "<li>Windows users must have the GNU package \"sed for windows\" installed and on the system PATH in order for view angles to be corrected.</li>\n</ul>")
         self.intro_para_3.setFont(bodyTextFont)
         self.intro_para_3.setStyleSheet( "border-top: 3px solid #6495ED;" )
         self.intro_para_3.setWordWrap( True )
         self.intro_para_3.adjustSize()
 
-        self.intro_para_4 = QLabel()
+        self.intro_para_4 = QLabel( self.container_widget )
         self.intro_para_4.setAlignment(Qt.AlignTop)
-        self.intro_para_4.setText("If you need any help with using this app, please see the help page.")
+        paragraphText_4 = "If you need any help with using this app, please see the help page.\n"
+        self.intro_para_4.setText( paragraphText_4 )
         self.intro_para_4.setFont(bodyTextFont)
         self.intro_para_4.setStyleSheet( "border-top: 3px solid #6495ED;" )
         self.intro_para_4.setWordWrap( True )
         self.intro_para_4.adjustSize()
-
 
         # Add text to layout
         self.page_1_layout.addWidget( self.label_1 )
@@ -245,6 +253,7 @@ class Ui_MainWindow(object):
         self.page_1_layout.addWidget( self.intro_para_2 )
         self.page_1_layout.addWidget( self.intro_para_3 )
         self.page_1_layout.addWidget( self.intro_para_4 )
+
         # -------------------------------------------------------------------------------------------------
 
 
