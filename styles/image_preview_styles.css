@@ -4,7 +4,7 @@
 /* The label for the upload region */
 QLabel#imageLabel
 {
-	background-color: white;
+	/*background-color: white;*/
 	color: black;
 	font-weight: bold;
 	font-size: 28px;
@@ -12,9 +12,9 @@ QLabel#imageLabel
 
 
 /* The file name label */
-QLabel#fileNameLabel
+QLabel#filenameLabel
 {
-	background-color: white;
+	/*background-color: white;*/
 	color: black;
 	font-weight: bold;
 	font-size: 20px;
@@ -25,27 +25,6 @@ QLabel#fileNameLabel
 QPushButton#removeButton
 {
 	background-color: #FF8C8C;
-	color: white;
-	font-weight: bold;
-}
-
-
-/* The click-to-browse button */
-QPushButton#browseButton
-{
-	background-color: #599CC1;
-	color: white;
-	font-weight: bold;
-}
-QPushButton#browseButton:hover
-{
-	background-color: #477C9A;
-	color: white;
-	font-weight: bold;
-}
-QPushButton#browseButton:pressed
-{
-	background-color: #355D73;
 	color: white;
 	font-weight: bold;
 }

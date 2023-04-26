@@ -2,7 +2,7 @@ import os
 from os.path import abspath
 
 from PySide2.QtCore import ( QCoreApplication, QMetaObject, QSize, Qt )
-from PySide2.QtGui import ( QFont, QIcon, QPixmap)
+from PySide2.QtGui import ( QFont, QIcon )
 from PySide2.QtWidgets import *
 
 from upload_file_region import UploadFileRegion
@@ -181,81 +181,79 @@ class Ui_MainWindow(object):
 
         # -------------------------------------------------------------------------------------------------
         # Page 1 Setup
-        self.page_1 = QWidget()
+
+        self.page_1_layout = QVBoxLayout()
+        self.page_1_layout.setObjectName("Page1_QVBoxLayout")
+
+        # Create a container widget to hold the labels
+        self.container_widget = QWidget()
+        self.container_widget.setObjectName(u"container_widget")
+        self.container_widget.setLayout(self.page_1_layout)
+
+        # Set the container widget as the widget of the scroll area
+        self.page_1 = QScrollArea()
         self.page_1.setObjectName(u"page_1")
-        self.verticalLayout_7 = QVBoxLayout(self.page_1)
-        self.verticalLayout_7.setObjectName(u"verticalLayout_7")
+        self.page_1.setWidget(self.container_widget)
+        self.page_1.setWidgetResizable(True)
+
+        # Welcome label
         self.label_1 = QLabel(self.page_1)
         self.label_1.setObjectName(u"label_1")
-        font = QFont()
-        font.setPointSize(40)
-        labelfont = QFont()
-        labelfont.setPointSize(20)
-        self.label_1.setFont(font)
-        self.label_1.setStyleSheet(u"color: #000;")
+        self.label_1.setStyleSheet(u"font: 40pt; color: #000;")
         self.label_1.setAlignment(Qt.AlignCenter)
-        self.verticalLayout_7.addWidget(self.label_1)
         
 
-
-        #self.label_p1 = QLabel(self.page_1)
-        #self.welcomeImagePixmap = QPixmap('./assets/images/officeteamstock.jpg')
-        #self.label_p1.setPixmap(self.welcomeImagePixmap)
-        #self.label_p1.setAlignment(Qt.AlignCenter)
-        #self.label_p1.resize(self.welcomeImagePixmap.width(), self.welcomeImagePixmap.height())
-        #self.label_p1.move(130,300)
-        #self.label_p1.show()
-
-        self.intro_para = QLabel(self.page_1)
+        # Body text
+        bodyTextFont = QFont()
+        bodyTextFont.setPointSize( 16 )
+       
+        self.intro_para = QLabel( self.container_widget )
         self.intro_para.setAlignment(Qt.AlignTop)
-        self.intro_para.setText("This tool was designed to automate the process of merging \n multiple LDR images together and generating an HDR image.")
-        self.intro_para.setFont(labelfont)
+        self.intro_para.setText("This tool was designed to automate the process of merging multiple LDR images together and generating an HDR image.")
+        self.intro_para.setFont(bodyTextFont)
+        self.intro_para.setStyleSheet( "border-top: 3px solid #6495ED;" )
+        self.intro_para.setWordWrap( True )
         self.intro_para.adjustSize()
-        self.intro_para.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
-        #self.intro_para.move(20,20)
-        self.intro_para.move(40,100)
 
-        #to read more paragraph
-        paperUrl = "<a href = \"https://drive.google.com/file/d/1qsz_XRwYatku_1YtNC-kbFxNRNs4Izno/view?usp=sharing\">here.</a>"
-        self.intro_para_2 = QLabel(self.page_1)
-        self.paper_label_url = QLabel(self.page_1)
-        self.paper_label_url.setOpenExternalLinks(True)
-        self.paper_label_url.setText(paperUrl)
-        self.paper_label_url.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
-        self.paper_label_url.move(590,230)
+        self.intro_para_2 = QLabel( self.container_widget )
+        self.intro_para_2.setOpenExternalLinks( True )
+        paragraphText_2 = 'To read more about the process of generating an HDR image from LDR image input, see the research paper by Clotilde Pierson <a href = \"https://doi.org/10.1080/15502724.2019.1684319\">here.</a><br>'
         self.intro_para_2.setAlignment(Qt.AlignTop)
-        self.intro_para_2.setText("To read more about the process of generating an HDR image from LDR image input, \n see the research paper by Clotilde Pierson ")
-        self.intro_para_2.setFont(labelfont)
+        self.intro_para_2.setText( paragraphText_2 )
+        self.intro_para_2.setFont(bodyTextFont)
+        self.intro_para_2.setStyleSheet( "border-top: 3px solid #6495ED;" )
+        self.intro_para_2.setWordWrap( True )
         self.intro_para_2.adjustSize()
-        self.intro_para_2.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
-        #self.intro_para_2.move(20,20)
-        self.intro_para_2.move(40,200)
 
-
-        #app version and feature paragraph
-        self.intro_para_3 = QLabel(self.page_1)
+        self.intro_para_3 = QLabel( self.container_widget )
         self.intro_para_3.setAlignment(Qt.AlignTop)
-        self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]: \n"
-                                  " -   This application assumes that the user already knows \n"
-                                  "      the settings of the camera that took the LDR images beforehand.\n"
-                                  " -   This application performs no calculations to cull the LDR images based on exposure.\n"
-                                  " -   Windows users must have the GNU package \"sed for windows\" installed and on the\n"
-                                  "     system PATH in order for view angles to be corrected.")
-        self.intro_para_3.setFont(labelfont)
+        self.intro_para_3.setTextFormat(Qt.RichText)
+        self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]:\n<ul>"
+                                  "<li>This application requires that Radiance is on your PATH.</li>\n"
+                                  "<li>This application assumes that the user already knows the settings of the camera that took the LDR images beforehand.</li>\n"
+                                  "<li>This application performs no calculations to cull the LDR images based on exposure.</li>\n"
+                                  "<li>Windows users must have the GNU package \"sed for windows\" installed and on the system PATH in order for view angles to be corrected.</li>\n</ul>")
+        self.intro_para_3.setFont(bodyTextFont)
+        self.intro_para_3.setStyleSheet( "border-top: 3px solid #6495ED;" )
+        self.intro_para_3.setWordWrap( True )
         self.intro_para_3.adjustSize()
-        self.intro_para_3.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
-        #self.intro_para_3.move(20,20)
-        self.intro_para_3.move(40,300)
-        
-        #if you need help paragraph
-        self.intro_para_4 = QLabel(self.page_1)
+
+        self.intro_para_4 = QLabel( self.container_widget )
         self.intro_para_4.setAlignment(Qt.AlignTop)
-        self.intro_para_4.setText("If you need any help with using this app, \n please try the help page.")
-        self.intro_para_4.setFont(labelfont)
+        paragraphText_4 = "If you need any help with using this app, please see the help page.\n"
+        self.intro_para_4.setText( paragraphText_4 )
+        self.intro_para_4.setFont(bodyTextFont)
+        self.intro_para_4.setStyleSheet( "border-top: 3px solid #6495ED;" )
+        self.intro_para_4.setWordWrap( True )
         self.intro_para_4.adjustSize()
-        self.intro_para_4.setStyleSheet("font: 17pt \".AppleSystemUIFont\";")
-        #self.intro_para.move(20,20)
-        self.intro_para_4.move(40,550)
+
+        # Add text to layout
+        self.page_1_layout.addWidget( self.label_1 )
+        self.page_1_layout.addWidget( self.intro_para )
+        self.page_1_layout.addWidget( self.intro_para_2 )
+        self.page_1_layout.addWidget( self.intro_para_3 )
+        self.page_1_layout.addWidget( self.intro_para_4 )
+
         # -------------------------------------------------------------------------------------------------
 
 
@@ -297,7 +295,7 @@ class Ui_MainWindow(object):
         self.label_cd = QLabel(self.mdiArea)
         self.label_cd.setAlignment(Qt.AlignLeft)
         self.label_cd.setText("Cropping Dimensions")
-        self.label_cd.setFont(labelfont)
+        self.label_cd.setFont(bodyTextFont)
         self.label_cd.adjustSize()
         self.label_cd.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
         self.label_cd.setStyleSheet("background-color: #a0a0a0")
@@ -311,7 +309,7 @@ class Ui_MainWindow(object):
         self.label_LVA = QLabel(self.mdiArea_2)
         self.label_LVA.setAlignment(Qt.AlignLeft)
         self.label_LVA.setText("Lens Viewing Angle")
-        self.label_LVA.setFont(labelfont)
+        self.label_LVA.setFont(bodyTextFont)
         self.label_LVA.adjustSize()
         self.label_LVA.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
         self.label_LVA.setStyleSheet("background-color: #a0a0a0")
@@ -326,7 +324,7 @@ class Ui_MainWindow(object):
         self.label_OID = QLabel(self.mdiArea_3)
         self.label_OID.setAlignment(Qt.AlignLeft)
         self.label_OID.setText("Output Image Dimensions")
-        self.label_OID.setFont(labelfont)
+        self.label_OID.setFont(bodyTextFont)
         self.label_OID.adjustSize()
         self.label_OID.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
         self.label_OID.setStyleSheet("background-color: #a0a0a0")
@@ -378,12 +376,6 @@ class Ui_MainWindow(object):
         self.inputField_yCropOffset.move(x_column2,160)
 
 
-        # Submit form button
-        # self.area1button = QPushButton('Enter', self.mdiArea)
-        # self.area1button.move(750,160)
-       # self.area1button.clicked.connect( self.setCroppingValues )
-
-
         # Lens Viewing Angle section
         
         # View Angle Vertical field
@@ -409,11 +401,6 @@ class Ui_MainWindow(object):
         self.inputField_viewAngleHorizontal.setText("")
         self.inputField_viewAngleHorizontal.setObjectName("inputField_viewAngleHorizontal")
         self.inputField_viewAngleHorizontal.move(x_column2,90)
-
-        # Submit form button
-        # self.area2button = QPushButton('Enter', self.mdiArea_2)
-        # self.area2button.move(750,160)
-      #  self.area2button.clicked.connect( self.setLensValues )
 
 
         # Output Image Dimensions section
@@ -443,20 +430,16 @@ class Ui_MainWindow(object):
         self.inputField_outputYRes.setObjectName("inputField_outputYRes")
         self.inputField_outputYRes.move(160,90)
 
-        # Submit form button
-        # self.area3button = QPushButton('Enter', self.mdiArea_3)
-        # self.area3button.move(750,160)
-      #  self.area3button.clicked.connect( self.setOutputDimensionValues )
 
         # Area 4 upload .rsp file region
-        rsp_uploadarea = UploadFileRegion("CameraResponseFileUpload", [900, 200], fileType=2 )
+        self.rsp_uploadarea = UploadFileRegion("CameraResponseFileUpload", [900, 200], fileType=2 )
 
 
         # Add widgets to Layout
         self.cameraSettingsPage.addWidget( self.mdiArea, stretch=1 )
         self.cameraSettingsPage.addWidget( self.mdiArea_2, stretch=1 )
         self.cameraSettingsPage.addWidget( self.mdiArea_3, stretch=1 )
-        self.cameraSettingsPage.addWidget( rsp_uploadarea, stretch=1 )
+        self.cameraSettingsPage.addWidget( self.rsp_uploadarea, stretch=1 )
         
         # -------------------------------------------------------------------------------------------------
 
@@ -479,33 +462,34 @@ class Ui_MainWindow(object):
 
         # Vignetting region
         # Add widget: UploadFileRegionObject class object
-        vc_UploadRegion = UploadFileRegion( "Vignetting", [900, 200], fileType=1 )
+        self.vc_UploadRegion = UploadFileRegion( "Vignetting", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( vc_UploadRegion )
+        self.calibrationPage.addWidget( self.vc_UploadRegion )
 
         # Fisheye correction region
         # Add widget: UploadFileRegionObject class object
-        fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [900, 200], fileType=1 )
+        self.fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( fc_UploadRegion )
+        self.calibrationPage.addWidget( self.fc_UploadRegion )
 
         # Camera factor region
         # Add widget: UploadFileRegionObject class object
-        cf_UploadRegion = UploadFileRegion( "CameraFactor", [900, 200], fileType=1 )
+        self.cf_UploadRegion = UploadFileRegion( "CameraFactor", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( cf_UploadRegion )
+        self.calibrationPage.addWidget( self.cf_UploadRegion )
 
         # Neutral Density Filter region
         # Add widget: UploadFileRegionObject class object
-        nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [900, 200], fileType=1 )
+        self.nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
-        self.calibrationPage.addWidget( nd_UploadRegion )
+        self.calibrationPage.addWidget( self.nd_UploadRegion )
 
         # -------------------------------------------------------------------------------------------------
+
 
 
         # -------------------------------------------------------------------------------------------------
@@ -519,16 +503,55 @@ class Ui_MainWindow(object):
 
         # -------------------------------------------------------------------------------------------------
 
-        #help page
-        self.page_h = QWidget()
-        self.page_h.setObjectName(u"page_h")
-        self.verticalLayout_11 = QVBoxLayout(self.page_h)
-        self.verticalLayout_11.setObjectName(u"verticalLayout_11")
-        #settings page
-        self.page_s = QWidget()
-        self.page_s.setObjectName(u"page_s")
-        self.verticalLayout_12 = QVBoxLayout(self.page_s)
-        self.verticalLayout_12.setObjectName(u"verticalLayout_12")
+
+
+        # -------------------------------------------------------------------------------------------------
+
+        # Help page
+        self.page_help_layout = QGridLayout()
+        self.page_help_layout.setObjectName("PageHelp_QGridLayout")
+
+        self.page_help = QWidget()
+        self.page_help.setObjectName( "page_help" )
+        self.page_help.setLayout( self.page_help_layout )
+
+        # Title label
+        self.page_help_title_label = QLabel( "Help", self.page_help )
+        self.page_help_title_label.setObjectName( "page_help_title_label" )
+        self.page_help_title_label.setStyleSheet( "font: 40pt; color: black;" )
+        self.page_help_title_label.setAlignment( Qt.AlignCenter )
+
+        # Add widgets and layouts
+        self.page_help_layout.addWidget( self.page_help_title_label )
+
+        # -------------------------------------------------------------------------------------------------
+
+
+
+        # -------------------------------------------------------------------------------------------------
+
+        # Settings page
+        self.page_settings_layout = QGridLayout()
+        self.page_settings_layout.setObjectName("PageSettings_QGridLayout")
+
+        self.page_settings = QWidget()
+        self.page_settings.setObjectName( "page_settings" )
+        self.page_settings.setLayout( self.page_settings_layout )
+
+        # Title label
+        self.page_settings_title_label = QLabel( "Settings", self.page_help )
+        self.page_settings_title_label.setObjectName( "page_settings_title_label" )
+        self.page_settings_title_label.setStyleSheet( "font: 40pt; color: black;" )
+        self.page_settings_title_label.setAlignment( Qt.AlignCenter )
+
+        # Add widgets and layouts
+        self.page_settings_layout.addWidget( self.page_settings_title_label )
+
+        # -------------------------------------------------------------------------------------------------
+
+
+
+        # -------------------------------------------------------------------------------------------------
 
         # Add pages to multi-page view stackedWidget
         self.stackedWidget.addWidget(self.page_1)
@@ -536,9 +559,8 @@ class Ui_MainWindow(object):
         self.stackedWidget.addWidget(self.page_3)
         self.stackedWidget.addWidget(self.page_4)
         self.stackedWidget.addWidget(self.page_5)
-        self.stackedWidget.addWidget(self.page_h)
-        self.stackedWidget.addWidget(self.page_s)
-
+        self.stackedWidget.addWidget(self.page_help)
+        self.stackedWidget.addWidget(self.page_settings)
 
         self.verticalLayout_5.addWidget(self.stackedWidget)
         self.verticalLayout.addWidget(self.Content)
@@ -550,6 +572,8 @@ class Ui_MainWindow(object):
         self.stackedWidget.setCurrentIndex(0)
 
         QMetaObject.connectSlotsByName(MainWindow)
+
+        return
     
 
     def retranslateUi(self, MainWindow):
@@ -660,12 +684,35 @@ class Ui_MainWindow(object):
         # Fill attributes from camera settings page
         self.ingestCameraSettingsFormData()
 
+        # If any of the calibration file uploads were disabled, set the filepath to None
+        if ( self.vc_UploadRegion.isEnabled == False ):
+            print( "vc enabled=false")
+            self.path_vignetting = None
+
+        if ( self.cf_UploadRegion.isEnabled == False ):
+            print( "cf enabled=false")
+            self.path_calfact = None
+
+        if ( self.fc_UploadRegion.isEnabled == False ):
+            print( "fc enabled=false")
+            self.path_fisheye = None
+
+        if ( self.nd_UploadRegion.isEnabled == False ):
+            print( "nd enabled=false")
+            self.path_ndfilter = None
+
         # Do some basic validation here
         # TODO
-
-        self.validateImages()
-        #self.validateCameraSettings()
-        #self.validateCalibration()
+        if ( self.validateImages() == False ):
+            print( "validateImages() failed!" )
+            return
+            # if ( self.validateCameraSettings() ):
+            #     print( "validateCameraSettings() failed!" )
+            #     return
+            
+            #     if ( self.validateCalibration() ):
+            #         print( "validateCalibration() failed!" )
+            #         return
 
         print("-----------------------------------------------------")
         print("goBtnClicked, here is the RadianceData obj. being sent:\n")
@@ -705,13 +752,19 @@ class Ui_MainWindow(object):
 
     # This function verifies that there is at least 1 image uploaded.
     def validateImages( self ):
+        # Set flag to pass or not
+        imageValidationPass = False
+
         imageUploader = self.page_2_Vlayout.itemAt(0).widget()
         uploadedImageCount = int( imageUploader.getTotalImagesCount() )
 
-        if ( uploadedImageCount < 1 ):
-            print( "Total images uploaded: {}".format( uploadedImageCount ) )
+        print( "Total images uploaded: {}".format( uploadedImageCount ) )
 
-        return
+        # Let pass if more than 1 image uploaded
+        if ( uploadedImageCount > 1 ):     
+            imageValidationPass = True
+
+        return imageValidationPass
 
     
     # This function validates the camera settings page form input.

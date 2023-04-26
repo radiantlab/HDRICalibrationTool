@@ -1,6 +1,6 @@
 import os
 
-from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
+from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QCheckBox
 from PySide2.QtGui import QPixmap
 from PySide2.QtCore import Qt, QRect
 
@@ -60,21 +60,24 @@ class UploadFileRegion( QWidget ):
         # Browse file button
         self.browseBtn = QPushButton( "Browse", self )
 
+        # Disable region checkbox
+        self.swapRegionInUseChkBox = QCheckBox( "Don't use", self )
+
         # Text labels for uploading
         self.dragTextLabel = QLabel( "drag file here to upload", self )
         self.orTextLabel = QLabel( "Or", self )
 
-        # Allow dropping files in this region
-        self.setAcceptDrops( True )
-
         # Init. flag that stores if region has an uploaded file.
         self.hasFile = False
+
+        # Flag that stores if region is disabled
+        self.isEnabled = True
 
         # Adjust elements of object
         self.create()
 
 
-    # Setting widget object names and pixmaps
+    # Setting widget object names and pixmaps, connecting any click event function
     def create( self ):
         # -------------------------------------------------------------------------------------
         # Upload Region
@@ -123,6 +126,11 @@ class UploadFileRegion( QWidget ):
         self.browseBtn.clicked.connect( self.browseFiles )
 
 
+        # Disable region checkbox
+        self.swapRegionInUseChkBox.setObjectName( "swapRegionInUseChkBox" )
+        self.swapRegionInUseChkBox.clicked.connect( self.swapRegionInUse )
+
+
         # Drag Text Label
         self.dragTextLabel.setObjectName( "dragTextLabel" )
 
@@ -133,7 +141,7 @@ class UploadFileRegion( QWidget ):
         # -------------------------------------------------------------------------------------
 
         # Set states of the created widgets (styles, visibility)
-        self.setWidgetStates()
+        self.setWidgetProperties()
 
         # Create layout and add widgets
         self.initRegionLayout()
@@ -187,7 +195,7 @@ class UploadFileRegion( QWidget ):
         self.buttonLabelHLayout.addWidget( self.orTextLabel, stretch=3, alignment=Qt.AlignCenter )
 
         self.upperHLayout.addWidget( self.regionLabel, stretch=6 )
-        self.upperHLayout.addWidget( self.regionSpacer, stretch=1 )
+        self.upperHLayout.addWidget( self.swapRegionInUseChkBox, stretch=1 )
         self.upperHLayout.addWidget( self.removeBtn, stretch=1 )
 
         # Add all inner layouts to the base layout for the region
@@ -199,9 +207,12 @@ class UploadFileRegion( QWidget ):
     # Allow the dragging of image/text files onto region.
     def dragEnterEvent( self, event ):
         # Only accept dragEnterEvents if region does not have a file already
-        if (self.hasFile == False):
-            if event.mimeData().hasText():
-                event.acceptProposedAction()
+        if ( self.hasFile == False ):
+            mime_data = event.mimeData()
+            if ( mime_data.hasUrls() and len(mime_data.urls()) == 1 ):
+                file_path = mime_data.urls()[0].toLocalFile()
+                if file_path.endswith(('.txt', '.cal', '.rsp')):
+                    event.acceptProposedAction()
 
 
     # On image/text file drop event
@@ -236,18 +247,35 @@ class UploadFileRegion( QWidget ):
 
         self.resetWidgetState()
 
+    
+    # Region checkbox click event
+    def swapRegionInUse( self ):
+        # Swap flag value
+        self.isEnabled = not self.isEnabled
+
+        if ( self.isEnabled == True ):
+            print( "Enabling upload file region: {}".format( self.regionLabel.text() ) )
+
+        else:
+            print( "Disabling upload file region: {}".format( self.regionLabel.text() ) )
+
+        self.setWidgetProperties()
+        
+        return
+
    
     # Reset the widget to the default state
     def resetWidgetState( self ):
-        # Set hasFile flag
+        # Set flags
         self.hasFile = False
+        self.isEnabled = True
 
         # Clear file name/path labels' text
         self.fileNameLabel.setText("")
         self.filePathLabel.setText("")
 
-        # Set widget states
-        self.setWidgetStates()
+        # Set widget properties
+        self.setWidgetProperties()
 
         return
 
@@ -299,7 +327,7 @@ class UploadFileRegion( QWidget ):
 
             self.validateFile()
 
-            self.setWidgetStates()
+            self.setWidgetProperties()
         
         else:
             print( "{} has no file!".format( self.regionName ) )
@@ -331,6 +359,9 @@ class UploadFileRegion( QWidget ):
 
             # Hide Browse button
             self.browseBtn.hide()
+
+            # Hide checkbox
+            self.swapRegionInUseChkBox.hide()
         
         else:
             # Hide file name label
@@ -352,24 +383,40 @@ class UploadFileRegion( QWidget ):
             # Show Browse button
             self.browseBtn.show()
 
+            # Show checkbox
+            self.swapRegionInUseChkBox.show()
+
         return
     
 
-    # Sets the style of widgets based on the region having a file or not
+    # Sets the style of widgets
+    # The disabling checkbox and if a file is uploaded or not affects the style
     def setWidgetStyle( self ):
         # Set property for stylesheet to apply correct style
         self.uploadRegion.setProperty( "hasFile", self.hasFile )
+        self.uploadRegion.setProperty( "isEnabled", self.isEnabled )
         self.regionSpacer.setProperty( "hasFile", self.hasFile )
+        self.regionSpacer.setProperty( "isEnabled", self.isEnabled )
 
         # Icons
         self.fileIcon.setProperty( "hasFile", self.hasFile )
+        self.fileIcon.setProperty( "isEnabled", self.isEnabled )
         self.uploadFileIcon.setProperty( "hasFile", self.hasFile )
+        self.uploadFileIcon.setProperty( "isEnabled", self.isEnabled )
 
         # Labels
         self.fileNameLabel.setProperty( "hasFile", self.hasFile )
+        self.fileNameLabel.setProperty( "isEnabled", self.isEnabled )
         self.regionLabel.setProperty( "hasFile", self.hasFile )
+        self.regionLabel.setProperty( "isEnabled", self.isEnabled )
         self.orTextLabel.setProperty( "hasFile", self.hasFile )
+        self.orTextLabel.setProperty( "isEnabled", self.isEnabled )
         self.dragTextLabel.setProperty( "hasFile", self.hasFile )
+        self.dragTextLabel.setProperty( "isEnabled", self.isEnabled )
+
+        # Buttons and checkboxes
+        self.browseBtn.setProperty( "isEnabled", self.isEnabled )
+        self.swapRegionInUseChkBox.setProperty( "isEnabled", self.isEnabled )
 
 
         # Apply style
@@ -390,14 +437,35 @@ class UploadFileRegion( QWidget ):
             # Buttons
             self.removeBtn.setStyleSheet( stylesheet.read() )
             self.browseBtn.setStyleSheet( stylesheet.read() )
+
+            # Checkbox
+            self.swapRegionInUseChkBox.setStyleSheet( stylesheet.read() )
         
         return
 
 
-    # Sets the state of the region's widgets
+    # Sets the states of widgets
     def setWidgetStates( self ):
+        self.swapRegionInUseChkBox.setEnabled( True )
+
+        if ( self.isEnabled == True ):
+            self.browseBtn.setEnabled( True )
+            self.setAcceptDrops( True )
+
+        else:
+            self.browseBtn.setEnabled( False )
+            self.setAcceptDrops( False )
+
+        return
+
+
+    # Sets the visibility, state, and styling of the region's widgets
+    def setWidgetProperties( self ):
         # Set widget visibility
         self.setWidgetVisibility()
+
+        # Set widget states
+        self.setWidgetStates()
 
         # Set widget style
         self.setWidgetStyle()
