@@ -9,10 +9,16 @@ QLabel[hasFile="true"]#regionLabel
 	font-weight: bold;
 	font-size: 28px;
 }
-QLabel[hasFile="false"]#regionLabel
+QLabel[hasFile="false"][isEnabled="true"]#regionLabel
 {
 	background-color: #CBEEB0;
 	color: black;
+	font-weight: bold;
+	font-size: 28px;
+}
+QLabel[hasFile="false"][isEnabled="false"]#regionLabel
+{
+	color: #E5E5E5;
 	font-weight: bold;
 	font-size: 28px;
 }
@@ -71,11 +77,38 @@ QPushButton#browseButton:pressed
 	color: white;
 	font-weight: bold;
 }
+QPushButton#browseButton:disabled
+{
+	background-color: #899499;
+	color: #E5E4E2;
+}
 
 
 /* The upload text labels in the UploadFileRegion */
+QLabel[isEnabled="false"]#dragTextLabel, QLabel[isEnabled="false"]#orTextLabel
+{
+	color: #818589;
+	font-weight: bold;
+}
+/* The upload text labels in the UploadFileRegion */
 QLabel#dragTextLabel, QLabel#orTextLabel
 {
+	font-weight: bold;
+}
+
+
+/* The checkbox that disables the usage of this region */
+
+QCheckBox[isEnabled="true"]
+{
+	background-color: #CBEEB0;
+	color: black;
+	font-weight: bold;
+}
+QCheckBox[isEnabled="false"]
+{
+	background-color: #FF8C8C;
+	color: white;
 	font-weight: bold;
 }
 
@@ -86,7 +119,11 @@ QWidget[hasFile="true"]
 {
 	background-color: white;
 }
-QWidget[hasFile="false"]
+QWidget[hasFile="false"][isEnabled="true"]
 {
 	background-color: #CBEEB0;
+}
+QWidget[hasFile="false"][isEnabled="false"]
+{
+	background-color: #8ea67b;
 }
