@@ -1,0 +1,129 @@
+/* Styling document for the UploadFileRegion class. */
+
+
+/* The label for the upload region */
+QLabel[hasFile="true"]#regionLabel
+{
+	background-color: white;
+	color: black;
+	font-weight: bold;
+	font-size: 28px;
+}
+QLabel[hasFile="false"][isEnabled="true"]#regionLabel
+{
+	background-color: #CBEEB0;
+	color: black;
+	font-weight: bold;
+	font-size: 28px;
+}
+QLabel[hasFile="false"][isEnabled="false"]#regionLabel
+{
+	color: #E5E5E5;
+	font-weight: bold;
+	font-size: 28px;
+}
+
+
+/* The file name label */
+QLabel[hasFile="true"]#fileNameLabel
+{
+	background-color: white;
+	color: black;
+	font-weight: bold;
+	font-size: 20px;
+}
+QLabel[hasFile="false"]#fileNameLabel
+{
+	background-color: #CBEEB0;
+}
+
+
+/* The file icon */
+QLabel[hasFile="true"]#fileIcon
+{
+	background-color: white;
+}
+QLabel[hasFile="false"]#fileIcon
+{
+	background-color: #CBEEB0;
+}
+
+
+/* The remove button */
+QPushButton#removeButton
+{
+	background-color: #FF8C8C;
+	color: white;
+	font-weight: bold;
+}
+
+
+/* The click-to-browse button */
+QPushButton#browseButton
+{
+	background-color: #599CC1;
+	color: white;
+	font-weight: bold;
+}
+QPushButton#browseButton:hover
+{
+	background-color: #477C9A;
+	color: white;
+	font-weight: bold;
+}
+QPushButton#browseButton:pressed
+{
+	background-color: #355D73;
+	color: white;
+	font-weight: bold;
+}
+QPushButton#browseButton:disabled
+{
+	background-color: #899499;
+	color: #E5E4E2;
+}
+
+
+/* The upload text labels in the UploadFileRegion */
+QLabel[isEnabled="false"]#dragTextLabel, QLabel[isEnabled="false"]#orTextLabel
+{
+	color: #818589;
+	font-weight: bold;
+}
+/* The upload text labels in the UploadFileRegion */
+QLabel#dragTextLabel, QLabel#orTextLabel
+{
+	font-weight: bold;
+}
+
+
+/* The checkbox that disables the usage of this region */
+
+QCheckBox[isEnabled="true"]
+{
+	background-color: #CBEEB0;
+	color: black;
+	font-weight: bold;
+}
+QCheckBox[isEnabled="false"]
+{
+	background-color: #FF8C8C;
+	color: white;
+	font-weight: bold;
+}
+
+
+/* The visible portion of the upload region, including placeholder spacers */
+
+QWidget[hasFile="true"]
+{
+	background-color: white;
+}
+QWidget[hasFile="false"][isEnabled="true"]
+{
+	background-color: #CBEEB0;
+}
+QWidget[hasFile="false"][isEnabled="false"]
+{
+	background-color: #8ea67b;
+}
