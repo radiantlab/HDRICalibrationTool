@@ -645,9 +645,9 @@ class Ui_MainWindow(object):
     
     # Sets the RadianceObject properties from the cropping values inputsection
     def setCroppingValues( self ):
-        print( "self.inputField_fisheyeViewDiameter.text(): {}".format(self.inputField_fisheyeViewDiameter.text()))
-        print( "self.inputField_xCropOffset.text(): {}".format(self.inputField_xCropOffset.text()))
-        print( "self.inputField_yCropOffset.text(): {}".format(self.inputField_yCropOffset.text()))
+        # print( "self.inputField_fisheyeViewDiameter.text(): {}".format(self.inputField_fisheyeViewDiameter.text()))
+        # print( "self.inputField_xCropOffset.text(): {}".format(self.inputField_xCropOffset.text()))
+        # print( "self.inputField_yCropOffset.text(): {}".format(self.inputField_yCropOffset.text()))
         
         # Fill Radiance object attribute values from form
         self.diameter = self.inputField_fisheyeViewDiameter.text()
@@ -659,8 +659,8 @@ class Ui_MainWindow(object):
 
     # Sets the RadianceObject properties from the lens values inputsection
     def setLensValues( self ):
-        print( "self.inputField_viewAngleVertical.text(): {}".format(self.inputField_viewAngleVertical.text()))
-        print( "self.inputField_viewAngleHorizontal.text(): {}".format(self.inputField_viewAngleHorizontal.text()))
+        # print( "self.inputField_viewAngleVertical.text(): {}".format(self.inputField_viewAngleVertical.text()))
+        # print( "self.inputField_viewAngleHorizontal.text(): {}".format(self.inputField_viewAngleHorizontal.text()))
 
         # Fill Radiance object attribute values from form
         self.view_angle_vertical = self.inputField_viewAngleVertical.text()
@@ -671,8 +671,8 @@ class Ui_MainWindow(object):
 
     # Sets the RadianceObject properties from the output dimensions inputsection
     def setOutputDimensionValues( self ):
-        print( "self.inputField_outputXRes.text(): {}".format(self.inputField_outputXRes.text()))
-        print( "self.inputField_outputYRes.text(): {}".format(self.inputField_outputYRes.text()))
+        # print( "self.inputField_outputXRes.text(): {}".format(self.inputField_outputXRes.text()))
+        # print( "self.inputField_outputYRes.text(): {}".format(self.inputField_outputYRes.text()))
 
         # Fill Radiance object attribute values from form
         self.target_x_resolution = self.inputField_outputXRes.text()
