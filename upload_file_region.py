@@ -60,7 +60,8 @@ class UploadFileRegion( QWidget ):
         # Browse file button
         self.browseBtn = QPushButton( "Browse", self )
 
-        # Disable region checkbox
+        # Disable region label and checkbox
+        self.swapRegionInUseLabel = QLabel( self )
         self.swapRegionInUseChkBox = QCheckBox( "Don't use", self )
 
         # Text labels for uploading
@@ -125,6 +126,24 @@ class UploadFileRegion( QWidget ):
         # Connect event to signal
         self.browseBtn.clicked.connect( self.browseFiles )
 
+
+        # Disable region label
+        self.swapRegionInUseLabel.setObjectName( "swapRegionInUseLabel" )
+        self.swapRegionInUseLabel.setWordWrap( True )
+
+        # .cal file
+        if ( self.fileType == 1 ):
+            labelText = "This calibration step will be omitted from the pipeline process, which may produce unintended results."
+            self.swapRegionInUseLabel.setText( labelText )
+        
+        # .rsp file
+        elif ( self.fileType == 2 ):
+            labelText = "Radiance will attempt to automatically generate a response function file, which may fail or have unintended results."
+            self.swapRegionInUseLabel.setText( labelText )
+
+        else:
+            labelText = "File will not be used."
+            self.swapRegionInUseLabel.setText( labelText )
 
         # Disable region checkbox
         self.swapRegionInUseChkBox.setObjectName( "swapRegionInUseChkBox" )
@@ -195,6 +214,7 @@ class UploadFileRegion( QWidget ):
         self.buttonLabelHLayout.addWidget( self.orTextLabel, stretch=3, alignment=Qt.AlignCenter )
 
         self.upperHLayout.addWidget( self.regionLabel, stretch=6 )
+        self.upperHLayout.addWidget( self.swapRegionInUseLabel, stretch=4 )
         self.upperHLayout.addWidget( self.swapRegionInUseChkBox, stretch=1 )
         self.upperHLayout.addWidget( self.removeBtn, stretch=1 )
 
@@ -255,6 +275,7 @@ class UploadFileRegion( QWidget ):
 
         if ( self.isEnabled == True ):
             print( "Enabling upload file region: {}".format( self.regionLabel.text() ) )
+            self.filePathLabel.setText( "" )
 
         else:
             print( "Disabling upload file region: {}".format( self.regionLabel.text() ) )
@@ -339,7 +360,17 @@ class UploadFileRegion( QWidget ):
     def setWidgetVisibility( self ):
         # Always
         self.filePathLabel.hide()
+        
 
+        # Upload File Region is enabled
+        if ( self.isEnabled == True ):
+            self.swapRegionInUseLabel.hide()
+        
+        else:
+            self.swapRegionInUseLabel.show()
+
+
+        # Upload File Region has a file uploaded
         if ( self.hasFile == True ):
             # Show fileNameLabel
             self.fileNameLabel.show()
@@ -413,6 +444,7 @@ class UploadFileRegion( QWidget ):
         self.orTextLabel.setProperty( "isEnabled", self.isEnabled )
         self.dragTextLabel.setProperty( "hasFile", self.hasFile )
         self.dragTextLabel.setProperty( "isEnabled", self.isEnabled )
+        self.swapRegionInUseLabel.setProperty( "isEnabled", self.isEnabled )
 
         # Buttons and checkboxes
         self.browseBtn.setProperty( "isEnabled", self.isEnabled )
@@ -433,6 +465,7 @@ class UploadFileRegion( QWidget ):
             self.regionLabel.setStyleSheet( stylesheet.read() )
             self.orTextLabel.setStyleSheet( stylesheet.read() )
             self.dragTextLabel.setStyleSheet( stylesheet.read() )
+            self.swapRegionInUseLabel.setStyleSheet( stylesheet.read() )
 
             # Buttons
             self.removeBtn.setStyleSheet( stylesheet.read() )
