@@ -102,11 +102,15 @@ class Ui_MainWindow(object):
         self.btn_page_4.setProperty( "isActivePage", False )
         self.btn_page_4.setMinimumSize( QSize( 0, 48 ) )
 
-        # Go button - Starts Radiance pipeline process
+        # Start pipeline 'Go' button - Starts Radiance pipeline process
         self.btn_start_pipeline = QPushButton( self.sidebarMenuFrame )
         self.btn_start_pipeline.setObjectName( "btn_start_pipeline" )
         self.btn_start_pipeline.setProperty( "isActivePage", False )
         self.btn_start_pipeline.setMinimumSize( QSize( 0, 64 ) )
+
+        # Go button error label
+        self.start_pipeline_error_label = QLabel( self.sidebarMenuFrame )
+        self.start_pipeline_error_label.setObjectName( "start_pipeline_error_label" )
 
         # Help button
         self.btn_help = QPushButton(self.sidebarMenuFrame)
@@ -116,7 +120,7 @@ class Ui_MainWindow(object):
         self.btn_help.setMinimumSize(QSize(0, 40))
         self.btn_help.setIcon( QIcon("./assets/icons/help-icon.png") )
 
-        #settings button
+        # Settings button
         self.btn_settings = QPushButton( "Settings", self.sidebarMenuFrame)
         self.btn_settings.setObjectName( u"btn_settings" )
         self.btn_settings.setProperty( "isActivePage", False )
@@ -133,7 +137,7 @@ class Ui_MainWindow(object):
         self.btn_page_3.clicked.connect( lambda: self.setActivePage( self.btn_page_3 ) )
         self.btn_page_4.clicked.connect( lambda: self.setActivePage( self.btn_page_4 ) )
         
-        self.btn_start_pipeline.clicked.connect( lambda: self.setActivePage( self.btn_start_pipeline ) )
+        # Link pipeline function to GO button
         self.btn_start_pipeline.clicked.connect( self.goButtonClicked )
 
         self.btn_help.clicked.connect( lambda: self.setActivePage( self.btn_help ) )
@@ -145,7 +149,8 @@ class Ui_MainWindow(object):
         self.sidebarMenuVLayout.addWidget( self.btn_page_3, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_page_4, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_start_pipeline, stretch=1 )
-        self.sidebarMenuVLayout.addWidget( QWidget(), stretch=20 )
+        self.sidebarMenuVLayout.addWidget( self.start_pipeline_error_label, stretch=4 )
+        self.sidebarMenuVLayout.addWidget( QWidget(), stretch=16 )
         self.sidebarMenuVLayout.addWidget( self.btn_help, stretch=1, alignment=Qt.AlignBottom )
         self.sidebarMenuVLayout.addWidget( self.btn_settings, stretch=2, alignment=Qt.AlignBottom )
 
@@ -598,7 +603,6 @@ class Ui_MainWindow(object):
         self.btn_page_2.setProperty( "isActivePage", False )
         self.btn_page_3.setProperty( "isActivePage", False )
         self.btn_page_4.setProperty( "isActivePage", False )
-        self.btn_start_pipeline.setProperty( "isActivePage", False )
         self.btn_help.setProperty( "isActivePage", False )
         self.btn_settings.setProperty( "isActivePage", False )
 
@@ -610,8 +614,6 @@ class Ui_MainWindow(object):
             self.btn_page_3.setProperty( "isActivePage", True )
         elif  ( newActiveBtn.objectName() == "btn_page_4" ):
             self.btn_page_4.setProperty( "isActivePage", True )
-        elif  ( newActiveBtn.objectName() == "btn_start_pipeline" ):
-            self.btn_start_pipeline.setProperty( "isActivePage", True )
         elif  ( newActiveBtn.objectName() == "btn_help" ):
             self.btn_help.setProperty( "isActivePage", True )
         elif  ( newActiveBtn.objectName() == "btn_settings" ):
@@ -681,6 +683,15 @@ class Ui_MainWindow(object):
 
     # Click event function for the GO button
     def goButtonClicked( self ):
+        # Flag to enable or disable GO button
+        radianceObjectToSendIsValid = False
+
+        # Validation flags for user input subsections
+        uploadedImagesValid = False
+        cameraSettingsInputValid = False
+        calibrationFilesValid = False
+
+
         # Fill attributes from camera settings page
         self.ingestCameraSettingsFormData()
 
@@ -701,37 +712,57 @@ class Ui_MainWindow(object):
             print( "nd enabled=false")
             self.path_ndfilter = None
 
+
         # Do some basic validation here
-        # TODO
-        if ( self.validateImages() == False ):
+        imageErrors = self.validateImages()
+        if ( len( imageErrors ) > 0 ):
             print( "validateImages() failed!" )
-            return
-            # if ( self.validateCameraSettings() ):
-            #     print( "validateCameraSettings() failed!" )
-            #     return
-            
-            #     if ( self.validateCalibration() ):
-            #         print( "validateCalibration() failed!" )
-            #         return
+            print( "imageErrors: %s", imageErrors )
+            uploadedImagesValid = False
+        
+        cameraSettingsErrors = self.validateCameraSettings()
+        if ( len( cameraSettingsErrors ) > 0 ):
+            print( "validateCameraSettings() failed!" )
+            print( "cameraSettingsErrors: %s", cameraSettingsErrors )
+            cameraSettingsInputValid = False
+        
+        calibrationErrors = self.validateCalibration()
+        if ( len( calibrationErrors ) > 0 ):
+            print( "validateCalibration() failed!" )
+            print( "calibrationErrors: %s", calibrationErrors )
+            calibrationFilesValid = False
 
-        print("-----------------------------------------------------")
-        print("goBtnClicked, here is the RadianceData obj. being sent:\n")
-        print("self.diameter: {}".format( self.diameter ))
-        print("self.crop_x_left: {}".format( self.crop_x_left ))
-        print("self.crop_y_down: {}".format( self.crop_y_down ))
-        print("self.view_angle_vertical: {}".format( self.view_angle_vertical ))
-        print("self.view_angle_horizontal: {}".format( self.view_angle_horizontal ))
-        print("self.target_x_resolution: {}".format( self.target_x_resolution ))
-        print("self.target_y_resolution: {}".format( self.target_y_resolution ))
-        print("self.paths_ldr: {}".format( self.paths_ldr ))
-        print("self.path_rsp_fn: {}".format( self.path_rsp_fn ))
-        print("self.path_vignetting: {}".format( self.path_vignetting ))
-        print("self.path_fisheye: {}".format( self.path_fisheye ))
-        print("self.path_ndfilter: {}".format( self.path_ndfilter ))
-        print("self.path_calfact: {}".format( self.path_calfact ))
-        print("-----------------------------------------------------")
+        # Check if validation steps all passed
+        if ( uploadedImagesValid and cameraSettingsInputValid and calibrationFilesValid ):
+            radianceObjectToSendIsValid = True
 
-        self.openProgressWindow()
+
+        # If Radiance object is valid, call pipeline
+        if ( radianceObjectToSendIsValid == True):
+            print("-----------------------------------------------------")
+            print("goBtnClicked, here is the RadianceData obj. being sent:\n")
+            print("self.diameter: {}".format( self.diameter ))
+            print("self.crop_x_left: {}".format( self.crop_x_left ))
+            print("self.crop_y_down: {}".format( self.crop_y_down ))
+            print("self.view_angle_vertical: {}".format( self.view_angle_vertical ))
+            print("self.view_angle_horizontal: {}".format( self.view_angle_horizontal ))
+            print("self.target_x_resolution: {}".format( self.target_x_resolution ))
+            print("self.target_y_resolution: {}".format( self.target_y_resolution ))
+            print("self.paths_ldr: {}".format( self.paths_ldr ))
+            print("self.path_rsp_fn: {}".format( self.path_rsp_fn ))
+            print("self.path_vignetting: {}".format( self.path_vignetting ))
+            print("self.path_fisheye: {}".format( self.path_fisheye ))
+            print("self.path_ndfilter: {}".format( self.path_ndfilter ))
+            print("self.path_calfact: {}".format( self.path_calfact ))
+            print("-----------------------------------------------------")
+
+            self.openProgressWindow()
+
+
+        # Insufficient information, tell user which info is missing
+        else:
+            self.goBtnErrorDialogOpen( imageErrors, cameraSettingsErrors, calibrationErrors )
+
 
         return
     
@@ -751,31 +782,135 @@ class Ui_MainWindow(object):
     
 
     # This function verifies that there is at least 1 image uploaded.
+    # Returns a list of errors to print.
     def validateImages( self ):
         # Set flag to pass or not
-        imageValidationPass = False
+        errors = []
 
         imageUploader = self.page_2_Vlayout.itemAt(0).widget()
         uploadedImageCount = int( imageUploader.getTotalImagesCount() )
 
         print( "Total images uploaded: {}".format( uploadedImageCount ) )
 
-        # Let pass if more than 1 image uploaded
-        if ( uploadedImageCount > 1 ):     
-            imageValidationPass = True
+        # Needs at least 1 image uploaded.
+        if ( uploadedImageCount <= 0 ):     
+            errors.append( "- No LDR images are uploaded. Please upload at least 1 LDR image. " )
 
-        return imageValidationPass
+        return errors
 
     
     # This function validates the camera settings page form input.
+    # Returns a list of errors to print.
     def validateCameraSettings( self ):
-        #TODO
+        # Function error list to return
+        errors = []
 
-        return
+        # Flag defaults
+        rspIsEnabled = True
+        rspIsEmpty = True
+        cropping_fisheyeDiameterIsEmpty = True
+        cropping_xCropOffsetIsEmpty = True
+        cropping_yCropOffsetIsEmpty = True
+        lens_viewVerticalIsEmpty = True
+        lens_viewHorizontalIsEmpty = True
+        output_xResolutionIsEmpty = True
+        output_yResolutionIsEmpty = True
+
+        # Set flags
+        rspIsEnabled = self.vc_UploadRegion.isEnabled
+        if ( self.path_rsp_fn == "" ):
+            rspIsEmpty = True
+
+        # Set error messages
+        if ( rspIsEnabled and rspIsEmpty ):
+            errors.append( "- Response Function .rsp file missing: Upload or choose to omit this file. " )
+        
+        if ( cropping_fisheyeDiameterIsEmpty ):
+            errors.append( "- Camera Input Settings: Fisheye view diameter field missing a value. " )
+        
+        if ( cropping_xCropOffsetIsEmpty ):
+            errors.append( "- Camera Input Settings: X Crop Offset field missing a value. " )
+
+        if ( cropping_yCropOffsetIsEmpty ):
+            errors.append( "- Camera Input Settings: Y Crop Offset field missing a value. " )
+
+        if ( lens_viewVerticalIsEmpty ):
+            errors.append( "- Camera Input Settings: Lens view angle vertical field missing a value. " )
+
+        if ( lens_viewHorizontalIsEmpty ):
+            errors.append( "- Camera Input Settings: Lens view angle horizontal field missing a value. " )
+
+        if ( output_xResolutionIsEmpty ):
+            errors.append( "- Camera Input Settings: Output image X resolution field missing a value. " )
+
+        if ( output_yResolutionIsEmpty ):
+            errors.append( "- Camera Input Settings: Output image Y resolution field missing a value. " )
+
+        return errors
     
 
     # This function validates the uploaded calibration files.
+    # It checks if every calibration file is either disabled or has a file uploaded.
+    # Returns a list of errors to print.
     def validateCalibration( self ):
-        #TODO
+        # Function error list to return
+        errors = []
+
+        # File upload flag defaults
+        vcIsEnabled = True
+        vcIsEmpty = True
+        cfIsEnabled = True
+        cfIsEmpty = True
+        fcIsEnabled = True
+        fcIsEmpty = True
+        ndIsEnabled = True
+        ndIsEmpty = True
+
+        # Set flags
+        vcIsEnabled = self.vc_UploadRegion.isEnabled
+        if ( self.path_vignetting == "" ):
+            vcIsEmpty = True
+        
+        cfIsEnabled = self.cf_UploadRegion.isEnabled
+        if ( self.path_calfact == "" ):
+            cfIsEmpty = True
+
+        fcIsEnabled = self.fc_UploadRegion.isEnabled
+        if ( self.path_fisheye == "" ):
+            fcIsEmpty = True
+
+        ndIsEnabled = self.nd_UploadRegion.isEnabled
+        if ( self.path_ndfilter == "" ):
+            ndIsEmpty = True
+
+        # Set error messages
+        if (vcIsEnabled and vcIsEmpty ):
+            errors.append( "- Vignetting .cal file missing: Upload or choose to omit this file. " )
+
+        if (cfIsEnabled and cfIsEmpty ):
+            errors.append( "- Camera Factor .cal file missing: Upload or choose to omit this file. " )
+
+        if (fcIsEnabled and fcIsEmpty ):
+            errors.append( "- Fisheye Correction .cal file missing: Upload or choose to omit this file. " )
+
+        if (ndIsEnabled and ndIsEmpty ):
+            errors.append( "- Neutral Denisty Filter .cal file missing: Upload or choose to omit this file. " )
+
+        return errors
+    
+
+    # Opens a message box to display errors preventing go button from being clicked
+    def goBtnErrorDialogOpen( self, imageErrors, cameraSettingsErrors, calibrationErrors ):
+        title = "HDRI Calibration Tool GO Button blocked: Missing info"
+        message = "ATTENTION:\nRequired information is missing. Please see the error messages below before starting the HDR Image generation process:\n\n"
+
+        message += '\n'.join( imageErrors )
+        message += "\n"
+        message += '\n'.join( calibrationErrors )
+        message += "\n"
+        message += '\n'.join( cameraSettingsErrors )
+        message += "\n"
+
+        QMessageBox.about( QWidget(), title, message )
 
         return
