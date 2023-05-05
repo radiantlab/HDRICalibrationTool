@@ -78,7 +78,7 @@ class UploadFileRegion( QWidget ):
         self.create()
 
 
-    # Setting widget object names and pixmaps, connecting any click event function
+    # Setting widget object names and pixmaps, connecting click event functions
     def create( self ):
         # -------------------------------------------------------------------------------------
         # Upload Region
@@ -131,20 +131,22 @@ class UploadFileRegion( QWidget ):
         self.swapRegionInUseLabel.setObjectName( "swapRegionInUseLabel" )
         self.swapRegionInUseLabel.setWordWrap( True )
 
-        # .cal file
+        # If .cal file, set label text
         if ( self.fileType == 1 ):
             labelText = "This calibration step will be omitted from the pipeline process, which may produce unintended results."
             self.swapRegionInUseLabel.setText( labelText )
         
-        # .rsp file
+        # If .rsp file, set label text
         elif ( self.fileType == 2 ):
             labelText = "Radiance will attempt to automatically generate a response function file, which may fail or have unintended results."
             self.swapRegionInUseLabel.setText( labelText )
 
+        # Default label text
         else:
             labelText = "File will not be used."
             self.swapRegionInUseLabel.setText( labelText )
 
+            
         # Disable region checkbox
         self.swapRegionInUseChkBox.setObjectName( "swapRegionInUseChkBox" )
         self.swapRegionInUseChkBox.clicked.connect( self.swapRegionInUse )
@@ -159,7 +161,7 @@ class UploadFileRegion( QWidget ):
 
         # -------------------------------------------------------------------------------------
 
-        # Set states of the created widgets (styles, visibility)
+        # Set properties of the created widgets (states, styles, visibility)
         self.setWidgetProperties()
 
         # Create layout and add widgets
@@ -229,10 +231,16 @@ class UploadFileRegion( QWidget ):
         # Only accept dragEnterEvents if region does not have a file already
         if ( self.hasFile == False ):
             mime_data = event.mimeData()
+            
+            # Restrict to only allow 1 file to be dragged onto this region
             if ( mime_data.hasUrls() and len(mime_data.urls()) == 1 ):
                 file_path = mime_data.urls()[0].toLocalFile()
+                
+                # Restrict to these file types
                 if file_path.endswith(('.txt', '.cal', '.rsp')):
                     event.acceptProposedAction()
+                    
+        return
 
 
     # On image/text file drop event
@@ -254,18 +262,21 @@ class UploadFileRegion( QWidget ):
         filename = self.getFilenameFromPath( filepath )
         self.fileNameLabel.setText( filename )
 
-        
         self.fileUploadedEvent()
 
-
         event.acceptProposedAction()
+        
+        return
 
 
     # Remove button click event
     def removeBtnClicked( self ):
         print( "Removing uploaded file: {} from path: {}".format( self.fileNameLabel.text(), self.filePathLabel.text() ) )
 
-        self.resetWidgetState()
+        # Reset widget to default
+        self.resetWidgetProperties()
+        
+        return
 
     
     # Region checkbox click event
@@ -285,8 +296,8 @@ class UploadFileRegion( QWidget ):
         return
 
    
-    # Reset the widget to the default state
-    def resetWidgetState( self ):
+    # Reset the widget to the default properties
+    def resetWidgetProperties( self ):
         # Set flags
         self.hasFile = False
         self.isEnabled = True
@@ -394,6 +405,7 @@ class UploadFileRegion( QWidget ):
             # Hide checkbox
             self.swapRegionInUseChkBox.hide()
         
+        # No file uploaded
         else:
             # Hide file name label
             self.fileNameLabel.hide()
@@ -421,7 +433,7 @@ class UploadFileRegion( QWidget ):
     
 
     # Sets the style of widgets
-    # The disabling checkbox and if a file is uploaded or not affects the style
+    # Style is affected by the checkbox to disable the region, as well as if the file has a file uploaded or not.
     def setWidgetStyle( self ):
         # Set property for stylesheet to apply correct style
         self.uploadRegion.setProperty( "hasFile", self.hasFile )
@@ -449,7 +461,6 @@ class UploadFileRegion( QWidget ):
         # Buttons and checkboxes
         self.browseBtn.setProperty( "isEnabled", self.isEnabled )
         self.swapRegionInUseChkBox.setProperty( "isEnabled", self.isEnabled )
-
 
         # Apply style
         with open( self.region_style_path, "r" ) as stylesheet:
@@ -492,7 +503,7 @@ class UploadFileRegion( QWidget ):
         return
 
 
-    # Sets the visibility, state, and styling of the region's widgets
+    # Sets the visibility, states, and styling of the region's widgets
     def setWidgetProperties( self ):
         # Set widget visibility
         self.setWidgetVisibility()
@@ -574,7 +585,7 @@ class UploadFileRegion( QWidget ):
                     uiObject.path_rsp_fn = self.filePathLabel.text()
                     print( "Set path_rsp_fn to path: {}".format( self.filePathLabel.text() ) )
 
-
+            # Default
             else:
                 print( "Upload region is unknown. self.uploadRegion.objectName(): {}".format( self.uploadRegion.objectName() ) )
 
@@ -694,16 +705,16 @@ class UploadFileRegion( QWidget ):
                     rad_r_exists = True
                     
         # If all expected vars a represent, set flag to true
-        if ( map_inverse_exists 
-             and inp_r_exists
-             and mapped_r_exists
-             and rmult_exists
-             and xoff_exists
-             and yoff_exists
-             and ro_var_exists
-             and go_var_exists
-             and bo_var_exists
-             and rad_r_exists ):
+        if ( map_inverse_exists and
+             inp_r_exists and
+             mapped_r_exists and
+             rmult_exists and
+             xoff_exists and
+             yoff_exists and
+             ro_var_exists and
+             go_var_exists and
+             bo_var_exists and
+             rad_r_exists ):
             fileIsValid = True
 
         return fileIsValid
@@ -775,9 +786,9 @@ class UploadFileRegion( QWidget ):
                     bo_var_exists = True
                     
         # If all expected vars a represent, set flag to true
-        if ( ro_var_exists
-             and go_var_exists
-             and bo_var_exists ):
+        if ( ro_var_exists and
+             go_var_exists and
+             bo_var_exists ):
             fileIsValid = True
 
         return fileIsValid
