@@ -1,4 +1,3 @@
-#import os
 
 from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
 from PySide2.QtGui import QPixmap
@@ -13,7 +12,7 @@ import ntpath
 import re
 
 
-# Creates a region to upload a file to, given an object name, and region size.
+# Creates a region to upload an image to, given an object name and region size.
 class UploadImageRegion( QWidget ):
     # regionSize[0]: width
     # regionSize[1]: height
@@ -101,8 +100,8 @@ class UploadImageRegion( QWidget ):
 
         # -------------------------------------------------------------------------------------
 
-        # Set states of the created widgets (styles, visibility)
-        self.setWidgetStates()
+        # Set properties of the created widgets (styles, visibility)
+        self.setWidgetProperties()
 
         # Create layout and add widgets
         self.initRegionLayout()
@@ -283,8 +282,8 @@ class UploadImageRegion( QWidget ):
         return
 
 
-    # Sets the state of the region's widgets
-    def setWidgetStates( self ):
+    # Sets the properties of the region's widgets
+    def setWidgetProperties( self ):
         # Set widget visibility
         self.setWidgetVisibility()
 
