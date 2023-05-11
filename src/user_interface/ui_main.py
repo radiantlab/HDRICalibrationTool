@@ -715,22 +715,26 @@ class Ui_MainWindow(object):
 
         # Do some basic validation here
         imageErrors = self.validateImages()
-        if ( len( imageErrors ) > 0 ):
+        if ( len( imageErrors ) == 0 ):
+            uploadedImagesValid = True
+        else:
             print( "validateImages() failed!" )
             print( "imageErrors: %s", imageErrors )
-            uploadedImagesValid = False
         
         cameraSettingsErrors = self.validateCameraSettings()
-        if ( len( cameraSettingsErrors ) > 0 ):
+        if ( len( cameraSettingsErrors ) == 0 ):
+            cameraSettingsInputValid = True
+        else:
             print( "validateCameraSettings() failed!" )
             print( "cameraSettingsErrors: %s", cameraSettingsErrors )
-            cameraSettingsInputValid = False
         
         calibrationErrors = self.validateCalibration()
         if ( len( calibrationErrors ) > 0 ):
+            calibrationFilesValid = True
+        else:
             print( "validateCalibration() failed!" )
             print( "calibrationErrors: %s", calibrationErrors )
-            calibrationFilesValid = False
+            
 
         # Check if validation steps all passed
         if ( uploadedImagesValid and cameraSettingsInputValid and calibrationFilesValid ):
@@ -821,25 +825,25 @@ class Ui_MainWindow(object):
         if ( self.path_rsp_fn != "" ):
             rspIsEmpty = False
 
-        if ( self.inputField_fisheyeViewDiameter != "" ):
+        if ( self.inputField_fisheyeViewDiameter.text() != "" ):
             cropping_fisheyeDiameterIsEmpty = False
 
-        if ( self.inputField_xCropOffset != "" ):
+        if ( self.inputField_xCropOffset.text() != "" ):
             cropping_xCropOffsetIsEmpty = False
 
-        if ( self.inputField_yCropOffset != "" ):
+        if ( self.inputField_yCropOffset.text() != "" ):
             cropping_yCropOffsetIsEmpty = False
 
-        if ( self.inputField_viewAngleVertical != "" ):
+        if ( self.inputField_viewAngleVertical.text() != "" ):
             lens_viewVerticalIsEmpty = False
 
-        if ( self.inputField_viewAngleHorizontal != "" ):
+        if ( self.inputField_viewAngleHorizontal.text() != "" ):
             lens_viewHorizontalIsEmpty = False
 
-        if ( self.inputField_outputXRes != "" ):
+        if ( self.inputField_outputXRes.text() != "" ):
             output_xResolutionIsEmpty = False
 
-        if ( self.inputField_outputYRes != "" ):
+        if ( self.inputField_outputYRes.text() != "" ):
             output_yResolutionIsEmpty = False
 
         # Set error messages
