@@ -1,3 +1,0 @@
-[submodule "radiance_pipeline"]
-	path = submodules/radiance_pipeline
-	url = git@github.com:zimmermannliam/radiance_pipeline.git
