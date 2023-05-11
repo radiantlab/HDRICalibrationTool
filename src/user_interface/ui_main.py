@@ -719,21 +719,21 @@ class Ui_MainWindow(object):
             uploadedImagesValid = True
         else:
             print( "validateImages() failed!" )
-            print( "imageErrors: %s", imageErrors )
+            print( "imageErrors: ", imageErrors )
         
         cameraSettingsErrors = self.validateCameraSettings()
         if ( len( cameraSettingsErrors ) == 0 ):
             cameraSettingsInputValid = True
         else:
             print( "validateCameraSettings() failed!" )
-            print( "cameraSettingsErrors: %s", cameraSettingsErrors )
+            print( "cameraSettingsErrors: ", cameraSettingsErrors )
         
         calibrationErrors = self.validateCalibration()
-        if ( len( calibrationErrors ) > 0 ):
+        if ( len( calibrationErrors ) == 0 ):
             calibrationFilesValid = True
         else:
             print( "validateCalibration() failed!" )
-            print( "calibrationErrors: %s", calibrationErrors )
+            print( "calibrationErrors: ", calibrationErrors )
             
 
         # Check if validation steps all passed
