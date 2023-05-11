@@ -15,5 +15,11 @@ temp/
 errors/
 logs/
 
+# Ignore PyInstaller directories
+build/
+dist/
+dist-windows/
+dist-macos/
+
 # Ignore MacOS hidden Finder file .DS_Store
 .DS_Store
