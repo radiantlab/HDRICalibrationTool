@@ -818,8 +818,29 @@ class Ui_MainWindow(object):
 
         # Set flags
         rspIsEnabled = self.vc_UploadRegion.isEnabled
-        if ( self.path_rsp_fn == "" ):
-            rspIsEmpty = True
+        if ( self.path_rsp_fn != "" ):
+            rspIsEmpty = False
+
+        if ( self.inputField_fisheyeViewDiameter != "" ):
+            cropping_fisheyeDiameterIsEmpty = False
+
+        if ( self.inputField_xCropOffset != "" ):
+            cropping_xCropOffsetIsEmpty = False
+
+        if ( self.inputField_yCropOffset != "" ):
+            cropping_yCropOffsetIsEmpty = False
+
+        if ( self.inputField_viewAngleVertical != "" ):
+            lens_viewVerticalIsEmpty = False
+
+        if ( self.inputField_viewAngleHorizontal != "" ):
+            lens_viewHorizontalIsEmpty = False
+
+        if ( self.inputField_outputXRes != "" ):
+            output_xResolutionIsEmpty = False
+
+        if ( self.inputField_outputYRes != "" ):
+            output_yResolutionIsEmpty = False
 
         # Set error messages
         if ( rspIsEnabled and rspIsEmpty ):
@@ -868,20 +889,20 @@ class Ui_MainWindow(object):
 
         # Set flags
         vcIsEnabled = self.vc_UploadRegion.isEnabled
-        if ( self.path_vignetting == "" ):
-            vcIsEmpty = True
+        if ( self.path_vignetting != "" ):
+            vcIsEmpty = False
         
         cfIsEnabled = self.cf_UploadRegion.isEnabled
-        if ( self.path_calfact == "" ):
-            cfIsEmpty = True
+        if ( self.path_calfact != "" ):
+            cfIsEmpty = False
 
         fcIsEnabled = self.fc_UploadRegion.isEnabled
-        if ( self.path_fisheye == "" ):
-            fcIsEmpty = True
+        if ( self.path_fisheye != "" ):
+            fcIsEmpty = False
 
         ndIsEnabled = self.nd_UploadRegion.isEnabled
-        if ( self.path_ndfilter == "" ):
-            ndIsEmpty = True
+        if ( self.path_ndfilter != "" ):
+            ndIsEmpty = False
 
         # Set error messages
         if (vcIsEnabled and vcIsEmpty ):
