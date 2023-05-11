@@ -14,7 +14,7 @@ class ImagePreview( QWidget ):
         self.imagePath = imagePath
 
         # Style path
-        self.imagePreviewStylePath = "../../src/styles/image_preview_styles.css"
+        self.imagePreviewStylePath = "./src/styles/image_preview_styles.css"
 
         # UI setup
         self.layout = QHBoxLayout()

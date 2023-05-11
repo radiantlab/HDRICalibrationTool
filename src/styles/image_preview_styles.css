@@ -28,3 +28,15 @@ QPushButton#removeButton
 	color: white;
 	font-weight: bold;
 }
+QPushButton#removeButton:hover
+{
+	background-color: #FF5959;
+	color: white;
+	font-weight: bold;
+}
+QPushButton#removeButton:clicked
+{
+	background-color: #FF0D0D;
+	color: white;
+	font-weight: bold;
+}
