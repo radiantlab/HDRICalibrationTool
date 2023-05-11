@@ -2,7 +2,7 @@ import sys
 from PySide2.QtWidgets import *
 
 # GUI FILE
-from ui_main import Ui_MainWindow
+from src.user_interface.ui_main import Ui_MainWindow
 
 class MainWindow(QMainWindow):
     def __init__(self):

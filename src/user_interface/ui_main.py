@@ -5,11 +5,11 @@ from PySide2.QtCore import ( QCoreApplication, QMetaObject, QSize, Qt )
 from PySide2.QtGui import ( QFont, QIcon )
 from PySide2.QtWidgets import *
 
-from upload_file_region import UploadFileRegion
+from src.user_interface.upload_file_region import UploadFileRegion
 
-from image_uploader import ImageUploader
+from src.user_interface.image_uploader import ImageUploader
 
-from progress_window import ProgressWindow
+from src.progress_window import ProgressWindow
 
 appVersion = "0.9"
 
@@ -38,7 +38,7 @@ class Ui_MainWindow(object):
         
 
         # Main Window stylesheet path
-        self.main_styles_path = "./styles/main_styles.css"
+        self.main_styles_path = "../../src/styles/main_styles.css"
 
         MainWindow.resize(1150, 840)
         MainWindow.setMinimumSize(QSize(1000, 500))
@@ -118,7 +118,7 @@ class Ui_MainWindow(object):
         self.btn_help.setProperty( "isActivePage", False )
         self.btn_help.move(0,1000)
         self.btn_help.setMinimumSize(QSize(0, 40))
-        self.btn_help.setIcon( QIcon("./assets/icons/help-icon.png") )
+        self.btn_help.setIcon( QIcon("../../src/assets/icons/help-icon.png") )
 
         # Settings button
         self.btn_settings = QPushButton( "Settings", self.sidebarMenuFrame)
@@ -126,7 +126,7 @@ class Ui_MainWindow(object):
         self.btn_settings.setProperty( "isActivePage", False )
         self.btn_settings.setMinimumSize( QSize( 0, 52 ) )
         self.btn_settings.setGeometry(0,0, 200, 30)
-        self.btn_settings.setIcon( QIcon("./assets/icons/settings-icon.png") )
+        self.btn_settings.setIcon( QIcon("../../src/assets/icons/settings-icon.png") )
         
 
         # Default active page

@@ -6,9 +6,9 @@
 
 import os
 from PySide2 import QtWidgets, QtGui, QtCore
-from image_preview import ImagePreview
+from src.user_interface.image_preview import ImagePreview
 
-from upload_image_region import UploadImageRegion
+from src.user_interface.upload_image_region import UploadImageRegion
 
 class ImageUploader( QtWidgets.QWidget ):
     def __init__( self ):

@@ -1,4 +1,3 @@
-
 from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
 from PySide2.QtGui import QPixmap
 from PySide2.QtCore import Qt, QRect
@@ -25,7 +24,7 @@ class UploadImageRegion( QWidget ):
         self.regionHeight = regionSize[1]
 
         # Style path
-        self.regionStylePath = "./styles/upload_image_region_styles.css"
+        self.regionStylePath = "../../src/styles/upload_image_region_styles.css"
 
         # Visible region background
         self.uploadRegion = QWidget( self )
@@ -39,7 +38,7 @@ class UploadImageRegion( QWidget ):
         
         # Upload file icon pixmap
         self.uploadFileIcon = QLabel( self )
-        self.uploadFileIconPixmap = QPixmap( './assets/icons/upload-file-multi.ico' )
+        self.uploadFileIconPixmap = QPixmap( '../../src/assets/icons/upload-file-multi.ico' )
 
         # File path label
         self.filePathLabel = QLabel( self )
@@ -210,16 +209,6 @@ class UploadImageRegion( QWidget ):
 
     # Open file dialog box to browse for calibration .cal files
     def browseFiles( self ):
-        # # Show file dialog to select images
-        # fileDialog = QtWidgets.QFileDialog()
-        # fileDialog.setFileMode( QtWidgets.QFileDialog.ExistingFiles )
-        # fileDialog.setNameFilter( "Image files (*.jpg *.png)" )
-
-        # if fileDialog.exec_():
-        #     filenames = fileDialog.selectedFiles()
-        #     for filename in filenames:
-        #         self.fileUploadedEvent( filename )
-
         # Restrict to image file upload
         inputFileNames = QFileDialog.getOpenFileNames( None, "Upload Image(s)", "", "Image files (*.jpg *.png *.JPG)" )
 

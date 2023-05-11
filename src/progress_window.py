@@ -4,8 +4,8 @@ from PyQt5 import QtCore
 from PyQt5.QtCore import QThread, pyqtSignal, QObject, pyqtSlot, Qt
 from PyQt5.QtWidgets import QApplication, QPushButton, QWidget, QHBoxLayout, QProgressBar, QVBoxLayout, QLabel
 
-import radiance_pipeline.radiance_pipeline as rp
-from radiance_pipeline.radiance_data import RadianceData
+import submodules.radiance_pipeline.radiance_pipeline as rp
+from submodules.radiance_pipeline.radiance_data import RadianceData
 
 import threading
 from threading import Timer

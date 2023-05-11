@@ -28,7 +28,7 @@ class UploadFileRegion( QWidget ):
         self.fileType = fileType
 
         # Style path
-        self.region_style_path = "./styles/upload_file_region_styles.css"
+        self.region_style_path = "../../src/styles/upload_file_region_styles.css"
 
         # Visible region background
         self.uploadRegion = QWidget( self )
@@ -42,11 +42,11 @@ class UploadFileRegion( QWidget ):
         
         # File icon pixmap
         self.fileIcon = QLabel( self )
-        self.fileIconPixmap = QPixmap( './assets/icons/blank-file-128.ico' )
+        self.fileIconPixmap = QPixmap( '../../src/assets/icons/blank-file-128.ico' )
 
         # Upload file icon pixmap
         self.uploadFileIcon = QLabel( self )
-        self.uploadFileIconPixmap = QPixmap( './assets/icons/upload-file-multi.ico' )
+        self.uploadFileIconPixmap = QPixmap( '../../src/assets/icons/upload-file-multi.ico' )
 
         # File path label
         self.filePathLabel = QLabel( self )
@@ -525,9 +525,6 @@ class UploadFileRegion( QWidget ):
         # Handle empty file
         if ( fileSize == 0 ):
             print( "File: \"{}\" at location {} is empty.".format( self.filePathLabel.text(), self.fileNameLabel.text() ) )
-
-            # TODO
-            # Display empty error in this case
         
         # In this case, file is not empty so check for variable definitions and initializations (varies by calibration file)
         else:
