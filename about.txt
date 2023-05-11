@@ -1,0 +1,1 @@
+A free, open-source cross-platform interface to help Radiance automate the merging of multiple LDR images into an HDR image.
