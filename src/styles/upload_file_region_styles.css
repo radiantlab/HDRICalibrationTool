@@ -63,6 +63,18 @@ QPushButton#removeButton
 	color: white;
 	font-weight: bold;
 }
+QPushButton#removeButton:hover
+{
+	background-color: #FF5959;
+	color: white;
+	font-weight: bold;
+}
+QPushButton#removeButton:pressed
+{
+	background-color: #FF0D0D;
+	color: white;
+	font-weight: bold;
+}
 
 
 /* The click-to-browse button */
@@ -115,6 +127,18 @@ QCheckBox[isEnabled="true"]
 QCheckBox[isEnabled="false"]
 {
 	background-color: #FF8C8C;
+	color: white;
+	font-weight: bold;
+}
+QCheckBox[isEnabled="false"]:hover
+{
+	background-color: #FF5959;
+	color: white;
+	font-weight: bold;
+}
+QCheckBox[isEnabled="false"]:hover
+{
+	background-color: #FF0D0D;
 	color: white;
 	font-weight: bold;
 }

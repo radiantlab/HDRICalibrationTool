@@ -24,7 +24,7 @@ class UploadImageRegion( QWidget ):
         self.regionHeight = regionSize[1]
 
         # Style path
-        self.regionStylePath = "../../src/styles/upload_image_region_styles.css"
+        self.regionStylePath = "./src/styles/upload_image_region_styles.css"
 
         # Visible region background
         self.uploadRegion = QWidget( self )
@@ -38,7 +38,7 @@ class UploadImageRegion( QWidget ):
         
         # Upload file icon pixmap
         self.uploadFileIcon = QLabel( self )
-        self.uploadFileIconPixmap = QPixmap( '../../src/assets/icons/upload-file-multi.ico' )
+        self.uploadFileIconPixmap = QPixmap( './src/assets/icons/upload-file-multi.ico' )
 
         # File path label
         self.filePathLabel = QLabel( self )
