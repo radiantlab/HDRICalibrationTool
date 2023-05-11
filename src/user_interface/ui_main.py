@@ -11,7 +11,7 @@ from src.user_interface.image_uploader import ImageUploader
 
 from src.progress_window import ProgressWindow
 
-appVersion = "0.9"
+appVersion = "1.0.0"
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
