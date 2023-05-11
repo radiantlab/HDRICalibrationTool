@@ -19,6 +19,7 @@ class Repeat_Timer(Timer):
         while not self.finished.wait(self.interval):
             self.function(*self.args, **self.kwargs)
 
+
 class ProgressWindow( QWidget ):
     def __init__( self, MainWindow ):
         QWidget.__init__( self )
@@ -42,6 +43,7 @@ class ProgressWindow( QWidget ):
 
         # Start the Radiance pipeline
         self.startRadiancePipeline( MainWindow )
+
 
     def on_count_changed(self, value):
         self.progressBar.setValue(value)
