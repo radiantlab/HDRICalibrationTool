@@ -1,7 +1,8 @@
 # Ignores files in the ./__pycache__ directory
 __pycache__/
 
-# Ignores files in the ./.venv directory
+# Ignores virtual environments
+env/
 .venv/
 
 # Ignores files in the ./.vscode directory
