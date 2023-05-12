@@ -1,6 +1,6 @@
-from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
-from PySide2.QtGui import QPixmap
-from PySide2.QtCore import Qt, QRect
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
+from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt, QRect
 
 from PyQt5.QtWidgets import QFileDialog
 

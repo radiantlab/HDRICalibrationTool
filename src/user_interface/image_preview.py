@@ -3,9 +3,9 @@
 # Retrieved 2.19.2023 from OpenAI's ChatGPT language model, which was last trained on 2021-09. URL: https://chat.openai.com/chat
 
 import os
-from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QHBoxLayout
-from PySide2.QtGui import QPixmap
-from PySide2.QtCore import Qt
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QHBoxLayout
+from PySide6.QtGui import QPixmap
+from PySide6.QtCore import Qt
 
 class ImagePreview( QWidget ):
     def __init__( self, imagePath ):

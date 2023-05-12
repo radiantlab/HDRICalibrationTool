@@ -1,9 +1,9 @@
 import os
 from os.path import abspath
 
-from PySide2.QtCore import ( QCoreApplication, QMetaObject, QSize, Qt )
-from PySide2.QtGui import ( QFont, QIcon )
-from PySide2.QtWidgets import *
+from PySide6.QtCore import ( QCoreApplication, QMetaObject, QSize, Qt )
+from PySide6.QtGui import ( QFont, QIcon )
+from PySide6.QtWidgets import *
 
 from src.user_interface.upload_file_region import UploadFileRegion
 
@@ -290,7 +290,6 @@ class Ui_MainWindow(object):
         self.cameraSettingsPage.setObjectName(u"cameraSettingsPage")
         self.cameraSettingsPage.setContentsMargins( 0, 0, 0, 0 )
         self.cameraSettingsPage.setSpacing( 4 )
-        self.cameraSettingsPage.setMargin( 0 )
 
         
         # Cropping Area mdiArea
@@ -462,7 +461,6 @@ class Ui_MainWindow(object):
         self.calibrationPage.setObjectName( "calibrationPage" )
         self.calibrationPage.setContentsMargins( 0, 0, 0, 0 )
         self.calibrationPage.setSpacing( 4 )
-        self.calibrationPage.setMargin( 0 )
         
 
         # Vignetting region
