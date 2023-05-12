@@ -82,7 +82,7 @@ class ProgressWindow( QWidget ):
             self.progressValue = rp.radiance_pipeline_get_percent()
             self.progressBar.setValue(rp.radiance_pipeline_get_percent())
             print(rp.radiance_pipeline_get_percent())
-            if(rp.radiance_pipeline_get_percent() == 100):
+            if( rp.radiance_pipeline_get_percent() >= 100 ):
                 progress_bar_update_timer.cancel()
             self.statusLabel.setText(rp.radiance_pipeline_get_status_text())
 
