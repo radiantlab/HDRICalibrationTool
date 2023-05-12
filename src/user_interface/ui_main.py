@@ -436,14 +436,14 @@ class Ui_MainWindow(object):
 
 
         # Area 4 upload .rsp file region
-        self.rsp_uploadarea = UploadFileRegion("CameraResponseFileUpload", [900, 200], fileType=2 )
+        self.rsp_UploadRegion = UploadFileRegion("CameraResponseFunction", [900, 200], fileType=2 )
 
 
         # Add widgets to Layout
         self.cameraSettingsPage.addWidget( self.mdiArea, stretch=1 )
         self.cameraSettingsPage.addWidget( self.mdiArea_2, stretch=1 )
         self.cameraSettingsPage.addWidget( self.mdiArea_3, stretch=1 )
-        self.cameraSettingsPage.addWidget( self.rsp_uploadarea, stretch=1 )
+        self.cameraSettingsPage.addWidget( self.rsp_UploadRegion, stretch=1 )
         
         # -------------------------------------------------------------------------------------------------
 
@@ -710,6 +710,10 @@ class Ui_MainWindow(object):
             print( "nd enabled=false")
             self.path_ndfilter = None
 
+        if ( self.rsp_UploadRegion.isEnabled == False ):
+            print( "rsp enabled=false")
+            self.path_rsp_fn = None
+
 
         # Do some basic validation here
         imageErrors = self.validateImages()
@@ -819,9 +823,13 @@ class Ui_MainWindow(object):
         output_yResolutionIsEmpty = True
 
         # Set flags
-        rspIsEnabled = self.vc_UploadRegion.isEnabled
+        rspIsEnabled = self.rsp_UploadRegion.isEnabled
         if ( self.path_rsp_fn != "" ):
             rspIsEmpty = False
+
+        print("rspIsEnabled", rspIsEnabled)
+        print("rspIsEmpty", rspIsEmpty)
+        print("self.path_rsp_fn: ", self.path_rsp_fn )
 
         if ( self.inputField_fisheyeViewDiameter.text() != "" ):
             cropping_fisheyeDiameterIsEmpty = False
