@@ -1,10 +1,8 @@
 import os
 
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QCheckBox
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QCheckBox, QFileDialog
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt, QRect
-
-from PyQt5.QtWidgets import QFileDialog
 
 # For file name extraction
 import ntpath
@@ -323,7 +321,7 @@ class UploadFileRegion( QWidget ):
         # Restrict to .cal file upload
         if ( self.fileType == 1 ):
             inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "", "Calibration File (*.cal)" )
-        
+
         # Restrict to .rsp file upload
         elif ( self.fileType == 2 ):
             inputFileName = QFileDialog.getOpenFileName( None, "Upload {} File".format( self.regionLabel.text() ), "", "Response Function File (*.rsp)" )

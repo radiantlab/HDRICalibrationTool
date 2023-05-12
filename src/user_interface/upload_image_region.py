@@ -1,8 +1,6 @@
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFileDialog
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt, QRect
-
-from PyQt5.QtWidgets import QFileDialog
 
 # For file name extraction
 import ntpath
