@@ -2,7 +2,7 @@ import sys
 import time
 from PyQt5 import QtCore
 from PyQt5.QtCore import QThread, pyqtSignal, QObject, pyqtSlot, Qt
-from PyQt5.QtWidgets import QApplication, QPushButton, QWidget, QHBoxLayout, QProgressBar, QVBoxLayout, QLabel
+from PySide6.QtWidgets import QApplication, QPushButton, QWidget, QHBoxLayout, QProgressBar, QVBoxLayout, QLabel
 
 import submodules.radiance_pipeline.radiance_pipeline as rp
 from submodules.radiance_pipeline.radiance_data import RadianceData

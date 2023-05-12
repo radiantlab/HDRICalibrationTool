@@ -1,8 +1,9 @@
 import sys
-from PySide6.QtWidgets import *
+from PySide6.QtWidgets import QApplication, QMainWindow
 
 # GUI FILE
 from src.user_interface.ui_main import Ui_MainWindow
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
