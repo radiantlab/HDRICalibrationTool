@@ -271,9 +271,12 @@ class UploadFileRegion( QWidget ):
     def removeBtnClicked( self ):
         print( "Removing uploaded file: {} from path: {}".format( self.fileNameLabel.text(), self.filePathLabel.text() ) )
 
+        # Clear Main Window path for the file
+        self.clearMainWindowObjFilePath()
+
         # Reset widget to default
         self.resetWidgetProperties()
-        
+
         return
 
     
@@ -515,6 +518,24 @@ class UploadFileRegion( QWidget ):
         return
 
 
+    # Returns the type of calibration/response file this region is for (e.g. vignetting, camera factor, response function, etc.)
+    # Does NOT return the file's extension (.cal, .rsp, .txt, etc.)
+    def getFileType( self ):
+        if ( self.uploadRegion.objectName() == "uploadFileRegion_Vignetting" ):
+            return "Vignetting"
+        elif ( self.uploadRegion.objectName() == "uploadFileRegion_FisheyeCorrection" ):
+            return "FisheyeCorrection"
+        elif ( self.uploadRegion.objectName() == "uploadFileRegion_CameraFactor" ):
+            return "CameraFactor"
+        elif ( self.uploadRegion.objectName() == "uploadFileRegion_NeutralDensityFilter" ):
+            return "NeutralDensityFilter"
+        elif ( self.uploadRegion.objectName() == "uploadFileRegion_CameraResponseFunction" ):
+            return "CameraResponseFunction"
+        else:
+            #print("upload_file_region doesn't have a valid calibration or response function file type. self.uploadRegion.objectName(): {}\n".format( self.uploadRegion.objectName() ) )
+            return None
+
+
     # Uploaded file validation. Ensures file is not empty.
     def validateFile( self ):
         # Check file size
@@ -528,11 +549,13 @@ class UploadFileRegion( QWidget ):
         else:
             print( "File: \"{}\" at location {} has size: {} bytes.".format( self.filePathLabel.text(), self.fileNameLabel.text(), fileSize ) )
 
+            fileType = self.getFileType()
+
             # Reach Ui_MainWindow object
             uiObject = self.parent().parent().parent().parent().parent().parent().ui
 
             # Upload region is for Vignetting
-            if ( self.uploadRegion.objectName() == "uploadFileRegion_Vignetting" ):
+            if ( fileType == "Vignetting" ):
                 print( "Upload region is for vignetting. Validating..." )
 
                 # Set RadianceData object path_vignetting here when valid vc file
@@ -542,7 +565,7 @@ class UploadFileRegion( QWidget ):
 
 
             # Upload region is for Fisheye Correction
-            elif ( self.uploadRegion.objectName() == "uploadFileRegion_FisheyeCorrection" ):
+            elif ( fileType == "FisheyeCorrection" ):
                 print( "Upload region is for fisheye correction. Validating..." )
                 
                 # Set RadianceData object path_fisheye here when valid fc file
@@ -552,7 +575,7 @@ class UploadFileRegion( QWidget ):
 
 
             # Upload region is for Camera Factor
-            elif ( self.uploadRegion.objectName() == "uploadFileRegion_CameraFactor" ):
+            elif ( fileType == "CameraFactor" ):
                 print( "Upload region is for camera factor adjustment. Validating..." )
 
                 # Set RadianceData object path_calfact here when valid cf file
@@ -562,7 +585,7 @@ class UploadFileRegion( QWidget ):
 
 
             # Upload region is for ND Filter
-            elif ( self.uploadRegion.objectName() == "uploadFileRegion_NeutralDensityFilter" ):
+            elif ( fileType == "NeutralDensityFilter" ):
                 print( "Upload region is for neutral density filter adjustment. Validating..." )
                 
                 # Set RadianceData object path_ndfilter here when valid nd file
@@ -572,7 +595,7 @@ class UploadFileRegion( QWidget ):
                     #TODO: reference obj. name
 
             # Upload region is for camera response function file (.rsp for camera settings page)
-            elif ( self.uploadRegion.objectName() == "uploadFileRegion_CameraResponseFileUpload" ):
+            elif ( fileType == "CameraResponseFunction" ):
                 print( "Upload region is for camera response function. Validating..." )
                 
                 # Set RadianceData object path_rsp_fn here when valid rsp file
@@ -873,4 +896,38 @@ class UploadFileRegion( QWidget ):
             order -= 1
 
         return formattedString
+
+
+    # Clears the correct MainWindow Radiance object file path the region is for to empty string ""
+    def clearMainWindowObjFilePath( self ):
+        fileType = self.getFileType()
+
+        # Reach Ui_MainWindow object
+        uiObject = self.parent().parent().parent().parent().parent().parent().ui
+
+        if ( fileType == "Vignetting" ):
+            uiObject.path_vignetting = ""
+            print( "Cleared path_vignetting and set path to empty string: \"\"\n" )
+
+        elif ( fileType == "FisheyeCorrection" ):
+            uiObject.path_fisheye = ""
+            print( "Cleared path_fisheye and set path to empty string: \"\"\n" )
+        
+        elif ( fileType == "CameraFactor" ):
+            uiObject.path_calfact = ""
+            print( "Cleared path_calfact and set path to empty string: \"\"\n" )
+
+        elif ( fileType == "NeutralDensityFilter" ):
+            uiObject.path_ndfilter = ""
+            print( "Cleared path_ndfilter and set path to empty string: \"\"\n" )
+
+        elif ( fileType == "CameraResponseFunction" ):
+            uiObject.path_rsp_fn = ""
+            print( "Cleared path_rsp_fn and set path to empty string: \"\"\n" )
+
+        else:
+            print( "Tried to clear an unknown file type. fileType: {}\n".format( fileType ) )
+        
+
+        return
     
