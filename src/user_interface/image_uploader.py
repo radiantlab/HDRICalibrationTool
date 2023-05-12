@@ -5,7 +5,7 @@
 # Access date: 2.19.2023
 
 import os
-from PySide2 import QtWidgets, QtGui, QtCore
+from PySide6 import QtWidgets
 from src.user_interface.image_preview import ImagePreview
 
 from src.user_interface.upload_image_region import UploadImageRegion
