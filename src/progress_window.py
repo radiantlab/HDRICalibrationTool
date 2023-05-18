@@ -142,7 +142,7 @@ class ProgressWindow( QWidget ):
         return
     
 
-    # Sets the visibility of widgets based on the region having a file or not
+    # Sets the visibility of widgets
     def setWidgetVisibility( self ):
         # Pipline is not done yet
         if ( self.pipelineIsComplete == False ):
