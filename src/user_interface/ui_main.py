@@ -1,5 +1,7 @@
 import os
 from os.path import abspath
+import json
+import pathlib
 
 from PySide6.QtCore import QCoreApplication, QMetaObject, QSize, Qt
 from PySide6.QtGui import QFont, QIcon
@@ -10,6 +12,8 @@ from src.user_interface.upload_file_region import UploadFileRegion
 from src.user_interface.image_uploader import ImageUploader
 
 from src.progress_window import ProgressWindow
+
+from src.helper import param2field
 
 appVersion = "1.0.0"
 
@@ -36,6 +40,7 @@ class Ui_MainWindow(object):
         self.path_ndfilter = ""
         self.path_calfact = ""
         
+        self.recoverCache()
 
         # Main Window stylesheet path
         self.main_styles_path = "./src/styles/main_styles.css"
@@ -349,7 +354,7 @@ class Ui_MainWindow(object):
         self.label_md13.move(10,70)
 
         self.inputField_fisheyeViewDiameter = QLineEdit(self.mdiArea)
-        self.inputField_fisheyeViewDiameter.setText("")
+        self.inputField_fisheyeViewDiameter.setText(param2field(self.diameter))
         self.inputField_fisheyeViewDiameter.setObjectName("inputField_fisheyeViewDiameter")
         self.inputField_fisheyeViewDiameter.move(10,100)
 
@@ -362,7 +367,7 @@ class Ui_MainWindow(object):
         self.label_md14.move(x_column2,70)
 
         self.inputField_xCropOffset = QLineEdit(self.mdiArea)
-        self.inputField_xCropOffset.setText("")
+        self.inputField_xCropOffset.setText(param2field(self.crop_x_left))
         self.inputField_xCropOffset.setObjectName("inputField_xCropOffset")
         self.inputField_xCropOffset.move(x_column2,100)
 
@@ -375,7 +380,7 @@ class Ui_MainWindow(object):
         self.label_md15.move(x_column2,140)
 
         self.inputField_yCropOffset = QLineEdit(self.mdiArea)
-        self.inputField_yCropOffset.setText("")
+        self.inputField_yCropOffset.setText(param2field(self.crop_y_down))
         self.inputField_yCropOffset.setObjectName("inputField_yCropOffset")
         self.inputField_yCropOffset.move(x_column2,160)
 
@@ -390,7 +395,7 @@ class Ui_MainWindow(object):
         self.label_md21.move(10,70)
 
         self.inputField_viewAngleVertical = QLineEdit(self.mdiArea_2)
-        self.inputField_viewAngleVertical.setText("")
+        self.inputField_viewAngleVertical.setText(param2field(self.view_angle_vertical))
         self.inputField_viewAngleVertical.setObjectName("inputField_viewAngleVertical")
         self.inputField_viewAngleVertical.move(10,90)
 
@@ -402,7 +407,7 @@ class Ui_MainWindow(object):
         self.label_md22.move(x_column2,70)
 
         self.inputField_viewAngleHorizontal = QLineEdit(self.mdiArea_2)
-        self.inputField_viewAngleHorizontal.setText("")
+        self.inputField_viewAngleHorizontal.setText(param2field(self.view_angle_horizontal))
         self.inputField_viewAngleHorizontal.setObjectName("inputField_viewAngleHorizontal")
         self.inputField_viewAngleHorizontal.move(x_column2,90)
 
@@ -418,7 +423,7 @@ class Ui_MainWindow(object):
 
         # Output X Resolution
         self.inputField_outputXRes = QLineEdit(self.mdiArea_3)
-        self.inputField_outputXRes.setText("")
+        self.inputField_outputXRes.setText(param2field(self.target_x_resolution))
         self.inputField_outputXRes.setObjectName("inputField_outputXRes")
         self.inputField_outputXRes.move(10,90)
 
@@ -430,7 +435,7 @@ class Ui_MainWindow(object):
 
         # Output Y Resolution
         self.inputField_outputYRes = QLineEdit(self.mdiArea_3)
-        self.inputField_outputYRes.setText("")
+        self.inputField_outputYRes.setText(param2field(self.target_y_resolution))
         self.inputField_outputYRes.setObjectName("inputField_outputYRes")
         self.inputField_outputYRes.move(160,90)
 
@@ -959,4 +964,31 @@ class Ui_MainWindow(object):
 
         QMessageBox.about( QWidget(), title, message )
 
+        return
+
+    # Recover cached inputs if they exist
+    def recoverCache(self):
+        cache_path = pathlib.Path("./cache.json")
+
+        # Make sure it exists
+        if not cache_path.is_file():
+            return
+        
+        # Create the JSON
+        with open("cache.json", 'r') as cache_file:
+            cache_json = json.load(cache_file)
+
+        #Load parameters
+        self.diameter       = int(cache_json.get("diameter",0))
+        self.crop_x_left    = int(cache_json.get("crop_x_left",0))
+        self.crop_y_down    = int(cache_json.get("crop_y_down",0))
+        self.view_angle_vertical    = int(cache_json.get("view_angle_vertical", 0))
+        self.view_angle_horizontal  = int(cache_json.get("view_angle_horizontal", 0))
+        self.target_x_resolution    = int(cache_json.get("target_x_resolution", 0))
+        self.target_y_resolution    = int(cache_json.get("target_y_resolution", 0))
+        self.path_rsp_fn = str(cache_json.get("path_rsp_fn", ""))
+        self.path_vignetting = str(cache_json.get("path_vignetting", ""))
+        self.path_fisheye = str(cache_json.get("path_fisheye", ""))
+        self.path_ndfilter = str(cache_json.get("path_ndfilter", ""))
+        self.path_calfact = str(cache_json.get("path_calfact", ""))
         return
