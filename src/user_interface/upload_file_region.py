@@ -69,8 +69,11 @@ class UploadFileRegion( QWidget ):
         # Init. flag that stores if region has an uploaded file.
         self.hasFile = False
 
-        # Flag that stores if region is disabled
+        # Flag that stores if region is disabled.
         self.isEnabled = True
+
+        # Flag that stores if the uploaded file is valid.
+        self.fileIsValid = False
 
         # Adjust elements of object
         self.create()
@@ -302,6 +305,7 @@ class UploadFileRegion( QWidget ):
         # Set flags
         self.hasFile = False
         self.isEnabled = True
+        self.fileIsValid = False
 
         # Clear file name/path labels' text
         self.fileNameLabel.setText("")
@@ -439,29 +443,45 @@ class UploadFileRegion( QWidget ):
         # Set property for stylesheet to apply correct style
         self.uploadRegion.setProperty( "hasFile", self.hasFile )
         self.uploadRegion.setProperty( "isEnabled", self.isEnabled )
+        self.uploadRegion.setProperty( "fileIsValid", self.fileIsValid )
+
         self.regionSpacer.setProperty( "hasFile", self.hasFile )
         self.regionSpacer.setProperty( "isEnabled", self.isEnabled )
+        self.regionSpacer.setProperty( "fileIsValid", self.fileIsValid )
+
 
         # Icons
         self.fileIcon.setProperty( "hasFile", self.hasFile )
         self.fileIcon.setProperty( "isEnabled", self.isEnabled )
+        self.fileIcon.setProperty( "fileIsValid", self.fileIsValid )
+
         self.uploadFileIcon.setProperty( "hasFile", self.hasFile )
         self.uploadFileIcon.setProperty( "isEnabled", self.isEnabled )
+
 
         # Labels
         self.fileNameLabel.setProperty( "hasFile", self.hasFile )
         self.fileNameLabel.setProperty( "isEnabled", self.isEnabled )
+        self.fileNameLabel.setProperty( "fileIsValid", self.fileIsValid )
+
         self.regionLabel.setProperty( "hasFile", self.hasFile )
         self.regionLabel.setProperty( "isEnabled", self.isEnabled )
+        self.regionLabel.setProperty( "fileIsValid", self.fileIsValid )
+
         self.orTextLabel.setProperty( "hasFile", self.hasFile )
         self.orTextLabel.setProperty( "isEnabled", self.isEnabled )
+
         self.dragTextLabel.setProperty( "hasFile", self.hasFile )
         self.dragTextLabel.setProperty( "isEnabled", self.isEnabled )
+
         self.swapRegionInUseLabel.setProperty( "isEnabled", self.isEnabled )
+
 
         # Buttons and checkboxes
         self.browseBtn.setProperty( "isEnabled", self.isEnabled )
+
         self.swapRegionInUseChkBox.setProperty( "isEnabled", self.isEnabled )
+
 
         # Apply style
         with open( self.region_style_path, "r" ) as stylesheet:
@@ -560,8 +580,12 @@ class UploadFileRegion( QWidget ):
 
                 # Set RadianceData object path_vignetting here when valid vc file
                 if ( self.vc_validation() == True ):
+                    self.fileIsValid = True
                     uiObject.path_vignetting = self.filePathLabel.text()
-                    print( "Set path_vignetting to path: {}".format( self.filePathLabel.text() ) )
+                    print( "Valid file. Set path_vignetting to path: {}".format( self.filePathLabel.text() ) )
+                
+                else:
+                    print( "Invalid vignetting file: {}".format( self.filePathLabel.text() ) )
 
 
             # Upload region is for Fisheye Correction
@@ -570,8 +594,12 @@ class UploadFileRegion( QWidget ):
                 
                 # Set RadianceData object path_fisheye here when valid fc file
                 if ( self.fc_validation() == True ):
+                    self.fileIsValid = True
                     uiObject.path_fisheye = self.filePathLabel.text()
                     print( "Set path_fisheye to path: {}".format( self.filePathLabel.text() ) )
+
+                else:
+                    print( "Invalid fisheye correction file: {}".format( self.filePathLabel.text() ) )
 
 
             # Upload region is for Camera Factor
@@ -580,8 +608,12 @@ class UploadFileRegion( QWidget ):
 
                 # Set RadianceData object path_calfact here when valid cf file
                 if ( self.cf_validation() == True ):
+                    self.fileIsValid = True
                     uiObject.path_calfact = self.filePathLabel.text()
                     print( "Set path_calfact to path: {}".format( self.filePathLabel.text() ) )
+
+                else:
+                    print( "Invalid camera factor file: {}".format( self.filePathLabel.text() ) )
 
 
             # Upload region is for ND Filter
@@ -590,9 +622,13 @@ class UploadFileRegion( QWidget ):
                 
                 # Set RadianceData object path_ndfilter here when valid nd file
                 if ( self.nd_validation() == True ):
+                    self.fileIsValid = True
                     uiObject.path_ndfilter = self.filePathLabel.text()
                     print( "Set path_ndfilter to path: {}".format( self.filePathLabel.text() ) )
-                    #TODO: reference obj. name
+                
+                else:
+                    print( "Invalid ND filter file: {}".format( self.filePathLabel.text() ) )
+
 
             # Upload region is for camera response function file (.rsp for camera settings page)
             elif ( fileType == "CameraResponseFunction" ):
@@ -600,8 +636,13 @@ class UploadFileRegion( QWidget ):
                 
                 # Set RadianceData object path_rsp_fn here when valid rsp file
                 if ( self.rsp_validation() == True ):
+                    self.fileIsValid = True
                     uiObject.path_rsp_fn = self.filePathLabel.text()
                     print( "Set path_rsp_fn to path: {}".format( self.filePathLabel.text() ) )
+
+                else:
+                    print( "Invalid response function file: {}".format( self.filePathLabel.text() ) )
+
 
             # Default
             else:
