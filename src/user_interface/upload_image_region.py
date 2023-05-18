@@ -208,7 +208,7 @@ class UploadImageRegion( QWidget ):
     # Open file dialog box to browse for calibration .cal files
     def browseFiles( self ):
         # Restrict to image file upload
-        inputFileNames = QFileDialog.getOpenFileNames( None, "Upload Image(s)", "", "Image files (*.jpg *.png *.JPG)" )
+        inputFileNames = QFileDialog.getOpenFileNames( None, "Upload Image(s)", "", "Image files (*.jpg *.png *.JPG *.CR2 *.cr2)" )
 
         for filename in inputFileNames[0]:
             self.fileUploadedEvent( filename )
