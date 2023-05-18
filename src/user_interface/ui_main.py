@@ -799,8 +799,8 @@ class Ui_MainWindow(object):
         print( "Total images uploaded: {}".format( uploadedImageCount ) )
 
         # Needs at least 1 image uploaded.
-        if ( uploadedImageCount <= 0 ):     
-            errors.append( "- No LDR images are uploaded. Please upload at least 1 LDR image. " )
+        if ( uploadedImageCount <= 1 ):     
+            errors.append( "- Too few LDR images uploaded. Please upload at least 2 LDR images. " )
 
         return errors
 
