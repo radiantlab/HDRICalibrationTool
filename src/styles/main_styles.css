@@ -82,6 +82,6 @@ QPushButton#btn_start_pipeline:pressed
 }
 QPushButton#btn_start_pipeline:disabled
 {
-	color: 2B2B2B;
+	color: #2B2B2B;
     background-color: #8EA58D;
 }
