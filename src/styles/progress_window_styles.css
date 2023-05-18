@@ -31,34 +31,6 @@ QPushButton#finishButton:disabled
 
 
 /* The cancel button */
-QPushButton#finishButton
-{
-	color: white;
-    background-color: #72B170;
-    border: 1px solid;
-    border-color: white;
-	font-weight: normal;
-	font-size: 14px;
-}
-QPushButton#finishButton:hover
-{
-	color: white;
-	background-color: #476F46;
-	font-weight: bold;
-}
-QPushButton#finishButton:pressed
-{
-	color: white;
-	background-color: #395838;
-	font-weight: bold;
-}
-QPushButton#finishButton:disabled
-{
-	color: #2B2B2B;
-    background-color: #8EA58D;
-}
-
-
 QPushButton#cancelButton
 {
 	background-color: #FF8C8C;
@@ -80,11 +52,23 @@ QPushButton#cancelButton:pressed
 
 
 /* The QProgressBar */
-QProgressBar[pipelineComplete=False]::chunk
+QProgressBar[pipelineComplete="false"]
 {
-    background-color: #0047AB;
+	text-align: center;
+	border: 2px solid grey;
+	border-radius: 5px;
 }
-QProgressBar[pipelineComplete=True]::chunk
+QProgressBar[pipelineComplete="true"]
 {
-    background-color: #33FF44;
+    text-align: center;
+	border: 2px solid grey;
+    border-radius: 5px;
+}
+QProgressBar[pipelineComplete="false"]::chunk
+{
+    background-color: #B6D0E2;
+}
+QProgressBar[pipelineComplete="true"]::chunk
+{
+    background-color: #88FF33;
 }
