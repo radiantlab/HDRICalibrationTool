@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QProgressBar, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QTimer, Qt
 
 import submodules.radiance_pipeline.radiance_pipeline as rp
 from submodules.radiance_pipeline.radiance_data import RadianceData
@@ -13,6 +13,7 @@ class ProgressWindow( QWidget ):
 
         # Create flags and set default values
         self.pipelineIsComplete = False
+        self.pipelineCanceled = False
 
         # Style path
         self.progress_window_style_path = "./src/styles/progress_window_styles.css"
@@ -71,6 +72,8 @@ class ProgressWindow( QWidget ):
         self.cancelButton.setText( "Cancelling..." )
 
         rp.cancel_pipeline()
+
+        self.pipelineCanceled = True
 
         self.statusLabel.setText( rp.radiance_pipeline_get_status_text() )
 
