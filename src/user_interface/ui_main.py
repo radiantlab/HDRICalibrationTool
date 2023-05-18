@@ -814,6 +814,7 @@ class Ui_MainWindow(object):
         # Flag defaults
         rspIsEnabled = True
         rspIsEmpty = True
+        rspIsValid = False
         cropping_fisheyeDiameterIsEmpty = True
         cropping_xCropOffsetIsEmpty = True
         cropping_yCropOffsetIsEmpty = True
@@ -824,12 +825,8 @@ class Ui_MainWindow(object):
 
         # Set flags
         rspIsEnabled = self.rsp_UploadRegion.isEnabled
-        if ( self.path_rsp_fn != "" ):
-            rspIsEmpty = False
-
-        print("rspIsEnabled", rspIsEnabled)
-        print("rspIsEmpty", rspIsEmpty)
-        print("self.path_rsp_fn: ", self.path_rsp_fn )
+        rspIsEmpty = not self.rsp_UploadRegion.hasFile
+        rspIsValid = self.rsp_UploadRegion.fileIsValid
 
         if ( self.inputField_fisheyeViewDiameter.text() != "" ):
             cropping_fisheyeDiameterIsEmpty = False
@@ -853,7 +850,9 @@ class Ui_MainWindow(object):
             output_yResolutionIsEmpty = False
 
         # Set error messages
-        if ( rspIsEnabled and rspIsEmpty ):
+        if ( rspIsEnabled and not rspIsEmpty and not rspIsValid ):
+            errors.append( "- Response Function .rsp file invalid: Upload the correct file or fix formatting (See Wiki). " )
+        elif ( rspIsEnabled and rspIsEmpty ):
             errors.append( "- Response Function .rsp file missing: Upload or choose to omit this file. " )
         
         if ( cropping_fisheyeDiameterIsEmpty ):
@@ -890,41 +889,57 @@ class Ui_MainWindow(object):
         # File upload flag defaults
         vcIsEnabled = True
         vcIsEmpty = True
+        vcIsValid = False
         cfIsEnabled = True
         cfIsEmpty = True
+        cfIsValid = False
         fcIsEnabled = True
         fcIsEmpty = True
+        fcIsValid = False
         ndIsEnabled = True
         ndIsEmpty = True
+        ndIsValid = False
 
         # Set flags
         vcIsEnabled = self.vc_UploadRegion.isEnabled
-        if ( self.path_vignetting != "" ):
-            vcIsEmpty = False
+        vcIsEmpty = not self.vc_UploadRegion.hasFile
+        vcIsValid = self.vc_UploadRegion.fileIsValid
         
         cfIsEnabled = self.cf_UploadRegion.isEnabled
-        if ( self.path_calfact != "" ):
-            cfIsEmpty = False
+        cfIsEmpty = not self.cf_UploadRegion.hasFile
+        cfIsValid = self.cf_UploadRegion.fileIsValid
 
         fcIsEnabled = self.fc_UploadRegion.isEnabled
-        if ( self.path_fisheye != "" ):
-            fcIsEmpty = False
+        fcIsEmpty = not self.fc_UploadRegion.hasFile
+        fcIsValid = self.fc_UploadRegion.fileIsValid
 
         ndIsEnabled = self.nd_UploadRegion.isEnabled
-        if ( self.path_ndfilter != "" ):
-            ndIsEmpty = False
+        ndIsEmpty = not self.nd_UploadRegion.hasFile
+        ndIsValid = self.nd_UploadRegion.fileIsValid
+
+        print("vcIsEnabled: ", vcIsEnabled)
+        print("vcIsEmpty: ", vcIsEmpty)
+        print("vcIsValid: ", vcIsValid)
 
         # Set error messages
-        if (vcIsEnabled and vcIsEmpty ):
+        if ( vcIsEnabled and not vcIsEmpty and not vcIsValid ):
+            errors.append( "- Vignetting .cal file invalid: Upload the correct file or fix formatting (See Wiki). " )
+        elif ( vcIsEnabled and vcIsEmpty ):
             errors.append( "- Vignetting .cal file missing: Upload or choose to omit this file. " )
 
-        if (cfIsEnabled and cfIsEmpty ):
+        if ( cfIsEnabled and not cfIsEmpty and not cfIsValid ):
+            errors.append( "- Camera Factor .cal file invalid: Upload the correct file or fix formatting (See Wiki). " )
+        elif ( cfIsEnabled and cfIsEmpty ):
             errors.append( "- Camera Factor .cal file missing: Upload or choose to omit this file. " )
 
-        if (fcIsEnabled and fcIsEmpty ):
+        if ( fcIsEnabled and not fcIsEmpty and not fcIsValid ):
+            errors.append( "- Fisheye Correction .cal file invalid: Upload the correct file or fix formatting (See Wiki). " )
+        elif ( fcIsEnabled and fcIsEmpty ):
             errors.append( "- Fisheye Correction .cal file missing: Upload or choose to omit this file. " )
 
-        if (ndIsEnabled and ndIsEmpty ):
+        if ( ndIsEnabled and not ndIsEmpty and not ndIsValid ):
+            errors.append( "- Neutral Denisty Filter .cal file invalid: Upload the correct file or fix formatting (See Wiki). " )
+        elif ( ndIsEnabled and ndIsEmpty ):
             errors.append( "- Neutral Denisty Filter .cal file missing: Upload or choose to omit this file. " )
 
         return errors
