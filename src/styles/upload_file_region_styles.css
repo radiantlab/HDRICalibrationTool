@@ -146,6 +146,10 @@ QCheckBox[isEnabled="false"]:hover
 
 /* The visible portion of the upload region, including placeholder spacers */
 
+QWidget[hasFile="true"][fileIsValid="false"]
+{
+	background-color: #FA8072;
+}
 QWidget[hasFile="true"]
 {
 	background-color: white;
