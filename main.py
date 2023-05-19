@@ -1,7 +1,10 @@
+# Standard library imports
 import sys
+
+# Third-party library imports
 from PySide6.QtWidgets import QApplication, QMainWindow
 
-# GUI FILE
+# Local module imports
 from src.user_interface.ui_main import Ui_MainWindow
 
 
@@ -26,9 +29,6 @@ class MainWindow(QMainWindow):
 
         # PAGE 4
         self.ui.btn_page_4.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_4))
-
-        # PAGE HELP
-        self.ui.btn_help.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_help))
 
         # PAGE SETTINGS
         self.ui.btn_settings.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.ui.page_settings))
