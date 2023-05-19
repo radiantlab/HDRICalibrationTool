@@ -1,18 +1,19 @@
+# Standard library imports
 import os
 from os.path import abspath
 import json
 import pathlib
+import webbrowser
 
+# Third-party library imports
 from PySide6.QtCore import QCoreApplication, QMetaObject, QSize, Qt
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import *
+from PySide6.QtWidgets import QWidget, QPushButton, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QStackedWidget, QMdiArea, QScrollArea, QLineEdit, QGridLayout
 
+# Local module imports
 from src.user_interface.upload_file_region import UploadFileRegion
-
 from src.user_interface.image_uploader import ImageUploader
-
 from src.progress_window import ProgressWindow
-
 from src.helper import param2field, cast
 
 appVersion = "1.0.0"
@@ -85,7 +86,6 @@ class Ui_MainWindow(object):
         self.sidebarMenuVLayout.setContentsMargins( 2, 2, 2, 2 )
 
 
-
         # ---------------------------------------------------------------------------------------
         # Setting up page-routing buttons in menu sidebar
 
@@ -125,9 +125,9 @@ class Ui_MainWindow(object):
 
         # Help button
         self.btn_help = QPushButton(self.sidebarMenuFrame)
+        self.btn_help.clicked.connect( self.openWikiInBrowser )
         self.btn_help.setObjectName(u"btn_help")
         self.btn_help.setProperty( "isActivePage", False )
-        self.btn_help.move(0,1000)
         self.btn_help.setMinimumSize(QSize(0, 40))
         self.btn_help.setIcon( QIcon("./src/assets/icons/help-icon.png") )
 
@@ -136,7 +136,7 @@ class Ui_MainWindow(object):
         self.btn_settings.setObjectName( u"btn_settings" )
         self.btn_settings.setProperty( "isActivePage", False )
         self.btn_settings.setMinimumSize( QSize( 0, 52 ) )
-        self.btn_settings.setGeometry(0,0, 200, 30)
+        self.btn_settings.setGeometry(0, 0, 200, 30)
         self.btn_settings.setIcon( QIcon("./src/assets/icons/settings-icon.png") )
         
 
@@ -176,7 +176,6 @@ class Ui_MainWindow(object):
         # ---------------------------------------------------------------------------------------
 
         
-
         self.frame_pages = QFrame(self.Content)
         self.frame_pages.setObjectName(u"frame_pages")
         self.frame_pages.setFrameShape(QFrame.StyledPanel)
@@ -256,7 +255,7 @@ class Ui_MainWindow(object):
 
         self.intro_para_4 = QLabel( self.container_widget )
         self.intro_para_4.setAlignment(Qt.AlignTop)
-        paragraphText_4 = "If you need any help with using this app, please see the help page.\n"
+        paragraphText_4 = "If you need any help with using this app, please see the GitHub Wiki documentation page by clicking the \"Help\" button in the left sidebar.\n"
         self.intro_para_4.setText( paragraphText_4 )
         self.intro_para_4.setFont(bodyTextFont)
         self.intro_para_4.setStyleSheet( "border-top: 3px solid #6495ED;" )
@@ -624,7 +623,6 @@ class Ui_MainWindow(object):
         self.btn_page_2.setProperty( "isActivePage", False )
         self.btn_page_3.setProperty( "isActivePage", False )
         self.btn_page_4.setProperty( "isActivePage", False )
-        self.btn_help.setProperty( "isActivePage", False )
         self.btn_settings.setProperty( "isActivePage", False )
 
         if ( newActiveBtn.objectName() == "btn_page_1" ):
@@ -635,12 +633,9 @@ class Ui_MainWindow(object):
             self.btn_page_3.setProperty( "isActivePage", True )
         elif  ( newActiveBtn.objectName() == "btn_page_4" ):
             self.btn_page_4.setProperty( "isActivePage", True )
-        elif  ( newActiveBtn.objectName() == "btn_help" ):
-            self.btn_help.setProperty( "isActivePage", True )
         elif  ( newActiveBtn.objectName() == "btn_settings" ):
             self.btn_settings.setProperty( "isActivePage", True )
         
-
         self.setButtonStyling()
 
         return
@@ -662,6 +657,8 @@ class Ui_MainWindow(object):
             self.btn_help.setStyleSheet( stylesheet.read() )
         with open( self.main_styles_path, "r" ) as stylesheet:
             self.btn_settings.setStyleSheet( stylesheet.read() )
+
+        return
 
     
     # Sets the RadianceObject properties from the cropping values inputsection
@@ -802,6 +799,8 @@ class Ui_MainWindow(object):
     # Creates a ProgressWindow object to start pipeline process
     def openProgressWindow( self ):
         self.progressWindow = ProgressWindow( self )
+
+        return
 
 
     # This function sets the RadianceDate object attributes that are taken as user input from the Camera Settings page form
@@ -987,6 +986,7 @@ class Ui_MainWindow(object):
 
         return
 
+
     # Recover cached inputs if they exist
     def recoverCache(self):
         # Make sure it exists
@@ -1010,8 +1010,10 @@ class Ui_MainWindow(object):
         self.path_fisheye       = cast(cache_json.get("path_fisheye", None), str)
         self.path_ndfilter      = cast(cache_json.get("path_ndfilter", None), str)
         self.path_calfact       = cast(cache_json.get("path_calfact", None), str)
+
         return
     
+
     # Save cache
     def saveCache(self):
         cache = {
@@ -1028,7 +1030,18 @@ class Ui_MainWindow(object):
             "path_ndfilter": self.path_ndfilter,
             "path_calfact": self.path_calfact
         }
+
         with open(self.cache_path, 'w') as cache_file:
             json.dump(cache, cache_file)
+
         return
 
+
+    # This event function for the "Help" button opens the GitHub Wiki page in a new tab in the browser.
+    def openWikiInBrowser( self ):
+        wikiURL = "https://github.com/XiangyuLijoey/HDRICalibrationTool/wiki"
+        # Try and open wiki in a new tab 
+        webbrowser.open( wikiURL, new=2 )
+
+        return
+        
