@@ -16,7 +16,7 @@ class UploadFileRegion( QWidget ):
     # regionSize[0]: width
     # regionSize[1]: height
     # fileType: Restricts file upload to: [0: any;  1: .cal;  2: .rsp]
-    def __init__( self, regionName="DefaultLabel", regionSize=[128, 128], fileType=0 ):
+    def __init__( self, regionName="DefaultLabel", regionSize=[128, 128], fileType=0):
         QWidget.__init__(self)
 
         # Store input parameters as class attributes
@@ -77,6 +77,8 @@ class UploadFileRegion( QWidget ):
 
         # Adjust elements of object
         self.create()
+
+            
 
 
     # Setting widget object names and pixmaps, connecting click event functions
@@ -972,3 +974,19 @@ class UploadFileRegion( QWidget ):
 
         return
     
+    # Sets the file from some non-event mechanism
+    def setPath(self, newPath):
+        self.hasFile = True
+        self.filepath = newPath
+
+        # Set filePathLabel
+        self.filePathLabel.setText( self.filepath )
+
+        # Set fileNameLabel and show
+        filename = self.getFilenameFromPath( self.filepath )
+        self.fileNameLabel.setText( filename )
+
+        self.fileUploadedEvent()
+        
+        print(f"Default path set for {self.regionName}: {self.filepath}")
+
