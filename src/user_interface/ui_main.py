@@ -13,7 +13,7 @@ from src.user_interface.image_uploader import ImageUploader
 
 from src.progress_window import ProgressWindow
 
-from src.helper import param2field
+from src.helper import param2field, cast
 
 appVersion = "1.0.0"
 
@@ -23,22 +23,22 @@ class Ui_MainWindow(object):
             MainWindow.setObjectName(u"MainWindow")
 
         # Radiance Data vars
-        self.diameter = 0
-        self.crop_x_left = 0
-        self.crop_y_down = 0
-        self.view_angle_vertical = 0
-        self.view_angle_horizontal = 0
-        self.target_x_resolution = 0
-        self.target_y_resolution = 0
+        self.diameter = None
+        self.crop_x_left = None
+        self.crop_y_down = None
+        self.view_angle_vertical = None
+        self.view_angle_horizontal = None
+        self.target_x_resolution = None
+        self.target_y_resolution = None
         self.paths_ldr = [""]
         self.path_temp = os.path.abspath("./temp")
         self.path_errors = os.path.abspath("./errors")
         self.path_logs = os.path.abspath("./logs")
-        self.path_rsp_fn = ""
-        self.path_vignetting = ""
-        self.path_fisheye = ""
-        self.path_ndfilter = ""
-        self.path_calfact = ""
+        self.path_rsp_fn = None
+        self.path_vignetting = None
+        self.path_fisheye = None
+        self.path_ndfilter = None
+        self.path_calfact = None
         
         self.recoverCache()
 
@@ -979,16 +979,16 @@ class Ui_MainWindow(object):
             cache_json = json.load(cache_file)
 
         #Load parameters
-        self.diameter       = int(cache_json.get("diameter",0))
-        self.crop_x_left    = int(cache_json.get("crop_x_left",0))
-        self.crop_y_down    = int(cache_json.get("crop_y_down",0))
-        self.view_angle_vertical    = int(cache_json.get("view_angle_vertical", 0))
-        self.view_angle_horizontal  = int(cache_json.get("view_angle_horizontal", 0))
-        self.target_x_resolution    = int(cache_json.get("target_x_resolution", 0))
-        self.target_y_resolution    = int(cache_json.get("target_y_resolution", 0))
-        self.path_rsp_fn = str(cache_json.get("path_rsp_fn", ""))
-        self.path_vignetting = str(cache_json.get("path_vignetting", ""))
-        self.path_fisheye = str(cache_json.get("path_fisheye", ""))
-        self.path_ndfilter = str(cache_json.get("path_ndfilter", ""))
-        self.path_calfact = str(cache_json.get("path_calfact", ""))
+        self.diameter       = cast(cache_json.get("diameter", None), int)
+        self.crop_x_left    = cast(cache_json.get("crop_x_left", None), int)
+        self.crop_y_down    = cast(cache_json.get("crop_y_down", None), int)
+        self.view_angle_vertical    = cast(cache_json.get("view_angle_vertical", None), int)
+        self.view_angle_horizontal  = cast(cache_json.get("view_angle_horizontal", None), int)
+        self.target_x_resolution    = cast(cache_json.get("target_x_resolution", None), int)
+        self.target_y_resolution    = cast(cache_json.get("target_y_resolution", None), int)
+        self.path_rsp_fn = cast(cache_json.get("path_rsp_fn", None), str)
+        self.path_vignetting = cast(cache_json.get("path_vignetting", None), str)
+        self.path_fisheye = cast(cache_json.get("path_fisheye", None), str)
+        self.path_ndfilter = cast(cache_json.get("path_ndfilter", None), str)
+        self.path_calfact = cast(cache_json.get("path_calfact", None), str)
         return
