@@ -21,6 +21,11 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
+        
+        # Cache meta-options
+        self.recover_cache = True
+        self.generate_cache = True
+        self.cache_path = pathlib.Path("./cache.json")
 
         # Radiance Data vars
         self.diameter = None
@@ -40,7 +45,8 @@ class Ui_MainWindow(object):
         self.path_ndfilter = None
         self.path_calfact = None
         
-        self.recoverCache()
+        if self.recover_cache == True:
+            self.recoverCache()
 
         # Main Window stylesheet path
         self.main_styles_path = "./src/styles/main_styles.css"
@@ -759,8 +765,7 @@ class Ui_MainWindow(object):
         if ( uploadedImagesValid and cameraSettingsInputValid and calibrationFilesValid ):
             radianceObjectToSendIsValid = True
 
-
-        # If Radiance object is valid, call pipeline
+        # If Radiance object is valid, cache and call pipeline
         if ( radianceObjectToSendIsValid == True):
             print("-----------------------------------------------------")
             print("goBtnClicked, here is the RadianceData obj. being sent:\n")
@@ -778,6 +783,10 @@ class Ui_MainWindow(object):
             print("self.path_ndfilter: {}".format( self.path_ndfilter ))
             print("self.path_calfact: {}".format( self.path_calfact ))
             print("-----------------------------------------------------")
+            
+            if self.generate_cache:
+                print("Caching...")
+                self.saveCache()
 
             self.openProgressWindow()
 
@@ -980,14 +989,12 @@ class Ui_MainWindow(object):
 
     # Recover cached inputs if they exist
     def recoverCache(self):
-        cache_path = pathlib.Path("./cache.json")
-
         # Make sure it exists
-        if not cache_path.is_file():
+        if not self.cache_path.is_file():
             return
         
         # Create the JSON
-        with open(cache_path, 'r') as cache_file:
+        with open(self.cache_path, 'r') as cache_file:
             cache_json = json.load(cache_file)
 
         #Load parameters
@@ -1004,3 +1011,24 @@ class Ui_MainWindow(object):
         self.path_ndfilter      = cast(cache_json.get("path_ndfilter", None), str)
         self.path_calfact       = cast(cache_json.get("path_calfact", None), str)
         return
+    
+    # Save cache
+    def saveCache(self):
+        cache = {
+            "diameter": self.diameter,
+            "crop_x_left": self.crop_x_left,
+            "crop_y_down": self.crop_y_down,
+            "view_angle_vertical": self.view_angle_vertical,
+            "view_angle_horizontal": self.view_angle_horizontal,
+            "target_x_resolution": self.target_x_resolution,
+            "target_y_resolution": self.target_y_resolution,
+            "path_rsp_fn": self.path_rsp_fn,
+            "path_vignetting": self.path_vignetting,
+            "path_fisheye": self.path_fisheye,
+            "path_ndfilter": self.path_ndfilter,
+            "path_calfact": self.path_calfact
+        }
+        with open(self.cache_path, 'w') as cache_file:
+            json.dump(cache, cache_file)
+        return
+
