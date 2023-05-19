@@ -1,10 +1,13 @@
-from PySide6.QtWidgets import QWidget, QProgressBar, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
-from PySide6.QtCore import QTimer, Qt
+# Standard library imports
+import threading
 
+# Third-party library imports
+from PySide6.QtWidgets import QWidget, QProgressBar, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtCore import QTimer
+
+# Local module imports
 import submodules.radiance_pipeline.radiance_pipeline as rp
 from submodules.radiance_pipeline.radiance_data import RadianceData
-
-import threading
 
 
 class ProgressWindow( QWidget ):
