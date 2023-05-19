@@ -244,7 +244,7 @@ class Ui_MainWindow(object):
         self.intro_para_3.setAlignment(Qt.AlignTop)
         self.intro_para_3.setTextFormat(Qt.RichText)
         self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]:\n<ul>"
-                                  "<li>This application requires that Radiance is on your PATH.</li>\n"
+                                  "<li>This application requires that Radiance and HDRgen are installed and on your PATH.</li>\n"
                                   "<li>This application assumes that the user already knows the settings of the camera that took the LDR images beforehand.</li>\n"
                                   "<li>This application performs no calculations to cull the LDR images based on exposure.</li>\n"
                                   "<li>Windows users must have the GNU package \"sed for windows\" installed and on the system PATH in order for view angles to be corrected.</li>\n</ul>")
