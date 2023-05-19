@@ -441,7 +441,7 @@ class Ui_MainWindow(object):
 
 
         # Area 4 upload .rsp file region
-        self.rsp_UploadRegion = UploadFileRegion("CameraResponseFunction", [900, 200], fileType=2 )
+        self.rsp_UploadRegion = UploadFileRegion("CameraResponseFunction", [900, 200], fileType=2)
 
 
         # Add widgets to Layout
@@ -580,6 +580,18 @@ class Ui_MainWindow(object):
         self.stackedWidget.setCurrentIndex(0)
 
         QMetaObject.connectSlotsByName(MainWindow)
+        
+        # Grab cached file paths, if they exist
+        if self.path_rsp_fn is not None and self.path_rsp_fn != "":
+            self.rsp_UploadRegion.setPath(self.path_rsp_fn)
+        if self.path_vignetting is not None and self.path_vignetting != "":
+            self.vc_UploadRegion.setPath(self.path_vignetting)
+        if self.path_fisheye is not None and self.path_fisheye != "":
+            self.fc_UploadRegion.setPath(self.path_fisheye)
+        if self.path_ndfilter is not None and self.path_ndfilter != "":
+            self.nd_UploadRegion.setPath(self.path_ndfilter)
+        if self.path_calfact is not None and self.path_ndfilter != "":
+            self.cf_UploadRegion.setPath(self.path_calfact)
 
         return
     
