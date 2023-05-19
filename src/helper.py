@@ -20,5 +20,9 @@ def cast(x: any, t: type):
 
     if x is None:
         return None
+    
+    if x == "" and (t is int):
+        return None
+
     return t(x)
 
