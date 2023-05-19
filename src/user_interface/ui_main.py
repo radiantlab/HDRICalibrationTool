@@ -124,15 +124,15 @@ class Ui_MainWindow(object):
         self.start_pipeline_error_label.setObjectName( "start_pipeline_error_label" )
 
         # Help button
-        self.btn_help = QPushButton(self.sidebarMenuFrame)
-        self.btn_help.clicked.connect( self.openWikiInBrowser )
+        self.btn_help = QPushButton( "Help", self.sidebarMenuFrame )
+        self.btn_help.setToolTip( "Opens the GitHub Wiki in the web browser" )
         self.btn_help.setObjectName(u"btn_help")
         self.btn_help.setProperty( "isActivePage", False )
         self.btn_help.setMinimumSize(QSize(0, 40))
         self.btn_help.setIcon( QIcon("./src/assets/icons/help-icon.png") )
 
         # Settings button
-        self.btn_settings = QPushButton( "Settings", self.sidebarMenuFrame)
+        self.btn_settings = QPushButton( "Settings", self.sidebarMenuFrame )
         self.btn_settings.setObjectName( u"btn_settings" )
         self.btn_settings.setProperty( "isActivePage", False )
         self.btn_settings.setMinimumSize( QSize( 0, 52 ) )
@@ -140,6 +140,7 @@ class Ui_MainWindow(object):
         self.btn_settings.setIcon( QIcon("./src/assets/icons/settings-icon.png") )
         
 
+        # Connect click events to sidebar buttons
         # Default active page
         self.activePage = self.btn_page_1
 
@@ -148,13 +149,12 @@ class Ui_MainWindow(object):
         self.btn_page_3.clicked.connect( lambda: self.setActivePage( self.btn_page_3 ) )
         self.btn_page_4.clicked.connect( lambda: self.setActivePage( self.btn_page_4 ) )
         
-        # Link pipeline function to GO button
         self.btn_start_pipeline.clicked.connect( self.goButtonClicked )
-
-        self.btn_help.clicked.connect( lambda: self.setActivePage( self.btn_help ) )
+        self.btn_help.clicked.connect( self.openWikiInBrowser )
         self.btn_settings.clicked.connect( lambda: self.setActivePage( self.btn_settings ) )
         
-        # Add page-routing buttons to sidebar
+
+        # Add buttons to sidebar
         self.sidebarMenuVLayout.addWidget( self.btn_page_1, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_page_2, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_page_3, stretch=1 )
@@ -165,7 +165,7 @@ class Ui_MainWindow(object):
         self.sidebarMenuVLayout.addWidget( self.btn_help, stretch=1, alignment=Qt.AlignBottom )
         self.sidebarMenuVLayout.addWidget( self.btn_settings, stretch=2, alignment=Qt.AlignBottom )
 
-        #displays curr app version in the left bottom corner
+        # Displays current app version in the bottom left corner
         appVersionLabel = "Version: {}".format( appVersion )
         self.versionLabel = QLabel( appVersionLabel )
         self.sidebarMenuVLayout.addWidget( self.versionLabel, stretch=1, alignment=Qt.AlignBottom )
@@ -274,7 +274,7 @@ class Ui_MainWindow(object):
 
         
         # ------------------------------------------------------------------------------------------------------------
-        # Page 2 Setup
+        # Page 2 Setup - Upload Files
         self.page_2 = QWidget()
         self.page_2.setObjectName(u"page_2")
         self.page_2_Vlayout = QVBoxLayout(self.page_2)
@@ -292,7 +292,7 @@ class Ui_MainWindow(object):
 
 
         # ----------------------------------------------------------------------------------------
-        # Page 3 setup
+        # Page 3 setup - Camera Settings Form
         self.page_3 = QWidget()
         self.page_3.setObjectName(u"page_3")
 
