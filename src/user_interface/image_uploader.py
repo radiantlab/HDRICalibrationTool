@@ -1,14 +1,17 @@
-# Author: OpenAI (adapted by Nate Klump)
+# Author: OpenAI (heavily adapted by Nate Klump)
 # Title: Python Class for Uploading Multiple Images and Displaying Them with PyQt5
 # Year: 2023
 # URL: https://chat.openai.com/
 # Access date: 2.19.2023
 
-import os
-from PySide6 import QtWidgets
-from src.user_interface.image_preview import ImagePreview
 
+# Third-party library imports
+from PySide6 import QtWidgets
+
+# Local module imports
+from src.user_interface.image_preview import ImagePreview
 from src.user_interface.upload_image_region import UploadImageRegion
+
 
 class ImageUploader( QtWidgets.QWidget ):
     def __init__( self ):

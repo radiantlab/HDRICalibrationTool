@@ -1,12 +1,11 @@
+# Standard library imports
+import re
+import ntpath
+
+# Third-party library imports
 from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFileDialog
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt, QRect
-
-# For file name extraction
-import ntpath
-
-# For regular expressions
-import re
 
 
 # Creates a region to upload an image to, given an object name and region size.

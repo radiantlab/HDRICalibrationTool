@@ -2,10 +2,14 @@
 # with the file name displayed next to it, and a remove QPushButton that removes an uploaded image from the list.
 # Retrieved 2.19.2023 from OpenAI's ChatGPT language model, which was last trained on 2021-09. URL: https://chat.openai.com/chat
 
+# Standard library imports
 import os
+
+# Third-party library imports
 from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QHBoxLayout
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt
+
 
 class ImagePreview( QWidget ):
     def __init__( self, imagePath ):

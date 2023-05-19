@@ -1,7 +1,10 @@
+# Standard library imports
 import sys
+
+# Third-party library imports
 from PySide6.QtWidgets import QApplication, QMainWindow
 
-# GUI FILE
+# Local module imports
 from src.user_interface.ui_main import Ui_MainWindow
 
 
