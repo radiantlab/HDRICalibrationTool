@@ -22,12 +22,22 @@ It also includes information about the development of this project including lib
 ---
 ## To Run
 
+Prerequisite: [HDRGen](http://www.anyhere.com/) and [Radiance](https://www.radiance-online.org/)
+
 ### Windows
 For Windows users, unzip the code, and in the root directory, run the executable "HDRICalibrationTool.exe". ***Please do not remove this file from this directory, else it will not run.*** Feel free to make a shortcut of the executable and move that to a more accessible location.
 
 ### MacOS
 
 ### Linux
+For linux users -- Note that you will need an SSH key set up in Github to get the submodule. 
+```bash
+$ git clone https://github.com/XiangyuLijoey/HDRICalibrationTool.git
+$ cd HDRICalibrationTool
+$ git submodule update --init --recursive --remote
+$ pip3 install -r requirements.txt
+$ python3 main.py
+```
 
 
 ---
