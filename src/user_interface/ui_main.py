@@ -580,6 +580,28 @@ class Ui_MainWindow(object):
         if self.path_calfact is not None and self.path_ndfilter != "":
             self.cf_UploadRegion.setPath(self.path_calfact)
 
+        # Set checkbox states and apply upload file region styling
+        if ( self.recover_cache == True ):
+            # Settings cache enable checkbox
+            self.enableCacheCheckbox.setChecked( True )
+
+            # Upload file region disable checkboxes
+            if ( self.path_rsp_fn == None ):
+                self.rsp_UploadRegion.swapRegionInUseChkBox.setChecked( True )
+                self.rsp_UploadRegion.swapRegionInUse()
+            if ( self.path_vignetting == None ):
+                self.vc_UploadRegion.swapRegionInUseChkBox.setChecked( True )
+                self.vc_UploadRegion.swapRegionInUse()
+            if ( self.path_fisheye == None ):
+                self.fc_UploadRegion.swapRegionInUseChkBox.setChecked( True )
+                self.fc_UploadRegion.swapRegionInUse()
+            if ( self.path_calfact == None ):
+                self.cf_UploadRegion.swapRegionInUseChkBox.setChecked( True )
+                self.cf_UploadRegion.swapRegionInUse()
+            if ( self.path_ndfilter == None ):
+                self.nd_UploadRegion.swapRegionInUseChkBox.setChecked( True )
+                self.nd_UploadRegion.swapRegionInUse()
+
         return
     
 
