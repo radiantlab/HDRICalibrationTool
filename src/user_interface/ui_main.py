@@ -1025,3 +1025,20 @@ class Ui_MainWindow(object):
 
         return
         
+
+    # Toggles using the cache to pull file paths and form data
+    def toggleCacheUsage( self ):
+        self.generate_cache = not self.generate_cache
+        self.recover_cache = not self.recover_cache
+
+        # Save cache here in case user enables after running pipeline
+        if ( self.generate_cache == True ):
+            print("Caching...")
+            self.saveCache()
+
+        # Cache settings now
+        # cache settings function here
+
+        return
+    
+    
