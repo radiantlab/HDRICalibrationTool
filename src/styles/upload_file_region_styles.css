@@ -22,12 +22,9 @@ QLabel[hasFile="false"][isEnabled="false"]#regionLabel
 	font-weight: bold;
 	font-size: 28px;
 }
-QLabel[isEnabled="false"]#swapRegionInUseLabel
+QLabel[hasFile="true"][fileIsValid="false"]#regionLabel
 {
-	background-color: #FF8C8C;
-	color: white;
-	font-weight: 500; /* 400=normal, 700=bold*/
-	padding: 8px;
+	background-color: #FA8072;
 }
 
 
@@ -43,6 +40,10 @@ QLabel[hasFile="false"]#fileNameLabel
 {
 	background-color: #CBEEB0;
 }
+QLabel[hasFile="true"][fileIsValid="false"]#fileNameLabel
+{
+	background-color: #FA8072;
+}
 
 
 /* The file icon */
@@ -53,6 +54,10 @@ QLabel[hasFile="true"]#fileIcon
 QLabel[hasFile="false"]#fileIcon
 {
 	background-color: #CBEEB0;
+}
+QLabel[hasFile="true"][fileIsValid="false"]#fileIcon
+{
+	background-color: #FA8072;
 }
 
 
@@ -117,7 +122,6 @@ QLabel#dragTextLabel, QLabel#orTextLabel
 
 
 /* The checkbox that disables the usage of this region */
-
 QCheckBox[isEnabled="true"]
 {
 	background-color: #CBEEB0;
@@ -145,7 +149,6 @@ QCheckBox[isEnabled="false"]:hover
 
 
 /* The visible portion of the upload region, including placeholder spacers */
-
 QWidget[hasFile="true"][fileIsValid="false"]
 {
 	background-color: #FA8072;
@@ -161,4 +164,14 @@ QWidget[hasFile="false"][isEnabled="true"]
 QWidget[hasFile="false"][isEnabled="false"]
 {
 	background-color: #8ea67b;
+}
+
+
+/* The disabled region label */
+QLabel[isEnabled="false"]#swapRegionInUseLabel
+{
+	background-color: #FF8C8C;
+	color: white;
+	font-weight: 500; /* 400=normal, 700=bold*/
+	padding: 8px;
 }

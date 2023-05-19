@@ -1,15 +1,20 @@
+# Standard library imports
 import os
 from os.path import abspath
+import json
+import pathlib
+import webbrowser
 
+# Third-party library imports
 from PySide6.QtCore import QCoreApplication, QMetaObject, QSize, Qt
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import *
+from PySide6.QtWidgets import QWidget, QPushButton, QCheckBox, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QStackedWidget, QMdiArea, QScrollArea, QLineEdit, QGridLayout
 
+# Local module imports
 from src.user_interface.upload_file_region import UploadFileRegion
-
 from src.user_interface.image_uploader import ImageUploader
-
 from src.progress_window import ProgressWindow
+from src.helper import param2field, cast
 
 appVersion = "1.0.0"
 
@@ -17,25 +22,36 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
+        
+        # Cache meta-options
+        self.recover_cache = True
+        self.generate_cache = True
+        self.cache_path = pathlib.Path("./cache.json")
+
+        # Settings meta-options
+        self.settings_path = pathlib.Path("./settings.json")
+        self.recoverSettings()
 
         # Radiance Data vars
-        self.diameter = 0
-        self.crop_x_left = 0
-        self.crop_y_down = 0
-        self.view_angle_vertical = 0
-        self.view_angle_horizontal = 0
-        self.target_x_resolution = 0
-        self.target_y_resolution = 0
+        self.diameter = None
+        self.crop_x_left = None
+        self.crop_y_down = None
+        self.view_angle_vertical = None
+        self.view_angle_horizontal = None
+        self.target_x_resolution = None
+        self.target_y_resolution = None
         self.paths_ldr = [""]
         self.path_temp = os.path.abspath("./temp")
         self.path_errors = os.path.abspath("./errors")
         self.path_logs = os.path.abspath("./logs")
-        self.path_rsp_fn = ""
-        self.path_vignetting = ""
-        self.path_fisheye = ""
-        self.path_ndfilter = ""
-        self.path_calfact = ""
+        self.path_rsp_fn = None
+        self.path_vignetting = None
+        self.path_fisheye = None
+        self.path_ndfilter = None
+        self.path_calfact = None
         
+        if self.recover_cache == True:
+            self.recoverCache()
 
         # Main Window stylesheet path
         self.main_styles_path = "./src/styles/main_styles.css"
@@ -72,7 +88,6 @@ class Ui_MainWindow(object):
         self.sidebarMenuVLayout.setObjectName( "sidebarMenuVLayout" )
         self.sidebarMenuVLayout.setSpacing( 8 )
         self.sidebarMenuVLayout.setContentsMargins( 2, 2, 2, 2 )
-
 
 
         # ---------------------------------------------------------------------------------------
@@ -113,22 +128,23 @@ class Ui_MainWindow(object):
         self.start_pipeline_error_label.setObjectName( "start_pipeline_error_label" )
 
         # Help button
-        self.btn_help = QPushButton(self.sidebarMenuFrame)
+        self.btn_help = QPushButton( "Help", self.sidebarMenuFrame )
+        self.btn_help.setToolTip( "Opens the GitHub Wiki in the web browser" )
         self.btn_help.setObjectName(u"btn_help")
         self.btn_help.setProperty( "isActivePage", False )
-        self.btn_help.move(0,1000)
         self.btn_help.setMinimumSize(QSize(0, 40))
         self.btn_help.setIcon( QIcon("./src/assets/icons/help-icon.png") )
 
         # Settings button
-        self.btn_settings = QPushButton( "Settings", self.sidebarMenuFrame)
+        self.btn_settings = QPushButton( "Settings", self.sidebarMenuFrame )
         self.btn_settings.setObjectName( u"btn_settings" )
         self.btn_settings.setProperty( "isActivePage", False )
         self.btn_settings.setMinimumSize( QSize( 0, 52 ) )
-        self.btn_settings.setGeometry(0,0, 200, 30)
+        self.btn_settings.setGeometry(0, 0, 200, 30)
         self.btn_settings.setIcon( QIcon("./src/assets/icons/settings-icon.png") )
         
 
+        # Connect click events to sidebar buttons
         # Default active page
         self.activePage = self.btn_page_1
 
@@ -137,13 +153,12 @@ class Ui_MainWindow(object):
         self.btn_page_3.clicked.connect( lambda: self.setActivePage( self.btn_page_3 ) )
         self.btn_page_4.clicked.connect( lambda: self.setActivePage( self.btn_page_4 ) )
         
-        # Link pipeline function to GO button
         self.btn_start_pipeline.clicked.connect( self.goButtonClicked )
-
-        self.btn_help.clicked.connect( lambda: self.setActivePage( self.btn_help ) )
+        self.btn_help.clicked.connect( self.openWikiInBrowser )
         self.btn_settings.clicked.connect( lambda: self.setActivePage( self.btn_settings ) )
         
-        # Add page-routing buttons to sidebar
+
+        # Add buttons to sidebar
         self.sidebarMenuVLayout.addWidget( self.btn_page_1, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_page_2, stretch=1 )
         self.sidebarMenuVLayout.addWidget( self.btn_page_3, stretch=1 )
@@ -154,7 +169,7 @@ class Ui_MainWindow(object):
         self.sidebarMenuVLayout.addWidget( self.btn_help, stretch=1, alignment=Qt.AlignBottom )
         self.sidebarMenuVLayout.addWidget( self.btn_settings, stretch=2, alignment=Qt.AlignBottom )
 
-        #displays curr app version in the left bottom corner
+        # Displays current app version in the bottom left corner
         appVersionLabel = "Version: {}".format( appVersion )
         self.versionLabel = QLabel( appVersionLabel )
         self.sidebarMenuVLayout.addWidget( self.versionLabel, stretch=1, alignment=Qt.AlignBottom )
@@ -165,7 +180,6 @@ class Ui_MainWindow(object):
         # ---------------------------------------------------------------------------------------
 
         
-
         self.frame_pages = QFrame(self.Content)
         self.frame_pages.setObjectName(u"frame_pages")
         self.frame_pages.setFrameShape(QFrame.StyledPanel)
@@ -234,7 +248,7 @@ class Ui_MainWindow(object):
         self.intro_para_3.setAlignment(Qt.AlignTop)
         self.intro_para_3.setTextFormat(Qt.RichText)
         self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]:\n<ul>"
-                                  "<li>This application requires that Radiance is on your PATH.</li>\n"
+                                  "<li>This application requires that Radiance and HDRgen are installed and on your PATH.</li>\n"
                                   "<li>This application assumes that the user already knows the settings of the camera that took the LDR images beforehand.</li>\n"
                                   "<li>This application performs no calculations to cull the LDR images based on exposure.</li>\n"
                                   "<li>Windows users must have the GNU package \"sed for windows\" installed and on the system PATH in order for view angles to be corrected.</li>\n</ul>")
@@ -245,7 +259,7 @@ class Ui_MainWindow(object):
 
         self.intro_para_4 = QLabel( self.container_widget )
         self.intro_para_4.setAlignment(Qt.AlignTop)
-        paragraphText_4 = "If you need any help with using this app, please see the help page.\n"
+        paragraphText_4 = "If you need any help with using this app, please see the GitHub Wiki documentation page by clicking the \"Help\" button in the left sidebar.\n"
         self.intro_para_4.setText( paragraphText_4 )
         self.intro_para_4.setFont(bodyTextFont)
         self.intro_para_4.setStyleSheet( "border-top: 3px solid #6495ED;" )
@@ -264,7 +278,7 @@ class Ui_MainWindow(object):
 
         
         # ------------------------------------------------------------------------------------------------------------
-        # Page 2 Setup
+        # Page 2 Setup - Upload Files
         self.page_2 = QWidget()
         self.page_2.setObjectName(u"page_2")
         self.page_2_Vlayout = QVBoxLayout(self.page_2)
@@ -282,7 +296,7 @@ class Ui_MainWindow(object):
 
 
         # ----------------------------------------------------------------------------------------
-        # Page 3 setup
+        # Page 3 setup - Camera Settings Form
         self.page_3 = QWidget()
         self.page_3.setObjectName(u"page_3")
 
@@ -349,7 +363,7 @@ class Ui_MainWindow(object):
         self.label_md13.move(10,70)
 
         self.inputField_fisheyeViewDiameter = QLineEdit(self.mdiArea)
-        self.inputField_fisheyeViewDiameter.setText("")
+        self.inputField_fisheyeViewDiameter.setText(param2field(self.diameter))
         self.inputField_fisheyeViewDiameter.setObjectName("inputField_fisheyeViewDiameter")
         self.inputField_fisheyeViewDiameter.move(10,100)
 
@@ -362,7 +376,7 @@ class Ui_MainWindow(object):
         self.label_md14.move(x_column2,70)
 
         self.inputField_xCropOffset = QLineEdit(self.mdiArea)
-        self.inputField_xCropOffset.setText("")
+        self.inputField_xCropOffset.setText(param2field(self.crop_x_left))
         self.inputField_xCropOffset.setObjectName("inputField_xCropOffset")
         self.inputField_xCropOffset.move(x_column2,100)
 
@@ -375,7 +389,7 @@ class Ui_MainWindow(object):
         self.label_md15.move(x_column2,140)
 
         self.inputField_yCropOffset = QLineEdit(self.mdiArea)
-        self.inputField_yCropOffset.setText("")
+        self.inputField_yCropOffset.setText(param2field(self.crop_y_down))
         self.inputField_yCropOffset.setObjectName("inputField_yCropOffset")
         self.inputField_yCropOffset.move(x_column2,160)
 
@@ -390,7 +404,7 @@ class Ui_MainWindow(object):
         self.label_md21.move(10,70)
 
         self.inputField_viewAngleVertical = QLineEdit(self.mdiArea_2)
-        self.inputField_viewAngleVertical.setText("")
+        self.inputField_viewAngleVertical.setText(param2field(self.view_angle_vertical))
         self.inputField_viewAngleVertical.setObjectName("inputField_viewAngleVertical")
         self.inputField_viewAngleVertical.move(10,90)
 
@@ -402,7 +416,7 @@ class Ui_MainWindow(object):
         self.label_md22.move(x_column2,70)
 
         self.inputField_viewAngleHorizontal = QLineEdit(self.mdiArea_2)
-        self.inputField_viewAngleHorizontal.setText("")
+        self.inputField_viewAngleHorizontal.setText(param2field(self.view_angle_horizontal))
         self.inputField_viewAngleHorizontal.setObjectName("inputField_viewAngleHorizontal")
         self.inputField_viewAngleHorizontal.move(x_column2,90)
 
@@ -418,7 +432,7 @@ class Ui_MainWindow(object):
 
         # Output X Resolution
         self.inputField_outputXRes = QLineEdit(self.mdiArea_3)
-        self.inputField_outputXRes.setText("")
+        self.inputField_outputXRes.setText(param2field(self.target_x_resolution))
         self.inputField_outputXRes.setObjectName("inputField_outputXRes")
         self.inputField_outputXRes.move(10,90)
 
@@ -430,13 +444,13 @@ class Ui_MainWindow(object):
 
         # Output Y Resolution
         self.inputField_outputYRes = QLineEdit(self.mdiArea_3)
-        self.inputField_outputYRes.setText("")
+        self.inputField_outputYRes.setText(param2field(self.target_y_resolution))
         self.inputField_outputYRes.setObjectName("inputField_outputYRes")
         self.inputField_outputYRes.move(160,90)
 
 
         # Area 4 upload .rsp file region
-        self.rsp_UploadRegion = UploadFileRegion("CameraResponseFunction", [900, 200], fileType=2 )
+        self.rsp_UploadRegion = UploadFileRegion("CameraResponseFunction", [900, 200], fileType=2)
 
 
         # Add widgets to Layout
@@ -477,9 +491,9 @@ class Ui_MainWindow(object):
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( self.fc_UploadRegion )
 
-        # Camera factor region
+        # Calibration factor region
         # Add widget: UploadFileRegionObject class object
-        self.cf_UploadRegion = UploadFileRegion( "CameraFactor", [900, 200], fileType=1 )
+        self.cf_UploadRegion = UploadFileRegion( "CalibrationFactor", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( self.cf_UploadRegion )
@@ -510,45 +524,38 @@ class Ui_MainWindow(object):
 
         # -------------------------------------------------------------------------------------------------
 
-        # Help page
-        self.page_help_layout = QGridLayout()
-        self.page_help_layout.setObjectName("PageHelp_QGridLayout")
-
-        self.page_help = QWidget()
-        self.page_help.setObjectName( "page_help" )
-        self.page_help.setLayout( self.page_help_layout )
-
-        # Title label
-        self.page_help_title_label = QLabel( "Help", self.page_help )
-        self.page_help_title_label.setObjectName( "page_help_title_label" )
-        self.page_help_title_label.setStyleSheet( "font: 40pt; color: black;" )
-        self.page_help_title_label.setAlignment( Qt.AlignCenter )
-
-        # Add widgets and layouts
-        self.page_help_layout.addWidget( self.page_help_title_label )
-
-        # -------------------------------------------------------------------------------------------------
-
-
-
-        # -------------------------------------------------------------------------------------------------
-
         # Settings page
-        self.page_settings_layout = QGridLayout()
-        self.page_settings_layout.setObjectName("PageSettings_QGridLayout")
-
         self.page_settings = QWidget()
         self.page_settings.setObjectName( "page_settings" )
-        self.page_settings.setLayout( self.page_settings_layout )
-
+        
         # Title label
-        self.page_settings_title_label = QLabel( "Settings", self.page_help )
+        self.page_settings_title_label = QLabel( "Settings", self.page_settings )
         self.page_settings_title_label.setObjectName( "page_settings_title_label" )
-        self.page_settings_title_label.setStyleSheet( "font: 40pt; color: black;" )
-        self.page_settings_title_label.setAlignment( Qt.AlignCenter )
+        self.page_settings_title_label.setStyleSheet( "font: 28pt; color: black;" )
+        self.page_settings_title_label.setAlignment( Qt.AlignTop )
+
+        # Cache checkbox
+        self.enableCacheCheckbox = QCheckBox( "Enable cache" )
+        self.enableCacheCheckbox.clicked.connect( self.toggleCacheUsage )
+
+        # Cache save button
+        self.saveCacheButton = QPushButton("Manually save cache")
+        self.saveCacheButton.clicked.connect(self.saveCacheButtonClicked)
+
+        # Save settings
+        self.saveSettingsButton = QPushButton("Save settings")
+        self.saveSettingsButton.clicked.connect(self.saveSettings)
 
         # Add widgets and layouts
-        self.page_settings_layout.addWidget( self.page_settings_title_label )
+        self.page_settings_layout = QVBoxLayout()
+
+        self.page_settings_layout.addWidget( self.page_settings_title_label, stretch=1 )
+        self.page_settings_layout.addWidget( self.enableCacheCheckbox, stretch=2 )
+        self.page_settings_layout.addWidget( self.saveCacheButton )
+        self.page_settings_layout.addWidget( self.saveSettingsButton)
+        self.page_settings_layout.addWidget( QWidget(), stretch=10 )
+
+        self.page_settings.setLayout( self.page_settings_layout )
 
         # -------------------------------------------------------------------------------------------------
 
@@ -562,7 +569,6 @@ class Ui_MainWindow(object):
         self.stackedWidget.addWidget(self.page_3)
         self.stackedWidget.addWidget(self.page_4)
         self.stackedWidget.addWidget(self.page_5)
-        self.stackedWidget.addWidget(self.page_help)
         self.stackedWidget.addWidget(self.page_settings)
 
         self.verticalLayout_5.addWidget(self.stackedWidget)
@@ -575,6 +581,40 @@ class Ui_MainWindow(object):
         self.stackedWidget.setCurrentIndex(0)
 
         QMetaObject.connectSlotsByName(MainWindow)
+        
+        # Grab cached file paths, if they exist
+        if self.path_rsp_fn is not None and self.path_rsp_fn != "":
+            self.rsp_UploadRegion.setPath(self.path_rsp_fn)
+        if self.path_vignetting is not None and self.path_vignetting != "":
+            self.vc_UploadRegion.setPath(self.path_vignetting)
+        if self.path_fisheye is not None and self.path_fisheye != "":
+            self.fc_UploadRegion.setPath(self.path_fisheye)
+        if self.path_ndfilter is not None and self.path_ndfilter != "":
+            self.nd_UploadRegion.setPath(self.path_ndfilter)
+        if self.path_calfact is not None and self.path_ndfilter != "":
+            self.cf_UploadRegion.setPath(self.path_calfact)
+
+        # Set checkbox states and apply upload file region styling
+        if ( self.recover_cache == True ):
+            # Settings cache enable checkbox
+            self.enableCacheCheckbox.setChecked( True )
+
+            # Upload file region disable checkboxes
+            if ( self.path_rsp_fn == None ):
+                self.rsp_UploadRegion.swapRegionInUseChkBox.setChecked( True )
+                self.rsp_UploadRegion.swapRegionInUse()
+            if ( self.path_vignetting == None ):
+                self.vc_UploadRegion.swapRegionInUseChkBox.setChecked( True )
+                self.vc_UploadRegion.swapRegionInUse()
+            if ( self.path_fisheye == None ):
+                self.fc_UploadRegion.swapRegionInUseChkBox.setChecked( True )
+                self.fc_UploadRegion.swapRegionInUse()
+            if ( self.path_calfact == None ):
+                self.cf_UploadRegion.swapRegionInUseChkBox.setChecked( True )
+                self.cf_UploadRegion.swapRegionInUse()
+            if ( self.path_ndfilter == None ):
+                self.nd_UploadRegion.swapRegionInUseChkBox.setChecked( True )
+                self.nd_UploadRegion.swapRegionInUse()
 
         return
     
@@ -586,8 +626,6 @@ class Ui_MainWindow(object):
         self.btn_page_3.setText(QCoreApplication.translate("MainWindow", u"Camera Settings", None))
         self.btn_page_4.setText(QCoreApplication.translate("MainWindow", u"Upload Calibration", None))
         self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO", None))
-        self.btn_help.setText(QCoreApplication.translate("MainWindow", u"Help", None))
-        self.btn_settings.setText(QCoreApplication.translate("MainWindow", u"Settings", None))
         self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
         self.label_1.setAlignment(Qt.AlignHCenter)
 
@@ -601,7 +639,6 @@ class Ui_MainWindow(object):
         self.btn_page_2.setProperty( "isActivePage", False )
         self.btn_page_3.setProperty( "isActivePage", False )
         self.btn_page_4.setProperty( "isActivePage", False )
-        self.btn_help.setProperty( "isActivePage", False )
         self.btn_settings.setProperty( "isActivePage", False )
 
         if ( newActiveBtn.objectName() == "btn_page_1" ):
@@ -612,12 +649,9 @@ class Ui_MainWindow(object):
             self.btn_page_3.setProperty( "isActivePage", True )
         elif  ( newActiveBtn.objectName() == "btn_page_4" ):
             self.btn_page_4.setProperty( "isActivePage", True )
-        elif  ( newActiveBtn.objectName() == "btn_help" ):
-            self.btn_help.setProperty( "isActivePage", True )
         elif  ( newActiveBtn.objectName() == "btn_settings" ):
             self.btn_settings.setProperty( "isActivePage", True )
         
-
         self.setButtonStyling()
 
         return
@@ -639,6 +673,8 @@ class Ui_MainWindow(object):
             self.btn_help.setStyleSheet( stylesheet.read() )
         with open( self.main_styles_path, "r" ) as stylesheet:
             self.btn_settings.setStyleSheet( stylesheet.read() )
+
+        return
 
     
     # Sets the RadianceObject properties from the cropping values inputsection
@@ -742,8 +778,7 @@ class Ui_MainWindow(object):
         if ( uploadedImagesValid and cameraSettingsInputValid and calibrationFilesValid ):
             radianceObjectToSendIsValid = True
 
-
-        # If Radiance object is valid, call pipeline
+        # If Radiance object is valid, cache and call pipeline
         if ( radianceObjectToSendIsValid == True):
             print("-----------------------------------------------------")
             print("goBtnClicked, here is the RadianceData obj. being sent:\n")
@@ -761,6 +796,10 @@ class Ui_MainWindow(object):
             print("self.path_ndfilter: {}".format( self.path_ndfilter ))
             print("self.path_calfact: {}".format( self.path_calfact ))
             print("-----------------------------------------------------")
+            
+            if self.generate_cache:
+                print("Caching...")
+                self.saveCache()
 
             self.openProgressWindow()
 
@@ -776,6 +815,8 @@ class Ui_MainWindow(object):
     # Creates a ProgressWindow object to start pipeline process
     def openProgressWindow( self ):
         self.progressWindow = ProgressWindow( self )
+
+        return
 
 
     # This function sets the RadianceDate object attributes that are taken as user input from the Camera Settings page form
@@ -928,9 +969,9 @@ class Ui_MainWindow(object):
             errors.append( "- Vignetting .cal file missing: Upload or choose to omit this file. " )
 
         if ( cfIsEnabled and not cfIsEmpty and not cfIsValid ):
-            errors.append( "- Camera Factor .cal file invalid: Upload the correct file or fix formatting (See Wiki). " )
+            errors.append( "- Calibration Factor .cal file invalid: Upload the correct file or fix formatting (See Wiki). " )
         elif ( cfIsEnabled and cfIsEmpty ):
-            errors.append( "- Camera Factor .cal file missing: Upload or choose to omit this file. " )
+            errors.append( "- Calibration Factor .cal file missing: Upload or choose to omit this file. " )
 
         if ( fcIsEnabled and not fcIsEmpty and not fcIsValid ):
             errors.append( "- Fisheye Correction .cal file invalid: Upload the correct file or fix formatting (See Wiki). " )
@@ -960,3 +1001,100 @@ class Ui_MainWindow(object):
         QMessageBox.about( QWidget(), title, message )
 
         return
+
+
+    # Recover cached inputs if they exist
+    def recoverCache(self):
+        # Make sure it exists
+        if not self.cache_path.is_file():
+            return
+        
+        # Create the JSON
+        with open(self.cache_path, 'r') as cache_file:
+            cache_json = json.load(cache_file)
+
+        #Load parameters
+        self.diameter       = cast(cache_json.get("diameter", None), int)
+        self.crop_x_left    = cast(cache_json.get("crop_x_left", None), int)
+        self.crop_y_down    = cast(cache_json.get("crop_y_down", None), int)
+        self.view_angle_vertical    = cast(cache_json.get("view_angle_vertical", None), int)
+        self.view_angle_horizontal  = cast(cache_json.get("view_angle_horizontal", None), int)
+        self.target_x_resolution    = cast(cache_json.get("target_x_resolution", None), int)
+        self.target_y_resolution    = cast(cache_json.get("target_y_resolution", None), int)
+        self.path_rsp_fn        = cast(cache_json.get("path_rsp_fn", None), str)
+        self.path_vignetting    = cast(cache_json.get("path_vignetting", None), str)
+        self.path_fisheye       = cast(cache_json.get("path_fisheye", None), str)
+        self.path_ndfilter      = cast(cache_json.get("path_ndfilter", None), str)
+        self.path_calfact       = cast(cache_json.get("path_calfact", None), str)
+
+        return
+    
+
+    # Save cache
+    def saveCache(self):
+        cache = {
+            "diameter": self.diameter,
+            "crop_x_left": self.crop_x_left,
+            "crop_y_down": self.crop_y_down,
+            "view_angle_vertical": self.view_angle_vertical,
+            "view_angle_horizontal": self.view_angle_horizontal,
+            "target_x_resolution": self.target_x_resolution,
+            "target_y_resolution": self.target_y_resolution,
+            "path_rsp_fn": self.path_rsp_fn,
+            "path_vignetting": self.path_vignetting,
+            "path_fisheye": self.path_fisheye,
+            "path_ndfilter": self.path_ndfilter,
+            "path_calfact": self.path_calfact
+        }
+
+        with open(self.cache_path, 'w') as cache_file:
+            json.dump(cache, cache_file)
+
+        return
+
+
+    # This event function for the "Help" button opens the GitHub Wiki page in a new tab in the browser.
+    def openWikiInBrowser( self ):
+        wikiURL = "https://github.com/XiangyuLijoey/HDRICalibrationTool/wiki"
+        # Try and open wiki in a new tab 
+        webbrowser.open( wikiURL, new=2 )
+
+        return
+        
+
+    # Toggles using the cache to pull file paths and form data
+    def toggleCacheUsage( self ):
+        self.generate_cache = not self.generate_cache
+        self.recover_cache = not self.recover_cache
+
+        # Cache settings now
+        # cache settings function here
+
+        return
+    
+    def recoverSettings(self):
+        # Make sure settings exist
+        if not self.settings_path.is_file():
+            print("Error: No settings")
+            return
+
+        with open(self.settings_path , 'r') as settings_file:
+            settings_json = json.load(settings_file)
+
+        self.generate_cache = cast(settings_json.get("generate_cache", None), bool)
+        self.recover_cache  = cast(settings_json.get("recover_cache", None), bool)
+
+    def saveSettings(self):
+        print("Saving settings...")
+        settings = {
+                "recover_cache":self.recover_cache,
+                "generate_cache":self.generate_cache
+                }
+        with open(self.settings_path, 'w') as settings_file:
+            json.dump(settings, settings_file)
+        print("Settings saved")
+
+    def saveCacheButtonClicked(self):
+        self.ingestCameraSettingsFormData()
+        self.saveCache()
+

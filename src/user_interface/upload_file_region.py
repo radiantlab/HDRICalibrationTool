@@ -1,14 +1,12 @@
+# Standard library imports
 import os
+import re
+import ntpath
 
+# Third-party library imports
 from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QCheckBox, QFileDialog
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt, QRect
-
-# For file name extraction
-import ntpath
-
-# For regular expressions
-import re
 
 
 # Creates a region to upload a file to, given an object name, and region size.
@@ -77,6 +75,8 @@ class UploadFileRegion( QWidget ):
 
         # Adjust elements of object
         self.create()
+
+            
 
 
     # Setting widget object names and pixmaps, connecting click event functions
@@ -237,9 +237,16 @@ class UploadFileRegion( QWidget ):
             if ( mime_data.hasUrls() and len(mime_data.urls()) == 1 ):
                 file_path = mime_data.urls()[0].toLocalFile()
                 
-                # Restrict to these file types
-                if file_path.endswith(('.txt', '.cal', '.rsp')):
-                    event.acceptProposedAction()
+                # Restrict to file type of region
+                # .cal file
+                if ( self.fileType == 1 ):
+                    if file_path.endswith( ('.txt', '.cal') ):
+                        event.acceptProposedAction()
+
+                # .rsp file
+                elif ( self.fileType == 2 ):
+                    if file_path.endswith( ('.txt', '.rsp') ):
+                        event.acceptProposedAction()
                     
         return
 
@@ -538,15 +545,15 @@ class UploadFileRegion( QWidget ):
         return
 
 
-    # Returns the type of calibration/response file this region is for (e.g. vignetting, camera factor, response function, etc.)
+    # Returns the type of calibration/response file this region is for (e.g. vignetting, calibration factor, response function, etc.)
     # Does NOT return the file's extension (.cal, .rsp, .txt, etc.)
     def getFileType( self ):
         if ( self.uploadRegion.objectName() == "uploadFileRegion_Vignetting" ):
             return "Vignetting"
         elif ( self.uploadRegion.objectName() == "uploadFileRegion_FisheyeCorrection" ):
             return "FisheyeCorrection"
-        elif ( self.uploadRegion.objectName() == "uploadFileRegion_CameraFactor" ):
-            return "CameraFactor"
+        elif ( self.uploadRegion.objectName() == "uploadFileRegion_CalibrationFactor" ):
+            return "CalibrationFactor"
         elif ( self.uploadRegion.objectName() == "uploadFileRegion_NeutralDensityFilter" ):
             return "NeutralDensityFilter"
         elif ( self.uploadRegion.objectName() == "uploadFileRegion_CameraResponseFunction" ):
@@ -602,9 +609,9 @@ class UploadFileRegion( QWidget ):
                     print( "Invalid fisheye correction file: {}".format( self.filePathLabel.text() ) )
 
 
-            # Upload region is for Camera Factor
-            elif ( fileType == "CameraFactor" ):
-                print( "Upload region is for camera factor adjustment. Validating..." )
+            # Upload region is for Calibration Factor
+            elif ( fileType == "CalibrationFactor" ):
+                print( "Upload region is for calibration factor adjustment. Validating..." )
 
                 # Set RadianceData object path_calfact here when valid cf file
                 if ( self.cf_validation() == True ):
@@ -613,7 +620,7 @@ class UploadFileRegion( QWidget ):
                     print( "Set path_calfact to path: {}".format( self.filePathLabel.text() ) )
 
                 else:
-                    print( "Invalid camera factor file: {}".format( self.filePathLabel.text() ) )
+                    print( "Invalid calibration factor file: {}".format( self.filePathLabel.text() ) )
 
 
             # Upload region is for ND Filter
@@ -954,7 +961,7 @@ class UploadFileRegion( QWidget ):
             uiObject.path_fisheye = ""
             print( "Cleared path_fisheye and set path to empty string: \"\"\n" )
         
-        elif ( fileType == "CameraFactor" ):
+        elif ( fileType == "CalibrationFactor" ):
             uiObject.path_calfact = ""
             print( "Cleared path_calfact and set path to empty string: \"\"\n" )
 
@@ -972,3 +979,20 @@ class UploadFileRegion( QWidget ):
 
         return
     
+
+    # Sets the file from some non-event mechanism
+    def setPath( self, newPath ):
+        self.hasFile = True
+        self.filepath = newPath
+
+        # Set filePathLabel
+        self.filePathLabel.setText( self.filepath )
+
+        # Set fileNameLabel and show
+        filename = self.getFilenameFromPath( self.filepath )
+        self.fileNameLabel.setText( filename )
+
+        self.fileUploadedEvent()
+        
+        print(f"Default path set for {self.regionName}: {self.filepath}")
+
