@@ -975,7 +975,7 @@ class Ui_MainWindow(object):
             return
         
         # Create the JSON
-        with open("cache.json", 'r') as cache_file:
+        with open(cache_path, 'r') as cache_file:
             cache_json = json.load(cache_file)
 
         #Load parameters
@@ -986,9 +986,9 @@ class Ui_MainWindow(object):
         self.view_angle_horizontal  = cast(cache_json.get("view_angle_horizontal", None), int)
         self.target_x_resolution    = cast(cache_json.get("target_x_resolution", None), int)
         self.target_y_resolution    = cast(cache_json.get("target_y_resolution", None), int)
-        self.path_rsp_fn = cast(cache_json.get("path_rsp_fn", None), str)
-        self.path_vignetting = cast(cache_json.get("path_vignetting", None), str)
-        self.path_fisheye = cast(cache_json.get("path_fisheye", None), str)
-        self.path_ndfilter = cast(cache_json.get("path_ndfilter", None), str)
-        self.path_calfact = cast(cache_json.get("path_calfact", None), str)
+        self.path_rsp_fn        = cast(cache_json.get("path_rsp_fn", None), str)
+        self.path_vignetting    = cast(cache_json.get("path_vignetting", None), str)
+        self.path_fisheye       = cast(cache_json.get("path_fisheye", None), str)
+        self.path_ndfilter      = cast(cache_json.get("path_ndfilter", None), str)
+        self.path_calfact       = cast(cache_json.get("path_calfact", None), str)
         return
