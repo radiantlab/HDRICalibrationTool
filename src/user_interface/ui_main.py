@@ -487,9 +487,9 @@ class Ui_MainWindow(object):
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( self.fc_UploadRegion )
 
-        # Camera factor region
+        # Calibration factor region
         # Add widget: UploadFileRegionObject class object
-        self.cf_UploadRegion = UploadFileRegion( "CameraFactor", [900, 200], fileType=1 )
+        self.cf_UploadRegion = UploadFileRegion( "CalibrationFactor", [900, 200], fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( self.cf_UploadRegion )
@@ -933,9 +933,9 @@ class Ui_MainWindow(object):
             errors.append( "- Vignetting .cal file missing: Upload or choose to omit this file. " )
 
         if ( cfIsEnabled and not cfIsEmpty and not cfIsValid ):
-            errors.append( "- Camera Factor .cal file invalid: Upload the correct file or fix formatting (See Wiki). " )
+            errors.append( "- Calibration Factor .cal file invalid: Upload the correct file or fix formatting (See Wiki). " )
         elif ( cfIsEnabled and cfIsEmpty ):
-            errors.append( "- Camera Factor .cal file missing: Upload or choose to omit this file. " )
+            errors.append( "- Calibration Factor .cal file missing: Upload or choose to omit this file. " )
 
         if ( fcIsEnabled and not fcIsEmpty and not fcIsValid ):
             errors.append( "- Fisheye Correction .cal file invalid: Upload the correct file or fix formatting (See Wiki). " )

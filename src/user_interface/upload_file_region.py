@@ -545,15 +545,15 @@ class UploadFileRegion( QWidget ):
         return
 
 
-    # Returns the type of calibration/response file this region is for (e.g. vignetting, camera factor, response function, etc.)
+    # Returns the type of calibration/response file this region is for (e.g. vignetting, calibration factor, response function, etc.)
     # Does NOT return the file's extension (.cal, .rsp, .txt, etc.)
     def getFileType( self ):
         if ( self.uploadRegion.objectName() == "uploadFileRegion_Vignetting" ):
             return "Vignetting"
         elif ( self.uploadRegion.objectName() == "uploadFileRegion_FisheyeCorrection" ):
             return "FisheyeCorrection"
-        elif ( self.uploadRegion.objectName() == "uploadFileRegion_CameraFactor" ):
-            return "CameraFactor"
+        elif ( self.uploadRegion.objectName() == "uploadFileRegion_CalibrationFactor" ):
+            return "CalibrationFactor"
         elif ( self.uploadRegion.objectName() == "uploadFileRegion_NeutralDensityFilter" ):
             return "NeutralDensityFilter"
         elif ( self.uploadRegion.objectName() == "uploadFileRegion_CameraResponseFunction" ):
@@ -609,9 +609,9 @@ class UploadFileRegion( QWidget ):
                     print( "Invalid fisheye correction file: {}".format( self.filePathLabel.text() ) )
 
 
-            # Upload region is for Camera Factor
-            elif ( fileType == "CameraFactor" ):
-                print( "Upload region is for camera factor adjustment. Validating..." )
+            # Upload region is for Calibration Factor
+            elif ( fileType == "CalibrationFactor" ):
+                print( "Upload region is for calibration factor adjustment. Validating..." )
 
                 # Set RadianceData object path_calfact here when valid cf file
                 if ( self.cf_validation() == True ):
@@ -620,7 +620,7 @@ class UploadFileRegion( QWidget ):
                     print( "Set path_calfact to path: {}".format( self.filePathLabel.text() ) )
 
                 else:
-                    print( "Invalid camera factor file: {}".format( self.filePathLabel.text() ) )
+                    print( "Invalid calibration factor file: {}".format( self.filePathLabel.text() ) )
 
 
             # Upload region is for ND Filter
@@ -961,7 +961,7 @@ class UploadFileRegion( QWidget ):
             uiObject.path_fisheye = ""
             print( "Cleared path_fisheye and set path to empty string: \"\"\n" )
         
-        elif ( fileType == "CameraFactor" ):
+        elif ( fileType == "CalibrationFactor" ):
             uiObject.path_calfact = ""
             print( "Cleared path_calfact and set path to empty string: \"\"\n" )
 
