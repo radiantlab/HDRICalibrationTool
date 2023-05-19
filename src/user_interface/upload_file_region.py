@@ -16,7 +16,7 @@ class UploadFileRegion( QWidget ):
     # regionSize[0]: width
     # regionSize[1]: height
     # fileType: Restricts file upload to: [0: any;  1: .cal;  2: .rsp]
-    def __init__( self, regionName="DefaultLabel", regionSize=[128, 128], fileType=0):
+    def __init__( self, regionName="DefaultLabel", regionSize=[128, 128], fileType=0 ):
         QWidget.__init__(self)
 
         # Store input parameters as class attributes
@@ -239,9 +239,16 @@ class UploadFileRegion( QWidget ):
             if ( mime_data.hasUrls() and len(mime_data.urls()) == 1 ):
                 file_path = mime_data.urls()[0].toLocalFile()
                 
-                # Restrict to these file types
-                if file_path.endswith(('.txt', '.cal', '.rsp')):
-                    event.acceptProposedAction()
+                # Restrict to file type of region
+                # .cal file
+                if ( self.fileType == 1 ):
+                    if file_path.endswith( ('.txt', '.cal') ):
+                        event.acceptProposedAction()
+
+                # .rsp file
+                elif ( self.fileType == 2 ):
+                    if file_path.endswith( ('.txt', '.rsp') ):
+                        event.acceptProposedAction()
                     
         return
 
@@ -974,8 +981,9 @@ class UploadFileRegion( QWidget ):
 
         return
     
+
     # Sets the file from some non-event mechanism
-    def setPath(self, newPath):
+    def setPath( self, newPath ):
         self.hasFile = True
         self.filepath = newPath
 
