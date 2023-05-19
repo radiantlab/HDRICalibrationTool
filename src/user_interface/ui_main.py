@@ -8,7 +8,7 @@ import webbrowser
 # Third-party library imports
 from PySide6.QtCore import QCoreApplication, QMetaObject, QSize, Qt
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import QWidget, QPushButton, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QStackedWidget, QMdiArea, QScrollArea, QLineEdit, QGridLayout
+from PySide6.QtWidgets import QWidget, QPushButton, QCheckBox, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QStackedWidget, QMdiArea, QScrollArea, QLineEdit, QGridLayout
 
 # Local module imports
 from src.user_interface.upload_file_region import UploadFileRegion
@@ -520,45 +520,28 @@ class Ui_MainWindow(object):
 
         # -------------------------------------------------------------------------------------------------
 
-        # Help page
-        self.page_help_layout = QGridLayout()
-        self.page_help_layout.setObjectName("PageHelp_QGridLayout")
-
-        self.page_help = QWidget()
-        self.page_help.setObjectName( "page_help" )
-        self.page_help.setLayout( self.page_help_layout )
-
-        # Title label
-        self.page_help_title_label = QLabel( "Help", self.page_help )
-        self.page_help_title_label.setObjectName( "page_help_title_label" )
-        self.page_help_title_label.setStyleSheet( "font: 40pt; color: black;" )
-        self.page_help_title_label.setAlignment( Qt.AlignCenter )
-
-        # Add widgets and layouts
-        self.page_help_layout.addWidget( self.page_help_title_label )
-
-        # -------------------------------------------------------------------------------------------------
-
-
-
-        # -------------------------------------------------------------------------------------------------
-
         # Settings page
-        self.page_settings_layout = QGridLayout()
-        self.page_settings_layout.setObjectName("PageSettings_QGridLayout")
-
         self.page_settings = QWidget()
         self.page_settings.setObjectName( "page_settings" )
-        self.page_settings.setLayout( self.page_settings_layout )
-
+        
         # Title label
-        self.page_settings_title_label = QLabel( "Settings", self.page_help )
+        self.page_settings_title_label = QLabel( "Settings", self.page_settings )
         self.page_settings_title_label.setObjectName( "page_settings_title_label" )
-        self.page_settings_title_label.setStyleSheet( "font: 40pt; color: black;" )
-        self.page_settings_title_label.setAlignment( Qt.AlignCenter )
+        self.page_settings_title_label.setStyleSheet( "font: 28pt; color: black;" )
+        self.page_settings_title_label.setAlignment( Qt.AlignTop )
+
+        # Cache checkbox
+        self.enableCacheCheckbox = QCheckBox( "Enable cache" )
+        self.enableCacheCheckbox.clicked.connect( self.toggleCacheUsage )
 
         # Add widgets and layouts
-        self.page_settings_layout.addWidget( self.page_settings_title_label )
+        self.page_settings_layout = QVBoxLayout()
+
+        self.page_settings_layout.addWidget( self.page_settings_title_label, stretch=1 )
+        self.page_settings_layout.addWidget( self.enableCacheCheckbox, stretch=2 )
+        self.page_settings_layout.addWidget( QWidget(), stretch=10 )
+
+        self.page_settings.setLayout( self.page_settings_layout )
 
         # -------------------------------------------------------------------------------------------------
 
@@ -572,7 +555,6 @@ class Ui_MainWindow(object):
         self.stackedWidget.addWidget(self.page_3)
         self.stackedWidget.addWidget(self.page_4)
         self.stackedWidget.addWidget(self.page_5)
-        self.stackedWidget.addWidget(self.page_help)
         self.stackedWidget.addWidget(self.page_settings)
 
         self.verticalLayout_5.addWidget(self.stackedWidget)
@@ -608,8 +590,6 @@ class Ui_MainWindow(object):
         self.btn_page_3.setText(QCoreApplication.translate("MainWindow", u"Camera Settings", None))
         self.btn_page_4.setText(QCoreApplication.translate("MainWindow", u"Upload Calibration", None))
         self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO", None))
-        self.btn_help.setText(QCoreApplication.translate("MainWindow", u"Help", None))
-        self.btn_settings.setText(QCoreApplication.translate("MainWindow", u"Settings", None))
         self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
         self.label_1.setAlignment(Qt.AlignHCenter)
 
