@@ -28,6 +28,10 @@ class Ui_MainWindow(object):
         self.generate_cache = True
         self.cache_path = pathlib.Path("./cache.json")
 
+        # Settings meta-options
+        self.settings_path = pathlib.Path("./settings.json")
+        self.recoverSettings()
+
         # Radiance Data vars
         self.diameter = None
         self.crop_x_left = None
@@ -534,11 +538,21 @@ class Ui_MainWindow(object):
         self.enableCacheCheckbox = QCheckBox( "Enable cache" )
         self.enableCacheCheckbox.clicked.connect( self.toggleCacheUsage )
 
+        # Cache save button
+        self.saveCacheButton = QPushButton("Manually save cache")
+        self.saveCacheButton.clicked.connect(self.saveCacheButtonClicked)
+
+        # Save settings
+        self.saveSettingsButton = QPushButton("Save settings")
+        self.saveSettingsButton.clicked.connect(self.saveSettings)
+
         # Add widgets and layouts
         self.page_settings_layout = QVBoxLayout()
 
         self.page_settings_layout.addWidget( self.page_settings_title_label, stretch=1 )
         self.page_settings_layout.addWidget( self.enableCacheCheckbox, stretch=2 )
+        self.page_settings_layout.addWidget( self.saveCacheButton )
+        self.page_settings_layout.addWidget( self.saveSettingsButton)
         self.page_settings_layout.addWidget( QWidget(), stretch=10 )
 
         self.page_settings.setLayout( self.page_settings_layout )
@@ -1053,14 +1067,34 @@ class Ui_MainWindow(object):
         self.generate_cache = not self.generate_cache
         self.recover_cache = not self.recover_cache
 
-        # Save cache here in case user enables after running pipeline
-        if ( self.generate_cache == True ):
-            print("Caching...")
-            self.saveCache()
-
         # Cache settings now
         # cache settings function here
 
         return
     
-    
+    def recoverSettings(self):
+        # Make sure settings exist
+        if not self.settings_path.is_file():
+            print("Error: No settings")
+            return
+
+        with open(self.settings_path , 'r') as settings_file:
+            settings_json = json.load(settings_file)
+
+        self.generate_cache = cast(settings_json.get("generate_cache", None), bool)
+        self.recover_cache  = cast(settings_json.get("recover_cache", None), bool)
+
+    def saveSettings(self):
+        print("Saving settings...")
+        settings = {
+                "recover_cache":self.recover_cache,
+                "generate_cache":self.generate_cache
+                }
+        with open(self.settings_path, 'w') as settings_file:
+            json.dump(settings, settings_file)
+        print("Settings saved")
+
+    def saveCacheButtonClicked(self):
+        self.ingestCameraSettingsFormData()
+        self.saveCache()
+
