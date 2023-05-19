@@ -30,3 +30,6 @@ tags
 
 # Ignore cache
 cache.json
+
+# Ignore updates to settings, but they should be on the repo
+settings.json
