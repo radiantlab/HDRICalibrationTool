@@ -301,165 +301,174 @@ class Ui_MainWindow(object):
         self.page_3 = QWidget()
         self.page_3.setObjectName(u"page_3")
 
-        self.cameraSettingsPage = QVBoxLayout(self.page_3)
-        self.cameraSettingsPage.setObjectName(u"cameraSettingsPage")
-        self.cameraSettingsPage.setContentsMargins( 0, 0, 0, 0 )
-        self.cameraSettingsPage.setSpacing( 4 )
+        self.cameraSettingsPageV = QVBoxLayout( self.page_3 )
+        self.cameraSettingsPageV.setObjectName(u"cameraSettingsPageV")
+        self.cameraSettingsPageV.setContentsMargins( 0, 0, 0, 0 )
+        self.cameraSettingsPageV.setSpacing( 4 )
 
+        self.cameraSettingsPageH = QHBoxLayout( self.page_3 )
+        self.cameraSettingsPageH.setObjectName(u"cameraSettingsPageH")
+        self.cameraSettingsPageH.setContentsMargins( 0, 0, 0, 0 )
+        self.cameraSettingsPageH.setSpacing( 4 )
         
-        # Cropping Area mdiArea
-        self.mdiArea = QMdiArea(self.page_3)
-        self.mdiArea.setObjectName("mdiArea_2")
+        # Cropping Region
+        self.croppingLayout = QVBoxLayout( self.page_3 )
+        self.croppingRegion = QWidget( self.page_3 )
+        self.croppingRegion.setObjectName( "croppingRegion" )
+        self.croppingRegion.setLayout( self.croppingLayout )
 
-        self.label_cd = QLabel(self.mdiArea)
-        self.label_cd.setAlignment(Qt.AlignLeft)
-        self.label_cd.setText("Cropping Dimensions")
-        self.label_cd.setFont(bodyTextFont)
-        self.label_cd.adjustSize()
-        self.label_cd.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.label_cd.setStyleSheet("background-color: #a0a0a0")
-        self.label_cd.move(10,10)
+        self.label_CD = QLabel( "Cropping Dimensions", self.page_3 )
+        self.label_CD.setObjectName( "label_CD" )
+        self.label_CD.setAlignment(Qt.AlignLeft)
+        self.label_CD.setFont(bodyTextFont)
+        self.label_CD.adjustSize()
+        self.label_CD.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
 
 
-        # Viewing angles mdiArea
-        self.mdiArea_2 = QMdiArea(self.page_3)
-        self.mdiArea_2.setObjectName("mdiArea_2")
+        # Viewing angles
+        self.viewingAngleLayout = QVBoxLayout( self.page_3 )
+        self.viewingAngleRegion = QWidget( self.page_3 )
+        self.viewingAngleRegion.setObjectName( "viewingAngleRegion" )
+        self.viewingAngleRegion.setLayout( self.viewingAngleLayout )
 
-        self.label_LVA = QLabel(self.mdiArea_2)
+
+        self.label_LVA = QLabel( "Lens Viewing Angle", self.page_3 )
+        self.label_LVA.setObjectName( "label_LVA" )
         self.label_LVA.setAlignment(Qt.AlignLeft)
-        self.label_LVA.setText("Lens Viewing Angle")
         self.label_LVA.setFont(bodyTextFont)
         self.label_LVA.adjustSize()
-        self.label_LVA.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.label_LVA.setStyleSheet("background-color: #a0a0a0")
-        self.label_LVA.move(10,10)
-        self.label_LVA.raise_()
 
 
-        # Output Dimensions mdiArea
-        self.mdiArea_3 = QMdiArea(self.page_3)
-        self.mdiArea_3.setObjectName("mdiArea_3")
+        # Output Dimensions
+        self.outputDimLayout = QVBoxLayout( self.page_3 )
+        self.outputDimRegion = QWidget( self.page_3 )
+        self.outputDimRegion.setObjectName( "outputDimRegion" )
+        self.outputDimRegion.setLayout( self.outputDimLayout )
 
-        self.label_OID = QLabel(self.mdiArea_3)
+        self.label_OID = QLabel( "Output Image Dimensions", self.page_3 )
+        self.label_OID.setObjectName( "label_OID" )
         self.label_OID.setAlignment(Qt.AlignLeft)
-        self.label_OID.setText("Output Image Dimensions")
         self.label_OID.setFont(bodyTextFont)
         self.label_OID.adjustSize()
         self.label_OID.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.label_OID.setStyleSheet("background-color: #a0a0a0")
-        self.label_OID.move(10,10)
-        self.label_OID.raise_()
 
 
-        # To keep consistent spacing
-        x_column2 = 400
-
-        # Cropping Dimension section
+        # Cropping Dimension Region form input
 
         # Fisheye View Diameter field
-        self.label_md13 = QLabel(self.mdiArea)
-        self.label_md13.setAlignment(Qt.AlignLeft)
-        self.label_md13.setText("Fisheye View Diameter")
-        self.label_md13.setStyleSheet("background-color: #a0a0a0")
-        self.label_md13.move(10,70)
+        self.label_fisheyeViewDiameter = QLabel( "Fisheye View Diameter", self.page_3 )
+        self.label_fisheyeViewDiameter.setObjectName( "label_fisheyeViewDiameter" )
+        self.label_fisheyeViewDiameter.setAlignment(Qt.AlignBottom)
 
-        self.inputField_fisheyeViewDiameter = QLineEdit(self.mdiArea)
+        self.inputField_fisheyeViewDiameter = QLineEdit( self.page_3 )
+        self.inputField_fisheyeViewDiameter.setAlignment(Qt.AlignTop)
         self.inputField_fisheyeViewDiameter.setText(param2field(self.diameter))
         self.inputField_fisheyeViewDiameter.setObjectName("inputField_fisheyeViewDiameter")
-        self.inputField_fisheyeViewDiameter.move(10,100)
 
 
         # X Crop Offset field
-        self.label_md14 = QLabel(self.mdiArea)
-        self.label_md14.setAlignment(Qt.AlignLeft)
-        self.label_md14.setText("X Crop Offset")
-        self.label_md14.setStyleSheet("background-color: #a0a0a0")
-        self.label_md14.move(x_column2,70)
+        self.label_xCropOffset = QLabel( "X Crop Offset", self.page_3 )
+        self.label_xCropOffset.setObjectName( "label_xCropOffset" )
+        self.label_xCropOffset.setAlignment(Qt.AlignBottom)
 
-        self.inputField_xCropOffset = QLineEdit(self.mdiArea)
+        self.inputField_xCropOffset = QLineEdit( self.page_3 )
+        self.inputField_xCropOffset.setAlignment(Qt.AlignTop)
         self.inputField_xCropOffset.setText(param2field(self.crop_x_left))
         self.inputField_xCropOffset.setObjectName("inputField_xCropOffset")
-        self.inputField_xCropOffset.move(x_column2,100)
 
 
         # Y Crop Offset field
-        self.label_md15 = QLabel(self.mdiArea)
-        self.label_md15.setAlignment(Qt.AlignLeft)
-        self.label_md15.setText("Y Crop Offset")
-        self.label_md15.setStyleSheet("background-color: #a0a0a0")
-        self.label_md15.move(x_column2,140)
+        self.label_yCropOffset = QLabel( "Y Crop Offset", self.page_3 )
+        self.label_yCropOffset.setObjectName( "label_yCropOffset" )
+        self.label_yCropOffset.setAlignment(Qt.AlignBottom)
 
-        self.inputField_yCropOffset = QLineEdit(self.mdiArea)
+        self.inputField_yCropOffset = QLineEdit( self.page_3 )
+        self.inputField_yCropOffset.setAlignment(Qt.AlignTop)
         self.inputField_yCropOffset.setText(param2field(self.crop_y_down))
         self.inputField_yCropOffset.setObjectName("inputField_yCropOffset")
-        self.inputField_yCropOffset.move(x_column2,160)
 
 
-        # Lens Viewing Angle section
+        # Lens Viewing Angle region form input
         
         # View Angle Vertical field
-        self.label_md21 = QLabel(self.mdiArea_2)
-        self.label_md21.setAlignment(Qt.AlignLeft)
-        self.label_md21.setText("View Angle Vertical")
-        self.label_md21.setStyleSheet("background-color: #a0a0a0")
-        self.label_md21.move(10,70)
+        self.label_viewAngleVertical = QLabel( "View Angle Vertical", self.page_3 )
+        self.label_viewAngleVertical.setObjectName( "label_viewAngleVertical" )
+        self.label_viewAngleVertical.setAlignment(Qt.AlignBottom)
 
-        self.inputField_viewAngleVertical = QLineEdit(self.mdiArea_2)
+        self.inputField_viewAngleVertical = QLineEdit( self.page_3 )
+        self.inputField_viewAngleVertical.setAlignment( Qt.AlignTop )
         self.inputField_viewAngleVertical.setText(param2field(self.view_angle_vertical))
-        self.inputField_viewAngleVertical.setObjectName("inputField_viewAngleVertical")
-        self.inputField_viewAngleVertical.move(10,90)
 
         # View Angle Horizontal field
-        self.label_md22 = QLabel(self.mdiArea_2)
-        self.label_md22.setAlignment(Qt.AlignLeft)
-        self.label_md22.setText("View Angle Horizontal")
-        self.label_md22.setStyleSheet("background-color: #a0a0a0")
-        self.label_md22.move(x_column2,70)
+        self.label_viewAngleHorizontal = QLabel( "View Angle Horizontal", self.page_3 )
+        self.label_viewAngleHorizontal.setObjectName( "label_viewAngleHorizontal" )
+        self.label_viewAngleHorizontal.setAlignment(Qt.AlignBottom)
 
-        self.inputField_viewAngleHorizontal = QLineEdit(self.mdiArea_2)
+        self.inputField_viewAngleHorizontal = QLineEdit( self.page_3 )
+        self.inputField_viewAngleHorizontal.setAlignment(Qt.AlignTop)
         self.inputField_viewAngleHorizontal.setText(param2field(self.view_angle_horizontal))
         self.inputField_viewAngleHorizontal.setObjectName("inputField_viewAngleHorizontal")
-        self.inputField_viewAngleHorizontal.move(x_column2,90)
 
 
-        # Output Image Dimensions section
-
-        # Output Resolution fields
-        self.label_md31 = QLabel(self.mdiArea_3)
-        self.label_md31.setAlignment(Qt.AlignLeft)
-        self.label_md31.setText("HDR Image Output Resolution")
-        self.label_md31.setStyleSheet("background-color: #a0a0a0")
-        self.label_md31.move(10,70)
+        # Output Image Dimensions region form input
 
         # Output X Resolution
-        self.inputField_outputXRes = QLineEdit(self.mdiArea_3)
+        self.label_outputXRes = QLabel( "HDR Image Output X Resolution", self.page_3 )
+        self.label_outputXRes.setObjectName( "label_outputXRes" )
+        self.label_outputXRes.setAlignment(Qt.AlignBottom)
+
+        self.inputField_outputXRes = QLineEdit( self.page_3 )
+        self.inputField_outputXRes.setAlignment(Qt.AlignTop)
         self.inputField_outputXRes.setText(param2field(self.target_x_resolution))
         self.inputField_outputXRes.setObjectName("inputField_outputXRes")
-        self.inputField_outputXRes.move(10,90)
 
-        self.label_md31x = QLabel(self.mdiArea_3)
-        self.label_md31x.setAlignment(Qt.AlignLeft)
-        self.label_md31x.setText("x")
-        self.label_md31x.setStyleSheet("background-color: #a0a0a0")
-        self.label_md31x.move(149,92)
 
         # Output Y Resolution
-        self.inputField_outputYRes = QLineEdit(self.mdiArea_3)
+        self.label_outputYRes = QLabel( "HDR Image Output Y Resolution", self.page_3 )
+        self.label_outputYRes.setObjectName( "label_outputYRes" )
+        self.label_outputYRes.setAlignment(Qt.AlignBottom)
+
+        self.inputField_outputYRes = QLineEdit(self.page_3)
+        self.inputField_outputYRes.setAlignment(Qt.AlignTop)
         self.inputField_outputYRes.setText(param2field(self.target_y_resolution))
         self.inputField_outputYRes.setObjectName("inputField_outputYRes")
-        self.inputField_outputYRes.move(160,90)
 
 
-        # Area 4 upload .rsp file region
+        # Upload .rsp file region
         self.rsp_UploadRegion = UploadFileRegion( "CameraResponseFunction", fileType=2 )
 
 
         # Add widgets to Layout
-        self.cameraSettingsPage.addWidget( self.mdiArea, stretch=1 )
-        self.cameraSettingsPage.addWidget( self.mdiArea_2, stretch=1 )
-        self.cameraSettingsPage.addWidget( self.mdiArea_3, stretch=1 )
-        self.cameraSettingsPage.addWidget( self.rsp_UploadRegion )
+        self.croppingLayout.addWidget( self.label_CD, stretch=1 )
+        self.croppingLayout.addWidget( self.label_fisheyeViewDiameter, stretch=1 )
+        self.croppingLayout.addWidget( self.inputField_fisheyeViewDiameter, stretch=1 )
+        self.croppingLayout.addWidget( self.label_xCropOffset, stretch=1 )
+        self.croppingLayout.addWidget( self.inputField_xCropOffset, stretch=1 )
+        self.croppingLayout.addWidget( self.label_yCropOffset, stretch=1 )
+        self.croppingLayout.addWidget( self.inputField_yCropOffset, stretch=1 )
+
+        self.viewingAngleLayout.addWidget( self.label_LVA, stretch=1 )
+        self.viewingAngleLayout.addWidget( self.label_viewAngleVertical, stretch=1 )
+        self.viewingAngleLayout.addWidget( self.inputField_viewAngleVertical, stretch=1 )
+        self.viewingAngleLayout.addWidget( self.label_viewAngleHorizontal, stretch=1 )
+        self.viewingAngleLayout.addWidget( self.inputField_viewAngleHorizontal, stretch=1 )
+
+        self.outputDimLayout.addWidget( self.label_OID, stretch=1 )
+        self.outputDimLayout.addWidget( self.label_outputXRes, stretch=1 )
+        self.outputDimLayout.addWidget( self.inputField_outputXRes, stretch=1 )
+        self.outputDimLayout.addWidget( self.label_outputYRes, stretch=1 )
+        self.outputDimLayout.addWidget( self.inputField_outputYRes, stretch=1 )
+
+        self.cameraSettingsPageH.addWidget( self.croppingRegion, stretch=1 )
+        self.cameraSettingsPageH.addWidget( self.viewingAngleRegion, stretch=1 )
+        self.cameraSettingsPageH.addWidget( self.outputDimRegion, stretch=1 )
         
+        self.cameraSettingsPageV.addLayout( self.cameraSettingsPageH, stretch=3 )
+        self.cameraSettingsPageV.addWidget( self.rsp_UploadRegion, stretch=1 )
+        
+        # Set styling
+        self.setFormStyles()
+
         # -------------------------------------------------------------------------------------------------
 
 
@@ -1119,3 +1128,36 @@ class Ui_MainWindow(object):
 
         return scaling_factor
     
+
+    # Style the Camera Settings form widgets
+    def setFormStyles( self ):
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.croppingRegion.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.viewingAngleRegion.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.outputDimRegion.setStyleSheet( stylesheet.read() )
+        
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_CD.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_LVA.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_OID.setStyleSheet( stylesheet.read() )
+        
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_fisheyeViewDiameter.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_xCropOffset.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_yCropOffset.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_viewAngleVertical.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_viewAngleHorizontal.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_outputXRes.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_outputYRes.setStyleSheet( stylesheet.read() )
+            
+        return
