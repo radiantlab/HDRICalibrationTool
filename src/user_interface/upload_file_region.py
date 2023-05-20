@@ -92,8 +92,6 @@ class UploadFileRegion( QWidget ):
 
         # File Icon
         self.fileIcon.setObjectName( "fileIcon" )
-        # Set pixmap
-        self.fileIcon.setPixmap( self.fileIconPixmap )
 
         # File Path Label
         self.filePathLabel.setObjectName( "filePathLabel" )
@@ -109,8 +107,6 @@ class UploadFileRegion( QWidget ):
 
         # Upload File Icon
         self.uploadFileIcon.setObjectName( "uploadFileIcon" )
-        # Set pixmap 
-        self.uploadFileIcon.setPixmap( self.uploadFileIconPixmap )
 
         # Browse Button
         self.browseBtn.setObjectName( "browseButton" )
