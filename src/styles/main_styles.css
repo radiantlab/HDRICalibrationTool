@@ -1,87 +1,107 @@
 /* Styling document for the main UI widgets for the application */
 
-
 /* Page-routing, "Help", and "Settings" buttons in menu sidebar */
 QPushButton#btn_page_1[isActivePage="true"],
-		   #btn_page_2[isActivePage="true"],
-		   #btn_page_3[isActivePage="true"],
-		   #btn_page_4[isActivePage="true"],
-		   #btn_settings[isActivePage="true"],
-		   #btn_help[isActivePage="true"]
-{
+#btn_page_2[isActivePage="true"],
+#btn_page_3[isActivePage="true"],
+#btn_page_4[isActivePage="true"],
+#btn_settings[isActivePage="true"],
+#btn_help[isActivePage="true"] {
     color: white;
-    background-color: #599CC1;
-	font-weight: bolder;
+    background-color: #599cc1;
+    font-weight: bolder;
 }
 QPushButton#btn_page_1,
-		   #btn_page_2,
-		   #btn_page_3,
-		   #btn_page_4
-{
+#btn_page_2,
+#btn_page_3,
+#btn_page_4 {
     color: black;
-    background-color: #E8E7DF;
+    background-color: #e8e7df;
     border: 2px solid;
     border-color: black;
-	font-weight: bold;
+    font-weight: bold;
 }
 QPushButton#btn_settings,
-		   #btn_help
-{
-	color: black;
-    background-color: #D9D9D9;
-	border: 2px solid;
+#btn_help {
+    color: black;
+    background-color: #d9d9d9;
+    border: 2px solid;
     border-color: black;
-	font-weight: bold;
+    font-weight: bold;
 }
 QPushButton#btn_page_1:hover,
-		   #btn_page_2:hover,
-		   #btn_page_3:hover,
-		   #btn_page_4:hover,
-		   #btn_settings:hover,
-		   #btn_help:hover
-{
+#btn_page_2:hover,
+#btn_page_3:hover,
+#btn_page_4:hover,
+#btn_settings:hover,
+#btn_help:hover {
     color: white;
-    background-color: #599CC1;
-	border-color: white;
-	border-width: 2px;
-	font-weight: bold;
+    background-color: #599cc1;
+    border-color: white;
+    border-width: 2px;
+    font-weight: bold;
 }
 QPushButton#btn_page_1:pressed,
-		   #btn_page_2:pressed,
-		   #btn_page_3:pressed,
-		   #btn_page_4:pressed,
-		   #btn_settings:pressed,
-		   #btn_help:pressed
-{
-    background-color: #477C9A;
-	font-weight: bold;
+#btn_page_2:pressed,
+#btn_page_3:pressed,
+#btn_page_4:pressed,
+#btn_settings:pressed,
+#btn_help:pressed {
+    background-color: #477c9a;
+    font-weight: bold;
 }
-
 
 /* "Go" button in menu sidebar that begins the Radiance pipeline process */
-QPushButton#btn_start_pipeline
-{
-	color: black;
-    background-color: #72B170;
+QPushButton#btn_start_pipeline {
+    color: black;
+    background-color: #72b170;
     border: 2px solid;
     border-color: white;
-	font-weight: bold;
-	font-size: 22px;
+    font-weight: bold;
+    font-size: 22px;
 }
-QPushButton#btn_start_pipeline:hover
-{
-	color: white;
-	background-color: #476F46;
-	font-weight: bold;
+QPushButton#btn_start_pipeline:hover {
+    color: white;
+    background-color: #476f46;
+    font-weight: bold;
 }
-QPushButton#btn_start_pipeline:pressed
-{
-	color: white;
-	background-color: #395838;
-	font-weight: bold;
+QPushButton#btn_start_pipeline:pressed {
+    color: white;
+    background-color: #395838;
+    font-weight: bold;
 }
-QPushButton#btn_start_pipeline:disabled
-{
-	color: #2B2B2B;
-    background-color: #8EA58D;
+QPushButton#btn_start_pipeline:disabled {
+    color: #2b2b2b;
+    background-color: #8ea58d;
+}
+
+/* The camera settings page input fields */
+QLineEdit {
+    background-color: white;
+    color: black;
+}
+
+/* Camera settings page form qwidgets */
+QWidget#croppingRegion,
+#viewingAngleRegion,
+#outputDimRegion {
+    background-color: #a0a0a0;
+}
+
+/* Camera settings page form labels */
+QLabel#label_fisheyeViewDiameter,
+#label_xCropOffset,
+#label_yCropOffset,
+#label_viewAngleVertical,
+#label_viewAngleHorizontal,
+#label_outputXRes,
+#label_outputYRes {
+    background-color: #a0a0a0;
+}
+
+QLabel#label_CD,
+#label_LVA,
+#label_OID {
+    background-color: #a0a0a0;
+    font-weight: bold;
 }
