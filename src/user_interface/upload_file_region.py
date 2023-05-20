@@ -11,8 +11,6 @@ from PySide6.QtCore import Qt, QRect
 
 # Creates a region to upload a file to, given an object name, and region size.
 class UploadFileRegion( QWidget ):
-    # regionSize[0]: width
-    # regionSize[1]: height
     # fileType: Restricts file upload to: [0: any;  1: .cal;  2: .rsp]
     def __init__( self, regionName="DefaultLabel", fileType=0 ):
         QWidget.__init__(self)
@@ -191,7 +189,6 @@ class UploadFileRegion( QWidget ):
 
         self.uploadIconVLayout.addLayout( self.uploadIconHLayout, stretch=6)
         self.uploadIconVLayout.addWidget( self.dragTextLabel, stretch=2, alignment=Qt.AlignLeft )
-        self.uploadIconVLayout.addWidget( self.regionSpacer, stretch=1 )
 
         self.uploadIconHLayout.addWidget( self.uploadFileIcon, stretch=1, alignment=Qt.AlignCenter )
         self.uploadIconHLayout.addWidget( self.regionSpacer, stretch=1 )
@@ -205,7 +202,7 @@ class UploadFileRegion( QWidget ):
         self.buttonLabelHLayout.addWidget( self.orTextLabel, stretch=3, alignment=Qt.AlignCenter )
 
         self.upperHLayout.addWidget( self.regionLabel, stretch=6 )
-        self.upperHLayout.addWidget( self.swapRegionInUseLabel, stretch=4 )
+        self.upperHLayout.addWidget( self.swapRegionInUseLabel, stretch=8 )
         self.upperHLayout.addWidget( self.swapRegionInUseChkBox, stretch=1 )
         self.upperHLayout.addWidget( self.removeBtn, stretch=1 )
 
@@ -371,14 +368,22 @@ class UploadFileRegion( QWidget ):
     def setWidgetVisibility( self ):
         # Always
         self.filePathLabel.hide()
-        
 
         # Upload File Region is enabled
         if ( self.isEnabled == True ):
             self.swapRegionInUseLabel.hide()
+            self.dragTextLabel.show()
+            self.orTextLabel.show()
+            self.uploadFileIcon.show()
+            self.browseBtn.show()
         
         else:
             self.swapRegionInUseLabel.show()
+            self.dragTextLabel.hide()
+            self.orTextLabel.hide()
+            self.uploadFileIcon.hide()
+            self.browseBtn.hide()
+            return
 
 
         # Upload File Region has a file uploaded
@@ -994,18 +999,18 @@ class UploadFileRegion( QWidget ):
         scaling_factor = self.getScreenScalingFactor()
         
         # Calculate the desired icon size based on the scaling factor
-        icon_size = int( 128 * scaling_factor )  # Adjust 128 to your desired reference icon size
+        file_icon_size = int( 84 * scaling_factor )
+        upload_file_icon_size = int( 52 * scaling_factor )
 
-        # Resize the file icon pixmap to the desired size
-        self.fileIconPixmap.scaledToWidth( icon_size, Qt.SmoothTransformation )
+        # Resize the icon pixmap to the desired size
+        file_icon_pixmap_resized = self.fileIconPixmap.scaledToWidth( file_icon_size, Qt.SmoothTransformation )
+        upload_file_icon_pixmap_resized = self.uploadFileIconPixmap.scaledToWidth( upload_file_icon_size, Qt.SmoothTransformation )
         
         # Set the resized pixmap to the QLabel
-        self.fileIcon.setPixmap( self.fileIconPixmap )
+        self.fileIcon.setPixmap( file_icon_pixmap_resized )
+        self.uploadFileIcon.setPixmap( upload_file_icon_pixmap_resized )
 
-        # Adjust the font size of the button based on the scaling factor
-        font = self.removeBtn.font()
-        font.setPointSizeF(font.pointSizeF() * scaling_factor)
-        self.removeBtn.setFont(font)
+        return
 
 
     # Calculates the scale factor for widgets based off of the screen size
