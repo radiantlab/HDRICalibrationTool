@@ -4,7 +4,7 @@ import re
 import ntpath
 
 # Third-party library imports
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QCheckBox, QFileDialog, QApplication
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QCheckBox, QFileDialog, QApplication, QGridLayout
 from PySide6.QtGui import QPixmap, QScreen
 from PySide6.QtCore import Qt, QRect
 
@@ -14,13 +14,11 @@ class UploadFileRegion( QWidget ):
     # regionSize[0]: width
     # regionSize[1]: height
     # fileType: Restricts file upload to: [0: any;  1: .cal;  2: .rsp]
-    def __init__( self, regionName="DefaultLabel", regionSize=[128, 128], fileType=0 ):
+    def __init__( self, regionName="DefaultLabel", fileType=0 ):
         QWidget.__init__(self)
 
         # Store input parameters as class attributes
         self.regionName = regionName
-        self.regionWidth = regionSize[0]
-        self.regionHeight = regionSize[1]
         self.fileType = fileType
 
         # Style path
@@ -28,6 +26,11 @@ class UploadFileRegion( QWidget ):
 
         # Visible region background
         self.uploadRegion = QWidget( self )
+
+        # Create a layout for the region base
+        layout = QGridLayout( self )
+        layout.addWidget( self.uploadRegion )
+        self.setLayout( layout )
 
         # Spacers for QVBox/QHBox layouts
         self.regionSpacer = QLabel( self )
@@ -82,49 +85,39 @@ class UploadFileRegion( QWidget ):
         # -------------------------------------------------------------------------------------
         # Upload Region
         self.uploadRegion.setObjectName( "uploadFileRegion_{}".format( self.regionName ) )
-        self.uploadRegion.setGeometry( QRect( 0, 0, self.regionWidth, self.regionHeight ) )
-
 
         # Region Spacer Region
         self.regionSpacer.setObjectName( "regionSpacer" )
 
-
         # Region Label
         self.regionLabel.setObjectName( "regionLabel" )
-
 
         # File Icon
         self.fileIcon.setObjectName( "fileIcon" )
         # Set pixmap
         self.fileIcon.setPixmap( self.fileIconPixmap )
 
-
         # File Path Label
         self.filePathLabel.setObjectName( "filePathLabel" )
         self.filePathLabel.setText( "" )
 
-
         # File Name Label
         self.fileNameLabel.setObjectName( "fileNameLabel" )
-
 
         # Remove Button
         self.removeBtn.setObjectName( "removeButton" )
         # Connect event to signal
         self.removeBtn.clicked.connect( self.removeBtnClicked )
 
-
         # Upload File Icon
         self.uploadFileIcon.setObjectName( "uploadFileIcon" )
         # Set pixmap 
         self.uploadFileIcon.setPixmap( self.uploadFileIconPixmap )
 
-
         # Browse Button
         self.browseBtn.setObjectName( "browseButton" )
         # Connect event to signal
         self.browseBtn.clicked.connect( self.browseFiles )
-
 
         # Disable region label
         self.swapRegionInUseLabel.setObjectName( "swapRegionInUseLabel" )
@@ -144,16 +137,13 @@ class UploadFileRegion( QWidget ):
         else:
             labelText = "File will not be used."
             self.swapRegionInUseLabel.setText( labelText )
-
             
         # Disable region checkbox
         self.swapRegionInUseChkBox.setObjectName( "swapRegionInUseChkBox" )
         self.swapRegionInUseChkBox.clicked.connect( self.swapRegionInUse )
 
-
         # Drag Text Label
         self.dragTextLabel.setObjectName( "dragTextLabel" )
-
 
         # Or Text Label
         self.orTextLabel.setObjectName( "orTextLabel" )

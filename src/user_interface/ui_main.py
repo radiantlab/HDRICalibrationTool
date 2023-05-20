@@ -8,7 +8,7 @@ import webbrowser
 # Third-party library imports
 from PySide6.QtCore import QCoreApplication, QMetaObject, QSize, Qt
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import QWidget, QPushButton, QCheckBox, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QStackedWidget, QMdiArea, QScrollArea, QLineEdit, QGridLayout
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QCheckBox, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QStackedWidget, QMdiArea, QScrollArea, QLineEdit, QGridLayout
 
 # Local module imports
 from src.user_interface.upload_file_region import UploadFileRegion
@@ -56,9 +56,10 @@ class Ui_MainWindow(object):
         # Main Window stylesheet path
         self.main_styles_path = "./src/styles/main_styles.css"
 
-        MainWindow.resize(1150, 840)
-        MainWindow.setMinimumSize(QSize(1000, 500))
         MainWindow.setStyleSheet(u"background-color: #EAEAEA;")
+
+        # Get screen resolution scale factor for consistent sizing and scaling
+        scale_factor = self.getScreenScaleFactor()
 
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
@@ -450,14 +451,14 @@ class Ui_MainWindow(object):
 
 
         # Area 4 upload .rsp file region
-        self.rsp_UploadRegion = UploadFileRegion("CameraResponseFunction", [900, 200], fileType=2)
+        self.rsp_UploadRegion = UploadFileRegion( "CameraResponseFunction", fileType=2 )
 
 
         # Add widgets to Layout
         self.cameraSettingsPage.addWidget( self.mdiArea, stretch=1 )
         self.cameraSettingsPage.addWidget( self.mdiArea_2, stretch=1 )
         self.cameraSettingsPage.addWidget( self.mdiArea_3, stretch=1 )
-        self.cameraSettingsPage.addWidget( self.rsp_UploadRegion, stretch=1 )
+        self.cameraSettingsPage.addWidget( self.rsp_UploadRegion )
         
         # -------------------------------------------------------------------------------------------------
 
@@ -479,28 +480,28 @@ class Ui_MainWindow(object):
 
         # Vignetting region
         # Add widget: UploadFileRegionObject class object
-        self.vc_UploadRegion = UploadFileRegion( "Vignetting", [900, 200], fileType=1 )
+        self.vc_UploadRegion = UploadFileRegion( "Vignetting", fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( self.vc_UploadRegion )
 
         # Fisheye correction region
         # Add widget: UploadFileRegionObject class object
-        self.fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [900, 200], fileType=1 )
+        self.fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( self.fc_UploadRegion )
 
         # Calibration factor region
         # Add widget: UploadFileRegionObject class object
-        self.cf_UploadRegion = UploadFileRegion( "CalibrationFactor", [900, 200], fileType=1 )
+        self.cf_UploadRegion = UploadFileRegion( "CalibrationFactor", fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( self.cf_UploadRegion )
 
         # Neutral Density Filter region
         # Add widget: UploadFileRegionObject class object
-        self.nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [900, 200], fileType=1 )
+        self.nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( self.nd_UploadRegion )
@@ -579,6 +580,11 @@ class Ui_MainWindow(object):
         self.retranslateUi(MainWindow)
 
         self.stackedWidget.setCurrentIndex(0)
+
+        # Set size of MainWindow based on screen resolution
+        num_widgets = 4
+        MainWindow.resize( 1150 * scale_factor, 840 * scale_factor )
+        MainWindow.setMinimumSize( self.vc_UploadRegion.minimumSizeHint() * scale_factor * ( num_widgets + 1.5 ) )
 
         QMetaObject.connectSlotsByName(MainWindow)
         
@@ -1098,3 +1104,13 @@ class Ui_MainWindow(object):
         self.ingestCameraSettingsFormData()
         self.saveCache()
 
+    # Get the screen scale factor to resize widgets based on screen size
+    def getScreenScaleFactor( self ):
+        # Retrieve the screen resolution
+        screen = QApplication.primaryScreen()
+        screen_size = screen.size()
+
+        # Calculate the scaling factor based on the screen width
+        scaling_factor = screen_size.width() / 1920  # Adjust 1920 to your desired reference width
+
+        return scaling_factor
