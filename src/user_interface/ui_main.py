@@ -583,8 +583,8 @@ class Ui_MainWindow(object):
 
         # Set size of MainWindow based on screen resolution
         num_widgets = 4
-        MainWindow.resize( 1150 * scale_factor, 840 * scale_factor )
-        MainWindow.setMinimumSize( self.vc_UploadRegion.minimumSizeHint() * scale_factor * ( num_widgets + 1.5 ) )
+        MainWindow.resize( 1060 * scale_factor, 800 * scale_factor )
+        MainWindow.setMinimumSize( self.vc_UploadRegion.minimumSizeHint() * scale_factor * ( num_widgets + 1.8 ) )
 
         QMetaObject.connectSlotsByName(MainWindow)
         
@@ -1078,6 +1078,7 @@ class Ui_MainWindow(object):
 
         return
     
+
     def recoverSettings(self):
         # Make sure settings exist
         if not self.settings_path.is_file():
@@ -1090,6 +1091,7 @@ class Ui_MainWindow(object):
         self.generate_cache = cast(settings_json.get("generate_cache", None), bool)
         self.recover_cache  = cast(settings_json.get("recover_cache", None), bool)
 
+
     def saveSettings(self):
         print("Saving settings...")
         settings = {
@@ -1100,9 +1102,11 @@ class Ui_MainWindow(object):
             json.dump(settings, settings_file)
         print("Settings saved")
 
+
     def saveCacheButtonClicked(self):
         self.ingestCameraSettingsFormData()
         self.saveCache()
+
 
     # Get the screen scale factor to resize widgets based on screen size
     def getScreenScaleFactor( self ):
@@ -1114,3 +1118,4 @@ class Ui_MainWindow(object):
         scaling_factor = screen_size.width() / 1920  # Adjust 1920 to your desired reference width
 
         return scaling_factor
+    
