@@ -306,14 +306,14 @@ class Ui_MainWindow(object):
         self.cameraSettingsPageV.setContentsMargins( 0, 0, 0, 0 )
         self.cameraSettingsPageV.setSpacing( 4 )
 
-        self.cameraSettingsPageH = QHBoxLayout( self.page_3 )
+        self.cameraSettingsPageH = QHBoxLayout()
         self.cameraSettingsPageH.setObjectName(u"cameraSettingsPageH")
         self.cameraSettingsPageH.setContentsMargins( 0, 0, 0, 0 )
         self.cameraSettingsPageH.setSpacing( 4 )
         
         # Cropping Region
-        self.croppingLayout = QVBoxLayout( self.page_3 )
-        self.croppingRegion = QWidget( self.page_3 )
+        self.croppingLayout = QVBoxLayout()
+        self.croppingRegion = QWidget()
         self.croppingRegion.setObjectName( "croppingRegion" )
         self.croppingRegion.setLayout( self.croppingLayout )
 
@@ -326,8 +326,8 @@ class Ui_MainWindow(object):
 
 
         # Viewing angles
-        self.viewingAngleLayout = QVBoxLayout( self.page_3 )
-        self.viewingAngleRegion = QWidget( self.page_3 )
+        self.viewingAngleLayout = QVBoxLayout()
+        self.viewingAngleRegion = QWidget()
         self.viewingAngleRegion.setObjectName( "viewingAngleRegion" )
         self.viewingAngleRegion.setLayout( self.viewingAngleLayout )
 
@@ -340,8 +340,8 @@ class Ui_MainWindow(object):
 
 
         # Output Dimensions
-        self.outputDimLayout = QVBoxLayout( self.page_3 )
-        self.outputDimRegion = QWidget( self.page_3 )
+        self.outputDimLayout = QVBoxLayout()
+        self.outputDimRegion = QWidget()
         self.outputDimRegion.setObjectName( "outputDimRegion" )
         self.outputDimRegion.setLayout( self.outputDimLayout )
 
