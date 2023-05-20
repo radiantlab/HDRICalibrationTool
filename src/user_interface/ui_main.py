@@ -320,9 +320,7 @@ class Ui_MainWindow(object):
         self.label_CD = QLabel( "Cropping Dimensions", self.page_3 )
         self.label_CD.setObjectName( "label_CD" )
         self.label_CD.setAlignment(Qt.AlignLeft)
-        self.label_CD.setFont(bodyTextFont)
         self.label_CD.adjustSize()
-        self.label_CD.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
 
 
         # Viewing angles
@@ -335,7 +333,6 @@ class Ui_MainWindow(object):
         self.label_LVA = QLabel( "Lens Viewing Angle", self.page_3 )
         self.label_LVA.setObjectName( "label_LVA" )
         self.label_LVA.setAlignment(Qt.AlignLeft)
-        self.label_LVA.setFont(bodyTextFont)
         self.label_LVA.adjustSize()
 
 
@@ -348,9 +345,7 @@ class Ui_MainWindow(object):
         self.label_OID = QLabel( "Output Image Dimensions", self.page_3 )
         self.label_OID.setObjectName( "label_OID" )
         self.label_OID.setAlignment(Qt.AlignLeft)
-        self.label_OID.setFont(bodyTextFont)
         self.label_OID.adjustSize()
-        self.label_OID.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
 
 
         # Cropping Dimension Region form input
