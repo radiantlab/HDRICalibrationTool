@@ -4,8 +4,8 @@ import re
 import ntpath
 
 # Third-party library imports
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QCheckBox, QFileDialog
-from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QCheckBox, QFileDialog, QApplication
+from PySide6.QtGui import QPixmap, QScreen
 from PySide6.QtCore import Qt, QRect
 
 
@@ -77,8 +77,6 @@ class UploadFileRegion( QWidget ):
         self.create()
 
             
-
-
     # Setting widget object names and pixmaps, connecting click event functions
     def create( self ):
         # -------------------------------------------------------------------------------------
@@ -542,6 +540,9 @@ class UploadFileRegion( QWidget ):
         # Set widget style
         self.setWidgetStyle()
 
+        # Adjust widget scaling based off of screen size
+        self.adjustScaling()
+
         return
 
 
@@ -996,3 +997,35 @@ class UploadFileRegion( QWidget ):
         
         print(f"Default path set for {self.regionName}: {self.filepath}")
 
+
+    # Rescales widgets based off of the screen size
+    def adjustScaling(self):  
+        # Retrieve the scaling factor
+        scaling_factor = self.getScreenScalingFactor()
+        
+        # Calculate the desired icon size based on the scaling factor
+        icon_size = int( 128 * scaling_factor )  # Adjust 128 to your desired reference icon size
+
+        # Resize the file icon pixmap to the desired size
+        self.fileIconPixmap.scaledToWidth( icon_size, Qt.SmoothTransformation )
+        
+        # Set the resized pixmap to the QLabel
+        self.fileIcon.setPixmap( self.fileIconPixmap )
+
+        # Adjust the font size of the button based on the scaling factor
+        font = self.removeBtn.font()
+        font.setPointSizeF(font.pointSizeF() * scaling_factor)
+        self.removeBtn.setFont(font)
+
+
+    # Calculates the scale factor for widgets based off of the screen size
+    def getScreenScalingFactor(self):
+        # Retrieve the screen resolution
+        screen = QApplication.primaryScreen()
+        screen_size = screen.size()
+        
+        # Calculate the scaling factor based on the screen width
+        scaling_factor = screen_size.width() / 1920
+        
+        return scaling_factor
+    
