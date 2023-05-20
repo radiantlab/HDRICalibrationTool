@@ -27,9 +27,7 @@ Prerequisite: [HDRGen](http://www.anyhere.com/) and [Radiance](https://www.radia
 ### Windows
 For Windows users, unzip the code, and in the root directory, run the executable "HDRICalibrationTool.exe". ***Please do not remove this file from this directory, else it will not run.*** Feel free to make a shortcut of the executable and move that to a more accessible location.
 
-### MacOS
-
-### Linux
+### MacOS and Linux
 For linux users -- Note that you will need an SSH key set up in Github to get the submodule. 
 ```bash
 $ git clone https://github.com/XiangyuLijoey/HDRICalibrationTool.git
