@@ -24,7 +24,7 @@ class ImageUploader( QtWidgets.QWidget ):
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout( self.layout )
 
-        self.imageUploadRegion = UploadImageRegion( "Upload Image Files", [900, 200] )
+        self.imageUploadRegion = UploadImageRegion( "Upload Image Files" )
         self.imageUploadRegion.setParent( self )
         self.layout.addWidget( self.imageUploadRegion, stretch=4 )
 
