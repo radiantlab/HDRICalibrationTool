@@ -88,6 +88,23 @@ QWidget#croppingRegion,
     background-color: #a0a0a0;
 }
 
+/* Welcom page labels */
+QLabel#welcome_label {
+    font-size: 40pt;
+    color: black;
+    padding-top: 20px;
+}
+
+QLabel#intro_para,
+#intro_para_2,
+#intro_para_3,
+#intro_para_4 {
+    border-top: 3px solid #6495ED;
+    padding-top: 10px;
+    font-size: 16pt;
+}
+
+
 /* Camera settings page form labels */
 QLabel#label_fisheyeViewDiameter,
 #label_xCropOffset,
@@ -106,4 +123,33 @@ QLabel#label_CD,
     background-color: #a0a0a0;
     font-weight: bold;
     font-size: 20pt;
+}
+
+
+/* Settings page styling */
+QLabel#page_settings_title_label {
+    color: black;
+    font-weight: bold;
+    font-size: 28pt;
+    border-bottom: 3px solid #6495ED;
+    padding-bottom: 5%;
+}
+
+QLabel#cacheCheckboxLabel,
+#cacheButtonLabel {
+    color: black;
+    font-weight: bold;
+    font-size: 14pt;
+}
+
+QPushButton#enable_cache_checkbox,
+#save_cache_button,
+#save_settings_button {
+    font-size: 12pt;
+    color: black;
+    background-color: #d9d9d9;
+    border: 2px solid;
+    border-color: black;
+    font-weight: bold;
+    padding: 5%;
 }
