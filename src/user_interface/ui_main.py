@@ -175,9 +175,6 @@ class Ui_MainWindow(object):
         self.versionLabel = QLabel( appVersionLabel )
         self.sidebarMenuVLayout.addWidget( self.versionLabel, stretch=1, alignment=Qt.AlignBottom )
 
-        # Set style of sidebar menu buttons
-        self.setButtonStyling()
-
         # ---------------------------------------------------------------------------------------
 
         
@@ -217,35 +214,28 @@ class Ui_MainWindow(object):
         self.page_1.setWidgetResizable(True)
 
         # Welcome label
-        self.label_1 = QLabel(self.page_1)
-        self.label_1.setObjectName(u"label_1")
-        self.label_1.setStyleSheet(u"font: 40pt; color: #000;")
-        self.label_1.setAlignment(Qt.AlignCenter)
+        self.welcome_label = QLabel(self.page_1)
+        self.welcome_label.setObjectName(u"welcome_label")
+        self.welcome_label.setAlignment(Qt.AlignCenter)
         
 
         # Body text
-        bodyTextFont = QFont()
-        bodyTextFont.setPointSize( 16 )
-       
         self.intro_para = QLabel( self.container_widget )
+        self.intro_para.setObjectName( "intro_para" )
         self.intro_para.setAlignment(Qt.AlignTop)
         self.intro_para.setText("This tool was designed to automate the process of merging multiple LDR images together and generating an HDR image.")
-        self.intro_para.setFont(bodyTextFont)
-        self.intro_para.setStyleSheet( "border-top: 3px solid #6495ED;" )
         self.intro_para.setWordWrap( True )
-        self.intro_para.adjustSize()
 
         self.intro_para_2 = QLabel( self.container_widget )
+        self.intro_para_2.setObjectName( "intro_para_2" )
         self.intro_para_2.setOpenExternalLinks( True )
         paragraphText_2 = 'To read more about the process of generating an HDR image from LDR image input, see the research paper by Clotilde Pierson <a href = \"https://doi.org/10.1080/15502724.2019.1684319\">here.</a><br>'
         self.intro_para_2.setAlignment(Qt.AlignTop)
         self.intro_para_2.setText( paragraphText_2 )
-        self.intro_para_2.setFont(bodyTextFont)
-        self.intro_para_2.setStyleSheet( "border-top: 3px solid #6495ED;" )
         self.intro_para_2.setWordWrap( True )
-        self.intro_para_2.adjustSize()
 
         self.intro_para_3 = QLabel( self.container_widget )
+        self.intro_para_3.setObjectName( "intro_para_3" )
         self.intro_para_3.setAlignment(Qt.AlignTop)
         self.intro_para_3.setTextFormat(Qt.RichText)
         self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]:\n<ul>"
@@ -253,22 +243,17 @@ class Ui_MainWindow(object):
                                   "<li>This application assumes that the user already knows the settings of the camera that took the LDR images beforehand.</li>\n"
                                   "<li>This application performs no calculations to cull the LDR images based on exposure.</li>\n"
                                   "<li>Windows users must have the GNU package \"sed for windows\" installed and on the system PATH in order for view angles to be corrected.</li>\n</ul>")
-        self.intro_para_3.setFont(bodyTextFont)
-        self.intro_para_3.setStyleSheet( "border-top: 3px solid #6495ED;" )
         self.intro_para_3.setWordWrap( True )
-        self.intro_para_3.adjustSize()
 
         self.intro_para_4 = QLabel( self.container_widget )
+        self.intro_para_4.setObjectName( "intro_para_4" )
         self.intro_para_4.setAlignment(Qt.AlignTop)
         paragraphText_4 = "If you need any help with using this app, please see the GitHub Wiki documentation page by clicking the \"Help\" button in the left sidebar.\n"
         self.intro_para_4.setText( paragraphText_4 )
-        self.intro_para_4.setFont(bodyTextFont)
-        self.intro_para_4.setStyleSheet( "border-top: 3px solid #6495ED;" )
         self.intro_para_4.setWordWrap( True )
-        self.intro_para_4.adjustSize()
 
         # Add text to layout
-        self.page_1_layout.addWidget( self.label_1 )
+        self.page_1_layout.addWidget( self.welcome_label )
         self.page_1_layout.addWidget( self.intro_para )
         self.page_1_layout.addWidget( self.intro_para_2 )
         self.page_1_layout.addWidget( self.intro_para_3 )
@@ -460,9 +445,6 @@ class Ui_MainWindow(object):
         
         self.cameraSettingsPageV.addLayout( self.cameraSettingsPageH, stretch=3 )
         self.cameraSettingsPageV.addWidget( self.rsp_UploadRegion, stretch=1 )
-        
-        # Set styling
-        self.setFormStyles()
 
         # -------------------------------------------------------------------------------------------------
 
@@ -536,31 +518,56 @@ class Ui_MainWindow(object):
         # Title label
         self.page_settings_title_label = QLabel( "Settings", self.page_settings )
         self.page_settings_title_label.setObjectName( "page_settings_title_label" )
-        self.page_settings_title_label.setStyleSheet( "font: 28pt; color: black;" )
         self.page_settings_title_label.setAlignment( Qt.AlignTop )
 
-        # Cache checkbox
+        # Cache checkbox and label
         self.enableCacheCheckbox = QCheckBox( "Enable cache" )
+        self.enableCacheCheckbox.setObjectName( "enable_cache_checkbox" )
         self.enableCacheCheckbox.clicked.connect( self.toggleCacheUsage )
 
-        # Cache save button
+        cacheCheckBoxLabelText = "When you start a pipeline, the app will cache (save) camera settings, response function file path, and calibration file paths."
+        self.cacheCheckboxLabel = QLabel( cacheCheckBoxLabelText )
+        self.cacheCheckboxLabel.setObjectName( "cache_checkbox_label" )
+        self.cacheCheckboxLabel.setWordWrap( True )
+
+        # Cache save button and label
         self.saveCacheButton = QPushButton("Manually save cache")
+        self.saveCacheButton.setObjectName( "save_cache_button" )
         self.saveCacheButton.clicked.connect(self.saveCacheButtonClicked)
+
+        cacheButtonLabelText = "Click here to save your cache without running the pipeline."
+        self.cacheButtonLabel = QLabel( cacheButtonLabelText )
+        self.cacheButtonLabel.setObjectName( "cache_button_label" )
+        self.cacheButtonLabel.setWordWrap( True )
+        
 
         # Save settings
         self.saveSettingsButton = QPushButton("Save settings")
+        self.saveSettingsButton.setObjectName( "save_settings_button" )
         self.saveSettingsButton.clicked.connect(self.saveSettings)
 
         # Add widgets and layouts
-        self.page_settings_layout = QVBoxLayout()
+        self.page_settings_Vlayout = QVBoxLayout()
+        self.cacheButton_Hlayout = QHBoxLayout()
+        self.cacheCheckbox_Hlayout = QHBoxLayout()
 
-        self.page_settings_layout.addWidget( self.page_settings_title_label, stretch=1 )
-        self.page_settings_layout.addWidget( self.enableCacheCheckbox, stretch=2 )
-        self.page_settings_layout.addWidget( self.saveCacheButton )
-        self.page_settings_layout.addWidget( self.saveSettingsButton)
-        self.page_settings_layout.addWidget( QWidget(), stretch=10 )
+        self.cacheCheckbox_Hlayout.addWidget( self.enableCacheCheckbox, stretch=2 )
+        self.cacheCheckbox_Hlayout.addWidget( QWidget(), stretch=3 )
+        self.cacheCheckbox_Hlayout.addWidget( self.cacheCheckboxLabel, stretch=6 )
+        self.cacheCheckbox_Hlayout.addWidget( QWidget(), stretch=3 )
 
-        self.page_settings.setLayout( self.page_settings_layout )
+        self.cacheButton_Hlayout.addWidget( self.saveCacheButton, stretch=2 )
+        self.cacheButton_Hlayout.addWidget( QWidget(), stretch=3 )
+        self.cacheButton_Hlayout.addWidget( self.cacheButtonLabel, stretch=6 )
+        self.cacheButton_Hlayout.addWidget( QWidget(), stretch=3 )
+
+        self.page_settings_Vlayout.addWidget( self.page_settings_title_label, stretch=1 )
+        self.page_settings_Vlayout.addLayout( self.cacheCheckbox_Hlayout, stretch=3 )
+        self.page_settings_Vlayout.addLayout( self.cacheButton_Hlayout, stretch=3 )
+        self.page_settings_Vlayout.addWidget( self.saveSettingsButton )
+        self.page_settings_Vlayout.addWidget( QWidget(), stretch=10 )
+
+        self.page_settings.setLayout( self.page_settings_Vlayout )
 
         # -------------------------------------------------------------------------------------------------
 
@@ -585,12 +592,12 @@ class Ui_MainWindow(object):
 
         self.stackedWidget.setCurrentIndex(0)
 
+        QMetaObject.connectSlotsByName(MainWindow)
+
         # Set size of MainWindow based on screen resolution
         num_widgets = 4
         MainWindow.resize( 1060 * scale_factor, 800 * scale_factor )
         MainWindow.setMinimumSize( self.vc_UploadRegion.minimumSizeHint() * scale_factor * ( num_widgets + 1.8 ) )
-
-        QMetaObject.connectSlotsByName(MainWindow)
         
         # Grab cached file paths, if they exist
         if self.path_rsp_fn is not None and self.path_rsp_fn != "":
@@ -626,6 +633,9 @@ class Ui_MainWindow(object):
                 self.nd_UploadRegion.swapRegionInUseChkBox.setChecked( True )
                 self.nd_UploadRegion.swapRegionInUse()
 
+        # Set styling
+        self.setStyles()
+
         return
     
 
@@ -636,8 +646,8 @@ class Ui_MainWindow(object):
         self.btn_page_3.setText(QCoreApplication.translate("MainWindow", u"Camera Settings", None))
         self.btn_page_4.setText(QCoreApplication.translate("MainWindow", u"Upload Calibration", None))
         self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO", None))
-        self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
-        self.label_1.setAlignment(Qt.AlignHCenter)
+        self.welcome_label.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
+        self.welcome_label.setAlignment(Qt.AlignHCenter)
 
 
     # Sets the active page based on sidebar menu button clicks
@@ -1124,8 +1134,38 @@ class Ui_MainWindow(object):
         return scaling_factor
     
 
+    # Style the widgets
+    def setStyles( self ):
+        # Set style of sidebar menu buttons
+        self.setButtonStyling()
+        
+        self.setWelcomePageStyles()
+
+        self.setCameraSettingsStyles()
+
+        self.setSettingsStyles()
+            
+        return
+    
+
+    # Set styling for the Welcome page
+    def setWelcomePageStyles( self ):
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.welcome_label.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.intro_para.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.intro_para_2.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.intro_para_3.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.intro_para_4.setStyleSheet( stylesheet.read() )
+
+        return
+    
+
     # Style the Camera Settings form widgets
-    def setFormStyles( self ):
+    def setCameraSettingsStyles( self ):
         with open( self.main_styles_path, "r" ) as stylesheet:
             self.croppingRegion.setStyleSheet( stylesheet.read() )
         with open( self.main_styles_path, "r" ) as stylesheet:
@@ -1154,5 +1194,24 @@ class Ui_MainWindow(object):
             self.label_outputXRes.setStyleSheet( stylesheet.read() )
         with open( self.main_styles_path, "r" ) as stylesheet:
             self.label_outputYRes.setStyleSheet( stylesheet.read() )
-            
+
+        return
+    
+
+    # Set settings page styles
+    def setSettingsStyles( self ):
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.page_settings_title_label.setStyleSheet( stylesheet.read() )
+
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.enableCacheCheckbox.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.cacheCheckboxLabel.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.cacheButtonLabel.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.saveCacheButton.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.saveSettingsButton.setStyleSheet( stylesheet.read() )
+
         return
