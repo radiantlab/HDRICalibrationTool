@@ -3,28 +3,29 @@ import re
 import ntpath
 
 # Third-party library imports
-from PySide6.QtWidgets import QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFileDialog
+from PySide6.QtWidgets import QGridLayout, QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFileDialog
 from PySide6.QtGui import QPixmap
 from PySide6.QtCore import Qt, QRect
 
 
 # Creates a region to upload an image to, given an object name and region size.
 class UploadImageRegion( QWidget ):
-    # regionSize[0]: width
-    # regionSize[1]: height
-    def __init__( self, regionName="DefaultLabel", regionSize=[128, 128] ):
+    def __init__( self, regionName="DefaultLabel" ):
         QWidget.__init__(self)
 
         # Store input parameters as class attributes
         self.regionName = regionName
-        self.regionWidth = regionSize[0]
-        self.regionHeight = regionSize[1]
 
         # Style path
         self.regionStylePath = "./src/styles/upload_image_region_styles.css"
 
         # Visible region background
         self.uploadRegion = QWidget( self )
+
+        # Create a layout for the region base
+        layout = QGridLayout( self )
+        layout.addWidget( self.uploadRegion )
+        self.setLayout( layout )
 
         # Spacers for QVBox/QHBox layouts
         self.regionSpacer = QLabel( self )
@@ -59,16 +60,12 @@ class UploadImageRegion( QWidget ):
         # -------------------------------------------------------------------------------------
         # Upload Region
         self.uploadRegion.setObjectName( "uploadImageRegion_{}".format( self.regionName ) )
-        self.uploadRegion.setGeometry( QRect( 0, 0, self.regionWidth, self.regionHeight ) )
-
 
         # Region Spacer Region
         self.regionSpacer.setObjectName( "regionSpacer" )
 
-
         # Region Label
         self.regionLabel.setObjectName( "regionLabel" )
-
 
         # File Path Label
         self.filePathLabel.setObjectName( "filePathLabel" )
