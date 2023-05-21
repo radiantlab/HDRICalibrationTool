@@ -8,7 +8,7 @@ import webbrowser
 # Third-party library imports
 from PySide6.QtCore import QCoreApplication, QMetaObject, QSize, Qt
 from PySide6.QtGui import QFont, QIcon
-from PySide6.QtWidgets import QWidget, QPushButton, QCheckBox, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QStackedWidget, QMdiArea, QScrollArea, QLineEdit, QGridLayout
+from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QCheckBox, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QStackedWidget, QMdiArea, QScrollArea, QLineEdit, QGridLayout
 
 # Local module imports
 from src.user_interface.upload_file_region import UploadFileRegion
@@ -56,9 +56,10 @@ class Ui_MainWindow(object):
         # Main Window stylesheet path
         self.main_styles_path = "./src/styles/main_styles.css"
 
-        MainWindow.resize(1150, 840)
-        MainWindow.setMinimumSize(QSize(1000, 500))
         MainWindow.setStyleSheet(u"background-color: #EAEAEA;")
+
+        # Get screen resolution scale factor for consistent sizing and scaling
+        scale_factor = self.getScreenScaleFactor()
 
         self.centralwidget = QWidget(MainWindow)
         self.centralwidget.setObjectName(u"centralwidget")
@@ -174,9 +175,6 @@ class Ui_MainWindow(object):
         self.versionLabel = QLabel( appVersionLabel )
         self.sidebarMenuVLayout.addWidget( self.versionLabel, stretch=1, alignment=Qt.AlignBottom )
 
-        # Set style of sidebar menu buttons
-        self.setButtonStyling()
-
         # ---------------------------------------------------------------------------------------
 
         
@@ -216,35 +214,28 @@ class Ui_MainWindow(object):
         self.page_1.setWidgetResizable(True)
 
         # Welcome label
-        self.label_1 = QLabel(self.page_1)
-        self.label_1.setObjectName(u"label_1")
-        self.label_1.setStyleSheet(u"font: 40pt; color: #000;")
-        self.label_1.setAlignment(Qt.AlignCenter)
+        self.welcome_label = QLabel(self.page_1)
+        self.welcome_label.setObjectName(u"welcome_label")
+        self.welcome_label.setAlignment(Qt.AlignCenter)
         
 
         # Body text
-        bodyTextFont = QFont()
-        bodyTextFont.setPointSize( 16 )
-       
         self.intro_para = QLabel( self.container_widget )
+        self.intro_para.setObjectName( "intro_para" )
         self.intro_para.setAlignment(Qt.AlignTop)
         self.intro_para.setText("This tool was designed to automate the process of merging multiple LDR images together and generating an HDR image.")
-        self.intro_para.setFont(bodyTextFont)
-        self.intro_para.setStyleSheet( "border-top: 3px solid #6495ED;" )
         self.intro_para.setWordWrap( True )
-        self.intro_para.adjustSize()
 
         self.intro_para_2 = QLabel( self.container_widget )
+        self.intro_para_2.setObjectName( "intro_para_2" )
         self.intro_para_2.setOpenExternalLinks( True )
         paragraphText_2 = 'To read more about the process of generating an HDR image from LDR image input, see the research paper by Clotilde Pierson <a href = \"https://doi.org/10.1080/15502724.2019.1684319\">here.</a><br>'
         self.intro_para_2.setAlignment(Qt.AlignTop)
         self.intro_para_2.setText( paragraphText_2 )
-        self.intro_para_2.setFont(bodyTextFont)
-        self.intro_para_2.setStyleSheet( "border-top: 3px solid #6495ED;" )
         self.intro_para_2.setWordWrap( True )
-        self.intro_para_2.adjustSize()
 
         self.intro_para_3 = QLabel( self.container_widget )
+        self.intro_para_3.setObjectName( "intro_para_3" )
         self.intro_para_3.setAlignment(Qt.AlignTop)
         self.intro_para_3.setTextFormat(Qt.RichText)
         self.intro_para_3.setText("Things to note about current working version ["+ appVersion + "]:\n<ul>"
@@ -252,22 +243,17 @@ class Ui_MainWindow(object):
                                   "<li>This application assumes that the user already knows the settings of the camera that took the LDR images beforehand.</li>\n"
                                   "<li>This application performs no calculations to cull the LDR images based on exposure.</li>\n"
                                   "<li>Windows users must have the GNU package \"sed for windows\" installed and on the system PATH in order for view angles to be corrected.</li>\n</ul>")
-        self.intro_para_3.setFont(bodyTextFont)
-        self.intro_para_3.setStyleSheet( "border-top: 3px solid #6495ED;" )
         self.intro_para_3.setWordWrap( True )
-        self.intro_para_3.adjustSize()
 
         self.intro_para_4 = QLabel( self.container_widget )
+        self.intro_para_4.setObjectName( "intro_para_4" )
         self.intro_para_4.setAlignment(Qt.AlignTop)
         paragraphText_4 = "If you need any help with using this app, please see the GitHub Wiki documentation page by clicking the \"Help\" button in the left sidebar.\n"
         self.intro_para_4.setText( paragraphText_4 )
-        self.intro_para_4.setFont(bodyTextFont)
-        self.intro_para_4.setStyleSheet( "border-top: 3px solid #6495ED;" )
         self.intro_para_4.setWordWrap( True )
-        self.intro_para_4.adjustSize()
 
         # Add text to layout
-        self.page_1_layout.addWidget( self.label_1 )
+        self.page_1_layout.addWidget( self.welcome_label )
         self.page_1_layout.addWidget( self.intro_para )
         self.page_1_layout.addWidget( self.intro_para_2 )
         self.page_1_layout.addWidget( self.intro_para_3 )
@@ -300,165 +286,166 @@ class Ui_MainWindow(object):
         self.page_3 = QWidget()
         self.page_3.setObjectName(u"page_3")
 
-        self.cameraSettingsPage = QVBoxLayout(self.page_3)
-        self.cameraSettingsPage.setObjectName(u"cameraSettingsPage")
-        self.cameraSettingsPage.setContentsMargins( 0, 0, 0, 0 )
-        self.cameraSettingsPage.setSpacing( 4 )
+        self.cameraSettingsPageV = QVBoxLayout( self.page_3 )
+        self.cameraSettingsPageV.setObjectName(u"cameraSettingsPageV")
+        self.cameraSettingsPageV.setContentsMargins( 0, 0, 0, 0 )
+        self.cameraSettingsPageV.setSpacing( 4 )
 
+        self.cameraSettingsPageH = QHBoxLayout()
+        self.cameraSettingsPageH.setObjectName(u"cameraSettingsPageH")
+        self.cameraSettingsPageH.setContentsMargins( 0, 0, 0, 0 )
+        self.cameraSettingsPageH.setSpacing( 4 )
         
-        # Cropping Area mdiArea
-        self.mdiArea = QMdiArea(self.page_3)
-        self.mdiArea.setObjectName("mdiArea_2")
+        # Cropping Region
+        self.croppingLayout = QVBoxLayout()
+        self.croppingRegion = QWidget()
+        self.croppingRegion.setObjectName( "croppingRegion" )
+        self.croppingRegion.setLayout( self.croppingLayout )
 
-        self.label_cd = QLabel(self.mdiArea)
-        self.label_cd.setAlignment(Qt.AlignLeft)
-        self.label_cd.setText("Cropping Dimensions")
-        self.label_cd.setFont(bodyTextFont)
-        self.label_cd.adjustSize()
-        self.label_cd.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.label_cd.setStyleSheet("background-color: #a0a0a0")
-        self.label_cd.move(10,10)
+        self.label_CD = QLabel( "Cropping Dimensions", self.page_3 )
+        self.label_CD.setObjectName( "label_CD" )
+        self.label_CD.setAlignment(Qt.AlignLeft)
+        self.label_CD.adjustSize()
 
 
-        # Viewing angles mdiArea
-        self.mdiArea_2 = QMdiArea(self.page_3)
-        self.mdiArea_2.setObjectName("mdiArea_2")
+        # Viewing angles
+        self.viewingAngleLayout = QVBoxLayout()
+        self.viewingAngleRegion = QWidget()
+        self.viewingAngleRegion.setObjectName( "viewingAngleRegion" )
+        self.viewingAngleRegion.setLayout( self.viewingAngleLayout )
 
-        self.label_LVA = QLabel(self.mdiArea_2)
+
+        self.label_LVA = QLabel( "Lens Viewing Angle", self.page_3 )
+        self.label_LVA.setObjectName( "label_LVA" )
         self.label_LVA.setAlignment(Qt.AlignLeft)
-        self.label_LVA.setText("Lens Viewing Angle")
-        self.label_LVA.setFont(bodyTextFont)
         self.label_LVA.adjustSize()
-        self.label_LVA.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.label_LVA.setStyleSheet("background-color: #a0a0a0")
-        self.label_LVA.move(10,10)
-        self.label_LVA.raise_()
 
 
-        # Output Dimensions mdiArea
-        self.mdiArea_3 = QMdiArea(self.page_3)
-        self.mdiArea_3.setObjectName("mdiArea_3")
+        # Output Dimensions
+        self.outputDimLayout = QVBoxLayout()
+        self.outputDimRegion = QWidget()
+        self.outputDimRegion.setObjectName( "outputDimRegion" )
+        self.outputDimRegion.setLayout( self.outputDimLayout )
 
-        self.label_OID = QLabel(self.mdiArea_3)
+        self.label_OID = QLabel( "Output Image Dimensions", self.page_3 )
+        self.label_OID.setObjectName( "label_OID" )
         self.label_OID.setAlignment(Qt.AlignLeft)
-        self.label_OID.setText("Output Image Dimensions")
-        self.label_OID.setFont(bodyTextFont)
         self.label_OID.adjustSize()
-        self.label_OID.setStyleSheet("font: 18pt \".AppleSystemUIFont\";")
-        self.label_OID.setStyleSheet("background-color: #a0a0a0")
-        self.label_OID.move(10,10)
-        self.label_OID.raise_()
 
 
-        # To keep consistent spacing
-        x_column2 = 400
-
-        # Cropping Dimension section
+        # Cropping Dimension Region form input
 
         # Fisheye View Diameter field
-        self.label_md13 = QLabel(self.mdiArea)
-        self.label_md13.setAlignment(Qt.AlignLeft)
-        self.label_md13.setText("Fisheye View Diameter")
-        self.label_md13.setStyleSheet("background-color: #a0a0a0")
-        self.label_md13.move(10,70)
+        self.label_fisheyeViewDiameter = QLabel( "Fisheye View Diameter", self.page_3 )
+        self.label_fisheyeViewDiameter.setObjectName( "label_fisheyeViewDiameter" )
+        self.label_fisheyeViewDiameter.setAlignment(Qt.AlignBottom)
 
-        self.inputField_fisheyeViewDiameter = QLineEdit(self.mdiArea)
+        self.inputField_fisheyeViewDiameter = QLineEdit( self.page_3 )
+        self.inputField_fisheyeViewDiameter.setAlignment(Qt.AlignTop)
         self.inputField_fisheyeViewDiameter.setText(param2field(self.diameter))
         self.inputField_fisheyeViewDiameter.setObjectName("inputField_fisheyeViewDiameter")
-        self.inputField_fisheyeViewDiameter.move(10,100)
 
 
         # X Crop Offset field
-        self.label_md14 = QLabel(self.mdiArea)
-        self.label_md14.setAlignment(Qt.AlignLeft)
-        self.label_md14.setText("X Crop Offset")
-        self.label_md14.setStyleSheet("background-color: #a0a0a0")
-        self.label_md14.move(x_column2,70)
+        self.label_xCropOffset = QLabel( "X Crop Offset", self.page_3 )
+        self.label_xCropOffset.setObjectName( "label_xCropOffset" )
+        self.label_xCropOffset.setAlignment(Qt.AlignBottom)
 
-        self.inputField_xCropOffset = QLineEdit(self.mdiArea)
+        self.inputField_xCropOffset = QLineEdit( self.page_3 )
+        self.inputField_xCropOffset.setAlignment(Qt.AlignTop)
         self.inputField_xCropOffset.setText(param2field(self.crop_x_left))
         self.inputField_xCropOffset.setObjectName("inputField_xCropOffset")
-        self.inputField_xCropOffset.move(x_column2,100)
 
 
         # Y Crop Offset field
-        self.label_md15 = QLabel(self.mdiArea)
-        self.label_md15.setAlignment(Qt.AlignLeft)
-        self.label_md15.setText("Y Crop Offset")
-        self.label_md15.setStyleSheet("background-color: #a0a0a0")
-        self.label_md15.move(x_column2,140)
+        self.label_yCropOffset = QLabel( "Y Crop Offset", self.page_3 )
+        self.label_yCropOffset.setObjectName( "label_yCropOffset" )
+        self.label_yCropOffset.setAlignment(Qt.AlignBottom)
 
-        self.inputField_yCropOffset = QLineEdit(self.mdiArea)
+        self.inputField_yCropOffset = QLineEdit( self.page_3 )
+        self.inputField_yCropOffset.setAlignment(Qt.AlignTop)
         self.inputField_yCropOffset.setText(param2field(self.crop_y_down))
         self.inputField_yCropOffset.setObjectName("inputField_yCropOffset")
-        self.inputField_yCropOffset.move(x_column2,160)
 
 
-        # Lens Viewing Angle section
+        # Lens Viewing Angle region form input
         
         # View Angle Vertical field
-        self.label_md21 = QLabel(self.mdiArea_2)
-        self.label_md21.setAlignment(Qt.AlignLeft)
-        self.label_md21.setText("View Angle Vertical")
-        self.label_md21.setStyleSheet("background-color: #a0a0a0")
-        self.label_md21.move(10,70)
+        self.label_viewAngleVertical = QLabel( "View Angle Vertical", self.page_3 )
+        self.label_viewAngleVertical.setObjectName( "label_viewAngleVertical" )
+        self.label_viewAngleVertical.setAlignment(Qt.AlignBottom)
 
-        self.inputField_viewAngleVertical = QLineEdit(self.mdiArea_2)
+        self.inputField_viewAngleVertical = QLineEdit( self.page_3 )
+        self.inputField_viewAngleVertical.setAlignment( Qt.AlignTop )
         self.inputField_viewAngleVertical.setText(param2field(self.view_angle_vertical))
-        self.inputField_viewAngleVertical.setObjectName("inputField_viewAngleVertical")
-        self.inputField_viewAngleVertical.move(10,90)
 
         # View Angle Horizontal field
-        self.label_md22 = QLabel(self.mdiArea_2)
-        self.label_md22.setAlignment(Qt.AlignLeft)
-        self.label_md22.setText("View Angle Horizontal")
-        self.label_md22.setStyleSheet("background-color: #a0a0a0")
-        self.label_md22.move(x_column2,70)
+        self.label_viewAngleHorizontal = QLabel( "View Angle Horizontal", self.page_3 )
+        self.label_viewAngleHorizontal.setObjectName( "label_viewAngleHorizontal" )
+        self.label_viewAngleHorizontal.setAlignment(Qt.AlignBottom)
 
-        self.inputField_viewAngleHorizontal = QLineEdit(self.mdiArea_2)
+        self.inputField_viewAngleHorizontal = QLineEdit( self.page_3 )
+        self.inputField_viewAngleHorizontal.setAlignment(Qt.AlignTop)
         self.inputField_viewAngleHorizontal.setText(param2field(self.view_angle_horizontal))
         self.inputField_viewAngleHorizontal.setObjectName("inputField_viewAngleHorizontal")
-        self.inputField_viewAngleHorizontal.move(x_column2,90)
 
 
-        # Output Image Dimensions section
-
-        # Output Resolution fields
-        self.label_md31 = QLabel(self.mdiArea_3)
-        self.label_md31.setAlignment(Qt.AlignLeft)
-        self.label_md31.setText("HDR Image Output Resolution")
-        self.label_md31.setStyleSheet("background-color: #a0a0a0")
-        self.label_md31.move(10,70)
+        # Output Image Dimensions region form input
 
         # Output X Resolution
-        self.inputField_outputXRes = QLineEdit(self.mdiArea_3)
+        self.label_outputXRes = QLabel( "HDR Image Output X Resolution", self.page_3 )
+        self.label_outputXRes.setObjectName( "label_outputXRes" )
+        self.label_outputXRes.setAlignment(Qt.AlignBottom)
+
+        self.inputField_outputXRes = QLineEdit( self.page_3 )
+        self.inputField_outputXRes.setAlignment(Qt.AlignTop)
         self.inputField_outputXRes.setText(param2field(self.target_x_resolution))
         self.inputField_outputXRes.setObjectName("inputField_outputXRes")
-        self.inputField_outputXRes.move(10,90)
 
-        self.label_md31x = QLabel(self.mdiArea_3)
-        self.label_md31x.setAlignment(Qt.AlignLeft)
-        self.label_md31x.setText("x")
-        self.label_md31x.setStyleSheet("background-color: #a0a0a0")
-        self.label_md31x.move(149,92)
 
         # Output Y Resolution
-        self.inputField_outputYRes = QLineEdit(self.mdiArea_3)
+        self.label_outputYRes = QLabel( "HDR Image Output Y Resolution", self.page_3 )
+        self.label_outputYRes.setObjectName( "label_outputYRes" )
+        self.label_outputYRes.setAlignment(Qt.AlignBottom)
+
+        self.inputField_outputYRes = QLineEdit(self.page_3)
+        self.inputField_outputYRes.setAlignment(Qt.AlignTop)
         self.inputField_outputYRes.setText(param2field(self.target_y_resolution))
         self.inputField_outputYRes.setObjectName("inputField_outputYRes")
-        self.inputField_outputYRes.move(160,90)
 
 
-        # Area 4 upload .rsp file region
-        self.rsp_UploadRegion = UploadFileRegion("CameraResponseFunction", [900, 200], fileType=2)
+        # Upload .rsp file region
+        self.rsp_UploadRegion = UploadFileRegion( "CameraResponseFunction", fileType=2 )
 
 
         # Add widgets to Layout
-        self.cameraSettingsPage.addWidget( self.mdiArea, stretch=1 )
-        self.cameraSettingsPage.addWidget( self.mdiArea_2, stretch=1 )
-        self.cameraSettingsPage.addWidget( self.mdiArea_3, stretch=1 )
-        self.cameraSettingsPage.addWidget( self.rsp_UploadRegion, stretch=1 )
+        self.croppingLayout.addWidget( self.label_CD, stretch=1 )
+        self.croppingLayout.addWidget( self.label_fisheyeViewDiameter, stretch=1 )
+        self.croppingLayout.addWidget( self.inputField_fisheyeViewDiameter, stretch=1 )
+        self.croppingLayout.addWidget( self.label_xCropOffset, stretch=1 )
+        self.croppingLayout.addWidget( self.inputField_xCropOffset, stretch=1 )
+        self.croppingLayout.addWidget( self.label_yCropOffset, stretch=1 )
+        self.croppingLayout.addWidget( self.inputField_yCropOffset, stretch=1 )
+
+        self.viewingAngleLayout.addWidget( self.label_LVA, stretch=1 )
+        self.viewingAngleLayout.addWidget( self.label_viewAngleVertical, stretch=1 )
+        self.viewingAngleLayout.addWidget( self.inputField_viewAngleVertical, stretch=1 )
+        self.viewingAngleLayout.addWidget( self.label_viewAngleHorizontal, stretch=1 )
+        self.viewingAngleLayout.addWidget( self.inputField_viewAngleHorizontal, stretch=1 )
+
+        self.outputDimLayout.addWidget( self.label_OID, stretch=1 )
+        self.outputDimLayout.addWidget( self.label_outputXRes, stretch=1 )
+        self.outputDimLayout.addWidget( self.inputField_outputXRes, stretch=1 )
+        self.outputDimLayout.addWidget( self.label_outputYRes, stretch=1 )
+        self.outputDimLayout.addWidget( self.inputField_outputYRes, stretch=1 )
+
+        self.cameraSettingsPageH.addWidget( self.croppingRegion, stretch=1 )
+        self.cameraSettingsPageH.addWidget( self.viewingAngleRegion, stretch=1 )
+        self.cameraSettingsPageH.addWidget( self.outputDimRegion, stretch=1 )
         
+        self.cameraSettingsPageV.addLayout( self.cameraSettingsPageH, stretch=3 )
+        self.cameraSettingsPageV.addWidget( self.rsp_UploadRegion, stretch=1 )
+
         # -------------------------------------------------------------------------------------------------
 
 
@@ -479,28 +466,28 @@ class Ui_MainWindow(object):
 
         # Vignetting region
         # Add widget: UploadFileRegionObject class object
-        self.vc_UploadRegion = UploadFileRegion( "Vignetting", [900, 200], fileType=1 )
+        self.vc_UploadRegion = UploadFileRegion( "Vignetting", fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( self.vc_UploadRegion )
 
         # Fisheye correction region
         # Add widget: UploadFileRegionObject class object
-        self.fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", [900, 200], fileType=1 )
+        self.fc_UploadRegion = UploadFileRegion( "FisheyeCorrection", fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( self.fc_UploadRegion )
 
         # Calibration factor region
         # Add widget: UploadFileRegionObject class object
-        self.cf_UploadRegion = UploadFileRegion( "CalibrationFactor", [900, 200], fileType=1 )
+        self.cf_UploadRegion = UploadFileRegion( "CalibrationFactor", fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( self.cf_UploadRegion )
 
         # Neutral Density Filter region
         # Add widget: UploadFileRegionObject class object
-        self.nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", [900, 200], fileType=1 )
+        self.nd_UploadRegion = UploadFileRegion( "NeutralDensityFilter", fileType=1 )
 
         # Add vignetting UploadRegion object to the QVBox
         self.calibrationPage.addWidget( self.nd_UploadRegion )
@@ -531,31 +518,56 @@ class Ui_MainWindow(object):
         # Title label
         self.page_settings_title_label = QLabel( "Settings", self.page_settings )
         self.page_settings_title_label.setObjectName( "page_settings_title_label" )
-        self.page_settings_title_label.setStyleSheet( "font: 28pt; color: black;" )
         self.page_settings_title_label.setAlignment( Qt.AlignTop )
 
-        # Cache checkbox
+        # Cache checkbox and label
         self.enableCacheCheckbox = QCheckBox( "Enable cache" )
+        self.enableCacheCheckbox.setObjectName( "enable_cache_checkbox" )
         self.enableCacheCheckbox.clicked.connect( self.toggleCacheUsage )
 
-        # Cache save button
+        cacheCheckBoxLabelText = "When you start a pipeline, the app will cache (save) camera settings, response function file path, and calibration file paths."
+        self.cacheCheckboxLabel = QLabel( cacheCheckBoxLabelText )
+        self.cacheCheckboxLabel.setObjectName( "cache_checkbox_label" )
+        self.cacheCheckboxLabel.setWordWrap( True )
+
+        # Cache save button and label
         self.saveCacheButton = QPushButton("Manually save cache")
+        self.saveCacheButton.setObjectName( "save_cache_button" )
         self.saveCacheButton.clicked.connect(self.saveCacheButtonClicked)
+
+        cacheButtonLabelText = "Click here to save your cache without running the pipeline."
+        self.cacheButtonLabel = QLabel( cacheButtonLabelText )
+        self.cacheButtonLabel.setObjectName( "cache_button_label" )
+        self.cacheButtonLabel.setWordWrap( True )
+        
 
         # Save settings
         self.saveSettingsButton = QPushButton("Save settings")
+        self.saveSettingsButton.setObjectName( "save_settings_button" )
         self.saveSettingsButton.clicked.connect(self.saveSettings)
 
         # Add widgets and layouts
-        self.page_settings_layout = QVBoxLayout()
+        self.page_settings_Vlayout = QVBoxLayout()
+        self.cacheButton_Hlayout = QHBoxLayout()
+        self.cacheCheckbox_Hlayout = QHBoxLayout()
 
-        self.page_settings_layout.addWidget( self.page_settings_title_label, stretch=1 )
-        self.page_settings_layout.addWidget( self.enableCacheCheckbox, stretch=2 )
-        self.page_settings_layout.addWidget( self.saveCacheButton )
-        self.page_settings_layout.addWidget( self.saveSettingsButton)
-        self.page_settings_layout.addWidget( QWidget(), stretch=10 )
+        self.cacheCheckbox_Hlayout.addWidget( self.enableCacheCheckbox, stretch=2 )
+        self.cacheCheckbox_Hlayout.addWidget( QWidget(), stretch=3 )
+        self.cacheCheckbox_Hlayout.addWidget( self.cacheCheckboxLabel, stretch=6 )
+        self.cacheCheckbox_Hlayout.addWidget( QWidget(), stretch=3 )
 
-        self.page_settings.setLayout( self.page_settings_layout )
+        self.cacheButton_Hlayout.addWidget( self.saveCacheButton, stretch=2 )
+        self.cacheButton_Hlayout.addWidget( QWidget(), stretch=3 )
+        self.cacheButton_Hlayout.addWidget( self.cacheButtonLabel, stretch=6 )
+        self.cacheButton_Hlayout.addWidget( QWidget(), stretch=3 )
+
+        self.page_settings_Vlayout.addWidget( self.page_settings_title_label, stretch=1 )
+        self.page_settings_Vlayout.addLayout( self.cacheCheckbox_Hlayout, stretch=3 )
+        self.page_settings_Vlayout.addLayout( self.cacheButton_Hlayout, stretch=3 )
+        self.page_settings_Vlayout.addWidget( self.saveSettingsButton )
+        self.page_settings_Vlayout.addWidget( QWidget(), stretch=10 )
+
+        self.page_settings.setLayout( self.page_settings_Vlayout )
 
         # -------------------------------------------------------------------------------------------------
 
@@ -581,6 +593,11 @@ class Ui_MainWindow(object):
         self.stackedWidget.setCurrentIndex(0)
 
         QMetaObject.connectSlotsByName(MainWindow)
+
+        # Set size of MainWindow based on screen resolution
+        num_widgets = 4
+        MainWindow.resize( 1060 * scale_factor, 800 * scale_factor )
+        MainWindow.setMinimumSize( self.vc_UploadRegion.minimumSizeHint() * scale_factor * ( num_widgets + 1.8 ) )
         
         # Grab cached file paths, if they exist
         if self.path_rsp_fn is not None and self.path_rsp_fn != "":
@@ -616,6 +633,9 @@ class Ui_MainWindow(object):
                 self.nd_UploadRegion.swapRegionInUseChkBox.setChecked( True )
                 self.nd_UploadRegion.swapRegionInUse()
 
+        # Set styling
+        self.setStyles()
+
         return
     
 
@@ -626,8 +646,8 @@ class Ui_MainWindow(object):
         self.btn_page_3.setText(QCoreApplication.translate("MainWindow", u"Camera Settings", None))
         self.btn_page_4.setText(QCoreApplication.translate("MainWindow", u"Upload Calibration", None))
         self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO", None))
-        self.label_1.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
-        self.label_1.setAlignment(Qt.AlignHCenter)
+        self.welcome_label.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
+        self.welcome_label.setAlignment(Qt.AlignHCenter)
 
 
     # Sets the active page based on sidebar menu button clicks
@@ -1072,6 +1092,7 @@ class Ui_MainWindow(object):
 
         return
     
+
     def recoverSettings(self):
         # Make sure settings exist
         if not self.settings_path.is_file():
@@ -1084,6 +1105,7 @@ class Ui_MainWindow(object):
         self.generate_cache = cast(settings_json.get("generate_cache", None), bool)
         self.recover_cache  = cast(settings_json.get("recover_cache", None), bool)
 
+
     def saveSettings(self):
         print("Saving settings...")
         settings = {
@@ -1094,7 +1116,102 @@ class Ui_MainWindow(object):
             json.dump(settings, settings_file)
         print("Settings saved")
 
+
     def saveCacheButtonClicked(self):
         self.ingestCameraSettingsFormData()
         self.saveCache()
 
+
+    # Get the screen scale factor to resize widgets based on screen size
+    def getScreenScaleFactor( self ):
+        # Retrieve the screen resolution
+        screen = QApplication.primaryScreen()
+        screen_size = screen.size()
+
+        # Calculate the scaling factor based on the screen width
+        scaling_factor = screen_size.width() / 1920  # Adjust 1920 to your desired reference width
+
+        return scaling_factor
+    
+
+    # Style the widgets
+    def setStyles( self ):
+        # Set style of sidebar menu buttons
+        self.setButtonStyling()
+        
+        self.setWelcomePageStyles()
+
+        self.setCameraSettingsStyles()
+
+        self.setSettingsStyles()
+            
+        return
+    
+
+    # Set styling for the Welcome page
+    def setWelcomePageStyles( self ):
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.welcome_label.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.intro_para.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.intro_para_2.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.intro_para_3.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.intro_para_4.setStyleSheet( stylesheet.read() )
+
+        return
+    
+
+    # Style the Camera Settings form widgets
+    def setCameraSettingsStyles( self ):
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.croppingRegion.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.viewingAngleRegion.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.outputDimRegion.setStyleSheet( stylesheet.read() )
+        
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_CD.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_LVA.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_OID.setStyleSheet( stylesheet.read() )
+        
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_fisheyeViewDiameter.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_xCropOffset.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_yCropOffset.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_viewAngleVertical.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_viewAngleHorizontal.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_outputXRes.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.label_outputYRes.setStyleSheet( stylesheet.read() )
+
+        return
+    
+
+    # Set settings page styles
+    def setSettingsStyles( self ):
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.page_settings_title_label.setStyleSheet( stylesheet.read() )
+
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.enableCacheCheckbox.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.cacheCheckboxLabel.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.cacheButtonLabel.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.saveCacheButton.setStyleSheet( stylesheet.read() )
+        with open( self.main_styles_path, "r" ) as stylesheet:
+            self.saveSettingsButton.setStyleSheet( stylesheet.read() )
+
+        return
