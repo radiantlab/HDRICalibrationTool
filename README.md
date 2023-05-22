@@ -25,7 +25,7 @@ It also includes information about the development of this project including lib
 Prerequisite: [HDRGen](http://www.anyhere.com/), [Radiance](https://www.radiance-online.org/).
 
 ### Windows
-For Windows users, unzip the code, and in the root directory, run the executable "HDRICalibrationTool.exe". ***Please do not remove this file from this directory, else it will not run.*** Feel free to make a shortcut of the executable and move that to a more accessible location.
+This app has been tested on Windows 10. For Windows users, unzip the code, and in the root directory, run the executable "HDRICalibrationTool.exe". ***Please do not remove this file from this directory, else it will not run.*** Feel free to make a shortcut of the executable and move that to a more accessible location.
 
 ### MacOS and Linux
 Note that you will need an SSH key set up in Github to get the submodule. You may also need to install `qt6-base` or `qt6` from your package manager software.
