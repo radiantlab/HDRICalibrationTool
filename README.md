@@ -27,7 +27,7 @@ Prerequisite: [HDRGen](http://www.anyhere.com/), [Radiance](https://www.radiance
 ### Windows
 This app has been tested on Windows 10. For Windows users, unzip the code, and in the root directory, run the executable "HDRICalibrationTool.exe". ***Please do not remove this file from this directory, else it will not run.*** Feel free to make a shortcut of the executable and move that to a more accessible location.
 
-### MacOS and Linux
+### MacOS
 Note that you will need an SSH key set up in Github to get the submodule. You may also need to install `qt6-base` or `qt6` from your package manager software.
 ```bash
 $ git clone https://github.com/XiangyuLijoey/HDRICalibrationTool.git
@@ -36,7 +36,8 @@ $ git submodule update --init --recursive --remote
 $ pip3 install -r requirements.txt
 $ python3 main.py
 ```
-
+### Linux
+See the [wiki](https://github.com/XiangyuLijoey/HDRICalibrationTool/wiki/Linux)
 
 ---
 ## Examples
