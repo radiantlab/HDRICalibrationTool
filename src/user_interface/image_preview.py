@@ -12,7 +12,7 @@ from PySide6.QtCore import Qt
 
 
 class ImagePreview( QWidget ):
-    def __init__( self, imagePath ):
+    def __init__( self, imagePath, showImage ):
         super().__init__()
 
         self.imagePath = imagePath
@@ -27,8 +27,7 @@ class ImagePreview( QWidget ):
         self.imageLabel = QLabel()
         self.imageLabel.setObjectName( "imageLabel" )
 
-        self.imagePixmap = QPixmap( self.imagePath )
-        self.imageLabel.setPixmap( self.imagePixmap.scaled( 150, 150, Qt.KeepAspectRatio ) )
+        self.imageLabel.clear()
         self.layout.addWidget( self.imageLabel )
 
         self.filenameLabel = QLabel( os.path.basename( self.imagePath ) )
@@ -40,7 +39,9 @@ class ImagePreview( QWidget ):
         self.removeBtn.clicked.connect( self.removeSelf )
         self.layout.addWidget( self.removeBtn )
 
-        self.setWidgetStyle()
+        self.showImage = showImage
+
+        self.setWidgetProperties()
 
         return
 
@@ -80,5 +81,40 @@ class ImagePreview( QWidget ):
             self.filenameLabel.setStyleSheet( stylesheet.read() )
         with open( self.imagePreviewStylePath, "r" ) as stylesheet:
             self.removeBtn.setStyleSheet( stylesheet.read() )
+
+        return
+    
+
+    # Sets the states of widgets
+    def setWidgetStates( self ): 
+        if ( self.showImage == True ):
+            self.imagePixmap = QPixmap( self.imagePath )
+            self.imageLabel.setPixmap( self.imagePixmap.scaled( 150, 150, Qt.KeepAspectRatio ) )
+            self.imageLabel.show()
+        
+        else:
+            self.imageLabel.clear()
+            self.imageLabel.hide()
+
+        return
+    
+
+    # Sets the properties of widgets
+    def setWidgetProperties( self ):
+        # Set states
+        self.setWidgetStates()
+
+        # Set style
+        self.setWidgetStyle()
+
+        return
+    
+
+    # Sets flag to show images
+    def setShowImageFlag( self, flagValue ):
+        self.showImage = flagValue
+
+        # Update styling and states
+        self.setWidgetProperties()
 
         return
