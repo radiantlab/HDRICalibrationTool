@@ -5,6 +5,9 @@
 # Access date: 2.19.2023
 
 
+# Standard library imports
+import pathlib
+
 # Third-party library imports
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QScrollArea, QLabel, QPushButton
 
@@ -105,6 +108,8 @@ class ImageUploader( QWidget ):
 
         uiObject.paths_ldr = self.imagePaths
 
+        self.checkForRawImages()
+
         return
 
 
@@ -136,3 +141,24 @@ class ImageUploader( QWidget ):
             self.removeAllBtn.setStyleSheet( stylesheet.read() )
 
         return
+    
+
+    # This function checks the list of images uploaded, and if there is a raw image, sets a flag.
+    def checkForRawImages( self ):
+        # Reach Ui_MainWindow object
+        uiObject = self.parent().parent().parent().parent().parent().parent().ui
+
+        uiObject.rawImageUploaded == False
+
+        # Check each image extension
+        for ldrImage in self.imagePaths:
+            ext = pathlib.Path( ldrImage.lower() ).suffix
+
+            if ( ext == ".cr2" ):
+                uiObject.rawImageUploaded == True
+                uiObject.rsp_UploadRegion.setRspRegionState()
+                # Just need to find at least one for flag to be set, can break out of loop after
+                break
+
+        return
+    
