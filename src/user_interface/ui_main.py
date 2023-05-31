@@ -7,7 +7,7 @@ import webbrowser
 
 # Third-party library imports
 from PySide6.QtCore import QCoreApplication, QMetaObject, QSize, Qt
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QCheckBox, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QStackedWidget, QMdiArea, QScrollArea, QLineEdit, QGridLayout
 
 # Local module imports
@@ -16,7 +16,7 @@ from src.user_interface.image_uploader import ImageUploader
 from src.progress_window import ProgressWindow
 from src.helper import param2field, cast
 
-appVersion = "1.0.0"
+appVersion = "0.1.x"
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -271,6 +271,9 @@ class Ui_MainWindow(object):
         self.page_2_Vlayout.setObjectName(u"page_2_Vlayout")
         self.page_2_Vlayout.setSpacing(0)
         self.page_2_Vlayout.setContentsMargins(0, 0, 0, 0)
+
+        # Flag for .cr2 (raw) image uploaded for merge: will use flag to disable .rsp file upload
+        self.rawImageUploaded = False
         
         self.uploader = ImageUploader()
         self.uploader.setObjectName("ImageUploader")
