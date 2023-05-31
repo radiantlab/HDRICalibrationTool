@@ -13,6 +13,7 @@ from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QCheckBox, QFr
 # Local module imports
 from src.user_interface.upload_file_region import UploadFileRegion
 from src.user_interface.image_uploader import ImageUploader
+from src.user_interface.image_preview import ImagePreview
 from src.progress_window import ProgressWindow
 from src.helper import param2field, cast
 
@@ -26,6 +27,7 @@ class Ui_MainWindow(object):
         # Cache meta-options
         self.recover_cache = True
         self.generate_cache = True
+        self.show_image_previews = False
         self.cache_path = pathlib.Path("./cache.json")
 
         # Settings meta-options
@@ -277,6 +279,9 @@ class Ui_MainWindow(object):
         
         self.uploader = ImageUploader()
         self.uploader.setObjectName("ImageUploader")
+
+        # Tell the uploader to show image previews or not from cached flag
+        self.uploader.showImage = self.show_image_previews
 
         self.page_2_Vlayout.addWidget( self.uploader, stretch=1 )
         
@@ -533,6 +538,16 @@ class Ui_MainWindow(object):
         self.cacheCheckboxLabel.setObjectName( "cache_checkbox_label" )
         self.cacheCheckboxLabel.setWordWrap( True )
 
+        # Show image previews checkbox and label
+        self.showImagePreviewsCheckbox = QCheckBox( "Show image previews" )
+        self.showImagePreviewsCheckbox.setObjectName( "show_image_previews_checkbox" )
+        self.showImagePreviewsCheckbox.clicked.connect( self.toggleImagePreviews )
+
+        showImagePreviewsLabelText = "When enabled, image previews will be shown next to each uploaded image on the \"Upload LDR Images\" page. Enabling may cause performance issues only when uploading images, so it is disabled by default."
+        self.showImagePreviewsLabel = QLabel( showImagePreviewsLabelText )
+        self.showImagePreviewsLabel.setObjectName( "show_image_previews_label" )
+        self.showImagePreviewsLabel.setWordWrap( True )
+
         # Cache save button and label
         self.saveCacheButton = QPushButton("Manually save cache")
         self.saveCacheButton.setObjectName( "save_cache_button" )
@@ -551,13 +566,19 @@ class Ui_MainWindow(object):
 
         # Add widgets and layouts
         self.page_settings_Vlayout = QVBoxLayout()
-        self.cacheButton_Hlayout = QHBoxLayout()
         self.cacheCheckbox_Hlayout = QHBoxLayout()
+        self.imagePreviewCheckbox_Hlayout = QHBoxLayout()
+        self.cacheButton_Hlayout = QHBoxLayout()
 
         self.cacheCheckbox_Hlayout.addWidget( self.enableCacheCheckbox, stretch=2 )
         self.cacheCheckbox_Hlayout.addWidget( QWidget(), stretch=3 )
         self.cacheCheckbox_Hlayout.addWidget( self.cacheCheckboxLabel, stretch=6 )
         self.cacheCheckbox_Hlayout.addWidget( QWidget(), stretch=3 )
+
+        self.imagePreviewCheckbox_Hlayout.addWidget( self.showImagePreviewsCheckbox, stretch=2 )
+        self.imagePreviewCheckbox_Hlayout.addWidget( QWidget(), stretch=3 )
+        self.imagePreviewCheckbox_Hlayout.addWidget( self.showImagePreviewsLabel, stretch=6 )
+        self.imagePreviewCheckbox_Hlayout.addWidget( QWidget(), stretch=3 )
 
         self.cacheButton_Hlayout.addWidget( self.saveCacheButton, stretch=2 )
         self.cacheButton_Hlayout.addWidget( QWidget(), stretch=3 )
@@ -566,6 +587,7 @@ class Ui_MainWindow(object):
 
         self.page_settings_Vlayout.addWidget( self.page_settings_title_label, stretch=1 )
         self.page_settings_Vlayout.addLayout( self.cacheCheckbox_Hlayout, stretch=3 )
+        self.page_settings_Vlayout.addLayout( self.imagePreviewCheckbox_Hlayout, stretch=3 )
         self.page_settings_Vlayout.addLayout( self.cacheButton_Hlayout, stretch=3 )
         self.page_settings_Vlayout.addWidget( self.saveSettingsButton )
         self.page_settings_Vlayout.addWidget( QWidget(), stretch=10 )
@@ -618,6 +640,7 @@ class Ui_MainWindow(object):
         if ( self.recover_cache == True ):
             # Settings cache enable checkbox
             self.enableCacheCheckbox.setChecked( True )
+            self.showImagePreviewsCheckbox.setChecked( self.show_image_previews )
 
             # Upload file region disable checkboxes
             if ( self.path_rsp_fn == None ):
@@ -1111,13 +1134,15 @@ class Ui_MainWindow(object):
 
         self.generate_cache = cast(settings_json.get("generate_cache", None), bool)
         self.recover_cache  = cast(settings_json.get("recover_cache", None), bool)
+        self.show_image_previews  = cast(settings_json.get("show_image_previews", None), bool)
 
 
     def saveSettings(self):
         print("Saving settings...")
         settings = {
                 "recover_cache":self.recover_cache,
-                "generate_cache":self.generate_cache
+                "generate_cache":self.generate_cache,
+                "show_image_previews":self.show_image_previews
                 }
         with open(self.settings_path, 'w') as settings_file:
             json.dump(settings, settings_file)
@@ -1249,3 +1274,23 @@ class Ui_MainWindow(object):
                 continue
 
         return allMatch
+
+
+    # Swaps flag to show image previews or not on Upload LDR Images page 
+    def toggleImagePreviews( self ):
+        # Toggle flag
+        self.show_image_previews = not self.show_image_previews
+
+        print("self.uploader: ", self.uploader)
+        print("self.uploader.children: ", self.uploader.children)
+        print("self.uploader.gridLayout: ", self.uploader.gridLayout)
+        print("self.uploader.gridLayout.children: ", self.uploader.gridLayout.children)
+        
+
+      #  for imagePreview in self.uploader.children:
+        for imagePreview in self.uploader.gridLayout.parentWidget().findChildren(ImagePreview):
+            print("imagePreview: ", imagePreview)
+            imagePreview.setShowImageFlag( self.show_image_previews )
+
+        return
+    
