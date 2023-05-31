@@ -512,10 +512,12 @@ class UploadFileRegion( QWidget ):
         if ( self.isEnabled == True ):
             self.browseBtn.setEnabled( True )
             self.setAcceptDrops( True )
+            self.swapRegionInUseChkBox.setChecked( False )
 
         else:
             self.browseBtn.setEnabled( False )
             self.setAcceptDrops( False )
+            self.swapRegionInUseChkBox.setChecked( True )
 
         return
 
@@ -1020,3 +1022,14 @@ class UploadFileRegion( QWidget ):
         
         return scaling_factor
     
+
+    # Sets the state of the region based on the ui_main self.rawImageUploaded flag. This is to disable uploading .rsp files when using .cr2 images.
+    def setRspRegionState( self ):
+        # Reach Ui_MainWindow object
+        uiObject = self.parent().parent().parent().parent().parent().parent().ui
+
+        self.isEnabled = uiObject.rawImageUploaded
+
+        self.setWidgetProperties()
+
+        return
