@@ -854,14 +854,20 @@ class Ui_MainWindow(object):
         # Set flag to pass or not
         errors = []
 
+        # Reach imageUploader object
         imageUploader = self.page_2_Vlayout.itemAt(0).widget()
         uploadedImageCount = int( imageUploader.getTotalImagesCount() )
 
-        print( "Total images uploaded: {}".format( uploadedImageCount ) )
+        #print( "Total images uploaded: {}".format( uploadedImageCount ) )
 
         # Needs at least 1 image uploaded.
         if ( uploadedImageCount <= 1 ):     
             errors.append( "- Too few LDR images uploaded. Please upload at least 2 LDR images. " )
+
+        else:
+            # Check if all file extensions match
+            if ( self.checkAllExtMatch() == False ):
+                errors.append( "- Not all images uploaded have the same file extension. Please upload images of the same file type. " )
 
         return errors
 
@@ -1215,3 +1221,31 @@ class Ui_MainWindow(object):
             self.saveSettingsButton.setStyleSheet( stylesheet.read() )
 
         return
+    
+
+    # Checks uploaded images list and makes sure all file extensions match
+    def checkAllExtMatch( self ):
+        allMatch = True
+
+        # Early exit if list is empty
+        if ( len(self.paths_ldr) == 0 ):
+            allMatch = False
+
+            return allMatch
+
+        # Set key as first item in list's extension
+        key = pathlib.Path( self.paths_ldr[0].lower() ).suffix
+
+        # Check each image extension
+        for ldrImage in self.paths_ldr:
+            ext = pathlib.Path( ldrImage.lower() ).suffix
+            print("ext: %s\tkey: %s\n", ext, key)
+            if ( ext != key ):
+                allMatch = False
+                
+                break
+            else:
+                continue
+
+        print ("allMatch: %s", allMatch)
+        return allMatch
