@@ -1239,7 +1239,7 @@ class Ui_MainWindow(object):
         # Check each image extension
         for ldrImage in self.paths_ldr:
             ext = pathlib.Path( ldrImage.lower() ).suffix
-            print("ext: %s\tkey: %s\n", ext, key)
+
             if ( ext != key ):
                 allMatch = False
                 
@@ -1247,5 +1247,4 @@ class Ui_MainWindow(object):
             else:
                 continue
 
-        print ("allMatch: %s", allMatch)
         return allMatch
