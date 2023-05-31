@@ -20,6 +20,9 @@ class ImageUploader( QWidget ):
     def __init__( self ):
         super().__init__()
 
+        # Default flag set for showing image previews
+        self.showImage = False
+
         self.imageUploaderStylePath = "./src/styles/image_uploader_styles.css"
 
         # UI setup
@@ -71,7 +74,7 @@ class ImageUploader( QWidget ):
     def addImageToList( self, imagePath ):
         # Create ImagePreview object for given image
         row = self.gridLayout.rowCount()
-        preview = ImagePreview( imagePath )
+        preview = ImagePreview( imagePath, self.showImage )
 
         # Add ImagePreview to grid
         self.gridLayout.addWidget( preview, row, 0 )
