@@ -1028,7 +1028,7 @@ class UploadFileRegion( QWidget ):
         # Reach Ui_MainWindow object
         uiObject = self.parent().parent().parent().parent().parent().parent().ui
 
-        self.isEnabled = uiObject.rawImageUploaded
+        self.isEnabled = not uiObject.rawImageUploaded
 
         self.setWidgetProperties()
 
