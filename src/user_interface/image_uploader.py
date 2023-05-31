@@ -148,17 +148,18 @@ class ImageUploader( QWidget ):
         # Reach Ui_MainWindow object
         uiObject = self.parent().parent().parent().parent().parent().parent().ui
 
-        uiObject.rawImageUploaded == False
+        uiObject.rawImageUploaded = False
 
         # Check each image extension
         for ldrImage in self.imagePaths:
             ext = pathlib.Path( ldrImage.lower() ).suffix
 
             if ( ext == ".cr2" ):
-                uiObject.rawImageUploaded == True
-                uiObject.rsp_UploadRegion.setRspRegionState()
+                uiObject.rawImageUploaded = True
                 # Just need to find at least one for flag to be set, can break out of loop after
                 break
+
+        uiObject.rsp_UploadRegion.setRspRegionState()
 
         return
     
