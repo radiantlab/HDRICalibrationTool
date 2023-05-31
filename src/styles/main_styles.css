@@ -34,7 +34,9 @@ QPushButton#btn_page_1:hover,
 #btn_page_3:hover,
 #btn_page_4:hover,
 #btn_settings:hover,
-#btn_help:hover {
+#btn_help:hover,
+#save_cache_button:hover,
+#save_settings_button:hover {
     color: white;
     background-color: #599cc1;
     border-color: white;
@@ -46,7 +48,9 @@ QPushButton#btn_page_1:pressed,
 #btn_page_3:pressed,
 #btn_page_4:pressed,
 #btn_settings:pressed,
-#btn_help:pressed {
+#btn_help:pressed,
+#save_cache_button:pressed,
+#save_settings_button:pressed {
     background-color: #477c9a;
     font-weight: bold;
 }
@@ -142,8 +146,7 @@ QLabel#cacheCheckboxLabel,
     font-size: 14pt;
 }
 
-QPushButton#enable_cache_checkbox,
-#save_cache_button,
+QPushButton#save_cache_button,
 #save_settings_button {
     font-size: 12pt;
     color: black;
