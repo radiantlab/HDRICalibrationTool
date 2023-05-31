@@ -214,9 +214,9 @@ class Ui_MainWindow(object):
         self.page_1.setWidgetResizable(True)
 
         # Welcome label
-        self.welcome_label = QLabel(self.page_1)
+        self.welcome_label = QLabel( "Welcome!", self.page_1)
         self.welcome_label.setObjectName(u"welcome_label")
-        self.welcome_label.setAlignment(Qt.AlignCenter)
+        self.welcome_label.setAlignment(Qt.AlignHCenter)
         
 
         # Body text
@@ -649,8 +649,6 @@ class Ui_MainWindow(object):
         self.btn_page_3.setText(QCoreApplication.translate("MainWindow", u"Camera Settings", None))
         self.btn_page_4.setText(QCoreApplication.translate("MainWindow", u"Upload Calibration", None))
         self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO", None))
-        self.welcome_label.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
-        self.welcome_label.setAlignment(Qt.AlignHCenter)
 
 
     # Sets the active page based on sidebar menu button clicks
