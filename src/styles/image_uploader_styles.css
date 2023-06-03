@@ -1,0 +1,22 @@
+/* The remove all button */
+QPushButton#removeAllBtn
+{
+	background-color: #FF8C8C;
+	color: white;
+	font-weight: bold;
+	padding-top: 4%;
+	padding-bottom: 4%;
+	margin-top: 15%;
+}
+QPushButton#removeAllBtn:hover
+{
+	background-color: #FF5959;
+	color: white;
+	font-weight: bold;
+}
+QPushButton#removeAllBtn:clicked
+{
+	background-color: #FF0D0D;
+	color: white;
+	font-weight: bold;
+}
