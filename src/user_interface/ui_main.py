@@ -7,12 +7,13 @@ import webbrowser
 
 # Third-party library imports
 from PySide6.QtCore import QCoreApplication, QMetaObject, QSize, Qt
-from PySide6.QtGui import QFont, QIcon
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication, QWidget, QPushButton, QCheckBox, QFrame, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QStackedWidget, QMdiArea, QScrollArea, QLineEdit, QGridLayout
 
 # Local module imports
 from src.user_interface.upload_file_region import UploadFileRegion
 from src.user_interface.image_uploader import ImageUploader
+from src.user_interface.image_preview import ImagePreview
 from src.progress_window import ProgressWindow
 from src.helper import param2field, cast
 
@@ -26,6 +27,7 @@ class Ui_MainWindow(object):
         # Cache meta-options
         self.recover_cache = True
         self.generate_cache = True
+        self.show_image_previews = False
         self.cache_path = pathlib.Path("./cache.json")
 
         # Settings meta-options
@@ -214,9 +216,9 @@ class Ui_MainWindow(object):
         self.page_1.setWidgetResizable(True)
 
         # Welcome label
-        self.welcome_label = QLabel(self.page_1)
+        self.welcome_label = QLabel( "Welcome!", self.page_1)
         self.welcome_label.setObjectName(u"welcome_label")
-        self.welcome_label.setAlignment(Qt.AlignCenter)
+        self.welcome_label.setAlignment(Qt.AlignHCenter)
         
 
         # Body text
@@ -271,9 +273,15 @@ class Ui_MainWindow(object):
         self.page_2_Vlayout.setObjectName(u"page_2_Vlayout")
         self.page_2_Vlayout.setSpacing(0)
         self.page_2_Vlayout.setContentsMargins(0, 0, 0, 0)
+
+        # Flag for .cr2 (raw) image uploaded for merge: will use flag to disable .rsp file upload
+        self.rawImageUploaded = False
         
         self.uploader = ImageUploader()
         self.uploader.setObjectName("ImageUploader")
+
+        # Tell the uploader to show image previews or not from cached flag
+        self.uploader.showImage = self.show_image_previews
 
         self.page_2_Vlayout.addWidget( self.uploader, stretch=1 )
         
@@ -530,6 +538,16 @@ class Ui_MainWindow(object):
         self.cacheCheckboxLabel.setObjectName( "cache_checkbox_label" )
         self.cacheCheckboxLabel.setWordWrap( True )
 
+        # Show image previews checkbox and label
+        self.showImagePreviewsCheckbox = QCheckBox( "Show image previews" )
+        self.showImagePreviewsCheckbox.setObjectName( "show_image_previews_checkbox" )
+        self.showImagePreviewsCheckbox.clicked.connect( self.toggleImagePreviews )
+
+        showImagePreviewsLabelText = "When enabled, image previews will be shown next to each uploaded image on the \"Upload LDR Images\" page. Enabling may cause performance issues only when uploading images, so it is disabled by default."
+        self.showImagePreviewsLabel = QLabel( showImagePreviewsLabelText )
+        self.showImagePreviewsLabel.setObjectName( "show_image_previews_label" )
+        self.showImagePreviewsLabel.setWordWrap( True )
+
         # Cache save button and label
         self.saveCacheButton = QPushButton("Manually save cache")
         self.saveCacheButton.setObjectName( "save_cache_button" )
@@ -548,13 +566,19 @@ class Ui_MainWindow(object):
 
         # Add widgets and layouts
         self.page_settings_Vlayout = QVBoxLayout()
-        self.cacheButton_Hlayout = QHBoxLayout()
         self.cacheCheckbox_Hlayout = QHBoxLayout()
+        self.imagePreviewCheckbox_Hlayout = QHBoxLayout()
+        self.cacheButton_Hlayout = QHBoxLayout()
 
         self.cacheCheckbox_Hlayout.addWidget( self.enableCacheCheckbox, stretch=2 )
         self.cacheCheckbox_Hlayout.addWidget( QWidget(), stretch=3 )
         self.cacheCheckbox_Hlayout.addWidget( self.cacheCheckboxLabel, stretch=6 )
         self.cacheCheckbox_Hlayout.addWidget( QWidget(), stretch=3 )
+
+        self.imagePreviewCheckbox_Hlayout.addWidget( self.showImagePreviewsCheckbox, stretch=2 )
+        self.imagePreviewCheckbox_Hlayout.addWidget( QWidget(), stretch=3 )
+        self.imagePreviewCheckbox_Hlayout.addWidget( self.showImagePreviewsLabel, stretch=6 )
+        self.imagePreviewCheckbox_Hlayout.addWidget( QWidget(), stretch=3 )
 
         self.cacheButton_Hlayout.addWidget( self.saveCacheButton, stretch=2 )
         self.cacheButton_Hlayout.addWidget( QWidget(), stretch=3 )
@@ -563,6 +587,7 @@ class Ui_MainWindow(object):
 
         self.page_settings_Vlayout.addWidget( self.page_settings_title_label, stretch=1 )
         self.page_settings_Vlayout.addLayout( self.cacheCheckbox_Hlayout, stretch=3 )
+        self.page_settings_Vlayout.addLayout( self.imagePreviewCheckbox_Hlayout, stretch=3 )
         self.page_settings_Vlayout.addLayout( self.cacheButton_Hlayout, stretch=3 )
         self.page_settings_Vlayout.addWidget( self.saveSettingsButton )
         self.page_settings_Vlayout.addWidget( QWidget(), stretch=10 )
@@ -615,6 +640,7 @@ class Ui_MainWindow(object):
         if ( self.recover_cache == True ):
             # Settings cache enable checkbox
             self.enableCacheCheckbox.setChecked( True )
+            self.showImagePreviewsCheckbox.setChecked( self.show_image_previews )
 
             # Upload file region disable checkboxes
             if ( self.path_rsp_fn == None ):
@@ -646,8 +672,6 @@ class Ui_MainWindow(object):
         self.btn_page_3.setText(QCoreApplication.translate("MainWindow", u"Camera Settings", None))
         self.btn_page_4.setText(QCoreApplication.translate("MainWindow", u"Upload Calibration", None))
         self.btn_start_pipeline.setText(QCoreApplication.translate("MainWindow", u"GO", None))
-        self.welcome_label.setText(QCoreApplication.translate("MainWindow", u"Welcome!", None))
-        self.welcome_label.setAlignment(Qt.AlignHCenter)
 
 
     # Sets the active page based on sidebar menu button clicks
@@ -854,14 +878,20 @@ class Ui_MainWindow(object):
         # Set flag to pass or not
         errors = []
 
+        # Reach imageUploader object
         imageUploader = self.page_2_Vlayout.itemAt(0).widget()
         uploadedImageCount = int( imageUploader.getTotalImagesCount() )
 
-        print( "Total images uploaded: {}".format( uploadedImageCount ) )
+        #print( "Total images uploaded: {}".format( uploadedImageCount ) )
 
         # Needs at least 1 image uploaded.
         if ( uploadedImageCount <= 1 ):     
             errors.append( "- Too few LDR images uploaded. Please upload at least 2 LDR images. " )
+
+        else:
+            # Check if all file extensions match
+            if ( self.checkAllExtMatch() == False ):
+                errors.append( "- Not all images uploaded have the same file extension. Please upload images of the same file type. " )
 
         return errors
 
@@ -1104,13 +1134,15 @@ class Ui_MainWindow(object):
 
         self.generate_cache = cast(settings_json.get("generate_cache", None), bool)
         self.recover_cache  = cast(settings_json.get("recover_cache", None), bool)
+        self.show_image_previews  = cast(settings_json.get("show_image_previews", None), bool)
 
 
     def saveSettings(self):
         print("Saving settings...")
         settings = {
                 "recover_cache":self.recover_cache,
-                "generate_cache":self.generate_cache
+                "generate_cache":self.generate_cache,
+                "show_image_previews":self.show_image_previews
                 }
         with open(self.settings_path, 'w') as settings_file:
             json.dump(settings, settings_file)
@@ -1213,5 +1245,50 @@ class Ui_MainWindow(object):
             self.saveCacheButton.setStyleSheet( stylesheet.read() )
         with open( self.main_styles_path, "r" ) as stylesheet:
             self.saveSettingsButton.setStyleSheet( stylesheet.read() )
+
+        return
+
+    # Checks uploaded images list and makes sure all file extensions match
+    def checkAllExtMatch( self ):
+        allMatch = True
+
+        # Early exit if list is empty
+        if ( len(self.paths_ldr) == 0 ):
+            allMatch = False
+
+            return allMatch
+
+        # Set key as first item in list's extension
+        key = pathlib.Path( self.paths_ldr[0].lower() ).suffix
+
+        # Check each image extension
+        for ldrImage in self.paths_ldr:
+            ext = pathlib.Path( ldrImage.lower() ).suffix
+
+            if ( ext != key ):
+                allMatch = False
+                
+                break
+            else:
+                continue
+
+        return allMatch
+
+
+    # Swaps flag to show image previews or not on Upload LDR Images page 
+    def toggleImagePreviews( self ):
+        # Toggle flag
+        self.show_image_previews = not self.show_image_previews
+
+        print("self.uploader: ", self.uploader)
+        print("self.uploader.children: ", self.uploader.children)
+        print("self.uploader.gridLayout: ", self.uploader.gridLayout)
+        print("self.uploader.gridLayout.children: ", self.uploader.gridLayout.children)
+        
+
+      #  for imagePreview in self.uploader.children:
+        for imagePreview in self.uploader.gridLayout.parentWidget().findChildren(ImagePreview):
+            print("imagePreview: ", imagePreview)
+            imagePreview.setShowImageFlag( self.show_image_previews )
 
         return
