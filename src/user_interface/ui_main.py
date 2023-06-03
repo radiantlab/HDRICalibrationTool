@@ -1247,7 +1247,6 @@ class Ui_MainWindow(object):
             self.saveSettingsButton.setStyleSheet( stylesheet.read() )
 
         return
-    
 
     # Checks uploaded images list and makes sure all file extensions match
     def checkAllExtMatch( self ):
@@ -1293,4 +1292,3 @@ class Ui_MainWindow(object):
             imagePreview.setShowImageFlag( self.show_image_previews )
 
         return
-    
