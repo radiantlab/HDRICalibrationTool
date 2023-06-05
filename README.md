@@ -47,6 +47,7 @@ For example input LDR images, camera lens settings, calibration files, response 
 ---
 ## Credits
 Project partner: Clotilde Pierson
+
 Development team:
 * Nathaniel Klump
 * Liam Zimmermann
