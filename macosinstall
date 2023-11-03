@@ -1,5 +1,0 @@
-#!/bin/bash
-SRC="${BASH_SOURCE[0]}"
-DIR=$(dirname "${SRC}")
-cd ${DIR}
-pip3 install -r ./requirements.txt
