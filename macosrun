@@ -1,5 +1,0 @@
-#!/bin/bash
-SRC="${BASH_SOURCE[0]}"
-DIR=$(dirname "${SRC}")
-cd ${DIR}
-python3 main.py
