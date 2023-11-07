@@ -1,59 +1,36 @@
-# HDRI-Calibration-Tool
+This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+## Getting Started
 
----
-## About
-The HDRI Calibration Tool was designed to automate the process of merging multiple LDR images together and generating an HDR image. It is not a standalone app, and is meant to be used alongside the app Radiance. This is an entirely free,open-sourced application developed by a small group of computer science students.
+First, run the development server:
 
-To read more about the process of generating an HDR image from LDR image input, see the research paper by Clotilde Pierson [here](https://doi.org/10.1080/15502724.2019.1684319).
-
-
----
-## Other Documentation
-If you have any difficulty using the application, please check out our [github Wiki](https://github.com/XiangyuLijoey/HDRICalibrationTool/wiki) for more information.
-
-Additionally, the GitHub Wiki includes OS-specific information regarding installation, troubleshooting, and setting up a development environment to make changes to the app.
-
-A step-by-step guide on using the app is also on the wiki, with a formatting guide for the calibration and response function files.
-
-It also includes information about the development of this project including libraries used, more info about the radiance_pipeline submodule, using Figma to prototype and test design on users, and documentation for functions in some of the files.
-
-
----
-## To Run
-
-Prerequisite: [HDRGen](http://www.anyhere.com/), [Radiance](https://www.radiance-online.org/).
-
-### Windows
-This app has been tested on Windows 10. For Windows users, unzip the code, and in the root directory, run the executable "HDRICalibrationTool.exe". ***Please do not remove this file from this directory, else it will not run.*** Feel free to make a shortcut of the executable and move that to a more accessible location.
-
-### MacOS
-Note that you will need an SSH key set up in Github to get the submodule. You may also need to install `qt6-base` or `qt6` from your package manager software.
 ```bash
-$ git clone https://github.com/XiangyuLijoey/HDRICalibrationTool.git
-$ cd HDRICalibrationTool
-$ git submodule update --init --recursive --remote
-$ pip3 install -r requirements.txt
-$ python3 main.py
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
-### Linux
-See the [wiki](https://github.com/XiangyuLijoey/HDRICalibrationTool/wiki/Linux)
 
----
-## Examples
-For example input LDR images, camera lens settings, calibration files, response function files, and output HDR images, see the \examples directory in the root directory.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
----
-## Credits
-Project partner: Clotilde Pierson
+This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
 
-Development team:
-* Nathaniel Klump
-* Liam Zimmermann
-* Xiangyu "Joey" Li
+## Learn More
 
+To learn more about Next.js, take a look at the following resources:
 
----
-## Licensing Info
-For licensing, see LICENSE.txt in the root directory.
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
