@@ -6,7 +6,6 @@ use::std::process::Command;
 const DEBUG: bool = true;
 const HDRGEN_PATH: &str = "../../hdrgen_macosx/bin/hdrgen";
 
-
 fn main() {
 
   let fake_input_images: Vec<String> = [
@@ -32,11 +31,13 @@ fn main() {
 
   let fake_response_function = "../examples/inputs/parameters/response_function_files/Response_function.rsp".to_string();
 
-  merge_exposures(fake_input_images, fake_response_function);
+  let _result = merge_exposures(fake_input_images, fake_response_function);
 
 
   tauri::Builder::default()
-    .invoke_handler(tauri::generate_handler![merge_exposures])
+    // UNCOMMENT THE BELOW LINE WHEN THIS IS INTEGRATED WITH FRONTEND
+    // TO ALLOW merge_exposures COMMAND TO BE CALLED
+    // .invoke_handler(tauri::generate_handler![merge_exposures])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
@@ -52,8 +53,42 @@ fn merge_exposures(input_images: Vec<String>, response_function: String) -> Resu
   let output_path = "../results/output1.hdr";
 
 
+  // Create a new command for hdrgen
+  let mut command = Command::new(HDRGEN_PATH);
+
+  // Add input LDR images as args
+  for input_image in input_images {
+    command.arg(format!("{}", input_image));
+  }
+
+  // Add output path for HDR image
+  command.arg("-o");
+  command.arg(format!("{}", output_path));
+
+  // Add camera response function
+  command.arg("-r");
+  command.arg(format!("{}", response_function));
+
+  // Add remaining flags for hdrgen step
+  command.arg("-a");
+  command.arg("-e");
+  command.arg("-f");
+  command.arg("-g");
+
+  // Run the command
+  let status = command.status().unwrap();
   
+  if DEBUG {
+    println!("\nCommand exit status: {:?}\n", status);
+  }
   
-  return Ok(output_path.into());
+
+  // Check if hdrgen command was successful
+  if status.success() {
+    Ok(output_path.into())
+  }
+  else { 
+    Err("Error, non-zero exit status. hdrgen command failed.".into())
+  }
 
 }
