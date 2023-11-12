@@ -4,10 +4,18 @@
 use::std::process::Command;
 
 const DEBUG: bool = true;
-const HDRGEN_PATH: &str = "../../hdrgen_macosx/bin/hdrgen";
+
+// Path to hdrgen executable
+const HDRGEN_PATH: &str = "../../hdrgen_macosx/bin/";
+
+// Directory for output HDR images
+const OUTPUT_PATH: &str = "../results/";
 
 fn main() {
 
+  // === Define hardcoded data for testing ===
+
+  // Hardcoded input JPG image paths
   let fake_input_images: Vec<String> = [
     "../examples/inputs/input_images/IMG_6955.JPG".to_string(),
     "../examples/inputs/input_images/IMG_6956.JPG".to_string(),
@@ -29,8 +37,10 @@ fn main() {
     "../examples/inputs/input_images/IMG_6972.JPG".to_string()
   ].to_vec();
 
+  // Hardcoded camera response function path
   let fake_response_function = "../examples/inputs/parameters/response_function_files/Response_function.rsp".to_string();
 
+  // Call merge_exposures with hardcoded data
   let _result = merge_exposures(fake_input_images, fake_response_function);
 
 
@@ -43,6 +53,11 @@ fn main() {
 }
 
 
+// Merges multiple LDR images into an HDR image using hdrgen.
+// input_images is a vector of the paths to the input images. 
+//    Input images must be in .JPG format. 
+// response_function is a string for the path to the 
+//    camera response function, must be a .rsp file
 #[tauri::command]
 fn merge_exposures(input_images: Vec<String>, response_function: String) -> Result<String, String> {
 
@@ -50,11 +65,11 @@ fn merge_exposures(input_images: Vec<String>, response_function: String) -> Resu
     println!("merge_exposures Tauri command was called!");
   }
 
-  let output_path = "../results/output1.hdr";
+  let output_path = OUTPUT_PATH.to_string() + "output1.hdr";
 
 
   // Create a new command for hdrgen
-  let mut command = Command::new(HDRGEN_PATH);
+  let mut command = Command::new(HDRGEN_PATH.to_string() + "hdrgen");
 
   // Add input LDR images as args
   for input_image in input_images {
@@ -83,11 +98,13 @@ fn merge_exposures(input_images: Vec<String>, response_function: String) -> Resu
   }
   
 
-  // Check if hdrgen command was successful
+  // Return a Result object to indicate whether hdrgen command was successful
   if status.success() {
+    // On success, return output path of HDR image
     Ok(output_path.into())
   }
-  else { 
+  else {
+    // On error, return an error message
     Err("Error, non-zero exit status. hdrgen command failed.".into())
   }
 
