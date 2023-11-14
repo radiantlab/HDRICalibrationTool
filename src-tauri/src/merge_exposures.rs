@@ -1,12 +1,9 @@
 use std::process::Command;
 
-
 const DEBUG: bool = false;
 
 // Path to hdrgen executable
 const HDRGEN_PATH: &str = "/usr/local/bin/";
-
-
 
 // Merges multiple LDR images into an HDR image using hdrgen.
 // input_images:

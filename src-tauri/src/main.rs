@@ -5,7 +5,6 @@ mod merge_exposures;
 
 use merge_exposures::merge_exposures;
 
-
 fn main() {
     // === Define hardcoded data for testing ===
 
@@ -50,4 +49,3 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-
