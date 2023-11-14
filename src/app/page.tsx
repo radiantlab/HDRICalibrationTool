@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useState, ChangeEvent } from 'react';
+import React, { useState, ChangeEvent, useRef } from 'react';
 
 export default function Home() {
     const [images, setImages] = useState<File[]>([]);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
   
-    const handleImageSelect = (e: ChangeEvent<HTMLInputElement>) => {
-      const selectedImages = Array.from(e.target.files as FileList);
+    const handleImageSelect = (event: ChangeEvent<HTMLInputElement>) => {
+      const selectedImages = Array.from(event.target.files as FileList);
       setImages(images.concat(selectedImages));
     };
   
@@ -16,21 +17,31 @@ export default function Home() {
       setImages(updatedImages);
     };
 
+    const handleClick = () => {
+      if (fileInputRef.current) {
+        fileInputRef.current.click();
+      }
+  }
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <h1>HDRICalibrationTool</h1>
       <div>
         <h2>Image Upload</h2>
-        <input type="file" accept="image/*" multiple onChange={handleImageSelect} />
+        <input type="file" accept=".jpg, .jpeg" multiple onChange={handleImageSelect} ref={fileInputRef} className="hidden"/>
+        <button onClick={handleClick} className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded">Select Files</button>
 
         <div className="image-preview">
           {images.map((image, index) => (
             <div key={index} className="image-item">
-              <img src={URL.createObjectURL(image)} alt={`Image ${index}`} />
-              <button onClick={() => handleImageDelete(index)}>Delete</button>
+              <div className="grid grid-cols-3 gap-4"> {/* option 2*/}
+                <img src={URL.createObjectURL(image)} alt={`Image ${index}`} width={200} height={200}/>
+                <button onClick={() => handleImageDelete(index)}>Delete</button>
+              </div>
             </div>
           ))}
         </div>
+
+        <div>Image count: {images.length}</div>
       </div>
     </main>
   )
