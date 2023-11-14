@@ -6,10 +6,7 @@ use std::process::Command;
 const DEBUG: bool = false;
 
 // Path to hdrgen executable
-const HDRGEN_PATH: &str = "../../hdrgen_macosx/bin/";
-
-// Directory for output HDR images
-// const OUTPUT_PATH: &str = "../../results/";
+const HDRGEN_PATH: &str = "/usr/local/bin/";
 
 fn main() {
     // === Define hardcoded data for testing ===
@@ -43,7 +40,7 @@ fn main() {
 
     let _fake_output_path = "../tmp/output1.hdr".to_string();
 
-    // Call merge_exposures with hardcoded data
+    // UNCOMMENT TO CALL MERGE_EXPOSURES WITH HARDCODED DATA
     // let _result = merge_exposures(
     //     _fake_input_images,
     //     _fake_response_function,
@@ -57,10 +54,12 @@ fn main() {
 }
 
 // Merges multiple LDR images into an HDR image using hdrgen.
-// input_images is a vector of the paths to the input images.
-//    Input images must be in .JPG format.
-// response_function is a string for the path to the
-//    camera response function, must be a .rsp file
+// input_images:
+//    vector of the paths to the input images. Input images must be in .JPG format.
+// response_function:
+//    string for the path to the camera response function, must be a .rsp file
+// output_path:
+//    a string for the path and filename where the resulting HDR image will be saved.
 #[tauri::command]
 fn merge_exposures(
     input_images: Vec<String>,
