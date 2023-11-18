@@ -19,15 +19,8 @@ pub fn nullify_exposure_value(input_image: String, output_path: String) -> Resul
     // Create a new command for ra_xyze
     let mut command = Command::new(RADIANCE_PATH.to_string() + "ra_xyze");
 
-    // Add flags for ra_xyze step
-    command.arg("-r");
-    command.arg("-o");
-
-    // Add input HDR image as arg
-    command.arg(format!("{}", input_image));
-
-    // Add output path for HDR image
-    command.arg(format!("{}", output_path));
+    // Add arguments to ra_xyze command
+    command.args(["-r", "-o", input_image.as_str(), output_path.as_str()]);
 
     // Run the command
     let status = command.status().unwrap();
