@@ -1,24 +1,33 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod nullify_exposure_value;
+// Import pipeline module
+mod pipeline;
+use pipeline::pipeline;
 
-use nullify_exposure_value::nullify_exposure_value;
+// Hardcoded radiance and hdrgen paths for backend testing
+const _FAKE_RADIANCE_PATH: &str = "/usr/local/radiance/bin/";
+const _FAKE_HDRGEN_PATH: &str = "/usr/local/bin/";
 
 fn main() {
     // === Define hardcoded data for testing ===
 
-    // Hardcoded input HDR image path
-    let _fake_input_image = "../tmp/output1.hdr".to_string();
+    // Hardcoded output path
+    let _fake_output_path = "../output/".to_string();
 
-    // Hardcoded output HDR image path
-    let _fake_output_path = "../tmp/output2.hdr".to_string();
+    // Hardcoded temp path
+    let _fake_temp_path = "../tmp/".to_string();
 
-    // UNCOMMENT TO CALL NULLIFY_EXPOSURE_VALUE WITH HARDCODED DATA
-    // let _result = nullify_exposure_value(_fake_input_image, _fake_output_path);
+    // UNCOMMENT TO CALL PIPELINE WITH HARDCODED DATA
+    // let _result = pipeline(
+    //     _FAKE_RADIANCE_PATH.to_string(),
+    //     _FAKE_HDRGEN_PATH.to_string(),
+    //     _fake_output_path,
+    //     _fake_temp_path,
+    // );
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![nullify_exposure_value])
+        .invoke_handler(tauri::generate_handler![pipeline])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
