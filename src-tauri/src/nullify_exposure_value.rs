@@ -2,16 +2,49 @@ use std::process::Command;
 
 const DEBUG: bool = false;
 
-// Path to radiance
+// Path to radiance executables
 const RADIANCE_PATH: &str = "/usr/local/radiance/bin/";
 
+// Nullifies the exposure value of an HDR image using ra_xyze.
 // input_image:
-//    the paths to the input HDR image. Input image must be in .hdr format.
+//    the path to the input HDR image. Input image must be in .hdr format.
 // output_path:
 //    a string for the path and filename where the HDR image with nullified exposure value will be saved.
 #[tauri::command]
 pub fn nullify_exposure_value(input_image: String, output_path: String) -> Result<String, String> {
-    println!("Nullify exposure value was called!!");
+    if DEBUG {
+        println!("nullify_exposure_value was called!");
+    }
 
-    return Err("Nullify exposure value not implemented yet.".into());
+    // Create a new command for ra_xyze
+    let mut command = Command::new(RADIANCE_PATH.to_string() + "ra_xyze");
+
+    // Add flags for ra_xyze step
+    command.arg("-r");
+    command.arg("-o");
+
+    // Add input HDR image as arg
+    command.arg(format!("{}", input_image));
+
+    // Add output path for HDR image
+    command.arg(format!("{}", output_path));
+
+    // Run the command
+    let status = command.status().unwrap();
+
+    if DEBUG {
+        println!(
+            "\nNullication of exposure value command exit status: {:?}\n",
+            status
+        );
+    }
+
+    // Return a Result object to indicate whether ra_xyze command was successful
+    if status.success() {
+        // On success, return output path of HDR image
+        Ok(output_path.into())
+    } else {
+        // On error, return an error message
+        Err("Error, non-zero exit status. ra_xyze command failed.".into())
+    }
 }
