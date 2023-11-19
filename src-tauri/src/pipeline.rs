@@ -5,7 +5,7 @@ use crop::crop;
 // use resize::resize;
 
 // Used to print out debug information
-pub const DEBUG: bool = false;
+pub const DEBUG: bool = true;
 
 // Struct to hold some configuration settings (e.g. path settings).
 // Used when various stages of the pipeline are called.

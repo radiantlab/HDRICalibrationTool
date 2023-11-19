@@ -23,15 +23,15 @@ fn main() {
     let _fake_ydown = "74".to_string();
 
     // UNCOMMENT TO CALL PIPELINE WITH HARDCODED DATA
-    // let _result = pipeline(
-    //     _FAKE_RADIANCE_PATH.to_string(),
-    //     _FAKE_HDRGEN_PATH.to_string(),
-    //     _fake_output_path,
-    //     _fake_temp_path,
-    //     _fake_diameter,
-    //     _fake_xleft,
-    //     _fake_ydown
-    // );
+    let _result = pipeline(
+        _FAKE_RADIANCE_PATH.to_string(),
+        _FAKE_HDRGEN_PATH.to_string(),
+        _fake_output_path,
+        _fake_temp_path,
+        _fake_diameter,
+        _fake_xleft,
+        _fake_ydown,
+    );
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![pipeline])
