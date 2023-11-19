@@ -24,8 +24,8 @@ fn main() {
     let _fake_ydown = "74".to_string();
 
     // Hardcoded HDR image resolution
-    let _fake_xdim = "5616".to_string();
-    let _fake_ydim = "3744".to_string();
+    let _fake_xdim = "1000".to_string();
+    let _fake_ydim = "1000".to_string();
 
     // UNCOMMENT TO CALL PIPELINE WITH HARDCODED DATA
     // let _result = pipeline(

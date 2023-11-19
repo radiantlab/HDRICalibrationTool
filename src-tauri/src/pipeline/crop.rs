@@ -29,7 +29,7 @@ pub fn crop(
     ydown: String,
 ) -> Result<String, String> {
     if DEBUG {
-        println!("crop was called! With parameters");
+        println!("crop() was called with parameters:");
         println!("\tdiameter: {diameter}");
         println!("\txleft: {xleft}");
         println!("\tydown: {ydown}");
@@ -47,11 +47,10 @@ pub fn crop(
         input_file.as_str(),
         format!("-{xleft}").as_str(),
         format!("-{ydown}").as_str(),
-        // output_file.as_str(),
     ]);
 
     // Direct command's output to specifed output file
-    let file = File::create(format!("{}output3.hdr", config_settings.temp_path)).unwrap();
+    let file = File::create(&output_file).unwrap();
     let stdio = Stdio::from(file);
     command.stdout(stdio);
 
@@ -68,6 +67,6 @@ pub fn crop(
         Ok(output_file.into())
     } else {
         // On error, return an error message
-        Err("Error, non-zero exit status. Crop (pcompos command) failed.".into())
+        Err("Error, non-zero exit status. Crop command (pcompos) failed.".into())
     }
 }
