@@ -18,20 +18,27 @@ fn main() {
     // Hardcoded temp path
     let _fake_temp_path = "../tmp/".to_string();
 
+    // Hardcoded fisheye diameter and coordinates of square around fisheye view
     let _fake_diameter = "3612".to_string();
     let _fake_xleft = "1019".to_string();
     let _fake_ydown = "74".to_string();
 
+    // Hardcoded HDR image resolution
+    let _fake_xdim = "5616".to_string();
+    let _fake_ydim = "3744".to_string();
+
     // UNCOMMENT TO CALL PIPELINE WITH HARDCODED DATA
-    let _result = pipeline(
-        _FAKE_RADIANCE_PATH.to_string(),
-        _FAKE_HDRGEN_PATH.to_string(),
-        _fake_output_path,
-        _fake_temp_path,
-        _fake_diameter,
-        _fake_xleft,
-        _fake_ydown,
-    );
+    // let _result = pipeline(
+    //     _FAKE_RADIANCE_PATH.to_string(),
+    //     _FAKE_HDRGEN_PATH.to_string(),
+    //     _fake_output_path,
+    //     _fake_temp_path,
+    //     _fake_diameter,
+    //     _fake_xleft,
+    //     _fake_ydown,
+    //     _fake_xdim,
+    //     _fake_ydim,
+    // );
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![pipeline])
