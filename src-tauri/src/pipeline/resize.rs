@@ -1,7 +1,7 @@
 use crate::pipeline::DEBUG;
-// use std::fs::File;
+use std::fs::File;
 use std::process::Command;
-// use std::process::Stdio;
+use std::process::Stdio;
 
 use super::ConfigSettings;
 
@@ -24,10 +24,42 @@ pub fn resize(
     ydim: String,
 ) -> Result<String, String> {
     if DEBUG {
-        println!("resize was called! With parameters");
+        println!("resize() was called with parameters:");
         println!("\txdim: {xdim}");
         println!("\tydim: {ydim}");
     }
 
-    return Err("Resize hasn't been implemented yet!".into());
+    // Create a new command for pfilt
+    let mut command = Command::new(config_settings.radiance_path.to_string() + "pfilt");
+
+    // Add arguments to pfilt command
+    command.args([
+        "-1",
+        "-x",
+        xdim.as_str(),
+        "-y",
+        ydim.as_str(),
+        input_file.as_str(),
+    ]);
+
+    // Direct command's output to specifed output file
+    let file = File::create(&output_file).unwrap();
+    let stdio = Stdio::from(file);
+    command.stdout(stdio);
+
+    // Run the command
+    let status = command.status().unwrap();
+
+    if DEBUG {
+        println!("\nCrop command exit status: {:?}\n", status);
+    }
+
+    // Return a Result object to indicate whether command was successful
+    if status.success() {
+        // On success, return output path of HDR image
+        Ok(output_file.into())
+    } else {
+        // On error, return an error message
+        Err("Error, non-zero exit status. Resize command (pfilt) failed.".into())
+    }
 }
