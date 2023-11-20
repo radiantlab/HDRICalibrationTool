@@ -32,6 +32,7 @@ export default function Home() {
               <div className="grid grid-cols-3 gap-4"> {/* option 2*/}
                 <img src={URL.createObjectURL(image)} alt={`Image ${index}`} width={200} height={200}/>
                 <button onClick={() => handleImageDelete(index)}>Delete</button>
+                <div>{image.name}</div>
               </div>
             </div>
           ))}
