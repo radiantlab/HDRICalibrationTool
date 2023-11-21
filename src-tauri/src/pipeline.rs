@@ -1,6 +1,12 @@
 mod merge_exposures;
+mod nullify_exposure_value;
+mod crop;
+mod resize;
 
 use merge_exposures::merge_exposures;
+use nullify_exposure_value::nullify_exposure_value;
+use crop::crop;
+use resize::resize;
 
 // Used to print out debug information
 pub const DEBUG: bool = true;
@@ -81,5 +87,48 @@ pub fn pipeline(
         format!("{}output1.hdr", config_settings.temp_path),
     );
 
-    return merge_exposures_result;
+    // If the command to merge exposures encountered an error, abort pipeline
+    if merge_exposures_result.is_err() {
+        return merge_exposures_result;
+    };
+
+  
+    // Nullify the exposure value
+    let nullify_exposure_result = nullify_exposure_value(
+        &config_settings,
+        format!("{}output1.hdr", config_settings.temp_path),
+        format!("{}output2.hdr", config_settings.temp_path),
+    );
+  
+    // If the command to nullify the exposure value encountered an error, abort pipeline
+    if nullify_exposure_result.is_err() {
+        return nullify_exposure_result;
+    }
+
+    // Crop the HDR image to a square fitting the fisheye view
+    let crop_result = crop(
+        &config_settings,
+        format!("{}output2.hdr", config_settings.temp_path),
+        format!("{}output3.hdr", config_settings.temp_path),
+        diameter,
+        xleft,
+        ydown,
+    );
+
+    // If the cropping command encountered an error, abort pipeline
+    if crop_result.is_err() {
+        return crop_result;
+    }
+
+    // Resize the HDR image
+    let resize_result = resize(
+        &config_settings,
+        format!("{}output3.hdr", config_settings.temp_path),
+        format!("{}output4.hdr", config_settings.temp_path),
+        xdim,
+        ydim,
+    );
+
+    // Return the result of the resizing command
+    return resize_result;
 }

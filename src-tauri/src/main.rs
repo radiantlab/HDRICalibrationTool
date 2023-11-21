@@ -39,7 +39,8 @@ fn main() {
     let _fake_response_function =
         "../examples/inputs/parameters/response_function_files/Response_function.rsp".to_string();
 
-    let _fake_output_path = "../tmp/output1.hdr".to_string();
+    // Hardcoded output path
+    let _fake_output_path = "../output/".to_string();
 
     // Hardcoded temp path
     let _fake_temp_path = "../tmp/".to_string();
@@ -53,6 +54,7 @@ fn main() {
     let _fake_xdim = "1000".to_string();
     let _fake_ydim = "1000".to_string();
 
+    // UNCOMMENT TO CALL PIPELINE WITH HARDCODED DATA
     // let _result = pipeline(
     //     _FAKE_RADIANCE_PATH.to_string(),
     //     _FAKE_HDRGEN_PATH.to_string(),
