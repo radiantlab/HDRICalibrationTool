@@ -1,16 +1,15 @@
 mod crop;
+mod merge_exposures;
+mod nullify_exposure_value;
 mod resize;
 
 use crop::crop;
-use resize::resize;
-
-mod nullify_exposure_value;
-
+use merge_exposures::merge_exposures;
 use nullify_exposure_value::nullify_exposure_value;
+use resize::resize;
 
 // Used to print out debug information
 pub const DEBUG: bool = true;
-
 
 // Struct to hold some configuration settings (e.g. path settings).
 // Used when various stages of the pipeline are called.
@@ -30,6 +29,10 @@ pub struct ConfigSettings {
 //      Place for final HDR image to be stored
 // temp_path: (CURRENTLY WHERE OUTPUTS ARE STORED)
 //      Place for intermediate HDR image outputs to be stored
+// input_images:
+//      vector of the paths to the input images. Input images must be in .JPG format.
+// response_function:
+//      string for the path to the camera response function, must be a .rsp file
 // diameter:
 //      the fisheye view diameter in pixels
 // xleft:
@@ -48,6 +51,8 @@ pub fn pipeline(
     hdrgen_path: String,
     output_path: String,
     temp_path: String,
+    input_images: Vec<String>,
+    response_function: String,
     diameter: String,
     xleft: String,
     ydown: String,
@@ -60,6 +65,8 @@ pub fn pipeline(
         println!("\thdrgen path: {hdrgen_path}");
         println!("\toutput path: {output_path}");
         println!("\ttemp path: {temp_path}");
+        println!("\tinput images: {:?}", input_images);
+        println!("\tresponse function: {response_function}");
         println!("\tdiameter: {diameter}");
         println!("\txleft: {xleft}");
         println!("\tydown: {ydown}");
@@ -72,14 +79,27 @@ pub fn pipeline(
         output_path: output_path,
         temp_path: temp_path,
     };
-  
+
+    let merge_exposures_result = merge_exposures(
+        &config_settings,
+        input_images,
+        response_function,
+        format!("{}output1.hdr", config_settings.temp_path),
+    );
+
+    // If the command to merge exposures encountered an error, abort pipeline
+    // if merge_exposures_result.is_err() {
+    //     return merge_exposures_result;
+    // };
+
     // Nullify the exposure value
     let nullify_exposure_result = nullify_exposure_value(
         &config_settings,
         format!("{}output1.hdr", config_settings.temp_path),
         format!("{}output2.hdr", config_settings.temp_path),
     );
-  
+
+    // If the command to nullify the exposure value encountered an error, abort pipeline
     if nullify_exposure_result.is_err() {
         return nullify_exposure_result;
     }
