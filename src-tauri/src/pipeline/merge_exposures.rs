@@ -1,7 +1,5 @@
 use crate::pipeline::DEBUG;
-use std::fs::File;
 use std::process::Command;
-use std::process::Stdio;
 
 use super::ConfigSettings;
 

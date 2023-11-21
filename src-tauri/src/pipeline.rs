@@ -1,11 +1,11 @@
+mod crop;
 mod merge_exposures;
 mod nullify_exposure_value;
-mod crop;
 mod resize;
 
+use crop::crop;
 use merge_exposures::merge_exposures;
 use nullify_exposure_value::nullify_exposure_value;
-use crop::crop;
 use resize::resize;
 
 // Used to print out debug information
@@ -88,18 +88,17 @@ pub fn pipeline(
     );
 
     // If the command to merge exposures encountered an error, abort pipeline
-    if merge_exposures_result.is_err() {
-        return merge_exposures_result;
-    };
+    // if merge_exposures_result.is_err() {
+    //     return merge_exposures_result;
+    // };
 
-  
     // Nullify the exposure value
     let nullify_exposure_result = nullify_exposure_value(
         &config_settings,
         format!("{}output1.hdr", config_settings.temp_path),
         format!("{}output2.hdr", config_settings.temp_path),
     );
-  
+
     // If the command to nullify the exposure value encountered an error, abort pipeline
     if nullify_exposure_result.is_err() {
         return nullify_exposure_result;
