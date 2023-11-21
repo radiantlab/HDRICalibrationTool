@@ -4,15 +4,20 @@ mod resize;
 use crop::crop;
 use resize::resize;
 
+mod nullify_exposure_value;
+
+use nullify_exposure_value::nullify_exposure_value;
+
 // Used to print out debug information
-pub const DEBUG: bool = false;
+pub const DEBUG: bool = true;
+
 
 // Struct to hold some configuration settings (e.g. path settings).
 // Used when various stages of the pipeline are called.
 pub struct ConfigSettings {
     radiance_path: String,
-    // hdrgen_path: String,
-    // output_path: String,
+    hdrgen_path: String,
+    output_path: String,
     temp_path: String,
 }
 
@@ -63,10 +68,21 @@ pub fn pipeline(
     // Add path to radiance and temp directory info to config settings
     let config_settings = ConfigSettings {
         radiance_path: radiance_path,
-        // _hdrgen_path: hdrgen_path,
-        // _output_path: output_path,
+        _hdrgen_path: hdrgen_path,
+        _output_path: output_path,
         temp_path: temp_path,
     };
+  
+    // Nullify the exposure value
+    let nullify_exposure_result = nullify_exposure_value(
+        &config_settings,
+        format!("{}output1.hdr", config_settings.temp_path),
+        format!("{}output2.hdr", config_settings.temp_path),
+    );
+  
+    if nullify_exposure_result.iserr() {
+        return nullify_exposure_result;
+    }
 
     // Crop the HDR image to a square fitting the fisheye view
     let crop_result = crop(
