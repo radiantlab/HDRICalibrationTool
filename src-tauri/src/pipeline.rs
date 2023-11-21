@@ -68,8 +68,8 @@ pub fn pipeline(
     // Add path to radiance and temp directory info to config settings
     let config_settings = ConfigSettings {
         radiance_path: radiance_path,
-        _hdrgen_path: hdrgen_path,
-        _output_path: output_path,
+        hdrgen_path: hdrgen_path,
+        output_path: output_path,
         temp_path: temp_path,
     };
   
@@ -80,7 +80,7 @@ pub fn pipeline(
         format!("{}output2.hdr", config_settings.temp_path),
     );
   
-    if nullify_exposure_result.iserr() {
+    if nullify_exposure_result.is_err() {
         return nullify_exposure_result;
     }
 
