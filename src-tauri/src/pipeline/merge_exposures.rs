@@ -1,9 +1,9 @@
+use crate::pipeline::DEBUG;
+use std::fs::File;
 use std::process::Command;
+use std::process::Stdio;
 
-const DEBUG: bool = false;
-
-// Path to hdrgen executable
-const HDRGEN_PATH: &str = "/usr/local/bin/";
+use super::ConfigSettings;
 
 // Merges multiple LDR images into an HDR image using hdrgen.
 // input_images:
@@ -14,6 +14,7 @@ const HDRGEN_PATH: &str = "/usr/local/bin/";
 //    a string for the path and filename where the resulting HDR image will be saved.
 #[tauri::command]
 pub fn merge_exposures(
+    config_settings: &ConfigSettings,
     input_images: Vec<String>,
     response_function: String,
     output_path: String,
@@ -23,7 +24,7 @@ pub fn merge_exposures(
     }
 
     // Create a new command for hdrgen
-    let mut command = Command::new(HDRGEN_PATH.to_string() + "hdrgen");
+    let mut command = Command::new(config_settings.hdrgen_path.to_string() + "hdrgen");
 
     // Add input LDR images as args
     for input_image in input_images {
