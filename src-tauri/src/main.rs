@@ -43,6 +43,10 @@ fn main() {
     let _fake_fisheye_correction_cal =
         "../examples/inputs/parameters/calibration_files/fisheye_corr.cal".to_string();
 
+    // Hardcoded vignetting effect correction calibration file
+    let _fake_vignetting_correction_cal =
+        "../examples/inputs/parameters/calibration_files/vignetting_f5d6.cal".to_string();
+
     // Hardcoded output path
     let _fake_output_path = "../output/".to_string();
 
@@ -67,6 +71,7 @@ fn main() {
     //     _fake_input_images,
     //     _fake_response_function,
     //     _fake_fisheye_correction_cal,
+    //     _fake_vignetting_correction_cal,
     //     _fake_diameter,
     //     _fake_xleft,
     //     _fake_ydown,
