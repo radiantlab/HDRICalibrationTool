@@ -1,11 +1,13 @@
 mod crop;
 mod merge_exposures;
 mod nullify_exposure_value;
+mod projection_adjustment;
 mod resize;
 
 use crop::crop;
 use merge_exposures::merge_exposures;
 use nullify_exposure_value::nullify_exposure_value;
+use projection_adjustment::projection_adjustment;
 use resize::resize;
 
 // Used to print out debug information
@@ -53,6 +55,7 @@ pub fn pipeline(
     temp_path: String,
     input_images: Vec<String>,
     response_function: String,
+    fisheye_correction_cal: String,
     diameter: String,
     xleft: String,
     ydown: String,
@@ -67,6 +70,7 @@ pub fn pipeline(
         println!("\ttemp path: {temp_path}");
         println!("\tinput images: {:?}", input_images);
         println!("\tresponse function: {response_function}");
+        println!("\tfisheye correction cal: {fisheye_correction_cal}");
         println!("\tdiameter: {diameter}");
         println!("\txleft: {xleft}");
         println!("\tydown: {ydown}");
@@ -128,6 +132,18 @@ pub fn pipeline(
         ydim,
     );
 
-    // Return the result of the resizing command
-    return resize_result;
+    // If the resizing command encountered an error, abort pipeline
+    if resize_result.is_err() {
+        return resize_result;
+    }
+
+    // Apply the projection adjustment to the HDR image
+    let projection_adjustment_result = projection_adjustment(
+        &config_settings,
+        format!("{}output4.hdr", config_settings.temp_path),
+        format!("{}output5.hdr", config_settings.temp_path),
+        fisheye_correction_cal,
+    );
+
+    return projection_adjustment_result;
 }
