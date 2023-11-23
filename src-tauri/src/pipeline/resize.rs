@@ -51,7 +51,7 @@ pub fn resize(
     let status = command.status().unwrap();
 
     if DEBUG {
-        println!("\nCrop command exit status: {:?}\n", status);
+        println!("\nResize command exit status: {:?}\n", status);
     }
 
     // Return a Result object to indicate whether command was successful

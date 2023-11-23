@@ -39,6 +39,10 @@ fn main() {
     let _fake_response_function =
         "../examples/inputs/parameters/response_function_files/Response_function.rsp".to_string();
 
+    // Hardcoded fisheye correction calibration file
+    let _fake_fisheye_correction_cal =
+        "../examples/inputs/parameters/calibration_files/fisheye_corr.cal".to_string();
+
     // Hardcoded output path
     let _fake_output_path = "../output/".to_string();
 
@@ -62,6 +66,7 @@ fn main() {
     //     _fake_temp_path,
     //     _fake_input_images,
     //     _fake_response_function,
+    //     _fake_fisheye_correction_cal,
     //     _fake_diameter,
     //     _fake_xleft,
     //     _fake_ydown,
