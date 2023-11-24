@@ -26,10 +26,14 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <h1>HDRICalibrationTool</h1>
       <div>
-        <div className="image-preview" style={{ display: 'flex', flexWrap: 'wrap'}}>
+        <h2>Image Upload</h2>
+        <input type="file" accept=".jpg, .jpeg" multiple onChange={handleImageSelect} ref={fileInputRef} className="hidden"/>
+        <button onClick={handleClick} className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded">Select Files</button>
+        <div>Image count: {images.length}</div>
+        <div className="image-preview flex flex-wrap">
           {images.map((image, index) => (
             <div key={index} className="image-item">
-              <div className="grid grid-cols-3 gap-4"> {/* option 2*/}
+              <div>
                 <img src={URL.createObjectURL(image)} alt={`Image ${index}`} width={200} height={200}/>
                 <button onClick={() => handleImageDelete(index)}>Delete</button>
                 <div>{image.name}</div>
@@ -37,10 +41,6 @@ export default function Home() {
             </div>
           ))}
         </div>
-        <h2>Image Upload</h2>
-        <input type="file" accept=".jpg, .jpeg" multiple onChange={handleImageSelect} ref={fileInputRef} className="hidden"/>
-        <button onClick={handleClick} className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded">Select Files</button>
-        <div>Image count: {images.length}</div>
       </div>
     </main>
   )
