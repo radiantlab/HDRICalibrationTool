@@ -101,7 +101,7 @@ export default function Home() {
             <div key={index} className="image-item">
               <div>
                 <img
-                  src={image}
+                  src={String(image)}
                   alt={`Image ${index}`}
                   width={200}
                   height={200}
