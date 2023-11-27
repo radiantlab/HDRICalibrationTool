@@ -36,9 +36,9 @@ pub fn resize(
     command.args([
         "-1",
         "-x",
-        xdim.as_str(),
+        format!("-{xdim}").as_str(),
         "-y",
-        ydim.as_str(),
+        format!("-{ydim}").as_str(),
         input_file.as_str(),
     ]);
 
@@ -51,7 +51,7 @@ pub fn resize(
     let status = command.status().unwrap();
 
     if DEBUG {
-        println!("\nCrop command exit status: {:?}\n", status);
+        println!("\nResize command exit status: {:?}\n", status);
     }
 
     // Return a Result object to indicate whether command was successful
