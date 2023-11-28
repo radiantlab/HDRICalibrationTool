@@ -13,7 +13,7 @@ use resize::resize;
 use vignetting_effect_correction::vignetting_effect_correction;
 
 // Used to print out debug information
-pub const DEBUG: bool = true;
+pub const DEBUG: bool = false;
 
 // Struct to hold some configuration settings (e.g. path settings).
 // Used when various stages of the pipeline are called.
@@ -54,7 +54,7 @@ pub struct ConfigSettings {
 // ydim:
 //      The y-dimensional resolution to resize the HDR image to (in pixels)
 #[tauri::command]
-pub fn pipeline(
+pub async fn pipeline(
     radiance_path: String,
     hdrgen_path: String,
     output_path: String,

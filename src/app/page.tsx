@@ -85,6 +85,14 @@ export default function Home() {
   const fakeResponseFunction =
     "../examples/inputs/parameters/response_function_files/Response_function.rsp";
 
+  // Hardcoded fisheye correction calibration file
+  const fakeFisheyeCorrectionCal =
+    "../examples/inputs/parameters/calibration_files/fisheye_corr.cal";
+
+  // Hardcoded vignetting effect correction calibration file
+  const fakeVignettingCorrectionCal =
+    "../examples/inputs/parameters/calibration_files/vignetting_f5d6.cal";
+
   // Hardcoded output path
   const fakeOutputPath = "../output/";
 
@@ -110,6 +118,8 @@ export default function Home() {
       tempPath: fakeTempPath,
       inputImages: devicePaths,
       responseFunction: fakeResponseFunction,
+      fisheyeCorrectionCal: fakeFisheyeCorrectionCal,
+      vignettingCorrectionCal: fakeVignettingCorrectionCal,
       diameter: fakeDiameter,
       xleft: fakeXleft,
       ydown: fakeYdown,
@@ -132,12 +142,6 @@ export default function Home() {
         >
           Select Files
         </button>
-        <button
-          onClick={handleGenerateHDRImage}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Generate HDR Image
-        </button>
         <div>Image count: {images.length}</div>
         <div className="image-preview flex flex-wrap">
           {images.map((image, index) => (
@@ -155,6 +159,12 @@ export default function Home() {
             </div>
           ))}
         </div>
+        <button
+          onClick={handleGenerateHDRImage}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+        >
+          Generate HDR Image
+        </button>
       </div>
     </main>
   );
