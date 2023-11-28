@@ -1,12 +1,16 @@
 mod crop;
 mod merge_exposures;
 mod nullify_exposure_value;
+mod projection_adjustment;
 mod resize;
+mod vignetting_effect_correction;
 
 use crop::crop;
 use merge_exposures::merge_exposures;
 use nullify_exposure_value::nullify_exposure_value;
+use projection_adjustment::projection_adjustment;
 use resize::resize;
+use vignetting_effect_correction::vignetting_effect_correction;
 
 // Used to print out debug information
 pub const DEBUG: bool = true;
@@ -33,6 +37,10 @@ pub struct ConfigSettings {
 //      vector of the paths to the input images. Input images must be in .JPG format.
 // response_function:
 //      string for the path to the camera response function, must be a .rsp file
+// fisheye_correction_cal:
+//      a string for the fisheye correction calibration file
+// vignetting_correction_cal:
+//      a string for the vignetting correction calibration file
 // diameter:
 //      the fisheye view diameter in pixels
 // xleft:
@@ -53,6 +61,8 @@ pub fn pipeline(
     temp_path: String,
     input_images: Vec<String>,
     response_function: String,
+    fisheye_correction_cal: String,
+    vignetting_correction_cal: String,
     diameter: String,
     xleft: String,
     ydown: String,
@@ -67,6 +77,7 @@ pub fn pipeline(
         println!("\ttemp path: {temp_path}");
         println!("\tinput images: {:?}", input_images);
         println!("\tresponse function: {response_function}");
+        println!("\tfisheye correction cal: {fisheye_correction_cal}");
         println!("\tdiameter: {diameter}");
         println!("\txleft: {xleft}");
         println!("\tydown: {ydown}");
@@ -128,6 +139,32 @@ pub fn pipeline(
         ydim,
     );
 
-    // Return the result of the resizing command
-    return resize_result;
+    // If the resizing command encountered an error, abort pipeline
+    if resize_result.is_err() {
+        return resize_result;
+    }
+
+    // Apply the projection adjustment to the HDR image
+    let projection_adjustment_result = projection_adjustment(
+        &config_settings,
+        // format!("{}output4.hdr", config_settings.temp_path),
+        format!("{}output4.hdr", config_settings.temp_path),
+        format!("{}output5.hdr", config_settings.temp_path),
+        fisheye_correction_cal,
+    );
+
+    // If the command to apply projection adjustment encountered an error, abort pipeline
+    if projection_adjustment_result.is_err() {
+        return projection_adjustment_result;
+    }
+
+    // Correct for the vignetting effect
+    let vignetting_effect_correction_result = vignetting_effect_correction(
+        &config_settings,
+        format!("{}output5.hdr", config_settings.temp_path),
+        format!("{}output6.hdr", config_settings.temp_path),
+        vignetting_correction_cal,
+    );
+
+    return vignetting_effect_correction_result;
 }
