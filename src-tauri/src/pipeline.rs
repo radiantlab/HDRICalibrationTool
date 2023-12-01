@@ -13,7 +13,7 @@ use resize::resize;
 use vignetting_effect_correction::vignetting_effect_correction;
 
 // Used to print out debug information
-pub const DEBUG: bool = false;
+pub const DEBUG: bool = true;
 
 // Struct to hold some configuration settings (e.g. path settings).
 // Used when various stages of the pipeline are called.
