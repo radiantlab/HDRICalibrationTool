@@ -4,6 +4,8 @@ import React, { useState, ChangeEvent, useRef, useEffect } from "react";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 
+import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
+
 const DEBUG = false;
 
 export default function Home() {
@@ -159,6 +161,7 @@ export default function Home() {
             </div>
           ))}
         </div>
+        <CroppingResizingViewSettings />
         <button
           onClick={handleGenerateHDRImage}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
