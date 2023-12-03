@@ -6,15 +6,15 @@ export default function NumberInput({
   defaultValue,
 }: any) {
   return (
-    <div>
-      <label>{label}</label>
+    <div className="mb-4">
+      <label className="block mb-2">{label}</label>
       <input
         onChange={handleChange}
         name={name}
         type="number"
         placeholder={placeholder}
         defaultValue={defaultValue}
-        className="placeholder:text-right no-spinner"
+        className="placeholder:text-right no-spinner w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
       ></input>
     </div>
   );
