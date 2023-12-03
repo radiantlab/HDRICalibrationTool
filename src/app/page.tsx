@@ -9,6 +9,18 @@ import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 const DEBUG = false;
 
 export default function Home() {
+  // Holds the fisheye coordinates and view settings
+  const [viewSettings, setViewSettings] = useState({
+    xres: "",
+    yres: "",
+    diameter: "",
+    xleft: "",
+    ydown: "",
+    vv: "",
+    vh: "",
+    targetRes: "1000",
+  });
+
   // Holds the file paths for the backend
   const [devicePaths, setDevicePaths] = useState<any[]>([]);
 
@@ -77,6 +89,16 @@ export default function Home() {
     }, [assetPaths]);
   }
 
+  // Update view settings (for cropping, resizing, header editing)
+  // when the user enters updates a number input
+  const handleViewSettingsChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const updatedViewSettings = JSON.parse(JSON.stringify(viewSettings));
+    updatedViewSettings[event.currentTarget.name] = event.currentTarget.value;
+    setViewSettings(updatedViewSettings);
+  };
+
   // === Define hardcoded data for testing ===
 
   // Hardcoded radiance and hdrgen paths for testing
@@ -102,13 +124,13 @@ export default function Home() {
   const fakeTempPath = "../tmp/";
 
   // Hardcoded fisheye diameter and coordinates of square around fisheye view
-  const fakeDiameter = "3612";
-  const fakeXleft = "1019";
-  const fakeYdown = "74";
+  // const fakeDiameter = "3612";
+  // const fakeXleft = "1019";
+  // const fakeYdown = "74";
 
   // Hardcoded HDR image resolution
-  const fakeXdim = "1000";
-  const fakeYdim = "1000";
+  // const fakeXdim = "1000";
+  // const fakeYdim = "1000";
 
   // Calls the BE pipeline function with the input images the user
   // selected, and hardcoded data for the rest of the inputs
@@ -122,11 +144,11 @@ export default function Home() {
       responseFunction: fakeResponseFunction,
       fisheyeCorrectionCal: fakeFisheyeCorrectionCal,
       vignettingCorrectionCal: fakeVignettingCorrectionCal,
-      diameter: fakeDiameter,
-      xleft: fakeXleft,
-      ydown: fakeYdown,
-      xdim: fakeXdim,
-      ydim: fakeYdim,
+      diameter: viewSettings.diameter,
+      xleft: viewSettings.xleft,
+      ydown: viewSettings.ydown,
+      xdim: viewSettings.targetRes,
+      ydim: viewSettings.targetRes,
     })
       .then((result) => console.log("Success. Result: ", result))
       .catch(console.error);
@@ -161,7 +183,7 @@ export default function Home() {
             </div>
           ))}
         </div>
-        <CroppingResizingViewSettings />
+        <CroppingResizingViewSettings handleChange={handleViewSettingsChange} />
         <button
           onClick={handleGenerateHDRImage}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"

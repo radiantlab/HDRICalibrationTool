@@ -26,9 +26,6 @@ body {
     rgb(var(--background-start-rgb));
 }
 
-
-
-
 @layer components {
   .no-spinner {
     -moz-appearance: textfield;
