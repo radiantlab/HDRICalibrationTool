@@ -2,10 +2,10 @@ import NumberInput from "./number-input";
 
 export default function CroppingResizingViewSettings({ handleChange }: any) {
   return (
-    <div>
-      <h2>Cropping, Resizing, and View Settings</h2>
+    <div className=" w-full border-y-2 border-gray-900 px-8 pt-6 pb-8 m-10">
+      <h2 className="pr-5 mb-10 border-b-gray-900 border w-fit pb-2 text-2xl">Cropping, Resizing, and View Settings</h2>
       <div>
-        <div>
+        <div className="flex flex-row space-x-5">
           <NumberInput
             name="xres"
             label="Width (X resolution)"
@@ -39,7 +39,7 @@ export default function CroppingResizingViewSettings({ handleChange }: any) {
             handleChange={handleChange}
           />
         </div>
-        <div>
+        <div className="flex flex-row space-x-5">
           <NumberInput
             name="vv"
             label="View Vertical (vv)"
