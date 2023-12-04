@@ -4,6 +4,9 @@ mod nullify_exposure_value;
 mod projection_adjustment;
 mod resize;
 mod vignetting_effect_correction;
+mod neutral_density;
+mod photometric_adjustment;
+mod header_editing;
 
 use crop::crop;
 use merge_exposures::merge_exposures;
@@ -11,6 +14,9 @@ use nullify_exposure_value::nullify_exposure_value;
 use projection_adjustment::projection_adjustment;
 use resize::resize;
 use vignetting_effect_correction::vignetting_effect_correction;
+use neutral_density::neutral_density;
+use photometric_adjustment::photometric_adjustment;
+use header_editing::header_editing;
 
 // Used to print out debug information
 pub const DEBUG: bool = true;
@@ -63,11 +69,15 @@ pub async fn pipeline(
     response_function: String,
     fisheye_correction_cal: String,
     vignetting_correction_cal: String,
+    photometric_adjustment_cal: String,
+    neutral_density_cal: String,
     diameter: String,
     xleft: String,
     ydown: String,
     xdim: String,
     ydim: String,
+    vertical_angle: String,
+    horizontal_angle: String,
 ) -> Result<String, String> {
     if DEBUG {
         println!("Pipeline module called...");
@@ -166,5 +176,42 @@ pub async fn pipeline(
         vignetting_correction_cal,
     );
 
-    return vignetting_effect_correction_result;
+    if vignetting_effect_correction_result.is_err() {
+        return vignetting_effect_correction_result;
+    }
+
+    // Apply the neutral density filter.
+    let neutral_density_result = neutral_density(
+        &config_settings,
+        format!("{}output6.hdr", config_settings.temp_path),
+        format!("{}output7.hdr", config_settings.temp_path),
+        neutral_density_cal,
+    );
+
+    if neutral_density_result.is_err() {
+        return neutral_density_result
+    }
+
+    // Correct for photometric adjustments
+    let photometric_adjustment_result = photometric_adjustment(
+        &config_settings,
+        format!("{}output7.hdr", config_settings.temp_path),
+        format!("{}output8.hdr", config_settings.temp_path),
+        photometric_adjustment_cal,
+    );
+
+    if photometric_adjustment_result.is_err() {
+        return photometric_adjustment_result
+    }
+
+    // Edit the header
+    let header_editing_result = header_editing(
+        &config_settings,
+        format!("{}output8.hdr", config_settings.temp_path),
+        format!("{}output9.hdr", config_settings.temp_path),
+        vertical_angle,
+        horizontal_angle,
+    );
+    
+    return header_editing_result;
 }
