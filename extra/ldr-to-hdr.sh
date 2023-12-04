@@ -8,7 +8,7 @@ TEMP_FILENAME=""
 TEMP_FILENAME_ALT="" # Used to go back-and-fourth on compiling the image.
 
 # Required files needed
-CONFIG_CALFAC=""	# Calibration Factor
+CONFIG_CALFAC_PATH=""	# Calibration Factor
 CONFIG_VIG_PATH=""	# Vignetting
 CONFIG_ND_PATH=""	# Neutral Density Filter
 CONFIG_FISHEYE_PATH=""	# Fisheye Correction
@@ -21,10 +21,6 @@ CONFIG_VA_H=""		# View angle of the lens horizontally
 CONFIG_OUT_X=""		# Output width of the image
 CONFIG_OUT_Y=""		# Output height of the image
 
-# Radiance prints the image to STDOUT, so we can use two variable to go back and fourth on applying modifiers.
-IMAGE_VAR1=""
-IMAGE_VAR2=""
-
 # Print Help function
 printhelp() {
 	echo "LDR 2 HDR"
@@ -34,7 +30,7 @@ printhelp() {
 	echo "-h [path] | HDRGen binary path"
 	echo "-r [path] | Radiance package binary path"
 	echo "-i [path/file wildcard] | Input image path/wildcard"
-	echo "-z [float] | Calibration Factoring amount (ie. 1.34)"
+	echo "-z [file] | Calibration Factoring amount (ie. 1.34)"
 	echo "-x [file] | Vignetting Config File"
 	echo "-c [file] | Neutral Density Filter File"
 	echo "-v [file] | Fisheye Correction File"
@@ -68,18 +64,18 @@ while getopts "h:r:i:z:x:c:v:b:n:" arg; do
       export PATH+=":$OPTARG"
       ;;
     i) # Getting the input files
-      INPUT_FILES=($OPTARG*)
-      for file in "$INPUT_FILES"; do
+      INPUT_FILES=("$OPTARG"*)
+      for file in $INPUT_FILES; do
         if ! [[ -f "$file" ]]; then
           echo "ERROR LOADING FILES: $file IS NOT A FILE.";
-	  echo "Other files attempting to load:"
+	        echo "Other files attempting to load:"
           printf '%s\n' "${INPUT_FILES[@]}"
-	  exit 1
-	fi
+	        exit 1
+        fi
       done;
       ;;
     z) # Calibration Factoring File
-      CONFIG_CALFAC=$OPTARG
+      CONFIG_CALFAC_PATH=$OPTARG
       ;;
     x) # Vignetting Config File
       CONFIG_VIG_PATH=$OPTARG
@@ -95,14 +91,17 @@ while getopts "h:r:i:z:x:c:v:b:n:" arg; do
       ;;
     n) # Camera Setting File
       # Use regex magic to parse the file for all the information we need.
-      CONFIG_FISHEYE_DIAM=$(grep -Po "(?<=diameter <- ).*" $OPTARG || grep -o "(?<=diameter <- ).*" $OPTARG)
-      CONFIG_CROP_X=$(grep -Po "(?<=xleft <- ).*" $OPTARG || grep -o "(?<=xleft <- ).*" $OPTARG)
-      CONFIG_CROP_Y=$(grep -Po "(?<=ydown <- ).*" $OPTARG || grep -o "(?<=ydown <- ).*" $OPTARG)
-      CONFIG_VA_V=$(grep -Po "(?<=-vv ).*" $OPTARG || grep -o "(?<=-vv ).*" $OPTARG)
-      CONFIG_VA_H=$(grep -Po "(?<=-vh ).*" $OPTARG || grep -o "(?<=-vh ).*" $OPTARG)
-      CONFIG_OUT_X=$(grep -Po "\d*(?=x\d*)" $OPTARG || grep -o "\d*(?=x\d*)" $OPTARG)
-      CONFIG_OUT_Y=$(grep -Po "(?<=\dx)\d*" $OPTARG || grep -o "(?<=\dx)\d*" $OPTARG)
+      CONFIG_FISHEYE_DIAM=$(grep -Po "(?<=diameter <- ).*" $OPTARG || ggrep -Po "(?<=diameter <- ).*" $OPTARG )
+      CONFIG_CROP_X=$(grep -Po "(?<=xleft <- ).*" $OPTARG || ggrep -Po "(?<=xleft <- ).*" $OPTARG)
+      CONFIG_CROP_Y=$(grep -Po "(?<=ydown <- ).*" $OPTARG || ggrep -Po "(?<=ydown <- ).*" $OPTARG)
+      CONFIG_VA_V=$(grep -Po "(?<=-vv ).*" $OPTARG || ggrep -Po "(?<=-vv ).*" $OPTARG)
+      CONFIG_VA_H=$(grep -Po "(?<=-vh ).*" $OPTARG || ggrep -Po "(?<=-vh ).*" $OPTARG)
+      CONFIG_OUT_X=$(grep -Po "\d*(?=x\d*)" $OPTARG || ggrep -Po "\d*(?=x\d*)" $OPTARG)
+      CONFIG_OUT_Y=$(grep -Po "(?<=\dx)\d*" $OPTARG || ggrep -Po "(?<=\dx)\d*" $OPTARG)
       ;;
+    *) # Unknown argument given
+      echo "Unknown argument given..."
+      echo "$OPTARG"
       
   esac
 done
@@ -113,8 +112,8 @@ if [[ -z $INPUT_FILES ]]; then
 	echo "ERROR: No input files given, please give as path to all files."
 	exit 1
 fi
-if [[ -z $CONFIG_CALFAC ]]; then
-	echo "ERROR: No calibration factoring amount given, please give a floating point number."
+if [[ -z $CONFIG_CALFAC_PATH ]]; then
+	echo "ERROR: No calibration factoring amount given, please give a calibration factor file."
 	exit 1
 fi
 if [[ -z $CONFIG_VIG_PATH ]]; then
@@ -180,12 +179,12 @@ pfilt -1 -x $CONFIG_OUT_X -y $CONFIG_OUT_Y $TEMP_FILENAME > $TEMP_FILENAME_ALT
 # Projection Adjustment
 echo "Adjusting Projection..."
 
-pcomb -f $CONFIG_FISHEYE_PATH $TEMP_FILENAME > $TEMP_FILENAME_ALT
+pcomb -f $CONFIG_FISHEYE_PATH $TEMP_FILENAME_ALT > $TEMP_FILENAME
 
 # Vignetting Correction
 echo "Correcting the vignetting..."
 
-pcomb -f $CONFIG_VIG_PATH $TEMP_FILENAME_ALT > $TEMP_FILENAME
+pcomb -f $CONFIG_VIG_PATH $TEMP_FILENAME > $TEMP_FILENAME_ALT
 
 # Applying Neutral Density Filter
 echo "Applying Neutral Density Filter..."
@@ -195,7 +194,7 @@ pcomb -f $CONFIG_ND_PATH $TEMP_FILENAME_ALT > $TEMP_FILENAME
 # Photometic Adjustments
 echo "Applying Photometic Adjustments..."
 
-pcomb -s $CONFIG_CALFAC $TEMP_FILENAME > $TEMP_FILENAME_ALT
+pcomb -h -f $CONFIG_CALFAC_PATH $TEMP_FILENAME > $TEMP_FILENAME_ALT
 
 # Edit the header
 echo "Editing the header..."
@@ -211,6 +210,7 @@ getinfo -a "VIEW= -vta -vv $CONFIG_VA_V -vh $CONFIG_VA_H" < $TEMP_FILENAME_ALT >
 echo "Performing final evaluation..."
 
 EVAL_OUTPUT=$(evalglare -V $TEMP_FILENAME)
+echo $EVAL_OUTPUT
 EVAL_OUTPUT=$(printf "%.0f" $EVAL_OUTPUT)
 
 if [ $EVAL_OUTPUT -eq 0 ]; then
