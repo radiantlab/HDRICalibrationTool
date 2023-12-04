@@ -33,6 +33,12 @@ export default function Home() {
   // Holds the temporary asset paths selected by the user during the dialog function
   let assets: any[] = [];
 
+  // Holds the file paths for the backend
+  const [responsePaths, setResponsePaths] = useState<any[]>([]);
+
+  // Holds the temporary device file paths selected by the user during the dialog function
+  let response: any | any[] = [];
+
   // Open a file dialog window using the tauri api and update the images array with the results
   async function dialog() {
     selected = await open({
@@ -65,6 +71,20 @@ export default function Home() {
     }
   }
 
+  async function dialogResponse() {
+    response = await open({
+      multiple: true,
+    });
+    if (response === null) {
+      // user cancelled the selection
+    } else {
+      // user response a single file
+      setResponsePaths(devicePaths.concat(response));
+    }
+    if (DEBUG) {
+    }
+  }
+
   const [images, setImages] = useState<File[]>([]);
 
   const handleImageDelete = (index: number) => {
@@ -77,6 +97,12 @@ export default function Home() {
     setImages(updatedImages);
     setDevicePaths(updatedDevicePaths);
     setAssetPaths(updatedAssetPaths);
+  };
+
+  const handleResponseDelete = (index: number) => {
+    const updateResponsePaths = responsePaths.slice();
+    updateResponsePaths.splice(index, 1); 
+    setResponsePaths(updateResponsePaths);
   };
 
   if (DEBUG) {
@@ -166,6 +192,16 @@ export default function Home() {
         >
           Select Files
         </button>
+        <button
+          onClick={dialogResponse}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+        >
+          Select Response Files
+        </button>
+        <div>
+          {responsePaths}
+          <button onClick={() => handleResponseDelete(0)}>Delete</button>
+        </div>
         <div>Image count: {images.length}</div>
         <div className="image-preview flex flex-wrap">
           {images.map((image, index) => (
