@@ -54,7 +54,7 @@ pub struct ConfigSettings {
 // ydim:
 //      The y-dimensional resolution to resize the HDR image to (in pixels)
 #[tauri::command]
-pub fn pipeline(
+pub async fn pipeline(
     radiance_path: String,
     hdrgen_path: String,
     output_path: String,
