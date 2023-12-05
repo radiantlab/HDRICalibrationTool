@@ -27,7 +27,7 @@ pub fn nullify_exposure_value(
     command.args(["-r", "-o", input_file.as_str(), output_file.as_str()]);
 
     // Run the command
-    let status = command.status().unwrap();
+    let status = command.status();
 
     if DEBUG {
         println!(
@@ -37,7 +37,7 @@ pub fn nullify_exposure_value(
     }
 
     // Return a Result object to indicate whether ra_xyze command was successful
-    if status.success() {
+    if status.is_ok() {
         // On success, return output path of HDR image
         Ok(output_file.into())
     } else {

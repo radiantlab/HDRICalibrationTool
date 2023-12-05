@@ -44,14 +44,14 @@ pub fn merge_exposures(
     command.arg("-g");
 
     // Run the command
-    let status = command.status().unwrap();
+    let status = command.status();
 
     if DEBUG {
         println!("\nCommand exit status: {:?}\n", status);
     }
 
     // Return a Result object to indicate whether hdrgen command was successful
-    if status.success() {
+    if status.is_ok() {
         // On success, return output path of HDR image
         Ok(output_path.into())
     } else {
