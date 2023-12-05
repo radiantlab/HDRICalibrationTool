@@ -42,7 +42,7 @@ pub fn neutral_density(
     command.stdout(stdio);
 
     // Run the command
-    let status = command.status().unwrap();
+    let status = command.status();
 
     if DEBUG {
         println!(
@@ -52,7 +52,7 @@ pub fn neutral_density(
     }
 
     // Return a Result object to indicate whether command was successful
-    if status.success() {
+    if status.is_ok() {
         // On success, return output path of HDR image
         Ok(output_file.into())
     } else {
