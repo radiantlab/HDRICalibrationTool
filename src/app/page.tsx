@@ -117,6 +117,14 @@ export default function Home() {
   const fakeVignettingCorrectionCal =
     "../examples/inputs/parameters/calibration_files/vignetting_f5d6.cal";
 
+  // Hardcoded photometric adjustment calibration file
+  const fakePhotometricAdjustmentCal =
+    "../examples/inputs/parameters/calibration_files/CF_f5d6.cal";
+
+  // Hardcoded neutral density filter correction calibration file
+  const fakeNeutralDensityCal =
+    "../examples/inputs/parameters/calibration_files/NDfilter_no_transform.cal";
+
   // Hardcoded output path
   const fakeOutputPath = "../output/";
 
@@ -144,11 +152,15 @@ export default function Home() {
       responseFunction: fakeResponseFunction,
       fisheyeCorrectionCal: fakeFisheyeCorrectionCal,
       vignettingCorrectionCal: fakeVignettingCorrectionCal,
+      photometricAdjustmentCal: fakePhotometricAdjustmentCal,
+      neutralDensityCal: fakeNeutralDensityCal,
       diameter: viewSettings.diameter,
       xleft: viewSettings.xleft,
       ydown: viewSettings.ydown,
       xdim: viewSettings.targetRes,
       ydim: viewSettings.targetRes,
+      verticalAngle: viewSettings.vv,
+      horizontalAngle: viewSettings.vh,
     })
       .then((result) => console.log("Success. Result: ", result))
       .catch(console.error);
