@@ -5,6 +5,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
+import { ResponseType } from "@tauri-apps/api/http";
 
 const DEBUG = false;
 
@@ -33,11 +34,14 @@ export default function Home() {
   // Holds the temporary asset paths selected by the user during the dialog function
   let assets: any[] = [];
 
-  // Holds the file paths for the backend
+  let response: any | any[] = [];
   const [responsePaths, setResponsePaths] = useState<any[]>([]);
 
-  // Holds the temporary device file paths selected by the user during the dialog function
-  let response: any | any[] = [];
+  let fe_correction: any | any[] = [];
+  const [fe_correctionPaths, setfe_correctionPaths] = useState<any[]>([]);
+
+  let v_correction: any | any[] = [];
+  const [v_correctionPaths, setv_correctionPaths] = useState<any[]>([]);
 
   // Open a file dialog window using the tauri api and update the images array with the results
   async function dialog() {
@@ -73,19 +77,48 @@ export default function Home() {
 
   async function dialogResponse() {
     response = await open({
-      multiple: true,
-    });
+      multiple: true})
     if (response === null) {
       // user cancelled the selection
     } else {
-      // user response a single file
-      setResponsePaths(devicePaths.concat(response));
+      // user selected a single file
+      setResponsePaths(response);
     }
     if (DEBUG) {
+      console.log("response: ", response);
+    }
+  }
+
+  async function dialogFE() {
+    fe_correction = await open({
+      multiple: true})
+    if (fe_correction === null) {
+      // user cancelled the selection
+    } else {
+      // user selected a single file
+      setfe_correctionPaths(fe_correction);
+    }
+    if (DEBUG) {
+      console.log("fe_correction: ", fe_correction);
+    }
+  }
+
+  async function dialogV() {
+    v_correction = await open({
+      multiple: true})
+    if (v_correction === null) {
+      // user cancelled the selection
+    } else {
+      // user selected a single file
+      setv_correctionPaths(v_correction);
+    }
+    if (DEBUG) {
+      console.log("v_correction: ", v_correction);
     }
   }
 
   const [images, setImages] = useState<File[]>([]);
+  // const [paths, setPaths] = useState<File[]>([]);
 
   const handleImageDelete = (index: number) => {
     const updatedImages = images.slice();
@@ -99,11 +132,24 @@ export default function Home() {
     setAssetPaths(updatedAssetPaths);
   };
 
-  const handleResponseDelete = (index: number) => {
-    const updateResponsePaths = responsePaths.slice();
-    updateResponsePaths.splice(index, 1); 
-    setResponsePaths(updateResponsePaths);
+  const handleResponseDelete = () => {
+    const updatedResponsePaths = responsePaths.slice();
+    updatedResponsePaths.splice(0, 1);
+    setResponsePaths(updatedResponsePaths);
   };
+
+  const handleFEDelete = () => {
+    const updatedfe_correctionPaths = fe_correctionPaths.slice();
+    updatedfe_correctionPaths.splice(0, 1);
+    setfe_correctionPaths(updatedfe_correctionPaths);
+  };
+
+  const handleVDelete = () => {
+    const updatedv_correctionPaths = v_correctionPaths.slice();
+    updatedv_correctionPaths.splice(0, 1);
+    setv_correctionPaths(updatedv_correctionPaths);
+  };
+  
 
   if (DEBUG) {
     useEffect(() => {
@@ -192,16 +238,6 @@ export default function Home() {
         >
           Select Files
         </button>
-        <button
-          onClick={dialogResponse}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Select Response Files
-        </button>
-        <div>
-          {responsePaths}
-          <button onClick={() => handleResponseDelete(0)}>Delete</button>
-        </div>
         <div>Image count: {images.length}</div>
         <div className="image-preview flex flex-wrap">
           {images.map((image, index) => (
@@ -218,6 +254,39 @@ export default function Home() {
               </div>
             </div>
           ))}
+        </div>
+        <h2>Response Path Upload</h2>
+        <button
+          onClick={dialogResponse}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+        >
+          Select Response Files
+        </button>
+        <div>
+          {responsePaths}
+          <button onClick={() => handleResponseDelete()}>Delete Response File</button>
+        </div>
+        <h2>Fish Eye Correction Path Upload</h2>
+        <button
+          onClick={dialogFE}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+        >
+          Select Fish Eye Correction Files
+        </button>
+        <div>
+          {fe_correctionPaths}
+          <button onClick={() => handleFEDelete()}>Delete Fish Eye Correction File</button>
+        </div>
+        <h2>Vignetting Correction Path Upload</h2>
+        <button
+          onClick={dialogV}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+        >
+          Select Vignetting Correction Files
+        </button>
+        <div>
+          {v_correctionPaths}
+          <button onClick={() => handleVDelete()}>Delete Vignetting Correction File</button>
         </div>
         <CroppingResizingViewSettings handleChange={handleViewSettingsChange} />
         <button
