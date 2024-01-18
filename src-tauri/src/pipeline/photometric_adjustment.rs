@@ -52,6 +52,8 @@ pub fn photometric_adjustment(
         );
     }
 
+    println!("{}", format!("{:?}", command).replace("\"", ""));
+
     // Return a Result object to indicate whether command was successful
     if status.is_ok() {
         // On success, return output path of HDR image
