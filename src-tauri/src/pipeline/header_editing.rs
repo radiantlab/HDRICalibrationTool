@@ -58,12 +58,12 @@ pub fn header_editing(
     // Add arguments
     command.args([
         "-a",
-        format!("\"VIEW= -vta -vv {} -vh {}\"", vertical_angle, horizontal_angle).as_str(),
+        format!("VIEW= -vta -vv {} -vh {}", vertical_angle, horizontal_angle).as_str(),
     ]);
 
     // Set up piping of the input and output file
     let file = File::create(&output_file).unwrap();
-    let fileinput = File::create(&input_file).unwrap();
+    let fileinput = File::open(&input_file).unwrap();
     let stdio_out = Stdio::from(file);
     let stdio_in = Stdio::from(fileinput);
     command.stdout(stdio_out);
