@@ -34,14 +34,14 @@ export default function Home() {
   // Holds the temporary asset paths selected by the user during the dialog function
   let assets: any[] = [];
 
-  let response: any | any[] = [];
-  const [responsePaths, setResponsePaths] = useState<any[]>([]);
+  let response: any = "";
+  const [responsePaths, setResponsePaths] = useState<string>("");
 
-  let fe_correction: any | any[] = [];
-  const [fe_correctionPaths, setfe_correctionPaths] = useState<any[]>([]);
+  let fe_correction: any = "";
+  const [fe_correctionPaths, setfe_correctionPaths] = useState<string>("");
 
-  let v_correction: any | any[] = [];
-  const [v_correctionPaths, setv_correctionPaths] = useState<any[]>([]);
+  let v_correction: any = "";
+  const [v_correctionPaths, setv_correctionPaths] = useState<string>("");
 
   // Open a file dialog window using the tauri api and update the images array with the results
   async function dialog() {
@@ -82,7 +82,7 @@ export default function Home() {
       // user cancelled the selection
     } else {
       // user selected a single file
-      setResponsePaths(response);
+      setResponsePaths(response[0]);
     }
     if (DEBUG) {
       console.log("response: ", response);
@@ -96,7 +96,7 @@ export default function Home() {
       // user cancelled the selection
     } else {
       // user selected a single file
-      setfe_correctionPaths(fe_correction);
+      setfe_correctionPaths(fe_correction[0]);
     }
     if (DEBUG) {
       console.log("fe_correction: ", fe_correction);
@@ -110,7 +110,7 @@ export default function Home() {
       // user cancelled the selection
     } else {
       // user selected a single file
-      setv_correctionPaths(v_correction);
+      setv_correctionPaths(v_correction[0]);
     }
     if (DEBUG) {
       console.log("v_correction: ", v_correction);
@@ -118,7 +118,6 @@ export default function Home() {
   }
 
   const [images, setImages] = useState<File[]>([]);
-  // const [paths, setPaths] = useState<File[]>([]);
 
   const handleImageDelete = (index: number) => {
     const updatedImages = images.slice();
@@ -133,21 +132,15 @@ export default function Home() {
   };
 
   const handleResponseDelete = () => {
-    const updatedResponsePaths = responsePaths.slice();
-    updatedResponsePaths.splice(0, 1);
-    setResponsePaths(updatedResponsePaths);
+    setResponsePaths("");
   };
 
   const handleFEDelete = () => {
-    const updatedfe_correctionPaths = fe_correctionPaths.slice();
-    updatedfe_correctionPaths.splice(0, 1);
-    setfe_correctionPaths(updatedfe_correctionPaths);
+    setfe_correctionPaths("");
   };
 
   const handleVDelete = () => {
-    const updatedv_correctionPaths = v_correctionPaths.slice();
-    updatedv_correctionPaths.splice(0, 1);
-    setv_correctionPaths(updatedv_correctionPaths);
+    setv_correctionPaths("");
   };
   
 
