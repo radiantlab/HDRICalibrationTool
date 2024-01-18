@@ -5,6 +5,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
+import Link from "next/link";
 
 const DEBUG = false;
 
@@ -156,6 +157,12 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
+      <div className="w-full">
+        <button className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded">
+          <Link href="/settings">Settings</Link>
+        </button>
+      </div>
+
       <h1>HDRICalibrationTool</h1>
       <div>
         <h2>Image Upload</h2>
