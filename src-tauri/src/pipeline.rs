@@ -101,7 +101,7 @@ pub async fn pipeline(
         temp_path: temp_path,
     };
 
-    let merge_exposures_result = merge_exposures(
+    let _merge_exposures_result = merge_exposures(
         &config_settings,
         input_images,
         response_function,
@@ -208,7 +208,7 @@ pub async fn pipeline(
     let header_editing_result = header_editing(
         &config_settings,
         format!("{}output8.hdr", config_settings.temp_path),
-        format!("{}output9.hdr", config_settings.temp_path),
+        format!("{}output9.hdr", config_settings.output_path),
         vertical_angle,
         horizontal_angle,
     );
