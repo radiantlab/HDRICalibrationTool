@@ -206,9 +206,9 @@ export default function Home() {
       outputPath: fakeOutputPath,
       tempPath: fakeTempPath,
       inputImages: devicePaths,
-      responseFunction: fakeResponseFunction,
-      fisheyeCorrectionCal: fakeFisheyeCorrectionCal,
-      vignettingCorrectionCal: fakeVignettingCorrectionCal,
+      responseFunction: responsePaths,
+      fisheyeCorrectionCal: fe_correctionPaths,
+      vignettingCorrectionCal: v_correctionPaths,
       diameter: viewSettings.diameter,
       xleft: viewSettings.xleft,
       ydown: viewSettings.ydown,
@@ -256,8 +256,12 @@ export default function Home() {
           Select Response Files
         </button>
         <div>
-          {responsePaths}
-          <button onClick={() => handleResponseDelete()}>Delete Response File</button>
+          {responsePaths && (
+              <div>
+                {responsePaths}
+                <button onClick={() => handleResponseDelete()}>Delete Response File</button>
+               </div>
+          )}
         </div>
         <h2>Fish Eye Correction Path Upload</h2>
         <button
