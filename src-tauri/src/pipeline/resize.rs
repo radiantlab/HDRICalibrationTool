@@ -36,9 +36,9 @@ pub fn resize(
     command.args([
         "-1",
         "-x",
-        format!("-{xdim}").as_str(),
+        xdim.as_str(),
         "-y",
-        format!("-{ydim}").as_str(),
+        ydim.as_str(),
         input_file.as_str(),
     ]);
 
