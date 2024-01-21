@@ -37,11 +37,18 @@ export default function Home() {
   let response: any = "";
   const [responsePaths, setResponsePaths] = useState<string>("");
 
+  // Correction files fe = fish eye, v= vignetting, nd = neutral density, cf = calibration factor
   let fe_correction: any = "";
-  const [fe_correctionPaths, setfe_correctionPaths] = useState<string>("");
+  const [fe_correctionPaths, set_fe_correctionPaths] = useState<string>("");
 
   let v_correction: any = "";
-  const [v_correctionPaths, setv_correctionPaths] = useState<string>("");
+  const [v_correctionPaths, set_v_correctionPaths] = useState<string>("");
+
+  let nd_correction: any = "";
+  const [nd_correctionPaths, set_nd_correctionPaths] = useState<string>("");
+
+  let cf_correction: any = "";
+  const [cf_correctionPaths, set_cf_correctionPaths] = useState<string>("");
 
   // Open a file dialog window using the tauri api and update the images array with the results
   async function dialog() {
@@ -96,7 +103,7 @@ export default function Home() {
       // user cancelled the selection
     } else {
       // user selected a single file
-      setfe_correctionPaths(fe_correction[0]);
+      set_fe_correctionPaths(fe_correction[0]);
     }
     if (DEBUG) {
       console.log("fe_correction: ", fe_correction);
@@ -110,10 +117,38 @@ export default function Home() {
       // user cancelled the selection
     } else {
       // user selected a single file
-      setv_correctionPaths(v_correction[0]);
+      set_v_correctionPaths(v_correction[0]);
     }
     if (DEBUG) {
       console.log("v_correction: ", v_correction);
+    }
+  }
+
+  async function dialogND() {
+    nd_correction = await open({
+      multiple: true})
+    if (nd_correction === null) {
+      // user cancelled the selection
+    } else {
+      // user selected a single file
+      set_nd_correctionPaths(nd_correction[0]);
+    }
+    if (DEBUG) {
+      console.log("nd_correction: ", nd_correction);
+    }
+  }
+
+  async function dialogCF() {
+    cf_correction = await open({
+      multiple: true})
+    if (cf_correction === null) {
+      // user cancelled the selection
+    } else {
+      // user selected a single file
+      set_cf_correctionPaths(cf_correction[0]);
+    }
+    if (DEBUG) {
+      console.log("cf_correction: ", cf_correction);
     }
   }
 
@@ -135,12 +170,20 @@ export default function Home() {
     setResponsePaths("");
   };
 
-  const handleFEDelete = () => {
-    setfe_correctionPaths("");
+  const handle_fe_delete = () => {
+    set_fe_correctionPaths("");
   };
 
-  const handleVDelete = () => {
-    setv_correctionPaths("");
+  const handle_v_delete = () => {
+    set_v_correctionPaths("");
+  };
+
+  const handle_nd_delete = () => {
+    set_nd_correctionPaths("");
+  };
+
+  const handle_cf_delete = () => {
+    set_cf_correctionPaths("");
   };
   
 
@@ -170,32 +213,11 @@ export default function Home() {
   const fakeRadiancePath = "/usr/local/radiance/bin/";
   const fakeHdrgenPath = "/usr/local/bin/";
 
-  // Hardcoded camera response function path
-  const fakeResponseFunction =
-    "../examples/inputs/parameters/response_function_files/Response_function.rsp";
-
-  // Hardcoded fisheye correction calibration file
-  const fakeFisheyeCorrectionCal =
-    "../examples/inputs/parameters/calibration_files/fisheye_corr.cal";
-
-  // Hardcoded vignetting effect correction calibration file
-  const fakeVignettingCorrectionCal =
-    "../examples/inputs/parameters/calibration_files/vignetting_f5d6.cal";
-
   // Hardcoded output path
   const fakeOutputPath = "../output/";
 
   // Hardcoded temp path
   const fakeTempPath = "../tmp/";
-
-  // Hardcoded fisheye diameter and coordinates of square around fisheye view
-  // const fakeDiameter = "3612";
-  // const fakeXleft = "1019";
-  // const fakeYdown = "74";
-
-  // Hardcoded HDR image resolution
-  // const fakeXdim = "1000";
-  // const fakeYdim = "1000";
 
   // Calls the BE pipeline function with the input images the user
   // selected, and hardcoded data for the rest of the inputs
@@ -209,6 +231,8 @@ export default function Home() {
       responseFunction: responsePaths,
       fisheyeCorrectionCal: fe_correctionPaths,
       vignettingCorrectionCal: v_correctionPaths,
+      neutraldensityCorrectionCal: nd_correctionPaths,
+      calibrationfactorCorrectionCal: cf_correctionPaths,
       diameter: viewSettings.diameter,
       xleft: viewSettings.xleft,
       ydown: viewSettings.ydown,
@@ -274,7 +298,7 @@ export default function Home() {
           {fe_correctionPaths && (
               <div>
                 {fe_correctionPaths}
-                <button onClick={() => handleFEDelete()}>Delete Fish Eye Correction File</button>
+                <button onClick={() => handle_fe_delete()}>Delete Fish Eye Correction File</button>
                </div>
           )}
         </div>
@@ -289,7 +313,37 @@ export default function Home() {
           {v_correctionPaths && (
               <div>
                 {v_correctionPaths}
-                <button onClick={() => handleVDelete()}>Delete Vignetting Correction File</button>
+                <button onClick={() => handle_v_delete()}>Delete Vignetting Correction File</button>
+               </div>
+          )}
+        </div>
+        <h2>Neutral Density Correction Path Upload</h2>
+        <button
+          onClick={dialogND}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+        >
+          Select Neutral Density Correction Files
+        </button>
+        <div>
+          {nd_correctionPaths && (
+              <div>
+                {nd_correctionPaths}
+                <button onClick={() => handle_nd_delete()}>Delete Neutral Density Correction File</button>
+               </div>
+          )}
+        </div>
+        <h2>Calibration Factor Correction Path Upload</h2>
+        <button
+          onClick={dialogCF}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+        >
+          Select Calibration Factor Correction Files
+        </button>
+        <div>
+          {cf_correctionPaths && (
+              <div>
+                {cf_correctionPaths}
+                <button onClick={() => handle_cf_delete()}>Delete Calibration Factor Correction File</button>
                </div>
           )}
         </div>
