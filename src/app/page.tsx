@@ -271,8 +271,12 @@ export default function Home() {
           Select Fish Eye Correction Files
         </button>
         <div>
-          {fe_correctionPaths}
-          <button onClick={() => handleFEDelete()}>Delete Fish Eye Correction File</button>
+          {fe_correctionPaths && (
+              <div>
+                {fe_correctionPaths}
+                <button onClick={() => handleFEDelete()}>Delete Fish Eye Correction File</button>
+               </div>
+          )}
         </div>
         <h2>Vignetting Correction Path Upload</h2>
         <button
@@ -282,8 +286,12 @@ export default function Home() {
           Select Vignetting Correction Files
         </button>
         <div>
-          {v_correctionPaths}
-          <button onClick={() => handleVDelete()}>Delete Vignetting Correction File</button>
+          {v_correctionPaths && (
+              <div>
+                {v_correctionPaths}
+                <button onClick={() => handleVDelete()}>Delete Vignetting Correction File</button>
+               </div>
+          )}
         </div>
         <CroppingResizingViewSettings handleChange={handleViewSettingsChange} />
         <button
