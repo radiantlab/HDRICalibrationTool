@@ -14,8 +14,6 @@ const _FAKE_HDRGEN_PATH: &str = "/usr/local/bin";
 fn main() {
     // === Define hardcoded data for testing ===
 
-    println!("Running fake test!");
-
     let path = env::current_dir();
     println!("The current directory is {}", path.expect("REASON").display());
 

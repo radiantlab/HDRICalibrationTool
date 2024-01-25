@@ -60,7 +60,7 @@ pub struct ConfigSettings {
 // ydim:
 //      The y-dimensional resolution to resize the HDR image to (in pixels)
 #[tauri::command]
-pub fn pipeline(
+pub async fn pipeline(
     radiance_path: String,
     hdrgen_path: String,
     output_path: String,
@@ -92,8 +92,6 @@ pub fn pipeline(
         println!("\txleft: {xleft}");
         println!("\tydown: {ydown}");
     }
-
-    println!("Run! Run! Run");
 
     // Add path to radiance and temp directory info to config settings
     let config_settings = ConfigSettings {
@@ -210,7 +208,7 @@ pub fn pipeline(
     let header_editing_result = header_editing(
         &config_settings,
         format!("{}output8.hdr", config_settings.temp_path),
-        format!("{}output9.hdr", config_settings.output_path),
+        format!("{}output9.hdr", config_settings.temp_path),
         vertical_angle,
         horizontal_angle,
     );
