@@ -79,25 +79,25 @@ fn main() {
 
 
     // UNCOMMENT TO CALL PIPELINE WITH HARDCODED DATA
-    let _result = pipeline(
-        _FAKE_RADIANCE_PATH.to_string(),
-        _FAKE_HDRGEN_PATH.to_string(),
-        _fake_output_path,
-        _fake_temp_path,
-        _fake_input_images,
-        _fake_response_function,
-        _fake_fisheye_correction_cal,
-        _fake_vignetting_correction_cal,
-        _fake_photometric_adjustment_cal,
-        _fake_neutral_density_cal,
-        _fake_diameter,
-        _fake_xleft,
-        _fake_ydown,
-        _fake_xdim,
-        _fake_ydim,
-        _fake_va,
-        _fake_ha,
-    );
+    //let _result = pipeline(
+    //    _FAKE_RADIANCE_PATH.to_string(),
+    //    _FAKE_HDRGEN_PATH.to_string(),
+        // _fake_output_path,
+        // _fake_temp_path,
+        // _fake_input_images,
+        // _fake_response_function,
+        // _fake_fisheye_correction_cal,
+        // _fake_vignetting_correction_cal,
+        // _fake_photometric_adjustment_cal,
+        // _fake_neutral_density_cal,
+        // _fake_diameter,
+        // _fake_xleft,
+        // _fake_ydown,
+        // _fake_xdim,
+        // _fake_ydim,
+        // _fake_va,
+        // _fake_ha,
+    // );
 
 
     tauri::Builder::default()
