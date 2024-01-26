@@ -61,33 +61,33 @@ pub struct ConfigSettings {
 //      The y-dimensional resolution to resize the HDR image to (in pixels)
 #[tauri::command]
 pub async fn pipeline(
-    radiance_path: String,
-    hdrgen_path: String,
-    output_path: String,
-    temp_path: String,
-    input_images: Vec<String>,
-    response_function: String,
-    fisheye_correction_cal: String,
-    vignetting_correction_cal: String,
-    photometric_adjustment_cal: String,
-    neutral_density_cal: String,
+    radiancePath: String,
+    hdrgenPath: String,
+    outputPath: String,
+    tempPath: String,
+    inputImages: Vec<String>,
+    responseFunction: String,
+    fisheyeCorrectionCal: String,
+    vignettingCorrectionCal: String,
+    photometricAdjustmentCal: String,
+    neutralDensityCal: String,
     diameter: String,
     xleft: String,
     ydown: String,
     xdim: String,
     ydim: String,
-    vertical_angle: String,
-    horizontal_angle: String,
+    verticalAngle: String,
+    horizontalAngle: String,
 ) -> Result<String, String> {
     if DEBUG {
         println!("Pipeline module called...");
-        println!("\tradiance path: {radiance_path}");
-        println!("\thdrgen path: {hdrgen_path}");
-        println!("\toutput path: {output_path}");
-        println!("\ttemp path: {temp_path}");
-        println!("\tinput images: {:?}", input_images);
-        println!("\tresponse function: {response_function}");
-        println!("\tfisheye correction cal: {fisheye_correction_cal}");
+        println!("\tradiance path: {radiancePath}");
+        println!("\thdrgen path: {hdrgenPath}");
+        println!("\toutput path: {outputPath}");
+        println!("\ttemp path: {tempPath}");
+        println!("\tinput images: {:?}", inputImages);
+        println!("\tresponse function: {responseFunction}");
+        println!("\tfisheye correction cal: {fisheyeCorrectionCal}");
         println!("\tdiameter: {diameter}");
         println!("\txleft: {xleft}");
         println!("\tydown: {ydown}");
@@ -95,16 +95,16 @@ pub async fn pipeline(
 
     // Add path to radiance and temp directory info to config settings
     let config_settings = ConfigSettings {
-        radiance_path: radiance_path,
-        hdrgen_path: hdrgen_path,
-        output_path: output_path,
-        temp_path: temp_path,
+        radiance_path: radiancePath,
+        hdrgen_path: hdrgenPath,
+        output_path: outputPath,
+        temp_path: tempPath,
     };
 
     let _merge_exposures_result = merge_exposures(
         &config_settings,
-        input_images,
-        response_function,
+        inputImages,
+        responseFunction,
         format!("{}output1.hdr", config_settings.temp_path),
     );
 
@@ -160,7 +160,7 @@ pub async fn pipeline(
         // format!("{}output4.hdr", config_settings.temp_path),
         format!("{}output4.hdr", config_settings.temp_path),
         format!("{}output5.hdr", config_settings.temp_path),
-        fisheye_correction_cal,
+        fisheyeCorrectionCal,
     );
 
     // If the command to apply projection adjustment encountered an error, abort pipeline
@@ -173,7 +173,7 @@ pub async fn pipeline(
         &config_settings,
         format!("{}output5.hdr", config_settings.temp_path),
         format!("{}output6.hdr", config_settings.temp_path),
-        vignetting_correction_cal,
+        vignettingCorrectionCal,
     );
 
     if vignetting_effect_correction_result.is_err() {
@@ -185,7 +185,7 @@ pub async fn pipeline(
         &config_settings,
         format!("{}output6.hdr", config_settings.temp_path),
         format!("{}output7.hdr", config_settings.temp_path),
-        neutral_density_cal,
+        neutralDensityCal,
     );
 
     if neutral_density_result.is_err() {
@@ -197,7 +197,7 @@ pub async fn pipeline(
         &config_settings,
         format!("{}output7.hdr", config_settings.temp_path),
         format!("{}output8.hdr", config_settings.temp_path),
-        photometric_adjustment_cal,
+        photometricAdjustmentCal,
     );
 
     if photometric_adjustment_result.is_err() {
@@ -209,8 +209,8 @@ pub async fn pipeline(
         &config_settings,
         format!("{}output8.hdr", config_settings.temp_path),
         format!("{}output9.hdr", config_settings.temp_path),
-        vertical_angle,
-        horizontal_angle,
+        verticalAngle,
+        horizontalAngle,
     );
     
     return header_editing_result;
