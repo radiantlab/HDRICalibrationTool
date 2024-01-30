@@ -1,5 +1,6 @@
 use crate::pipeline::DEBUG;
 use std::process::Command;
+use std::string::ToString;
 
 use super::ConfigSettings;
 
@@ -42,6 +43,9 @@ pub fn merge_exposures(
     command.arg("-e");
     command.arg("-f");
     command.arg("-g");
+
+    
+
 
     // Run the command
     let status = command.status();
