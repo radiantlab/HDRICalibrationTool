@@ -212,7 +212,6 @@ export default function Home() {
   // Hardcoded radiance and hdrgen paths for testing
   const fakeRadiancePath = "/usr/local/radiance/bin/";
   const fakeHdrgenPath = "/usr/local/bin/";
-
   // Hardcoded output path
   const fakeOutputPath = "../output/";
 
@@ -231,13 +230,15 @@ export default function Home() {
       responseFunction: responsePaths,
       fisheyeCorrectionCal: fe_correctionPaths,
       vignettingCorrectionCal: v_correctionPaths,
-      neutraldensityCorrectionCal: nd_correctionPaths,
-      calibrationfactorCorrectionCal: cf_correctionPaths,
+      photometricAdjustmentCal: cf_correctionPaths,
+      neutralDensityCal: nd_correctionPaths,
       diameter: viewSettings.diameter,
       xleft: viewSettings.xleft,
       ydown: viewSettings.ydown,
       xdim: viewSettings.targetRes,
       ydim: viewSettings.targetRes,
+      verticalAngle: viewSettings.vv,
+      horizontalAngle: viewSettings.vh,
     })
       .then((result) => console.log("Success. Result: ", result))
       .catch(console.error);
