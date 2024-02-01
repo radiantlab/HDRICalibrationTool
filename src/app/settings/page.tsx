@@ -1,6 +1,31 @@
+"use client";
+
 import Link from "next/link";
+import savedSettings from "./settings.json";
+import React, { useState } from "react";
+
+// const savedRadiancePath = settingsData.radiancePath
+//
 
 export default function Page() {
+  // const [ settings, setSettings ] = useState({
+  //   radiancePath: settingsData.radiancePath
+  // });
+
+  const settingsData = savedSettings.settingsData;
+  const [settings, setSettings] = useState(settingsData);
+
+
+  const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    // const updatedSettings = settings;
+    const updatedSettings = JSON.parse(JSON.stringify(settings));
+    updatedSettings[event.currentTarget.name] = event.currentTarget.value;
+    setSettings(updatedSettings);
+    // savedSettings.settingsData.radiancePath = settings.radiancePath;
+  };
+
+  // const [ radiancePath, setRadiancePath ] = useState<string>(savedRadiancePath ? savedRadiancePath : "usr/local/radiance/bin")
+
   return (
     <div>
       <div className="w-full">
@@ -20,8 +45,12 @@ export default function Page() {
               <div className="mb-4">
                 <label className="block mb-2">Radiance Path (binary)</label>
                 <input
+                  name="radiancePath"
                   type="text"
-                  defaultValue="/usr/local/radiance/bin"
+                  // defaultValue="/usr/local/radiance/bin"
+                  // value={radiancePath}
+                  value={settings.radiancePath}
+                  onChange={(e) => {console.log(e.target.value); handleSettingsChange(e)}}
                   className="placeholder:text-right no-spinner w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
                 ></input>
               </div>

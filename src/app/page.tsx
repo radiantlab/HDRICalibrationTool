@@ -6,6 +6,7 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Link from "next/link";
+import SettingsModal from "./settings-modal";
 
 const DEBUG = false;
 
@@ -137,10 +138,10 @@ export default function Home() {
   // selected, and hardcoded data for the rest of the inputs
   const handleGenerateHDRImage = () => {
     invoke<string>("pipeline", {
-      radiancePath: fakeRadiancePath,
-      hdrgenPath: fakeHdrgenPath,
-      outputPath: fakeOutputPath,
-      tempPath: fakeTempPath,
+      radiancePath: settings.radiancePath,
+      hdrgenPath: settings.hdrgenPath,
+      outputPath: settings.outputPath,
+      tempPath: settings.tempPath,
       inputImages: devicePaths,
       responseFunction: fakeResponseFunction,
       fisheyeCorrectionCal: fakeFisheyeCorrectionCal,
@@ -155,13 +156,35 @@ export default function Home() {
       .catch(console.error);
   };
 
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [settings, setSettings] = useState({
+    radiancePath: "/usr/local/radiance/bin/",
+    hdrgenPath: "/usr/local/bin/",
+    outputPath: "/home/hdri-app/",
+    tempPath: "/tmp/"
+  });
+
+  const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const updatedSettings = JSON.parse(JSON.stringify(settings));
+    updatedSettings[event.currentTarget.name] = event.currentTarget.value;
+    setSettings(updatedSettings);
+  };
+
+
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
+
       <div className="w-full">
-        <button className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded">
-          <Link href="/settings">Settings</Link>
+        <button
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          onClick={() => setShowSettings((prev) => !prev)}
+        >
+          Settings
         </button>
       </div>
+
+      {showSettings ? <SettingsModal settings={settings} handleChange={handleSettingsChange} toggleModal={() => setShowSettings(prev => !prev)} /> : <></>}
 
       <h1>HDRICalibrationTool</h1>
       <div>
