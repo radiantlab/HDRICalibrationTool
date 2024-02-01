@@ -85,7 +85,8 @@ export default function Home() {
 
   async function dialogResponse() {
     response = await open({
-      multiple: true})
+      multiple: true,
+    });
     if (response === null) {
       // user cancelled the selection
     } else {
@@ -99,7 +100,8 @@ export default function Home() {
 
   async function dialogFE() {
     fe_correction = await open({
-      multiple: true})
+      multiple: true,
+    });
     if (fe_correction === null) {
       // user cancelled the selection
     } else {
@@ -113,7 +115,8 @@ export default function Home() {
 
   async function dialogV() {
     v_correction = await open({
-      multiple: true})
+      multiple: true,
+    });
     if (v_correction === null) {
       // user cancelled the selection
     } else {
@@ -127,7 +130,8 @@ export default function Home() {
 
   async function dialogND() {
     nd_correction = await open({
-      multiple: true})
+      multiple: true,
+    });
     if (nd_correction === null) {
       // user cancelled the selection
     } else {
@@ -141,7 +145,8 @@ export default function Home() {
 
   async function dialogCF() {
     cf_correction = await open({
-      multiple: true})
+      multiple: true,
+    });
     if (cf_correction === null) {
       // user cancelled the selection
     } else {
@@ -186,7 +191,6 @@ export default function Home() {
   const handle_cf_delete = () => {
     set_cf_correctionPaths("");
   };
-  
 
   if (DEBUG) {
     useEffect(() => {
@@ -250,7 +254,7 @@ export default function Home() {
     radiancePath: "/usr/local/radiance/bin/",
     hdrgenPath: "/usr/local/bin/",
     outputPath: "/home/hdri-app/",
-    tempPath: "/tmp/"
+    tempPath: "/tmp/",
   });
 
   const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -259,11 +263,8 @@ export default function Home() {
     setSettings(updatedSettings);
   };
 
-
-
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
-
       <div className="w-full">
         <button
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
@@ -273,7 +274,15 @@ export default function Home() {
         </button>
       </div>
 
-      {showSettings ? <SettingsModal settings={settings} handleChange={handleSettingsChange} toggleModal={() => setShowSettings(prev => !prev)} /> : <></>}
+      {showSettings ? (
+        <SettingsModal
+          settings={settings}
+          handleChange={handleSettingsChange}
+          toggleModal={() => setShowSettings((prev) => !prev)}
+        />
+      ) : (
+        <></>
+      )}
 
       <h1>HDRICalibrationTool</h1>
       <div>
@@ -311,10 +320,12 @@ export default function Home() {
         </button>
         <div>
           {responsePaths && (
-              <div>
-                {responsePaths}
-                <button onClick={() => handleResponseDelete()}>Delete Response File</button>
-               </div>
+            <div>
+              {responsePaths}
+              <button onClick={() => handleResponseDelete()}>
+                Delete Response File
+              </button>
+            </div>
           )}
         </div>
         <h2>Fish Eye Correction Path Upload</h2>
@@ -326,10 +337,12 @@ export default function Home() {
         </button>
         <div>
           {fe_correctionPaths && (
-              <div>
-                {fe_correctionPaths}
-                <button onClick={() => handle_fe_delete()}>Delete Fish Eye Correction File</button>
-               </div>
+            <div>
+              {fe_correctionPaths}
+              <button onClick={() => handle_fe_delete()}>
+                Delete Fish Eye Correction File
+              </button>
+            </div>
           )}
         </div>
         <h2>Vignetting Correction Path Upload</h2>
@@ -341,10 +354,12 @@ export default function Home() {
         </button>
         <div>
           {v_correctionPaths && (
-              <div>
-                {v_correctionPaths}
-                <button onClick={() => handle_v_delete()}>Delete Vignetting Correction File</button>
-               </div>
+            <div>
+              {v_correctionPaths}
+              <button onClick={() => handle_v_delete()}>
+                Delete Vignetting Correction File
+              </button>
+            </div>
           )}
         </div>
         <h2>Neutral Density Correction Path Upload</h2>
@@ -356,10 +371,12 @@ export default function Home() {
         </button>
         <div>
           {nd_correctionPaths && (
-              <div>
-                {nd_correctionPaths}
-                <button onClick={() => handle_nd_delete()}>Delete Neutral Density Correction File</button>
-               </div>
+            <div>
+              {nd_correctionPaths}
+              <button onClick={() => handle_nd_delete()}>
+                Delete Neutral Density Correction File
+              </button>
+            </div>
           )}
         </div>
         <h2>Calibration Factor Correction Path Upload</h2>
@@ -371,10 +388,12 @@ export default function Home() {
         </button>
         <div>
           {cf_correctionPaths && (
-              <div>
-                {cf_correctionPaths}
-                <button onClick={() => handle_cf_delete()}>Delete Calibration Factor Correction File</button>
-               </div>
+            <div>
+              {cf_correctionPaths}
+              <button onClick={() => handle_cf_delete()}>
+                Delete Calibration Factor Correction File
+              </button>
+            </div>
           )}
         </div>
         <CroppingResizingViewSettings handleChange={handleViewSettingsChange} />
