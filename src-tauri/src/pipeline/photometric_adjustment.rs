@@ -1,48 +1,43 @@
 use crate::pipeline::DEBUG;
-use std::fs::File;
 use std::process::Command;
 use std::process::Stdio;
+use std::fs::File;
 
 use super::ConfigSettings;
 
-// Resizes an HDR image to the target x and y resolution.
+
+// Photometric Adjustments
 // config_settings:
 //      contains config settings - used for path to radiance and temp directory
 // input_file:
 //      the path to the input HDR image. Input image must be in .hdr format.
 // output_file:
 //      a string for the path and filename where the cropped HDR image will be saved.
-// xdim:
-//      The x-dimensional resolution to resize the HDR image to (in pixels)
-// ydim:
-//      The y-dimensional resolution to resize the HDR image to (in pixels)
-pub fn resize(
+// photometric_adjustment:
+//      A string for the photometric adjustment file
+
+pub fn photometric_adjustment(
     config_settings: &ConfigSettings,
     input_file: String,
     output_file: String,
-    xdim: String,
-    ydim: String,
+    photometric_adjustment: String,
 ) -> Result<String, String> {
     if DEBUG {
-        println!("resize() was called with parameters:");
-        println!("\txdim: {xdim}");
-        println!("\tydim: {ydim}");
+        println!("photometric_adjustment() was called with parameters:\n\t photometric_adjustment: {photometric_adjustment}");
     }
 
-    // Create a new command for pfilt
-    let mut command = Command::new(config_settings.radiance_path.to_string() + "pfilt");
+    // Command to run
+    let mut command = Command::new(config_settings.radiance_path.to_string() + "pcomb");
 
-    // Add arguments to pfilt command
+    // Add arguments
     command.args([
-        "-1",
-        "-x",
-        xdim.as_str(),
-        "-y",
-        ydim.as_str(),
+        "-h",
+        "-f",
+        photometric_adjustment.as_str(),
         input_file.as_str(),
     ]);
 
-    // Direct command's output to specifed output file
+    // Set up piping of output to file
     let file = File::create(&output_file).unwrap();
     let stdio = Stdio::from(file);
     command.stdout(stdio);
@@ -51,8 +46,13 @@ pub fn resize(
     let status = command.status();
 
     if DEBUG {
-        println!("\nResize command exit status: {:?}\n", status);
+        println!(
+            "\nPhotometric adjustment command exit status: {:?}\n",
+            status
+        );
     }
+
+    println!("{}", format!("{:?}", command).replace("\"", ""));
 
     // Return a Result object to indicate whether command was successful
     if status.is_ok() {
@@ -60,6 +60,9 @@ pub fn resize(
         Ok(output_file.into())
     } else {
         // On error, return an error message
-        Err("Error, non-zero exit status. Resize command (pfilt) failed.".into())
+        Err(
+            "Error, non-zero exit status. Photometric adjustment command (pcomb) failed."
+                .into(),
+        )
     }
 }
