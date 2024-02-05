@@ -101,6 +101,15 @@ pub async fn pipeline(
         temp_path: temp_path,
     };
 
+    if DEBUG {
+        if input_images[0].contains(".JPG") {
+            println!("User selected images, not directories.");
+        }
+        else {
+            println!("User selected directories.");
+        }   
+    }
+
     let _merge_exposures_result = merge_exposures(
         &config_settings,
         input_images,
