@@ -8,7 +8,7 @@ import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import { ResponseType } from "@tauri-apps/api/http";
 import SettingsModal from "./settings-modal";
 
-const DEBUG = false;
+const DEBUG = true;
 
 export default function Home() {
   // Holds the fisheye coordinates and view settings
@@ -22,6 +22,9 @@ export default function Home() {
     vh: "",
     targetRes: "1000",
   });
+
+  // const [imgDirs, setImgDirs] = useState<any[]>([]);
+  let imgDirs: any | any[] = [];
 
   // Holds the file paths for the backend
   const [devicePaths, setDevicePaths] = useState<any[]>([]);
@@ -80,6 +83,30 @@ export default function Home() {
       console.log("Dialog function called.");
       console.log("selected: ", selected);
       console.log("assets: ", assets);
+    }
+  }
+
+  async function dialogBatchProcessing() {
+    selected = await open({
+      multiple: true,
+      directory: true,
+    });
+    if (selected === null) {
+      // user cancelled the selection
+    } else if (Array.isArray(selected)) {
+      assets = selected.map((item: any) => convertFileSrc(item));
+      setImages(images.concat(assets));
+      setDevicePaths(devicePaths.concat(selected));
+      setAssetPaths(assetPaths.concat(assets));
+    }
+    else {
+      assets = [convertFileSrc(selected)];
+      setImages(images.concat(assets));
+      setDevicePaths(devicePaths.concat([selected]));
+      setAssetPaths(assetPaths.concat(assets));
+    }
+    if (DEBUG) {
+      console.log("directories selected in batch processing dialog: ", selected);
     }
   }
 
@@ -293,6 +320,12 @@ export default function Home() {
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
         >
           Select Files
+        </button>
+        <button
+          onClick={dialogBatchProcessing}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+        >
+          Select Files for Batch Processing
         </button>
         <div>Image count: {images.length}</div>
         <div className="image-preview flex flex-wrap">
