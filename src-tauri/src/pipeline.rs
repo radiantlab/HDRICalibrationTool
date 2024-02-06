@@ -1,22 +1,25 @@
 mod crop;
+mod header_editing;
 mod merge_exposures;
+mod neutral_density;
 mod nullify_exposure_value;
+mod photometric_adjustment;
 mod projection_adjustment;
 mod resize;
 mod vignetting_effect_correction;
-mod neutral_density;
-mod photometric_adjustment;
-mod header_editing;
+
+use std::{fmt::Debug, fs, io, path::Path, time::SystemTime, vec};
+// use chrono::{DateTime, Utc}
 
 use crop::crop;
+use header_editing::header_editing;
 use merge_exposures::merge_exposures;
+use neutral_density::neutral_density;
 use nullify_exposure_value::nullify_exposure_value;
+use photometric_adjustment::photometric_adjustment;
 use projection_adjustment::projection_adjustment;
 use resize::resize;
 use vignetting_effect_correction::vignetting_effect_correction;
-use neutral_density::neutral_density;
-use photometric_adjustment::photometric_adjustment;
-use header_editing::header_editing;
 
 // Used to print out debug information
 pub const DEBUG: bool = true;
@@ -79,6 +82,21 @@ pub async fn pipeline(
     vertical_angle: String,
     horizontal_angle: String,
 ) -> Result<String, String> {
+    // let sys_time: DateTime<Utc> = SystemTime::now().into();
+    // let sys_time_str = sys_time.to_rfc3339();
+    // let SystemTime
+    let sys_time: SystemTime = SystemTime::now().into();
+
+    let is_directory = if input_images[0].contains(".JPG")
+        || input_images[0].contains(".jpg")
+        || input_images[0].contains(".JPEG")
+        || input_images[0].contains(".jpeg")
+    {
+        false
+    } else {
+        true
+    };
+
     if DEBUG {
         println!("Pipeline module called...");
         println!("\tradiance path: {radiance_path}");
@@ -91,6 +109,15 @@ pub async fn pipeline(
         println!("\tdiameter: {diameter}");
         println!("\txleft: {xleft}");
         println!("\tydown: {ydown}");
+
+        println!("\n\n");
+        if input_images[0].contains(".JPG") {
+            println!("User selected images, not directories.");
+        } else {
+            println!("User selected directories.");
+        }
+
+        println!("System time: {:?}\n\n", sys_time);
     }
 
     // Add path to radiance and temp directory info to config settings
@@ -101,18 +128,47 @@ pub async fn pipeline(
         temp_path: temp_path,
     };
 
-    if DEBUG {
-        if input_images[0].contains(".JPG") {
-            println!("User selected images, not directories.");
+
+    let input_image_paths = 
+    if is_directory {
+
+        let entries = fs::read_dir(&input_images[0]).unwrap()
+        .map(|res| res.map(|e| e.path()))
+        .collect::<Result<Vec<_>, io::Error>>().unwrap();
+
+        // The order in which `read_dir` returns entries is not guaranteed. If reproducible
+        // ordering is required the entries should be explicitly sorted.
+
+        // entries.sort();
+
+        println!("=== ENTRIES: {:?}", entries);
+
+
+        // // input_images += "/*"
+        // let path = Path::new(&input_images[0]);
+        // let new_path = path.join("*").into_os_string().into_string().unwrap();
+        // // input_images = vec![new_path];
+        // if DEBUG {
+        //     println!("WOULD INPUT TO HDRGEN: {:?}", new_path);
+        // }
+
+        let mut input_image_paths: Vec<String> = Vec::new();
+        for entry in entries {
+            let x = entry.into_os_string().into_string().unwrap();
+            // x.into_string().unwrap();
+            input_image_paths.push(x);
+            // input_image_paths;
+
         }
-        else {
-            println!("User selected directories.");
-        }   
+        input_image_paths
     }
+    else {
+        input_images
+    };
 
     let _merge_exposures_result = merge_exposures(
         &config_settings,
-        input_images,
+        input_image_paths,
         response_function,
         format!("{}output1.hdr", config_settings.temp_path),
     );
@@ -198,7 +254,7 @@ pub async fn pipeline(
     );
 
     if neutral_density_result.is_err() {
-        return neutral_density_result
+        return neutral_density_result;
     }
 
     // Correct for photometric adjustments
@@ -210,7 +266,7 @@ pub async fn pipeline(
     );
 
     if photometric_adjustment_result.is_err() {
-        return photometric_adjustment_result
+        return photometric_adjustment_result;
     }
 
     // Edit the header
@@ -221,6 +277,6 @@ pub async fn pipeline(
         vertical_angle,
         horizontal_angle,
     );
-    
+
     return header_editing_result;
 }
