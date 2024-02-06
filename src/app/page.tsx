@@ -25,6 +25,7 @@ export default function Home() {
 
   // const [imgDirs, setImgDirs] = useState<any[]>([]);
   let imgDirs: any | any[] = [];
+  const [directorySelected, setDirectorySelected] = useState<boolean>(false);
 
   // Holds the file paths for the backend
   const [devicePaths, setDevicePaths] = useState<any[]>([]);
@@ -66,6 +67,7 @@ export default function Home() {
       ],
     });
     if (Array.isArray(selected)) {
+      setDirectorySelected(false)
       assets = selected.map((item: any) => convertFileSrc(item));
       setImages(images.concat(assets));
       setDevicePaths(devicePaths.concat(selected));
@@ -74,6 +76,7 @@ export default function Home() {
       // user cancelled the selection
     } else {
       // user selected a single file
+      setDirectorySelected(false)
       assets = [convertFileSrc(selected)];
       setImages(images.concat(assets));
       setDevicePaths(devicePaths.concat([selected]));
@@ -94,19 +97,23 @@ export default function Home() {
     if (selected === null) {
       // user cancelled the selection
     } else if (Array.isArray(selected)) {
+      setDirectorySelected(true)
       assets = selected.map((item: any) => convertFileSrc(item));
       setImages(images.concat(assets));
       setDevicePaths(devicePaths.concat(selected));
       setAssetPaths(assetPaths.concat(assets));
-    }
-    else {
+    } else {
+      setDirectorySelected(true)
       assets = [convertFileSrc(selected)];
       setImages(images.concat(assets));
       setDevicePaths(devicePaths.concat([selected]));
       setAssetPaths(assetPaths.concat(assets));
     }
     if (DEBUG) {
-      console.log("directories selected in batch processing dialog: ", selected);
+      console.log(
+        "directories selected in batch processing dialog: ",
+        selected
+      );
     }
   }
 
@@ -253,27 +260,55 @@ export default function Home() {
   // Calls the BE pipeline function with the input images the user
   // selected, and hardcoded data for the rest of the inputs
   const handleGenerateHDRImage = () => {
-    invoke<string>("pipeline", {
-      radiancePath: settings.radiancePath,
-      hdrgenPath: settings.hdrgenPath,
-      outputPath: settings.outputPath,
-      tempPath: settings.tempPath,
-      inputImages: devicePaths,
-      responseFunction: responsePaths,
-      fisheyeCorrectionCal: fe_correctionPaths,
-      vignettingCorrectionCal: v_correctionPaths,
-      photometricAdjustmentCal: cf_correctionPaths,
-      neutralDensityCal: nd_correctionPaths,
-      diameter: viewSettings.diameter,
-      xleft: viewSettings.xleft,
-      ydown: viewSettings.ydown,
-      xdim: viewSettings.targetRes,
-      ydim: viewSettings.targetRes,
-      verticalAngle: viewSettings.vv,
-      horizontalAngle: viewSettings.vh,
-    })
-      .then((result) => console.log("Success. Result: ", result))
-      .catch(console.error);
+    if (!directorySelected) {
+      invoke<string>("pipeline", {
+        radiancePath: settings.radiancePath,
+        hdrgenPath: settings.hdrgenPath,
+        outputPath: settings.outputPath,
+        tempPath: settings.tempPath,
+        inputImages: devicePaths,
+        responseFunction: responsePaths,
+        fisheyeCorrectionCal: fe_correctionPaths,
+        vignettingCorrectionCal: v_correctionPaths,
+        photometricAdjustmentCal: cf_correctionPaths,
+        neutralDensityCal: nd_correctionPaths,
+        diameter: viewSettings.diameter,
+        xleft: viewSettings.xleft,
+        ydown: viewSettings.ydown,
+        xdim: viewSettings.targetRes,
+        ydim: viewSettings.targetRes,
+        verticalAngle: viewSettings.vv,
+        horizontalAngle: viewSettings.vh,
+      })
+        .then((result) => console.log("Success. Result: ", result))
+        .catch(console.error);
+    }
+    else {
+      for (let directory in devicePaths) {
+        console.log(devicePaths[directory])
+        invoke<string>("pipeline", {
+          radiancePath: settings.radiancePath,
+          hdrgenPath: settings.hdrgenPath,
+          outputPath: settings.outputPath,
+          tempPath: settings.tempPath,
+          inputImages: [devicePaths[directory]],
+          responseFunction: responsePaths,
+          fisheyeCorrectionCal: fe_correctionPaths,
+          vignettingCorrectionCal: v_correctionPaths,
+          photometricAdjustmentCal: cf_correctionPaths,
+          neutralDensityCal: nd_correctionPaths,
+          diameter: viewSettings.diameter,
+          xleft: viewSettings.xleft,
+          ydown: viewSettings.ydown,
+          xdim: viewSettings.targetRes,
+          ydim: viewSettings.targetRes,
+          verticalAngle: viewSettings.vv,
+          horizontalAngle: viewSettings.vh,
+        })
+          .then((result) => console.log("Success. Result: ", result))
+          .catch(console.error);
+      }
+    }
   };
 
   const [showSettings, setShowSettings] = useState<boolean>(false);
