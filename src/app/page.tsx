@@ -247,10 +247,10 @@ export default function Home() {
   // selected, and hardcoded data for the rest of the inputs
   const handleGenerateHDRImage = () => {
     invoke<string>("pipeline", {
-      radiancePath: fakeRadiancePath,
-      hdrgenPath: fakeHdrgenPath,
-      outputPath: fakeOutputPath,
-      tempPath: fakeTempPath,
+      radiancePath: settings.radiancePath,
+      hdrgenPath: settings.hdrgenPath,
+      outputPath: settings.outputPath,
+      tempPath: settings.tempPath,
       inputImages: devicePaths,
       responseFunction: responsePaths,
       fisheyeCorrectionCal: fe_correctionPaths,
