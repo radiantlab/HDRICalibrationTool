@@ -318,102 +318,104 @@ export default function Home() {
 
           </ul>
         </nav>
-        <h1 className="font-bold pt-10">Configuration</h1>
-        <h2 className="font-bold pt-5" id="image_selection">Image Selection</h2>
-        <button
-          onClick={dialog}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded">
-          Select Files
-        </button>
-        <div>Image count: {images.length}</div>
-        <div className="image-preview flex flex-wrap">
-          {images.map((image, index) => (
-            <div key={index} className="image-item">
-              <div>
-                <img
-                  src={String(image)}
-                  alt={`Image ${index}`}
-                  width={200}
-                  height={200}
-                />
-                <button onClick={() => handleImageDelete(index)}>Delete</button>
-                <div>{image.name}</div>
+        <div className="w-3/4 ml-auto pl-3">
+          <h1 className="font-bold pt-10">Configuration</h1>
+          <h2 className="font-bold pt-5" id="image_selection">Image Selection</h2>
+          <button
+            onClick={dialog}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded">
+            Select Files
+          </button>
+          <div>Image count: {images.length}</div>
+          <div className="image-preview flex flex-wrap">
+            {images.map((image, index) => (
+              <div key={index} className="image-item">
+                <div>
+                  <img
+                    src={String(image)}
+                    alt={`Image ${index}`}
+                    width={200}
+                    height={200}
+                  />
+                  <button onClick={() => handleImageDelete(index)}>Delete</button>
+                  <div>{image.name}</div>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-        <h2 className="font-bold pt-5" id="response">Response File</h2>
-        <button
-          onClick={dialogResponse}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Select File
-        </button>
-        <div>
-          {responsePaths && (
-              <div>
-                {Paths(responsePaths)} <button onClick={() => handleResponseDelete()}>Delete</button>
-               </div>
-          )}
-        </div>
-        <div id="c_r_v">
-          <CroppingResizingViewSettings handleChange={handleViewSettingsChange} />
-        </div>
-        <h2 className="font-bold pt-5" id="fe">Fish Eye Correction</h2>
-        <button
-          onClick={dialogFE}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded">
-          Select File
-        </button>
-        <div>
-          {fe_correctionPaths && (
-              <div>
-                {Paths(fe_correctionPaths)} <button onClick={() => handle_fe_delete()}>Delete</button>
-               </div>
-          )}
-        </div>
-        <h2 className="font-bold pt-5" id="v">Vignetting Correction</h2>
-        <button
-          onClick={dialogV}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Select File
-        </button>
-        <div>
-          {v_correctionPaths && (
-              <div>
-                {Paths(v_correctionPaths)} <button onClick={() => handle_v_delete()}>Delete</button>
-               </div>
-          )}
-        </div>
-        <h2 className="font-bold pt-5" id="nd">Neutral Density Correction</h2>
-        <button
-          onClick={dialogND}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Select File
-        </button>
-        <div>
-          {nd_correctionPaths && (
-              <div>
-                {Paths(nd_correctionPaths)} <button onClick={() => handle_nd_delete()}>Delete</button>
-               </div>
-          )}
-        </div>
-        <h2 className="font-bold pt-5" id="cf">Calibration Factor Correction</h2>
-        <button
-          onClick={dialogCF}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Select File
-        </button>
-        <div>
-          {cf_correctionPaths && (
-              <div>
-                {Paths(cf_correctionPaths)} <button onClick={() => handle_cf_delete()}>Delete</button>
-               </div>
-          )}
-          <div className="pt-5"></div>
+            ))}
+          </div>
+          <h2 className="font-bold pt-5" id="response">Response File</h2>
+          <button
+            onClick={dialogResponse}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
+            Select File
+          </button>
+          <div>
+            {responsePaths && (
+                <div>
+                  {Paths(responsePaths)} <button onClick={() => handleResponseDelete()}>Delete</button>
+                </div>
+            )}
+          </div>
+          <div id="c_r_v">
+            <CroppingResizingViewSettings handleChange={handleViewSettingsChange} />
+          </div>
+          <h2 className="font-bold pt-5" id="fe">Fish Eye Correction</h2>
+          <button
+            onClick={dialogFE}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded">
+            Select File
+          </button>
+          <div>
+            {fe_correctionPaths && (
+                <div>
+                  {Paths(fe_correctionPaths)} <button onClick={() => handle_fe_delete()}>Delete</button>
+                </div>
+            )}
+          </div>
+          <h2 className="font-bold pt-5" id="v">Vignetting Correction</h2>
+          <button
+            onClick={dialogV}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
+            Select File
+          </button>
+          <div>
+            {v_correctionPaths && (
+                <div>
+                  {Paths(v_correctionPaths)} <button onClick={() => handle_v_delete()}>Delete</button>
+                </div>
+            )}
+          </div>
+          <h2 className="font-bold pt-5" id="nd">Neutral Density Correction</h2>
+          <button
+            onClick={dialogND}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
+            Select File
+          </button>
+          <div>
+            {nd_correctionPaths && (
+                <div>
+                  {Paths(nd_correctionPaths)} <button onClick={() => handle_nd_delete()}>Delete</button>
+                </div>
+            )}
+          </div>
+          <h2 className="font-bold pt-5" id="cf">Calibration Factor Correction</h2>
+          <button
+            onClick={dialogCF}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
+            Select File
+          </button>
+          <div>
+            {cf_correctionPaths && (
+                <div>
+                  {Paths(cf_correctionPaths)} <button onClick={() => handle_cf_delete()}>Delete</button>
+                </div>
+            )}
+            <div className="pt-5"></div>
+          </div>
         </div>
       </div>
     </main>
