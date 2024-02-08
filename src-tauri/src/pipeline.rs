@@ -8,8 +8,13 @@ mod projection_adjustment;
 mod resize;
 mod vignetting_effect_correction;
 
-use std::{fmt::Debug, fs, io, path::Path, time::SystemTime, vec};
-// use chrono::{DateTime, Utc}
+use std::{
+    fs::{self, create_dir, create_dir_all},
+    io,
+    path::{Path, PathBuf},
+};
+
+use chrono::Utc; // For getting UTC and formatting in ISO 8601
 
 use crop::crop;
 use header_editing::header_editing;
@@ -29,8 +34,8 @@ pub const DEBUG: bool = true;
 pub struct ConfigSettings {
     radiance_path: String,
     hdrgen_path: String,
-    output_path: String,
-    temp_path: String,
+    output_path: PathBuf,
+    temp_path: PathBuf,
 }
 
 // Runs the radiance and hdrgen pipeline.
@@ -82,11 +87,9 @@ pub async fn pipeline(
     vertical_angle: String,
     horizontal_angle: String,
 ) -> Result<String, String> {
-    // let sys_time: DateTime<Utc> = SystemTime::now().into();
-    // let sys_time_str = sys_time.to_rfc3339();
-    // let SystemTime
-    let sys_time: SystemTime = SystemTime::now().into();
+    let time = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
 
+    // TODO: CHANGE TO USE is_dir HERE
     let is_directory = if input_images[0].contains(".JPG")
         || input_images[0].contains(".jpg")
         || input_images[0].contains(".JPEG")
@@ -117,24 +120,30 @@ pub async fn pipeline(
             println!("User selected directories.");
         }
 
-        println!("System time: {:?}\n\n", sys_time);
+        println!("System time: {}", time);
     }
 
     // Add path to radiance and temp directory info to config settings
     let config_settings = ConfigSettings {
         radiance_path: radiance_path,
         hdrgen_path: hdrgen_path,
-        output_path: output_path,
-        temp_path: temp_path,
+        output_path: Path::new(&output_path).to_owned(),
+        temp_path: Path::new(&temp_path).to_owned(),
     };
 
+    let input_image_paths = if is_directory {
+        // let dir_name =
+        let a = Path::new(&input_images[0]).file_name();
+        // let dir_name = Path::new(&config_settings.temp_path).join(time + "_" + a);
+        // create_dir_all()
+        // println!("PATH GOING TO BE CREATED: {:?}", time_dir);
 
-    let input_image_paths = 
-    if is_directory {
-
-        let entries = fs::read_dir(&input_images[0]).unwrap()
-        .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, io::Error>>().unwrap();
+        // Taken from example code at https://doc.rust-lang.org/std/fs/fn.read_dir.html
+        let entries = fs::read_dir(&input_images[0])
+            .unwrap()
+            .map(|res| res.map(|e| e.path()))
+            .collect::<Result<Vec<_>, io::Error>>()
+            .unwrap();
 
         // The order in which `read_dir` returns entries is not guaranteed. If reproducible
         // ordering is required the entries should be explicitly sorted.
@@ -143,34 +152,28 @@ pub async fn pipeline(
 
         println!("=== ENTRIES: {:?}", entries);
 
-
-        // // input_images += "/*"
-        // let path = Path::new(&input_images[0]);
-        // let new_path = path.join("*").into_os_string().into_string().unwrap();
-        // // input_images = vec![new_path];
-        // if DEBUG {
-        //     println!("WOULD INPUT TO HDRGEN: {:?}", new_path);
-        // }
-
+        // TODO: use something different than unwrap to avoid panicking
         let mut input_image_paths: Vec<String> = Vec::new();
         for entry in entries {
             let x = entry.into_os_string().into_string().unwrap();
-            // x.into_string().unwrap();
+            // let x = entry.into_os_string().display().to_string();
             input_image_paths.push(x);
-            // input_image_paths;
-
         }
         input_image_paths
-    }
-    else {
+    } else {
         input_images
     };
 
+    // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
     let _merge_exposures_result = merge_exposures(
         &config_settings,
         input_image_paths,
         response_function,
-        format!("{}output1.hdr", config_settings.temp_path),
+        config_settings
+            .temp_path
+            .join("output1.hdr")
+            .display()
+            .to_string(),
     );
 
     // If the command to merge exposures encountered an error, abort pipeline
@@ -181,8 +184,16 @@ pub async fn pipeline(
     // Nullify the exposure value
     let nullify_exposure_result = nullify_exposure_value(
         &config_settings,
-        format!("{}output1.hdr", config_settings.temp_path),
-        format!("{}output2.hdr", config_settings.temp_path),
+        config_settings
+            .temp_path
+            .join("output1.hdr")
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("output2.hdr")
+            .display()
+            .to_string(),
     );
 
     // If the command to nullify the exposure value encountered an error, abort pipeline
@@ -193,8 +204,16 @@ pub async fn pipeline(
     // Crop the HDR image to a square fitting the fisheye view
     let crop_result = crop(
         &config_settings,
-        format!("{}output2.hdr", config_settings.temp_path),
-        format!("{}output3.hdr", config_settings.temp_path),
+        config_settings
+            .temp_path
+            .join("output2.hdr")
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("output3.hdr")
+            .display()
+            .to_string(),
         diameter,
         xleft,
         ydown,
@@ -208,8 +227,16 @@ pub async fn pipeline(
     // Resize the HDR image
     let resize_result = resize(
         &config_settings,
-        format!("{}output3.hdr", config_settings.temp_path),
-        format!("{}output4.hdr", config_settings.temp_path),
+        config_settings
+            .temp_path
+            .join("output3.hdr")
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("output4.hdr")
+            .display()
+            .to_string(),
         xdim,
         ydim,
     );
@@ -222,9 +249,16 @@ pub async fn pipeline(
     // Apply the projection adjustment to the HDR image
     let projection_adjustment_result = projection_adjustment(
         &config_settings,
-        // format!("{}output4.hdr", config_settings.temp_path),
-        format!("{}output4.hdr", config_settings.temp_path),
-        format!("{}output5.hdr", config_settings.temp_path),
+        config_settings
+            .temp_path
+            .join("output4.hdr")
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("output5.hdr")
+            .display()
+            .to_string(),
         fisheye_correction_cal,
     );
 
@@ -236,8 +270,16 @@ pub async fn pipeline(
     // Correct for the vignetting effect
     let vignetting_effect_correction_result = vignetting_effect_correction(
         &config_settings,
-        format!("{}output5.hdr", config_settings.temp_path),
-        format!("{}output6.hdr", config_settings.temp_path),
+        config_settings
+            .temp_path
+            .join("output5.hdr")
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("output6.hdr")
+            .display()
+            .to_string(),
         vignetting_correction_cal,
     );
 
@@ -246,10 +288,18 @@ pub async fn pipeline(
     }
 
     // Apply the neutral density filter.
-    let neutral_density_result = neutral_density(
+    let neutral_density_result: Result<String, String> = neutral_density(
         &config_settings,
-        format!("{}output6.hdr", config_settings.temp_path),
-        format!("{}output7.hdr", config_settings.temp_path),
+        config_settings
+            .temp_path
+            .join("output6.hdr")
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("output7.hdr")
+            .display()
+            .to_string(),
         neutral_density_cal,
     );
 
@@ -260,8 +310,16 @@ pub async fn pipeline(
     // Correct for photometric adjustments
     let photometric_adjustment_result = photometric_adjustment(
         &config_settings,
-        format!("{}output7.hdr", config_settings.temp_path),
-        format!("{}output8.hdr", config_settings.temp_path),
+        config_settings
+            .temp_path
+            .join("output7.hdr")
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("output8.hdr")
+            .display()
+            .to_string(),
         photometric_adjustment_cal,
     );
 
@@ -272,8 +330,16 @@ pub async fn pipeline(
     // Edit the header
     let header_editing_result = header_editing(
         &config_settings,
-        format!("{}output8.hdr", config_settings.temp_path),
-        format!("{}output9.hdr", config_settings.temp_path),
+        config_settings
+            .temp_path
+            .join("output8.hdr")
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("output9.hdr")
+            .display()
+            .to_string(),
         vertical_angle,
         horizontal_angle,
     );

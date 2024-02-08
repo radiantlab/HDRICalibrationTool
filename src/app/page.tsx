@@ -67,7 +67,7 @@ export default function Home() {
       ],
     });
     if (Array.isArray(selected)) {
-      setDirectorySelected(false)
+      setDirectorySelected(false);
       assets = selected.map((item: any) => convertFileSrc(item));
       setImages(images.concat(assets));
       setDevicePaths(devicePaths.concat(selected));
@@ -76,7 +76,7 @@ export default function Home() {
       // user cancelled the selection
     } else {
       // user selected a single file
-      setDirectorySelected(false)
+      setDirectorySelected(false);
       assets = [convertFileSrc(selected)];
       setImages(images.concat(assets));
       setDevicePaths(devicePaths.concat([selected]));
@@ -97,13 +97,13 @@ export default function Home() {
     if (selected === null) {
       // user cancelled the selection
     } else if (Array.isArray(selected)) {
-      setDirectorySelected(true)
+      setDirectorySelected(true);
       assets = selected.map((item: any) => convertFileSrc(item));
       setImages(images.concat(assets));
       setDevicePaths(devicePaths.concat(selected));
       setAssetPaths(assetPaths.concat(assets));
     } else {
-      setDirectorySelected(true)
+      setDirectorySelected(true);
       assets = [convertFileSrc(selected)];
       setImages(images.concat(assets));
       setDevicePaths(devicePaths.concat([selected]));
@@ -282,10 +282,9 @@ export default function Home() {
       })
         .then((result) => console.log("Success. Result: ", result))
         .catch(console.error);
-    }
-    else {
+    } else {
       for (let directory in devicePaths) {
-        console.log(devicePaths[directory])
+        console.log(devicePaths[directory]);
         invoke<string>("pipeline", {
           radiancePath: settings.radiancePath,
           hdrgenPath: settings.hdrgenPath,
