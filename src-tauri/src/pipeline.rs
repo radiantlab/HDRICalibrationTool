@@ -90,15 +90,16 @@ pub async fn pipeline(
     let time = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
 
     // TODO: CHANGE TO USE is_dir HERE
-    let is_directory = if input_images[0].contains(".JPG")
-        || input_images[0].contains(".jpg")
-        || input_images[0].contains(".JPEG")
-        || input_images[0].contains(".jpeg")
-    {
-        false
-    } else {
-        true
-    };
+    // let is_directory = if input_images[0].contains(".JPG")
+    //     || input_images[0].contains(".jpg")
+    //     || input_images[0].contains(".JPEG")
+    //     || input_images[0].contains(".jpeg")
+    // {
+    //     false
+    // } else {
+    //     true
+    // };
+    let is_directory = Path::new(&input_images[0]).is_dir();
 
     if DEBUG {
         println!("Pipeline module called...");
@@ -114,13 +115,13 @@ pub async fn pipeline(
         println!("\tydown: {ydown}");
 
         println!("\n\n");
-        if input_images[0].contains(".JPG") {
-            println!("User selected images, not directories.");
-        } else {
+        if is_directory {
             println!("User selected directories.");
+        } else {
+            println!("User selected images, not directories.");
         }
 
-        println!("System time: {}", time);
+        println!("\nSystem time: {}", time);
     }
 
     // Add path to radiance and temp directory info to config settings
