@@ -23,7 +23,7 @@ pub fn merge_exposures(
     }
 
     // Create a new command for hdrgen
-    let mut command = Command::new(config_settings.hdrgen_path.to_string() + "hdrgen");
+    let mut command = Command::new(config_settings.hdrgen_path.join("hdrgen"));
 
     // Add input LDR images as args
     for input_image in input_images {

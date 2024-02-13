@@ -53,7 +53,7 @@ pub fn header_editing(
     */
 
     // Apply the new header
-    let mut command = Command::new(config_settings.radiance_path.to_string() + "getinfo");
+    let mut command = Command::new(config_settings.radiance_path.join("getinfo"));
 
     // Add arguments
     command.args([
