@@ -32,8 +32,8 @@ pub const DEBUG: bool = true;
 // Struct to hold some configuration settings (e.g. path settings).
 // Used when various stages of the pipeline are called.
 pub struct ConfigSettings {
-    radiance_path: String,
-    hdrgen_path: String,
+    radiance_path: PathBuf,
+    hdrgen_path: PathBuf,
     output_path: PathBuf,
     temp_path: PathBuf,
 }
@@ -125,8 +125,8 @@ pub async fn pipeline(
 
     // Add path to radiance and temp directory info to config settings
     let config_settings = ConfigSettings {
-        radiance_path: radiance_path,
-        hdrgen_path: hdrgen_path,
+        radiance_path: Path::new(&radiance_path).to_owned(),
+        hdrgen_path: Path::new(&hdrgen_path).to_owned(),
         output_path: Path::new(&output_path).to_owned(),
         temp_path: Path::new(&temp_path).to_owned(),
     };

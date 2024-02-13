@@ -30,7 +30,7 @@ pub fn resize(
     }
 
     // Create a new command for pfilt
-    let mut command = Command::new(config_settings.radiance_path.to_string() + "pfilt");
+    let mut command = Command::new(config_settings.radiance_path.join("pfilt"));
 
     // Add arguments to pfilt command
     command.args([

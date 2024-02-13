@@ -27,7 +27,7 @@ pub fn photometric_adjustment(
     }
 
     // Command to run
-    let mut command = Command::new(config_settings.radiance_path.to_string() + "pcomb");
+    let mut command = Command::new(config_settings.radiance_path.join("pcomb"));
 
     // Add arguments
     command.args([
