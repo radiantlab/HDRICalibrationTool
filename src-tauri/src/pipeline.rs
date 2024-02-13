@@ -132,6 +132,20 @@ pub async fn pipeline(
         temp_path: Path::new(&temp_path).to_owned(),
     };
 
+    let create_temp_dir_result = create_dir_all(config_settings.temp_path.as_path());
+    let create_output_dir_result = create_dir_all(config_settings.output_path.as_path());
+    
+    if create_temp_dir_result.is_err() && create_output_dir_result.is_err() {
+        return Result::Err(("Error creating temp and output directories.").to_string());
+    }
+    else if create_temp_dir_result.is_err() {
+        return Result::Err(("Error creating temp directory.").to_string());
+    }
+    else if create_output_dir_result.is_err() {
+        return Result::Err(("Error creating output directory.").to_string());
+    }
+
+
     let input_image_paths = if is_directory {
         // let dir_name =
         let a = Path::new(&input_images[0]).file_name();
