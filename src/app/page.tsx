@@ -5,8 +5,8 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
+import Settings from "./settings";
 import { ResponseType } from "@tauri-apps/api/http";
-import SettingsModal from "./settings-modal";
 
 const DEBUG = true;
 
@@ -54,6 +54,30 @@ export default function Home() {
 
   let cf_correction: any = "";
   const [cf_correctionPaths, set_cf_correctionPaths] = useState<string>("");
+
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [settings, setSettings] = useState({
+    radiancePath: "/usr/local/radiance/bin/",
+    hdrgenPath: "/usr/local/bin/",
+    outputPath: "/home/hdri-app/",
+    tempPath: "/tmp/",
+  });
+
+  const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const updatedSettings = JSON.parse(JSON.stringify(settings));
+    updatedSettings[event.currentTarget.name] = event.currentTarget.value;
+    setSettings(updatedSettings);
+  };
+
+  function Paths(path: string) {
+    for (let i = 0; i < path.length; i++) {
+      if (path[i] == "/" || path[i] == "\\") {
+        path = path.slice(i + 1);
+        i = -1;
+      }
+    }
+    return path;
+  }
 
   // Open a file dialog window using the tauri api and update the images array with the results
   async function dialog() {
@@ -283,166 +307,183 @@ export default function Home() {
       .catch(console.error);
   };
 
-  const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [settings, setSettings] = useState({
-    radiancePath: "/usr/local/radiance/bin/",
-    hdrgenPath: "/usr/local/bin/",
-    outputPath: "/home/hdri-app/",
-    tempPath: "/tmp/",
-  });
-
-  const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const updatedSettings = JSON.parse(JSON.stringify(settings));
-    updatedSettings[event.currentTarget.name] = event.currentTarget.value;
-    setSettings(updatedSettings);
-  };
-
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="w-full">
-        <button
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-          onClick={() => setShowSettings((prev) => !prev)}
-        >
-          Settings
-        </button>
-      </div>
-
-      {showSettings ? (
-        <SettingsModal
-          settings={settings}
-          handleChange={handleSettingsChange}
-          toggleModal={() => setShowSettings((prev) => !prev)}
-        />
-      ) : (
-        <></>
-      )}
-
-      <h1>HDRICalibrationTool</h1>
+    <main className="bg-white flex min-h-screen flex-col items-center justify-between">
       <div>
-        <h2>Image Upload</h2>
-
-        <button
-          onClick={dialog}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Select Files
-        </button>
-        <button
-          onClick={dialogBatchProcessing}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Select Files for Batch Processing
-        </button>
-        <div>Image count: {images.length}</div>
-        <div className="image-preview flex flex-wrap">
-          {images.map((image, index) => (
-            <div key={index} className="image-item">
-              <div>
-                <img
-                  src={String(image)}
-                  alt={`Image ${index}`}
-                  width={200}
-                  height={200}
+        <nav className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full">
+          <ul>
+            <li className="font-bold pt-5 pl-5">Navigation Configuration</li>
+            <li className="pt-5 pl-5">
+              <a href="#image_selection">Image Selection</a>
+            </li>
+            <li className="pt-5 pl-5">
+              <a href="#response">Response File</a>
+            </li>
+            <li className="pt-5 pl-5">
+              <a href="#c_r_v">Cropping, Resizing, and View Settings</a>
+            </li>
+            <li className="pt-5 pl-5">
+              <a href="#v">Vignetting Correction</a>
+            </li>
+            <li className="pt-5 pl-5">
+              <a href="#nd">Neutral Density Correction</a>
+            </li>
+            <li className="pt-5 pl-5">
+              <a href="#cf">Calibration Factor Correction</a>
+            </li>
+            <li className="pt-10 pl-5">
+              <button
+                className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                onClick={() => setShowSettings(!showSettings)}
+              >
+                Settings
+              </button>
+              {showSettings && (
+                <Settings
+                  settings={settings}
+                  handleChange={handleSettingsChange}
+                  toggleDialog={() => setShowSettings(!showSettings)}
                 />
-                <button onClick={() => handleImageDelete(index)}>Delete</button>
-                <div>{image.name}</div>
+              )}
+            </li>
+            <li className="pt-5 pl-5">
+              <button
+                onClick={handleGenerateHDRImage}
+                className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+              >
+                Generate HDR Image
+              </button>
+            </li>
+          </ul>
+        </nav>
+        <div className="w-3/4 ml-auto pl-3">
+          <h1 className="font-bold pt-10">Configuration</h1>
+          <h2 className="font-bold pt-5" id="image_selection">
+            Image Selection
+          </h2>
+          <button
+            onClick={dialog}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
+            Select Files
+          </button>
+          <button
+            onClick={dialogBatchProcessing}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
+            Select Files for Batch Processing
+          </button>
+          <div>Image count: {images.length}</div>
+          <div className="image-preview flex flex-wrap">
+            {images.map((image, index) => (
+              <div key={index} className="image-item">
+                <div>
+                  <img
+                    src={String(image)}
+                    alt={`Image ${index}`}
+                    width={200}
+                    height={200}
+                  />
+                  <button onClick={() => handleImageDelete(index)}>
+                    Delete
+                  </button>
+                  <div>{image.name}</div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+          <h2 className="font-bold pt-5" id="response">
+            Response File
+          </h2>
+          <button
+            onClick={dialogResponse}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
+            Select File
+          </button>
+          <div>
+            {responsePaths && (
+              <div>
+                {Paths(responsePaths)}{" "}
+                <button onClick={() => handleResponseDelete()}>Delete</button>
+              </div>
+            )}
+          </div>
+          <div id="c_r_v">
+            <CroppingResizingViewSettings
+              handleChange={handleViewSettingsChange}
+            />
+          </div>
+          <h2 className="font-bold pt-5" id="fe">
+            Fish Eye Correction
+          </h2>
+          <button
+            onClick={dialogFE}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
+            Select File
+          </button>
+          <div>
+            {fe_correctionPaths && (
+              <div>
+                {Paths(fe_correctionPaths)}{" "}
+                <button onClick={() => handle_fe_delete()}>Delete</button>
+              </div>
+            )}
+          </div>
+          <h2 className="font-bold pt-5" id="v">
+            Vignetting Correction
+          </h2>
+          <button
+            onClick={dialogV}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
+            Select File
+          </button>
+          <div>
+            {v_correctionPaths && (
+              <div>
+                {Paths(v_correctionPaths)}{" "}
+                <button onClick={() => handle_v_delete()}>Delete</button>
+              </div>
+            )}
+          </div>
+          <h2 className="font-bold pt-5" id="nd">
+            Neutral Density Correction
+          </h2>
+          <button
+            onClick={dialogND}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
+            Select File
+          </button>
+          <div>
+            {nd_correctionPaths && (
+              <div>
+                {Paths(nd_correctionPaths)}{" "}
+                <button onClick={() => handle_nd_delete()}>Delete</button>
+              </div>
+            )}
+          </div>
+          <h2 className="font-bold pt-5" id="cf">
+            Calibration Factor Correction
+          </h2>
+          <button
+            onClick={dialogCF}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
+            Select File
+          </button>
+          <div>
+            {cf_correctionPaths && (
+              <div>
+                {Paths(cf_correctionPaths)}{" "}
+                <button onClick={() => handle_cf_delete()}>Delete</button>
+              </div>
+            )}
+            <div className="pt-5"></div>
+          </div>
         </div>
-        <h2>Response Path Upload</h2>
-        <button
-          onClick={dialogResponse}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Select Response Files
-        </button>
-        <div>
-          {responsePaths && (
-            <div>
-              {responsePaths}
-              <button onClick={() => handleResponseDelete()}>
-                Delete Response File
-              </button>
-            </div>
-          )}
-        </div>
-        <h2>Fish Eye Correction Path Upload</h2>
-        <button
-          onClick={dialogFE}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Select Fish Eye Correction Files
-        </button>
-        <div>
-          {fe_correctionPaths && (
-            <div>
-              {fe_correctionPaths}
-              <button onClick={() => handle_fe_delete()}>
-                Delete Fish Eye Correction File
-              </button>
-            </div>
-          )}
-        </div>
-        <h2>Vignetting Correction Path Upload</h2>
-        <button
-          onClick={dialogV}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Select Vignetting Correction Files
-        </button>
-        <div>
-          {v_correctionPaths && (
-            <div>
-              {v_correctionPaths}
-              <button onClick={() => handle_v_delete()}>
-                Delete Vignetting Correction File
-              </button>
-            </div>
-          )}
-        </div>
-        <h2>Neutral Density Correction Path Upload</h2>
-        <button
-          onClick={dialogND}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Select Neutral Density Correction Files
-        </button>
-        <div>
-          {nd_correctionPaths && (
-            <div>
-              {nd_correctionPaths}
-              <button onClick={() => handle_nd_delete()}>
-                Delete Neutral Density Correction File
-              </button>
-            </div>
-          )}
-        </div>
-        <h2>Calibration Factor Correction Path Upload</h2>
-        <button
-          onClick={dialogCF}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Select Calibration Factor Correction Files
-        </button>
-        <div>
-          {cf_correctionPaths && (
-            <div>
-              {cf_correctionPaths}
-              <button onClick={() => handle_cf_delete()}>
-                Delete Calibration Factor Correction File
-              </button>
-            </div>
-          )}
-        </div>
-        <CroppingResizingViewSettings handleChange={handleViewSettingsChange} />
-        <button
-          onClick={handleGenerateHDRImage}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-        >
-          Generate HDR Image
-        </button>
       </div>
     </main>
   );
