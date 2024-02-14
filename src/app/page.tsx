@@ -260,54 +260,27 @@ export default function Home() {
   // Calls the BE pipeline function with the input images the user
   // selected, and hardcoded data for the rest of the inputs
   const handleGenerateHDRImage = () => {
-    if (!directorySelected) {
-      invoke<string>("pipeline", {
-        radiancePath: settings.radiancePath,
-        hdrgenPath: settings.hdrgenPath,
-        outputPath: settings.outputPath,
-        tempPath: settings.tempPath,
-        inputImages: devicePaths,
-        responseFunction: responsePaths,
-        fisheyeCorrectionCal: fe_correctionPaths,
-        vignettingCorrectionCal: v_correctionPaths,
-        photometricAdjustmentCal: cf_correctionPaths,
-        neutralDensityCal: nd_correctionPaths,
-        diameter: viewSettings.diameter,
-        xleft: viewSettings.xleft,
-        ydown: viewSettings.ydown,
-        xdim: viewSettings.targetRes,
-        ydim: viewSettings.targetRes,
-        verticalAngle: viewSettings.vv,
-        horizontalAngle: viewSettings.vh,
-      })
-        .then((result) => console.log("Success. Result: ", result))
-        .catch(console.error);
-    } else {
-      for (let directory in devicePaths) {
-        console.log(devicePaths[directory]);
-        invoke<string>("pipeline", {
-          radiancePath: settings.radiancePath,
-          hdrgenPath: settings.hdrgenPath,
-          outputPath: settings.outputPath,
-          tempPath: settings.tempPath,
-          inputImages: [devicePaths[directory]],
-          responseFunction: responsePaths,
-          fisheyeCorrectionCal: fe_correctionPaths,
-          vignettingCorrectionCal: v_correctionPaths,
-          photometricAdjustmentCal: cf_correctionPaths,
-          neutralDensityCal: nd_correctionPaths,
-          diameter: viewSettings.diameter,
-          xleft: viewSettings.xleft,
-          ydown: viewSettings.ydown,
-          xdim: viewSettings.targetRes,
-          ydim: viewSettings.targetRes,
-          verticalAngle: viewSettings.vv,
-          horizontalAngle: viewSettings.vh,
-        })
-          .then((result) => console.log("Success. Result: ", result))
-          .catch(console.error);
-      }
-    }
+    invoke<string>("pipeline", {
+      radiancePath: settings.radiancePath,
+      hdrgenPath: settings.hdrgenPath,
+      outputPath: settings.outputPath,
+      tempPath: settings.tempPath,
+      inputImages: devicePaths,
+      responseFunction: responsePaths,
+      fisheyeCorrectionCal: fe_correctionPaths,
+      vignettingCorrectionCal: v_correctionPaths,
+      photometricAdjustmentCal: cf_correctionPaths,
+      neutralDensityCal: nd_correctionPaths,
+      diameter: viewSettings.diameter,
+      xleft: viewSettings.xleft,
+      ydown: viewSettings.ydown,
+      xdim: viewSettings.targetRes,
+      ydim: viewSettings.targetRes,
+      verticalAngle: viewSettings.vv,
+      horizontalAngle: viewSettings.vh,
+    })
+      .then((result) => console.log("Success. Result: ", result))
+      .catch(console.error);
   };
 
   const [showSettings, setShowSettings] = useState<boolean>(false);

@@ -89,16 +89,6 @@ pub async fn pipeline(
 ) -> Result<String, String> {
     let time = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
 
-    // TODO: CHANGE TO USE is_dir HERE
-    // let is_directory = if input_images[0].contains(".JPG")
-    //     || input_images[0].contains(".jpg")
-    //     || input_images[0].contains(".JPEG")
-    //     || input_images[0].contains(".jpeg")
-    // {
-    //     false
-    // } else {
-    //     true
-    // };
     let is_directory = Path::new(&input_images[0]).is_dir();
 
     if DEBUG {
@@ -134,55 +124,104 @@ pub async fn pipeline(
 
     let create_temp_dir_result = create_dir_all(config_settings.temp_path.as_path());
     let create_output_dir_result = create_dir_all(config_settings.output_path.as_path());
-    
+
     if create_temp_dir_result.is_err() && create_output_dir_result.is_err() {
         return Result::Err(("Error creating temp and output directories.").to_string());
-    }
-    else if create_temp_dir_result.is_err() {
+    } else if create_temp_dir_result.is_err() {
         return Result::Err(("Error creating temp directory.").to_string());
-    }
-    else if create_output_dir_result.is_err() {
+    } else if create_output_dir_result.is_err() {
         return Result::Err(("Error creating output directory.").to_string());
     }
 
-
-    let input_image_paths = if is_directory {
-        // let dir_name =
-        let a = Path::new(&input_images[0]).file_name();
-        // let dir_name = Path::new(&config_settings.temp_path).join(time + "_" + a);
-        // create_dir_all()
-        // println!("PATH GOING TO BE CREATED: {:?}", time_dir);
-
-        // Taken from example code at https://doc.rust-lang.org/std/fs/fn.read_dir.html
-        let entries = fs::read_dir(&input_images[0])
-            .unwrap()
-            .map(|res| res.map(|e| e.path()))
-            .collect::<Result<Vec<_>, io::Error>>()
-            .unwrap();
-
-        // The order in which `read_dir` returns entries is not guaranteed. If reproducible
-        // ordering is required the entries should be explicitly sorted.
-
-        // entries.sort();
-
-        println!("=== ENTRIES: {:?}", entries);
-
-        // TODO: use something different than unwrap to avoid panicking
-        let mut input_image_paths: Vec<String> = Vec::new();
-        for entry in entries {
-            let x = entry.into_os_string().into_string().unwrap();
-            // let x = entry.into_os_string().display().to_string();
-            input_image_paths.push(x);
+    if is_directory {
+        for input_dir in &input_images {
+            let input_images_from_dir = get_images_from_dir(&input_dir);
+            let result = process_image_set(
+                &config_settings,
+                input_images_from_dir,
+                response_function.clone(),
+                fisheye_correction_cal.clone(),
+                vignetting_correction_cal.clone(),
+                photometric_adjustment_cal.clone(),
+                neutral_density_cal.clone(),
+                diameter.clone(),
+                xleft.clone(),
+                ydown.clone(),
+                xdim.clone(),
+                ydim.clone(),
+                vertical_angle.clone(),
+                horizontal_angle.clone(),
+            );
+            if result.is_err() {
+                return result;
+            }
         }
-        input_image_paths
     } else {
-        input_images
-    };
+        let result = process_image_set(
+            &config_settings,
+            input_images,
+            response_function.clone(),
+            fisheye_correction_cal.clone(),
+            vignetting_correction_cal.clone(),
+            photometric_adjustment_cal.clone(),
+            neutral_density_cal.clone(),
+            diameter.clone(),
+            xleft.clone(),
+            ydown.clone(),
+            xdim.clone(),
+            ydim.clone(),
+            vertical_angle.clone(),
+            horizontal_angle.clone(),
+        );
+        if result.is_err() {
+            return result;
+        }
+    }
 
+    // If no errors, return Ok
+    return Result::Ok(("Completed image generation.").to_string());
+}
+
+pub fn get_images_from_dir(input_dir: &String) -> Vec<String> {
+    // TODO: Find code that doesn't panic? i.e. Don't use unwrap()?
+    // Taken from example code at https://doc.rust-lang.org/std/fs/fn.read_dir.html
+    let entries = fs::read_dir(input_dir)
+        .unwrap()
+        .map(|res| res.map(|e| e.path()))
+        .collect::<Result<Vec<_>, io::Error>>()
+        .unwrap();
+
+    println!("=== ENTRIES: {:?}", entries);
+
+    // TODO: use something different than unwrap to avoid panicking
+    let mut input_image_paths: Vec<String> = Vec::new();
+    for entry in entries {
+        let x = entry.into_os_string().into_string().unwrap();
+        input_image_paths.push(x);
+    }
+    input_image_paths
+}
+
+pub fn process_image_set(
+    config_settings: &ConfigSettings,
+    input_images: Vec<String>,
+    response_function: String,
+    fisheye_correction_cal: String,
+    vignetting_correction_cal: String,
+    photometric_adjustment_cal: String,
+    neutral_density_cal: String,
+    diameter: String,
+    xleft: String,
+    ydown: String,
+    xdim: String,
+    ydim: String,
+    vertical_angle: String,
+    horizontal_angle: String,
+) -> Result<String, String> {
     // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
     let _merge_exposures_result = merge_exposures(
         &config_settings,
-        input_image_paths,
+        input_images,
         response_function,
         config_settings
             .temp_path
@@ -359,5 +398,9 @@ pub async fn pipeline(
         horizontal_angle,
     );
 
-    return header_editing_result;
+    if header_editing_result.is_err() {
+        return header_editing_result;
+    }
+
+    return Result::Ok(("Image set processed.").to_string());
 }
