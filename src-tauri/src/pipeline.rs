@@ -115,7 +115,7 @@ pub async fn pipeline(
     }
 
     // Add path to radiance and temp directory info to config settings
-    let config_settings = ConfigSettings {
+    let mut config_settings = ConfigSettings {
         radiance_path: Path::new(&radiance_path).to_owned(),
         hdrgen_path: Path::new(&hdrgen_path).to_owned(),
         output_path: Path::new(&output_path).to_owned(),
@@ -135,6 +135,17 @@ pub async fn pipeline(
 
     if is_directory {
         for input_dir in &input_images {
+            // println!("TEMP PATH {:?}", &temp_path);
+
+            config_settings.temp_path = Path::new(&temp_path).join(Path::new(input_dir).file_name().unwrap());
+
+
+            if create_dir_all(&config_settings.temp_path).is_err() {
+                return Result::Err(
+                    ("Error creating directories for outputs in temp directory.").to_string()
+                );
+            }
+
             let input_images_from_dir = get_images_from_dir(&input_dir);
             let result = process_image_set(
                 &config_settings,
@@ -191,13 +202,20 @@ pub fn get_images_from_dir(input_dir: &String) -> Vec<String> {
         .collect::<Result<Vec<_>, io::Error>>()
         .unwrap();
 
-    println!("=== ENTRIES: {:?}", entries);
+    // println!("=== ENTRIES: {:?}", entries);
 
     // TODO: use something different than unwrap to avoid panicking
     let mut input_image_paths: Vec<String> = Vec::new();
     for entry in entries {
-        let x = entry.into_os_string().into_string().unwrap();
-        input_image_paths.push(x);
+        // TODO: Find a way to check all files in directory are images (e.g. not '.DS_store' which causes error)
+        // if entry.extension().unwrap() == "JPEG"
+        //     || entry.extension().unwrap() == "jpeg"
+        //     || entry.extension().unwrap() == "JPG"
+        //     || entry.extension().unwrap() == "jpg"
+        // {
+            let x = entry.into_os_string().into_string().unwrap();
+            input_image_paths.push(x);
+        // }
     }
     input_image_paths
 }
