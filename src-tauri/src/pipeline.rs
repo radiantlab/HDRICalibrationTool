@@ -9,7 +9,7 @@ mod resize;
 mod vignetting_effect_correction;
 
 use std::{
-    fs::{self, create_dir, create_dir_all},
+    fs::{self, copy, create_dir, create_dir_all},
     io,
     path::{Path, PathBuf},
 };
@@ -137,12 +137,12 @@ pub async fn pipeline(
         for input_dir in &input_images {
             // println!("TEMP PATH {:?}", &temp_path);
 
-            config_settings.temp_path = Path::new(&temp_path).join(Path::new(input_dir).file_name().unwrap());
-
+            config_settings.temp_path =
+                Path::new(&temp_path).join(Path::new(input_dir).file_name().unwrap());
 
             if create_dir_all(&config_settings.temp_path).is_err() {
                 return Result::Err(
-                    ("Error creating directories for outputs in temp directory.").to_string()
+                    ("Error creating directories for outputs in temp directory.").to_string(),
                 );
             }
 
@@ -166,6 +166,18 @@ pub async fn pipeline(
             if result.is_err() {
                 return result;
             }
+
+            let mut output_file_name =  config_settings.output_path.join(Path::new(input_dir).file_name().unwrap());
+            output_file_name.set_extension("hdr");
+            let copy_result = copy(
+                &config_settings.temp_path.join("output9.hdr"),
+               output_file_name,
+            );
+            if copy_result.is_err() {
+                return Result::Err(
+                    ("Error copying final hdr image to output directory.").to_string(),
+                );
+            }
         }
     } else {
         let result = process_image_set(
@@ -186,6 +198,21 @@ pub async fn pipeline(
         );
         if result.is_err() {
             return result;
+        }
+
+
+        // let output_file_name =  config_settings.output_path.join("output_".to_owned() + &time + ".hdr");
+        let output_file_name =  config_settings.output_path.join("output.hdr");
+
+        // output_file_name.set_extension("hdr");
+        let copy_result = copy(
+            &config_settings.temp_path.join("output9.hdr"),
+            output_file_name,
+        );
+        if copy_result.is_err() {
+            return Result::Err(
+                ("Error copying final hdr image to output directory.").to_string(),
+            );
         }
     }
 
@@ -213,8 +240,8 @@ pub fn get_images_from_dir(input_dir: &String) -> Vec<String> {
         //     || entry.extension().unwrap() == "JPG"
         //     || entry.extension().unwrap() == "jpg"
         // {
-            let x = entry.into_os_string().into_string().unwrap();
-            input_image_paths.push(x);
+        let x = entry.into_os_string().into_string().unwrap();
+        input_image_paths.push(x);
         // }
     }
     input_image_paths
