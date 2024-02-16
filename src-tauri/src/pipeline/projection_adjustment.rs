@@ -28,7 +28,7 @@ pub fn projection_adjustment(
     }
 
     // Create a new command for pcomb
-    let mut command = Command::new(config_settings.radiance_path.to_string() + "pcomb");
+    let mut command = Command::new(config_settings.radiance_path.join("pcomb"));
 
     // Add arguments to pcomb command
     command.args(["-f", fisheye_correction_cal.as_str(), input_file.as_str()]);

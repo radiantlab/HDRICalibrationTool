@@ -36,7 +36,7 @@ pub fn crop(
     }
 
     // Create a new command for pcompos
-    let mut command = Command::new(config_settings.radiance_path.to_string() + "pcompos");
+    let mut command = Command::new(config_settings.radiance_path.join("pcompos"));
 
     // Add arguments to pcompos command
     command.args([

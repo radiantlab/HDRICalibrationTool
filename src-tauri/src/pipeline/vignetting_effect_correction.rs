@@ -28,7 +28,7 @@ pub fn vignetting_effect_correction(
     }
 
     // Create a new command for pcomb
-    let mut command = Command::new(config_settings.radiance_path.to_string() + "pcomb");
+    let mut command = Command::new(config_settings.radiance_path.join("pcomb"));
 
     // Add arguments to pcomb command
     command.args([
