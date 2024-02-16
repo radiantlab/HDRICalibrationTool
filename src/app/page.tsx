@@ -8,7 +8,7 @@ import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Settings from "./settings";
 import { ResponseType } from "@tauri-apps/api/http";
 
-const DEBUG = false;
+const DEBUG = true;
 
 export default function Home() {
   // Holds the fisheye coordinates and view settings
@@ -22,6 +22,10 @@ export default function Home() {
     vh: "",
     targetRes: "1000",
   });
+
+  // const [imgDirs, setImgDirs] = useState<any[]>([]);
+  let imgDirs: any | any[] = [];
+  const [directorySelected, setDirectorySelected] = useState<boolean>(false);
 
   // Holds the file paths for the backend
   const [devicePaths, setDevicePaths] = useState<any[]>([]);
@@ -51,7 +55,7 @@ export default function Home() {
   let cf_correction: any = "";
   const [cf_correctionPaths, set_cf_correctionPaths] = useState<string>("");
 
-  const[showSettings, setShowSettings] = useState<boolean>(false)
+  const [showSettings, setShowSettings] = useState<boolean>(false);
   const [settings, setSettings] = useState({
     radiancePath: "/usr/local/radiance/bin/",
     hdrgenPath: "/usr/local/bin/",
@@ -68,11 +72,11 @@ export default function Home() {
   function Paths(path: string) {
     for (let i = 0; i < path.length; i++) {
       if (path[i] == "/" || path[i] == "\\") {
-        path = path.slice(i + 1)
-        i = -1
+        path = path.slice(i + 1);
+        i = -1;
       }
     }
-    return path
+    return path;
   }
 
   // Open a file dialog window using the tauri api and update the images array with the results
@@ -87,6 +91,7 @@ export default function Home() {
       ],
     });
     if (Array.isArray(selected)) {
+      setDirectorySelected(false);
       assets = selected.map((item: any) => convertFileSrc(item));
       setImages(images.concat(assets));
       setDevicePaths(devicePaths.concat(selected));
@@ -95,6 +100,7 @@ export default function Home() {
       // user cancelled the selection
     } else {
       // user selected a single file
+      setDirectorySelected(false);
       assets = [convertFileSrc(selected)];
       setImages(images.concat(assets));
       setDevicePaths(devicePaths.concat([selected]));
@@ -107,9 +113,38 @@ export default function Home() {
     }
   }
 
+  async function dialogBatchProcessing() {
+    selected = await open({
+      multiple: true,
+      directory: true,
+    });
+    if (selected === null) {
+      // user cancelled the selection
+    } else if (Array.isArray(selected)) {
+      setDirectorySelected(true);
+      assets = selected.map((item: any) => convertFileSrc(item));
+      setImages(images.concat(assets));
+      setDevicePaths(devicePaths.concat(selected));
+      setAssetPaths(assetPaths.concat(assets));
+    } else {
+      setDirectorySelected(true);
+      assets = [convertFileSrc(selected)];
+      setImages(images.concat(assets));
+      setDevicePaths(devicePaths.concat([selected]));
+      setAssetPaths(assetPaths.concat(assets));
+    }
+    if (DEBUG) {
+      console.log(
+        "directories selected in batch processing dialog: ",
+        selected
+      );
+    }
+  }
+
   async function dialogResponse() {
     response = await open({
-      multiple: true})
+      multiple: true,
+    });
     if (response === null) {
       // user cancelled the selection
     } else {
@@ -123,7 +158,8 @@ export default function Home() {
 
   async function dialogFE() {
     fe_correction = await open({
-      multiple: true})
+      multiple: true,
+    });
     if (fe_correction === null) {
       // user cancelled the selection
     } else {
@@ -137,7 +173,8 @@ export default function Home() {
 
   async function dialogV() {
     v_correction = await open({
-      multiple: true})
+      multiple: true,
+    });
     if (v_correction === null) {
       // user cancelled the selection
     } else {
@@ -151,7 +188,8 @@ export default function Home() {
 
   async function dialogND() {
     nd_correction = await open({
-      multiple: true})
+      multiple: true,
+    });
     if (nd_correction === null) {
       // user cancelled the selection
     } else {
@@ -165,7 +203,8 @@ export default function Home() {
 
   async function dialogCF() {
     cf_correction = await open({
-      multiple: true})
+      multiple: true,
+    });
     if (cf_correction === null) {
       // user cancelled the selection
     } else {
@@ -210,7 +249,6 @@ export default function Home() {
   const handle_cf_delete = () => {
     set_cf_correctionPaths("");
   };
-  
 
   if (DEBUG) {
     useEffect(() => {
@@ -297,7 +335,7 @@ export default function Home() {
               <button
                 className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
                 onClick={() => setShowSettings(!showSettings)}
-                >
+              >
                 Settings
               </button>
               {showSettings && (
@@ -306,25 +344,34 @@ export default function Home() {
                   handleChange={handleSettingsChange}
                   toggleDialog={() => setShowSettings(!showSettings)}
                 />
-                )}
+              )}
             </li>
             <li className="pt-5 pl-5">
               <button
                 onClick={handleGenerateHDRImage}
-                className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded">
+                className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+              >
                 Generate HDR Image
               </button>
             </li>
-
           </ul>
         </nav>
         <div className="w-3/4 ml-auto pl-3">
           <h1 className="font-bold pt-10">Configuration</h1>
-          <h2 className="font-bold pt-5" id="image_selection">Image Selection</h2>
+          <h2 className="font-bold pt-5" id="image_selection">
+            Image Selection
+          </h2>
           <button
             onClick={dialog}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded">
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
             Select Files
+          </button>
+          <button
+            onClick={dialogBatchProcessing}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
+            Select Files for Batch Processing
           </button>
           <div>Image count: {images.length}</div>
           <div className="image-preview flex flex-wrap">
@@ -337,13 +384,17 @@ export default function Home() {
                     width={200}
                     height={200}
                   />
-                  <button onClick={() => handleImageDelete(index)}>Delete</button>
+                  <button onClick={() => handleImageDelete(index)}>
+                    Delete
+                  </button>
                   <div>{image.name}</div>
                 </div>
               </div>
             ))}
           </div>
-          <h2 className="font-bold pt-5" id="response">Response File</h2>
+          <h2 className="font-bold pt-5" id="response">
+            Response File
+          </h2>
           <button
             onClick={dialogResponse}
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
@@ -352,28 +403,37 @@ export default function Home() {
           </button>
           <div>
             {responsePaths && (
-                <div>
-                  {Paths(responsePaths)} <button onClick={() => handleResponseDelete()}>Delete</button>
-                </div>
+              <div>
+                {Paths(responsePaths)}{" "}
+                <button onClick={() => handleResponseDelete()}>Delete</button>
+              </div>
             )}
           </div>
           <div id="c_r_v">
-            <CroppingResizingViewSettings handleChange={handleViewSettingsChange} />
+            <CroppingResizingViewSettings
+              handleChange={handleViewSettingsChange}
+            />
           </div>
-          <h2 className="font-bold pt-5" id="fe">Fish Eye Correction</h2>
+          <h2 className="font-bold pt-5" id="fe">
+            Fish Eye Correction
+          </h2>
           <button
             onClick={dialogFE}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded">
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          >
             Select File
           </button>
           <div>
             {fe_correctionPaths && (
-                <div>
-                  {Paths(fe_correctionPaths)} <button onClick={() => handle_fe_delete()}>Delete</button>
-                </div>
+              <div>
+                {Paths(fe_correctionPaths)}{" "}
+                <button onClick={() => handle_fe_delete()}>Delete</button>
+              </div>
             )}
           </div>
-          <h2 className="font-bold pt-5" id="v">Vignetting Correction</h2>
+          <h2 className="font-bold pt-5" id="v">
+            Vignetting Correction
+          </h2>
           <button
             onClick={dialogV}
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
@@ -382,12 +442,15 @@ export default function Home() {
           </button>
           <div>
             {v_correctionPaths && (
-                <div>
-                  {Paths(v_correctionPaths)} <button onClick={() => handle_v_delete()}>Delete</button>
-                </div>
+              <div>
+                {Paths(v_correctionPaths)}{" "}
+                <button onClick={() => handle_v_delete()}>Delete</button>
+              </div>
             )}
           </div>
-          <h2 className="font-bold pt-5" id="nd">Neutral Density Correction</h2>
+          <h2 className="font-bold pt-5" id="nd">
+            Neutral Density Correction
+          </h2>
           <button
             onClick={dialogND}
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
@@ -396,12 +459,15 @@ export default function Home() {
           </button>
           <div>
             {nd_correctionPaths && (
-                <div>
-                  {Paths(nd_correctionPaths)} <button onClick={() => handle_nd_delete()}>Delete</button>
-                </div>
+              <div>
+                {Paths(nd_correctionPaths)}{" "}
+                <button onClick={() => handle_nd_delete()}>Delete</button>
+              </div>
             )}
           </div>
-          <h2 className="font-bold pt-5" id="cf">Calibration Factor Correction</h2>
+          <h2 className="font-bold pt-5" id="cf">
+            Calibration Factor Correction
+          </h2>
           <button
             onClick={dialogCF}
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
@@ -410,9 +476,10 @@ export default function Home() {
           </button>
           <div>
             {cf_correctionPaths && (
-                <div>
-                  {Paths(cf_correctionPaths)} <button onClick={() => handle_cf_delete()}>Delete</button>
-                </div>
+              <div>
+                {Paths(cf_correctionPaths)}{" "}
+                <button onClick={() => handle_cf_delete()}>Delete</button>
+              </div>
             )}
             <div className="pt-5"></div>
           </div>

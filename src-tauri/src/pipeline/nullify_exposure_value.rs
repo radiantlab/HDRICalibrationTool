@@ -21,7 +21,7 @@ pub fn nullify_exposure_value(
     }
 
     // Create a new command for ra_xyze
-    let mut command = Command::new(config_settings.radiance_path.to_string() + "ra_xyze");
+    let mut command = Command::new(config_settings.radiance_path.join("ra_xyze"));
 
     // Add arguments to ra_xyze command
     command.args(["-r", "-o", input_file.as_str(), output_file.as_str()]);
