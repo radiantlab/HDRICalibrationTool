@@ -1,5 +1,6 @@
 use crate::pipeline::DEBUG;
-use std::process::Command;
+use std::os::unix::process::ExitStatusExt;
+use std::process::{Command, ExitStatus};
 use std::string::ToString;
 
 use super::ConfigSettings;
@@ -44,18 +45,15 @@ pub fn merge_exposures(
     command.arg("-f");
     command.arg("-g");
 
-    
-
-
     // Run the command
-    let status = command.status();
+    let status = command.status().unwrap_or(ExitStatus::from_raw(1));       // status = ExitStatus of 1 if failure to unwrap
 
     if DEBUG {
         println!("\nCommand exit status: {:?}\n", status);
     }
 
     // Return a Result object to indicate whether hdrgen command was successful
-    if status.is_ok() {
+    if status.success() {
         // On success, return output path of HDR image
         Ok(output_path.into())
     } else {
