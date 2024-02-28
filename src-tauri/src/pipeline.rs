@@ -89,7 +89,13 @@ pub async fn pipeline(
 ) -> Result<String, String> {
     let time = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
 
-    let is_directory = Path::new(&input_images[0]).is_dir();
+
+    let is_directory = if input_images.len() > 0 {
+        Path::new(&input_images[0]).is_dir()
+    }
+    else {
+        false
+    };
 
     if DEBUG {
         println!("Pipeline module called...");
@@ -259,7 +265,7 @@ pub fn process_image_set(
     horizontal_angle: String,
 ) -> Result<String, String> {
     // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
-    let _merge_exposures_result = merge_exposures(
+    let merge_exposures_result = merge_exposures(
         &config_settings,
         input_images,
         response_function,
@@ -271,9 +277,9 @@ pub fn process_image_set(
     );
 
     // If the command to merge exposures encountered an error, abort pipeline
-    // if merge_exposures_result.is_err() {
-    //     return merge_exposures_result;
-    // };
+    if merge_exposures_result.is_err() {
+        return merge_exposures_result;
+    };
 
     // Nullify the exposure value
     let nullify_exposure_result = nullify_exposure_value(
