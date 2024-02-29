@@ -84,8 +84,7 @@ export default function Home() {
         multiple: true,
         directory: true,
       });
-    }
-    else {
+    } else {
       selected = await open({
         multiple: true,
         filters: [
@@ -345,29 +344,51 @@ export default function Home() {
               Select Files
             </button>
             <div className="flex flex-row items-center space-x-4 pl-20">
-              <input type="checkbox" checked={directorySelected} onChange={() => setDirectorySelected(prev => !prev)} />
+              <input
+                type="checkbox"
+                checked={directorySelected}
+                onChange={() => setDirectorySelected((prev) => !prev)}
+              />
               <label>Select directories</label>
             </div>
           </div>
-          <div>Image count: {images.length}</div>
-          <div className="image-preview flex flex-wrap">
-            {images.map((image, index) => (
-              <div key={index} className="image-item">
-                <div>
-                  <img
-                    src={String(image)}
-                    alt={`Image ${index}`}
-                    width={200}
-                    height={200}
-                  />
-                  <button onClick={() => handleImageDelete(index)}>
-                    Delete
-                  </button>
-                  <div>{image.name}</div>
-                </div>
+          {directorySelected ? (
+            <>
+              <div>Directory count: {devicePaths.length}</div>
+              <div className="directory-preview flex flex-wrap flex-col">
+                {devicePaths.map((path, index) => (
+                  <div key={index} className="directory-item flex flex-row space-x-3">
+                    <p>{Paths(path)}</p>
+                    <button onClick={() => handleImageDelete(index)}>
+                      Delete
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          ) : (
+            <>
+              <div>Image count: {images.length}</div>
+              <div className="image-preview flex flex-wrap">
+                {images.map((image, index) => (
+                  <div key={index} className="image-item">
+                    <div>
+                      <img
+                        src={String(image)}
+                        alt={`Image ${index}`}
+                        width={200}
+                        height={200}
+                      />
+                      <button onClick={() => handleImageDelete(index)}>
+                        Delete
+                      </button>
+                      <div>{image.name}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
           <h2 className="font-bold pt-5" id="response">
             Response File
           </h2>
