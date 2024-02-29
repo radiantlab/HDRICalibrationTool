@@ -6,7 +6,6 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Settings from "./settings";
-import { ResponseType } from "@tauri-apps/api/http";
 
 const DEBUG = true;
 
@@ -23,8 +22,7 @@ export default function Home() {
     targetRes: "1000",
   });
 
-  // const [imgDirs, setImgDirs] = useState<any[]>([]);
-  let imgDirs: any | any[] = [];
+  // Represents the value of the checkbox for whether user wants to select directories instead of images
   const [directorySelected, setDirectorySelected] = useState<boolean>(false);
 
   // Holds the file paths for the backend
@@ -81,17 +79,24 @@ export default function Home() {
 
   // Open a file dialog window using the tauri api and update the images array with the results
   async function dialog() {
-    selected = await open({
-      multiple: true,
-      filters: [
-        {
-          name: "Image",
-          extensions: ["jpg", "jpeg", "JPG", "JPEG"],
-        },
-      ],
-    });
+    if (directorySelected == true) {
+      selected = await open({
+        multiple: true,
+        directory: true,
+      });
+    }
+    else {
+      selected = await open({
+        multiple: true,
+        filters: [
+          {
+            name: "Image",
+            extensions: ["jpg", "jpeg", "JPG", "JPEG"],
+          },
+        ],
+      });
+    }
     if (Array.isArray(selected)) {
-      setDirectorySelected(false);
       assets = selected.map((item: any) => convertFileSrc(item));
       setImages(images.concat(assets));
       setDevicePaths(devicePaths.concat(selected));
@@ -100,7 +105,6 @@ export default function Home() {
       // user cancelled the selection
     } else {
       // user selected a single file
-      setDirectorySelected(false);
       assets = [convertFileSrc(selected)];
       setImages(images.concat(assets));
       setDevicePaths(devicePaths.concat([selected]));
@@ -110,34 +114,6 @@ export default function Home() {
       console.log("Dialog function called.");
       console.log("selected: ", selected);
       console.log("assets: ", assets);
-    }
-  }
-
-  async function dialogBatchProcessing() {
-    selected = await open({
-      multiple: true,
-      directory: true,
-    });
-    if (selected === null) {
-      // user cancelled the selection
-    } else if (Array.isArray(selected)) {
-      setDirectorySelected(true);
-      assets = selected.map((item: any) => convertFileSrc(item));
-      setImages(images.concat(assets));
-      setDevicePaths(devicePaths.concat(selected));
-      setAssetPaths(assetPaths.concat(assets));
-    } else {
-      setDirectorySelected(true);
-      assets = [convertFileSrc(selected)];
-      setImages(images.concat(assets));
-      setDevicePaths(devicePaths.concat([selected]));
-      setAssetPaths(assetPaths.concat(assets));
-    }
-    if (DEBUG) {
-      console.log(
-        "directories selected in batch processing dialog: ",
-        selected
-      );
     }
   }
 
@@ -361,18 +337,18 @@ export default function Home() {
           <h2 className="font-bold pt-5" id="image_selection">
             Image Selection
           </h2>
-          <button
-            onClick={dialog}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-          >
-            Select Files
-          </button>
-          <button
-            onClick={dialogBatchProcessing}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-          >
-            Select Files for Batch Processing
-          </button>
+          <div className="flex flex-row">
+            <button
+              onClick={dialog}
+              className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
+            >
+              Select Files
+            </button>
+            <div className="flex flex-row items-center space-x-4 pl-20">
+              <input type="checkbox" checked={directorySelected} onChange={() => setDirectorySelected(prev => !prev)} />
+              <label>Select directories</label>
+            </div>
+          </div>
           <div>Image count: {images.length}</div>
           <div className="image-preview flex flex-wrap">
             {images.map((image, index) => (
