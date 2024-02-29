@@ -46,7 +46,7 @@ pub fn merge_exposures(
     command.arg("-g");
 
     // Run the command
-    let status = command.status().unwrap_or(ExitStatus::from_raw(1));       // status = ExitStatus of 1 if failure to unwrap
+    let status = command.status().unwrap_or(ExitStatus::from_raw(1)); // status = ExitStatus of 1 if failure to unwrap
 
     if DEBUG {
         println!("\nCommand exit status: {:?}\n", status);
