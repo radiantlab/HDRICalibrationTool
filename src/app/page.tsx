@@ -6,6 +6,7 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Settings from "./settings";
+import Progress from "./progress";
 import { ResponseType } from "@tauri-apps/api/http";
 
 const DEBUG = true;
@@ -56,6 +57,7 @@ export default function Home() {
   const [cf_correctionPaths, set_cf_correctionPaths] = useState<string>("");
 
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showProgress, setShowProgress] = useState<boolean>(false);
   const [settings, setSettings] = useState({
     radiancePath: "/usr/local/radiance/bin/",
     hdrgenPath: "/usr/local/bin/",
@@ -284,6 +286,8 @@ export default function Home() {
   // Calls the BE pipeline function with the input images the user
   // selected, and hardcoded data for the rest of the inputs
   const handleGenerateHDRImage = () => {
+    // Progress
+    setShowProgress(!showProgress);
     invoke<string>("pipeline", {
       radiancePath: settings.radiancePath,
       hdrgenPath: settings.hdrgenPath,
@@ -306,6 +310,8 @@ export default function Home() {
       .then((result) => console.log("Success. Result: ", result))
       .catch(console.error);
   };
+
+  const progress: number = 100;
 
   return (
     <main className="bg-white flex min-h-screen flex-col items-center justify-between">
@@ -357,7 +363,9 @@ export default function Home() {
           </ul>
         </nav>
         <div className="w-3/4 ml-auto pl-3">
+          {showProgress && progress < 100 && <Progress Progress={progress}/>}
           <h1 className="font-bold pt-10">Configuration</h1>
+          
           <h2 className="font-bold pt-5" id="image_selection">
             Image Selection
           </h2>
