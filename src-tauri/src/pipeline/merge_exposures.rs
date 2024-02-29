@@ -1,7 +1,5 @@
 use crate::pipeline::DEBUG;
-use std::os::unix::process::ExitStatusExt;
 use std::process::{Command, ExitStatus};
-use std::string::ToString;
 
 use super::ConfigSettings;
 
@@ -46,7 +44,7 @@ pub fn merge_exposures(
     command.arg("-g");
 
     // Run the command
-    let status = command.status().unwrap_or(ExitStatus::from_raw(1)); // status = ExitStatus of 1 if failure to unwrap
+    let status: ExitStatus = command.status().unwrap_or(ExitStatus::default()); // status = ExitStatus of 1 if failure to unwrap
 
     if DEBUG {
         println!("\nCommand exit status: {:?}\n", status);
