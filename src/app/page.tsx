@@ -340,9 +340,9 @@ export default function Home() {
           </ul>
         </nav>
         <div className="w-3/4 ml-auto pl-3">
-          {showProgress && progress < 100 && <Progress Progress={progress}/>}
+          {showProgress && progress < 100 && <Progress Progress={progress} />}
           <h1 className="font-bold pt-10">Configuration</h1>
-          
+
           <h2 className="font-bold pt-5" id="image_selection">
             Image Selection
           </h2>
@@ -367,7 +367,10 @@ export default function Home() {
               <div>Directory count: {devicePaths.length}</div>
               <div className="directory-preview flex flex-wrap flex-col">
                 {devicePaths.map((path, index) => (
-                  <div key={index} className="directory-item flex flex-row space-x-3">
+                  <div
+                    key={index}
+                    className="directory-item flex flex-row space-x-3"
+                  >
                     <p>{Paths(path)}</p>
                     <button onClick={() => handleImageDelete(index)}>
                       Delete

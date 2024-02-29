@@ -89,11 +89,9 @@ pub async fn pipeline(
 ) -> Result<String, String> {
     let time = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
 
-
     let is_directory = if input_images.len() > 0 {
         Path::new(&input_images[0]).is_dir()
-    }
-    else {
+    } else {
         false
     };
 
