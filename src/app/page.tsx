@@ -94,7 +94,7 @@ export default function Home() {
         filters: [
           {
             name: "Image",
-            extensions: ["jpg", "jpeg", "JPG", "JPEG"],
+            extensions: ["jpg", "jpeg", "JPG", "JPEG", "CR2"],
           },
         ],
       });
