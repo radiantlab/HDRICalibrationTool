@@ -6,7 +6,6 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Settings from "./settings";
-import Progress from "./progress";
 import { ResponseType } from "@tauri-apps/api/http";
 
 const DEBUG = true;
@@ -58,6 +57,7 @@ export default function Home() {
 
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showProgress, setShowProgress] = useState<boolean>(false);
+  const [progressButton, setProgressButton] = useState<boolean>(true);
   const [settings, setSettings] = useState({
     radiancePath: "/usr/local/radiance/bin/",
     hdrgenPath: "/usr/local/bin/",
@@ -308,10 +308,9 @@ export default function Home() {
       horizontalAngle: viewSettings.vh,
     })
       .then((result) => console.log("Success. Result: ", result))
+      .then(() => setProgressButton(true))
       .catch(console.error);
   };
-
-  const progress: number = 100;
 
   return (
     <main className="bg-white flex min-h-screen flex-col items-center justify-between text-black">
@@ -363,7 +362,12 @@ export default function Home() {
           </ul>
         </nav>
         <div className="w-3/4 ml-auto pl-3">
-          {showProgress && progress < 100 && <Progress Progress={progress}/>}
+          {showProgress &&
+            <div className="bg-gray-300 fixed w-6/12 h-56 top-56 text-center text-xl p-10">
+              {!progressButton && <h2>Your Images Are Being Generated</h2>}
+              {progressButton && <div><h2>Success!</h2> <button onClick={() => setShowProgress(!showProgress)} className="pt-24">Okay</button></div>}
+            </div>
+          }
           <h1 className="font-bold pt-10">Configuration</h1>
           
           <h2 className="font-bold pt-5" id="image_selection">
