@@ -314,7 +314,7 @@ export default function Home() {
   const progress: number = 100;
 
   return (
-    <main className="bg-white flex min-h-screen flex-col items-center justify-between">
+    <main className="bg-white flex min-h-screen flex-col items-center justify-between text-black">
       <div>
         <nav className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full">
           <ul>
