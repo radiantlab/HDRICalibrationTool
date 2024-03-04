@@ -89,7 +89,11 @@ pub async fn pipeline(
 ) -> Result<String, String> {
     let time = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
 
-    let is_directory = Path::new(&input_images[0]).is_dir();
+    let is_directory = if input_images.len() > 0 {
+        Path::new(&input_images[0]).is_dir()
+    } else {
+        false
+    };
 
     if DEBUG {
         println!("Pipeline module called...");
@@ -167,11 +171,13 @@ pub async fn pipeline(
                 return result;
             }
 
-            let mut output_file_name =  config_settings.output_path.join(Path::new(input_dir).file_name().unwrap());
+            let mut output_file_name = config_settings
+                .output_path
+                .join(Path::new(input_dir).file_name().unwrap());
             output_file_name.set_extension("hdr");
             let copy_result = copy(
                 &config_settings.temp_path.join("output9.hdr"),
-               output_file_name,
+                output_file_name,
             );
             if copy_result.is_err() {
                 return Result::Err(
@@ -200,9 +206,8 @@ pub async fn pipeline(
             return result;
         }
 
-
         // let output_file_name =  config_settings.output_path.join("output_".to_owned() + &time + ".hdr");
-        let output_file_name =  config_settings.output_path.join("output.hdr");
+        let output_file_name = config_settings.output_path.join("output.hdr");
 
         // output_file_name.set_extension("hdr");
         let copy_result = copy(
@@ -210,9 +215,7 @@ pub async fn pipeline(
             output_file_name,
         );
         if copy_result.is_err() {
-            return Result::Err(
-                ("Error copying final hdr image to output directory.").to_string(),
-            );
+            return Result::Err(("Error copying final hdr image to output directory.").to_string());
         }
     }
 
@@ -229,20 +232,16 @@ pub fn get_images_from_dir(input_dir: &String) -> Vec<String> {
         .collect::<Result<Vec<_>, io::Error>>()
         .unwrap();
 
-    // println!("=== ENTRIES: {:?}", entries);
-
-    // TODO: use something different than unwrap to avoid panicking
     let mut input_image_paths: Vec<String> = Vec::new();
     for entry in entries {
-        // TODO: Find a way to check all files in directory are images (e.g. not '.DS_store' which causes error)
-        // if entry.extension().unwrap() == "JPEG"
-        //     || entry.extension().unwrap() == "jpeg"
-        //     || entry.extension().unwrap() == "JPG"
-        //     || entry.extension().unwrap() == "jpg"
-        // {
-        let x = entry.into_os_string().into_string().unwrap();
-        input_image_paths.push(x);
-        // }
+        if entry.extension().unwrap_or_default() == "jpg"
+            || entry.extension().unwrap_or_default() == "JPG"
+            || entry.extension().unwrap_or_default() == "jpeg"
+            || entry.extension().unwrap_or_default() == "JPEG"
+        {
+            let x = entry.into_os_string().into_string().unwrap_or_default();
+            input_image_paths.push(x);
+        }
     }
     input_image_paths
 }
@@ -264,7 +263,7 @@ pub fn process_image_set(
     horizontal_angle: String,
 ) -> Result<String, String> {
     // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
-    let _merge_exposures_result = merge_exposures(
+    let merge_exposures_result = merge_exposures(
         &config_settings,
         input_images,
         response_function,
@@ -276,9 +275,9 @@ pub fn process_image_set(
     );
 
     // If the command to merge exposures encountered an error, abort pipeline
-    // if merge_exposures_result.is_err() {
-    //     return merge_exposures_result;
-    // };
+    if merge_exposures_result.is_err() {
+        return merge_exposures_result;
+    };
 
     // Nullify the exposure value
     let nullify_exposure_result = nullify_exposure_value(
