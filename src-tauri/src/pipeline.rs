@@ -238,6 +238,7 @@ pub fn get_images_from_dir(input_dir: &String) -> Vec<String> {
             || entry.extension().unwrap_or_default() == "JPG"
             || entry.extension().unwrap_or_default() == "jpeg"
             || entry.extension().unwrap_or_default() == "JPEG"
+            || entry.extension().unwrap_or_default() == "CR2"
         {
             let x = entry.into_os_string().into_string().unwrap_or_default();
             input_image_paths.push(x);
