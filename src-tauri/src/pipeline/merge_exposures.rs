@@ -84,22 +84,22 @@ pub fn merge_exposures(
     }
 
     // Run the command
-    let status: ExitStatus = command.status().unwrap_or(ExitStatus::default()); // status = ExitStatus of 1 if failure to unwrap
+    let status: Result<ExitStatus, std::io::Error> = command.status();
 
     if DEBUG {
         println!("\nCommand exit status: {:?}\n", status);
     }
 
     // Return a Result object to indicate whether hdrgen command was successful
-    if status.success() {
-        // On success, return output path of HDR image
-        Ok(output_path.into())
-    } else {
+    if !status.is_ok() || !status.unwrap_or(ExitStatus::default()).success() {
         // On error, return an error message
         Err(format!(
             "Error, non-zero exit status. {} command failed.",
             if raw_images { "raw2hdr" } else { "hdrgen" }
         )
         .into())
+    } else {
+        // On success, return output path of HDR image
+        Ok(output_path.into())
     }
 }
