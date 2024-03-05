@@ -1,8 +1,12 @@
 use crate::pipeline::DEBUG;
-use std::process::Command;
-use std::string::ToString;
+use std::{
+    path::Path,
+    process::{Command, ExitStatus},
+};
 
 use super::ConfigSettings;
+
+// const RAW: bool = true;
 
 // Merges multiple LDR images into an HDR image using hdrgen.
 // input_images:
@@ -22,44 +26,80 @@ pub fn merge_exposures(
         println!("merge_exposures Tauri command was called!");
     }
 
-    // Create a new command for hdrgen
-    let mut command = Command::new(config_settings.hdrgen_path.join("hdrgen"));
+    // Check whether images are in raw format
+    let first_image_ext = Path::new(&input_images[0]).extension().unwrap_or_default();
+    let raw_images: bool = if input_images.len() > 0
+        && (first_image_ext == "jpg"
+            || first_image_ext == "JPG"
+            || first_image_ext == "jpeg"
+            || first_image_ext == "JPEG")
+    {
+        false
+    } else {
+        true
+    };
 
-    // Add input LDR images as args
-    for input_image in input_images {
-        command.arg(format!("{}", input_image));
+    if DEBUG {
+        println!(
+            "\n\nMerge exposures running in {} MODE...\n\n",
+            if raw_images { "RAW" } else { "JPG" }
+        );
     }
 
-    // Add output path for HDR image
-    command.arg("-o");
-    command.arg(format!("{}", output_path));
+    let mut command: Command;
+    if raw_images {
+        // Create a new command for raw2hdr
+        command = Command::new(config_settings.hdrgen_path.join("raw2hdr"));
 
-    // Add camera response function
-    command.arg("-r");
-    command.arg(format!("{}", response_function));
+        // Add output path for HDR image
+        command.arg("-o");
+        command.arg(format!("{}", output_path));
 
-    // Add remaining flags for hdrgen step
-    command.arg("-a");
-    command.arg("-e");
-    command.arg("-f");
-    command.arg("-g");
+        // Add input raw LDR images as args
+        for input_image in input_images {
+            command.arg(format!("{}", input_image));
+        }
+    } else {
+        // Create a new command for hdrgen
+        command = Command::new(config_settings.hdrgen_path.join("hdrgen"));
 
-    
+        // Add input LDR images as args
+        for input_image in input_images {
+            command.arg(format!("{}", input_image));
+        }
 
+        // Add output path for HDR image
+        command.arg("-o");
+        command.arg(format!("{}", output_path));
+
+        // // Add camera response function
+        command.arg("-r");
+        command.arg(format!("{}", response_function));
+
+        // Add remaining flags for hdrgen step
+        command.arg("-a");
+        command.arg("-e");
+        command.arg("-f");
+        command.arg("-g");
+    }
 
     // Run the command
-    let status = command.status();
+    let status: ExitStatus = command.status().unwrap_or(ExitStatus::default()); // status = ExitStatus of 1 if failure to unwrap
 
     if DEBUG {
         println!("\nCommand exit status: {:?}\n", status);
     }
 
     // Return a Result object to indicate whether hdrgen command was successful
-    if status.is_ok() {
+    if status.success() {
         // On success, return output path of HDR image
         Ok(output_path.into())
     } else {
         // On error, return an error message
-        Err("Error, non-zero exit status. hdrgen command failed.".into())
+        Err(format!(
+            "Error, non-zero exit status. {} command failed.",
+            if raw_images { "raw2hdr" } else { "hdrgen" }
+        )
+        .into())
     }
 }
