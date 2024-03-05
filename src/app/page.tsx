@@ -23,41 +23,46 @@ export default function Home() {
     targetRes: "1000",
   });
 
-  // const [imgDirs, setImgDirs] = useState<any[]>([]);
-  let imgDirs: any | any[] = [];
-  const [directorySelected, setDirectorySelected] = useState<boolean>(false);
-
-  // Holds the file paths for the backend
-  const [devicePaths, setDevicePaths] = useState<any[]>([]);
-
-  // Holds the file paths for the frontend
-  const [assetPaths, setAssetPaths] = useState<any[]>([]);
-
-  // Holds the temporary device file paths selected by the user during the dialog function
-  let selected: any | any[] = [];
-
-  // Holds the temporary asset paths selected by the user during the dialog function
-  let assets: any[] = [];
-
-  let response: any = "";
-  const [responsePaths, setResponsePaths] = useState<string>("");
-
-  // Correction files fe = fish eye, v= vignetting, nd = neutral density, cf = calibration factor
-  let fe_correction: any = "";
-  const [fe_correctionPaths, set_fe_correctionPaths] = useState<string>("");
-
-  let v_correction: any = "";
-  const [v_correctionPaths, set_v_correctionPaths] = useState<string>("");
-
-  let nd_correction: any = "";
-  const [nd_correctionPaths, set_nd_correctionPaths] = useState<string>("");
-
-  let cf_correction: any = "";
-  const [cf_correctionPaths, set_cf_correctionPaths] = useState<string>("");
+  // DISPLAY STATES
 
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showProgress, setShowProgress] = useState<boolean>(false);
+  // to enable the progress set this to false
   const [progressButton, setProgressButton] = useState<boolean>(true);
+
+  // Error checking display
+  const [response_error, set_response_error] = useState<boolean>(false);
+  const [fe_error, set_fe_error] = useState<boolean>(false);
+  const [v_error, set_v_error] = useState<boolean>(false);
+  const [nd_error, set_nd_error] = useState<boolean>(false);
+  const [cf_error, set_cf_error] = useState<boolean>(false);
+
+  // PATH AND FILE INFORMATION
+
+  // const [imgDirs, setImgDirs] = useState<any[]>([]);
+  let imgDirs: any | any[] = [];
+  const [directorySelected, setDirectorySelected] = useState<boolean>(false);
+  // Holds the file paths for the backend
+  const [devicePaths, setDevicePaths] = useState<any[]>([]);
+  // Holds the file paths for the frontend
+  const [assetPaths, setAssetPaths] = useState<any[]>([]);
+  // Holds the temporary device file paths selected by the user during the dialog function
+  let selected: any | any[] = [];
+  // Holds the temporary asset paths selected by the user during the dialog function
+  let assets: any[] = [];
+  let response: any = "";
+  const [responsePaths, setResponsePaths] = useState<string>("");
+  // Correction files fe = fish eye, v= vignetting, nd = neutral density, cf = calibration factor
+  let fe_correction: any = "";
+  const [fe_correctionPaths, set_fe_correctionPaths] = useState<string>("");
+  let v_correction: any = "";
+  const [v_correctionPaths, set_v_correctionPaths] = useState<string>("");
+  let nd_correction: any = "";
+  const [nd_correctionPaths, set_nd_correctionPaths] = useState<string>("");
+  let cf_correction: any = "";
+  const [cf_correctionPaths, set_cf_correctionPaths] = useState<string>("");
+  const [images, setImages] = useState<File[]>([]);
+
   const [settings, setSettings] = useState({
     radiancePath: "/usr/local/radiance/bin/",
     hdrgenPath: "/usr/local/bin/",
@@ -71,6 +76,8 @@ export default function Home() {
     setSettings(updatedSettings);
   };
 
+  // FILE STRING FUNCTIONS
+
   function Paths(path: string) {
     for (let i = 0; i < path.length; i++) {
       if (path[i] == "/" || path[i] == "\\") {
@@ -80,6 +87,18 @@ export default function Home() {
     }
     return path;
   }
+
+  function Extensions(ext: string) {
+    for (let i = 0; i < ext.length; i++) {
+      if (ext[i] == ".") {
+        ext = ext.slice(i + 1);
+        i = -1;
+      }
+    }
+    return ext;
+  }
+  
+  // DIALOG FUNCTIONS
 
   // Open a file dialog window using the tauri api and update the images array with the results
   async function dialog() {
@@ -150,8 +169,14 @@ export default function Home() {
     if (response === null) {
       // user cancelled the selection
     } else {
-      // user selected a single file
-      setResponsePaths(response[0]);
+      console.log("Extension " + Extensions(response[0]))
+      set_response_error(false)
+      if (Extensions(response[0]) !== "rsp") {
+        set_response_error(true);
+      }
+      else {
+        setResponsePaths(response[0]);
+      }
     }
     if (DEBUG) {
       console.log("response: ", response);
@@ -165,8 +190,14 @@ export default function Home() {
     if (fe_correction === null) {
       // user cancelled the selection
     } else {
-      // user selected a single file
-      set_fe_correctionPaths(fe_correction[0]);
+      console.log(fe_correction[0])
+      set_fe_error(false)
+      if (Extensions(fe_correction[0]) !== "cal") {
+        set_fe_error(true);
+      }
+      else {
+        set_fe_correctionPaths(fe_correction[0]);
+      }
     }
     if (DEBUG) {
       console.log("fe_correction: ", fe_correction);
@@ -180,8 +211,13 @@ export default function Home() {
     if (v_correction === null) {
       // user cancelled the selection
     } else {
-      // user selected a single file
-      set_v_correctionPaths(v_correction[0]);
+      set_v_error(false)
+      if (Extensions(v_correction[0]) !== "cal") {
+        set_v_error(true);
+      }
+      else {
+        set_v_correctionPaths(v_correction[0]);
+      }
     }
     if (DEBUG) {
       console.log("v_correction: ", v_correction);
@@ -195,8 +231,13 @@ export default function Home() {
     if (nd_correction === null) {
       // user cancelled the selection
     } else {
-      // user selected a single file
-      set_nd_correctionPaths(nd_correction[0]);
+      set_nd_error(false)
+      if (Extensions(nd_correction[0]) !== "cal") {
+        set_nd_error(true);
+      }
+      else {
+        set_nd_correctionPaths(nd_correction[0]);
+      }
     }
     if (DEBUG) {
       console.log("nd_correction: ", nd_correction);
@@ -210,15 +251,21 @@ export default function Home() {
     if (cf_correction === null) {
       // user cancelled the selection
     } else {
-      // user selected a single file
-      set_cf_correctionPaths(cf_correction[0]);
+      set_cf_error(false)
+      if (Extensions(cf_correction[0]) !== "cal") {
+        set_cf_error(true);
+      }
+      else {
+        set_cf_correctionPaths(cf_correction[0]);
+      }
+      
     }
     if (DEBUG) {
       console.log("cf_correction: ", cf_correction);
     }
   }
 
-  const [images, setImages] = useState<File[]>([]);
+  // DELETE FUNCTIONS
 
   const handleImageDelete = (index: number) => {
     const updatedImages = images.slice();
@@ -272,14 +319,13 @@ export default function Home() {
     setViewSettings(updatedViewSettings);
   };
 
-  // === Define hardcoded data for testing ===
+  // HARD CODED PATHS FOR TESTING
 
   // Hardcoded radiance and hdrgen paths for testing
   const fakeRadiancePath = "/usr/local/radiance/bin/";
   const fakeHdrgenPath = "/usr/local/bin/";
   // Hardcoded output path
   const fakeOutputPath = "../output/";
-
   // Hardcoded temp path
   const fakeTempPath = "../tmp/";
 
@@ -369,7 +415,6 @@ export default function Home() {
             </div>
           }
           <h1 className="font-bold pt-10">Configuration</h1>
-          
           <h2 className="font-bold pt-5" id="image_selection">
             Image Selection
           </h2>
@@ -414,6 +459,10 @@ export default function Home() {
             Select File
           </button>
           <div>
+            {response_error &&
+            <div>
+              <p>Please only enter files ending in rsp</p>
+            </div>}
             {responsePaths && (
               <div>
                 {Paths(responsePaths)}{" "}
@@ -436,6 +485,10 @@ export default function Home() {
             Select File
           </button>
           <div>
+            {fe_error &&
+              <div>
+                <p>Please only enter files ending in cal</p>
+              </div>}
             {fe_correctionPaths && (
               <div>
                 {Paths(fe_correctionPaths)}{" "}
@@ -453,6 +506,10 @@ export default function Home() {
             Select File
           </button>
           <div>
+            {v_error &&
+                <div>
+                  <p>Please only enter files ending in cal</p>
+                </div>}
             {v_correctionPaths && (
               <div>
                 {Paths(v_correctionPaths)}{" "}
@@ -470,6 +527,10 @@ export default function Home() {
             Select File
           </button>
           <div>
+            {nd_error &&
+              <div>
+                <p>Please only enter files ending in cal</p>
+              </div>}
             {nd_correctionPaths && (
               <div>
                 {Paths(nd_correctionPaths)}{" "}
@@ -487,6 +548,10 @@ export default function Home() {
             Select File
           </button>
           <div>
+          {cf_error &&
+              <div>
+                <p>Please only enter files ending in cal</p>
+              </div>}
             {cf_correctionPaths && (
               <div>
                 {Paths(cf_correctionPaths)}{" "}
