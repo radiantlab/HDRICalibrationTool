@@ -49,7 +49,7 @@ pub fn merge_exposures(
     let mut command: Command;
     if raw_images {
         // Create a new command for raw2hdr
-        command = Command::new(config_settings.hdrgen_path.join("raw2hdr"));
+        command = Command::new(config_settings.raw2hdr_path.join("raw2hdr"));
 
         // Add output path for HDR image
         command.arg("-o");

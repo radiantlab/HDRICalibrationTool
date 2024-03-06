@@ -61,6 +61,7 @@ export default function Home() {
   const [settings, setSettings] = useState({
     radiancePath: "/usr/local/radiance/bin/",
     hdrgenPath: "/usr/local/bin/",
+    raw2hdrPath: "/usr/local/bin/",
     outputPath: "/home/hdri-app/",
     tempPath: "/tmp/",
   });
@@ -318,6 +319,7 @@ export default function Home() {
     invoke<string>("pipeline", {
       radiancePath: settings.radiancePath,
       hdrgenPath: settings.hdrgenPath,
+      raw2hdrPath: settings.raw2hdrPath,
       outputPath: settings.outputPath,
       tempPath: settings.tempPath,
       inputImages: devicePaths,
