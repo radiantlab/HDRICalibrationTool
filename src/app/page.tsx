@@ -9,6 +9,7 @@ import Settings from "./settings";
 
 import Progress from "./progress";
 import { ResponseType } from "@tauri-apps/api/http";
+import SaveConfigDialog from "./save-config-dialog";
 
 const DEBUG = true;
 
@@ -58,6 +59,9 @@ export default function Home() {
 
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showProgress, setShowProgress] = useState<boolean>(false);
+  const [showSaveConfigDialog, setShowSaveConfigDialog] =
+    useState<boolean>(false);
+
   const [settings, setSettings] = useState({
     radiancePath: "/usr/local/radiance/bin/",
     hdrgenPath: "/usr/local/bin/",
@@ -250,56 +254,6 @@ export default function Home() {
     setViewSettings(updatedViewSettings);
   };
 
-  function handleSaveConfiguration() {
-    // localStorage.setItem("responsePaths", responsePaths)
-    // localStorage.setItem("fe_correctionPaths", fe_correctionPaths)
-    // localStorage.setItem("v_correctionPaths", v_correctionPaths)
-    // localStorage.setItem("nd_correctionPaths", nd_correctionPaths)
-    // localStorage.setItem("cf_correctionPaths", cf_correctionPaths)
-    // localStorage.setItem("diameter", viewSettings.diameter)
-    // localStorage.setItem("xleft", viewSettings.xleft)
-    // localStorage.setItem("ydown", viewSettings.ydown)
-    // localStorage.setItem("xres", viewSettings.xres)
-    // localStorage.setItem("yres", viewSettings.yres)
-    // localStorage.setItem("targetRes", viewSettings.targetRes)
-    // localStorage.setItem("vh", viewSettings.vh)
-    // localStorage.setItem("vv", viewSettings.vv)
-
-    // localStorage.clear()
-    let exampleConfigName = "Configuration Name";
-
-    let savedConfigs = JSON.parse(localStorage.getItem("configs") || "[]")
-    console.log("SAVED CONFIGS:", savedConfigs)
-
-    // let savedConfigs = { configs: };
-    let exampleConfig = {
-      name: exampleConfigName,
-      responsePaths: responsePaths,
-      fe_correctionPaths: fe_correctionPaths,
-      v_correctionPaths: v_correctionPaths,
-      nd_correctionPaths: nd_correctionPaths,
-      cf_correctionPaths: cf_correctionPaths,
-      diameter: viewSettings.diameter,
-      xleft: viewSettings.xleft,
-      ydown: viewSettings.ydown,
-      xres: viewSettings.xres,
-      yres: viewSettings.yres,
-      targetRes: viewSettings.targetRes,
-      vh: viewSettings.vh,
-      vv: viewSettings.vv,
-    };
-
-    savedConfigs.push(exampleConfig)
-
-    localStorage.setItem("configs", JSON.stringify(savedConfigs));
-
-    if (DEBUG) {
-      console.log("localStorage: ", localStorage);
-      let test = JSON.parse(localStorage.getItem("configs") || "[]");
-      console.log("example config parsed from localStorage: ", test);
-    }
-  }
-
   // === Define hardcoded data for testing ===
 
   // Hardcoded radiance and hdrgen paths for testing
@@ -368,26 +322,33 @@ export default function Home() {
             </li>
             <li className="pt-5 pl-5">
               <button
-                onClick={handleSaveConfiguration}
+                onClick={() => setShowSaveConfigDialog((prev) => !prev)}
                 className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
               >
                 Save Configuration
               </button>
-              <dialog id="saveConfigDialog">
-                <p>Save Configuration</p>
-                <form>
-                  <p>
-                    <label>
-                      Configuration Name:
-                      <input type="text"></input>
-                    </label>
-                  </p>
-                  <div>
-                    <button value="cancel" formMethod="dialog">Cancel</button>
-                    <button id="confirmBtn" value="">Save</button>
-                  </div>
-                </form>
-              </dialog>
+              {showSaveConfigDialog && (
+                <SaveConfigDialog
+                  config={{
+                    responsePaths: responsePaths,
+                    fe_correctionPaths: fe_correctionPaths,
+                    v_correctionPaths: v_correctionPaths,
+                    nd_correctionPaths: nd_correctionPaths,
+                    cf_correctionPaths: cf_correctionPaths,
+                    diameter: viewSettings.diameter,
+                    xleft: viewSettings.xleft,
+                    ydown: viewSettings.ydown,
+                    xres: viewSettings.xres,
+                    yres: viewSettings.yres,
+                    targetRes: viewSettings.targetRes,
+                    vh: viewSettings.vh,
+                    vv: viewSettings.vv,
+                  }}
+                  toggleDialog={() =>
+                    setShowSaveConfigDialog(!showSaveConfigDialog)
+                  }
+                />
+              )}
             </li>
             <li className="pt-10 pl-5">
               <button
