@@ -28,13 +28,13 @@ export default function CroppingResizingViewSettings({ handleChange }: any) {
         <div>
           <NumberInput
             name="xleft"
-            label="X Left Offset (distance between left edge of the image and left edge of fisheye view"
+            label="X Left Offset (distance between left edge of the image and left edge of fisheye view)"
             placeholder="pixels"
             handleChange={handleChange}
           />
           <NumberInput
             name="ydown"
-            label="Y Bottom Offset (distance between bottom edge of the image and bottom edge of fisheye view"
+            label="Y Bottom Offset (distance between bottom edge of the image and bottom edge of fisheye view)"
             placeholder="pixels"
             handleChange={handleChange}
           />

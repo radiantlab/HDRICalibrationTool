@@ -7,8 +7,8 @@
     "distDir": "../out"
   },
   "package": {
-    "productName": "app",
-    "version": "0.1.0"
+    "productName": "HDRI Calibration Interface",
+    "version": "2.0.0-rc1"
   },
   "tauri": {
     "allowlist": {
@@ -27,6 +27,10 @@
         "assetScope": [
           "**"
         ]
+      },
+      "app": {
+        "show": true,
+        "hide": true
       }
     },
     "bundle": {
@@ -44,7 +48,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "hdricalibrationtool",
+      "identifier": "hdricalibrationinterface",
       "longDescription": "",
       "macOS": {
         "entitlements": null,
@@ -71,10 +75,10 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
+        "height": 768,
         "resizable": true,
-        "title": "app",
-        "width": 800
+        "title": "HDRI Calibration Interface",
+        "width": 1024
       }
     ]
   }
