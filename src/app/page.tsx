@@ -16,8 +16,8 @@ const DEBUG = true;
 export default function Home() {
   // Holds the fisheye coordinates and view settings
   const [viewSettings, setViewSettings] = useState({
-    xres: "",
-    yres: "",
+    // xres: "",
+    // yres: "",
     diameter: "",
     xleft: "",
     ydown: "",
@@ -338,8 +338,8 @@ export default function Home() {
                     diameter: viewSettings.diameter,
                     xleft: viewSettings.xleft,
                     ydown: viewSettings.ydown,
-                    xres: viewSettings.xres,
-                    yres: viewSettings.yres,
+                    // xres: viewSettings.xres,
+                    // yres: viewSettings.yres,
                     targetRes: viewSettings.targetRes,
                     vh: viewSettings.vh,
                     vv: viewSettings.vv,
