@@ -6,7 +6,7 @@ export default function CroppingResizingViewSettings({ handleChange }: any) {
       <h2 className="font-bold pt-5">Cropping, Resizing, and View Settings</h2>
       <div>
         <div className="flex flex-row space-x-5 pt-5">
-          <NumberInput
+          {/* <NumberInput
             name="xres"
             label="Width (X resolution)"
             placeholder="pixels"
@@ -17,7 +17,7 @@ export default function CroppingResizingViewSettings({ handleChange }: any) {
             label="Height (Y resolution)"
             placeholder="pixels"
             handleChange={handleChange}
-          />
+          /> */}
           <NumberInput
             name="diameter"
             label="Fisheye View Diameter"
