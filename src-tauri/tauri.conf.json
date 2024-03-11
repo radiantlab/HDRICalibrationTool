@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "HDRI Calibration Interface",
-    "version": "2.0.0-rc.1"
+    "version": "2.0.0-rc1"
   },
   "tauri": {
     "allowlist": {
