@@ -10,6 +10,7 @@ import Settings from "./settings";
 import Progress from "./progress";
 import { ResponseType } from "@tauri-apps/api/http";
 import SaveConfigDialog from "./save-config-dialog";
+import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 
 const DEBUG = true;
 
@@ -294,12 +295,30 @@ export default function Home() {
       .catch(console.error);
   };
 
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [appName, setAppName] = useState<string>("");
+  const [tauriVersion, setTauriVersion] = useState<string>("");
+
+  // Retrieves app name, app version, and tauri version from Tauri API
+  useEffect(() => {
+    async function fetchAppInfo() {
+      setAppVersion(await getVersion());
+      setAppName(await getName());
+      setTauriVersion(await getTauriVersion());
+    }
+    fetchAppInfo();
+  }, []);
+
   const progress: number = 100;
 
   return (
     <main className="bg-white flex min-h-screen flex-col items-center justify-between">
       <div>
-        <nav className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full">
+        <nav className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
+          <div className="flex px-5 pb-5 items-center">
+            {/* <img src="favicon.ico" className=" object-contain w-12 mr-5"/> */}
+            <h1 className="text-xl h-max text">{appName}</h1>
+          </div>
           <ul>
             <li className="font-bold pt-5 pl-5">Navigation Configuration</li>
             <li className="pt-5 pl-5">
@@ -374,6 +393,10 @@ export default function Home() {
               </button>
             </li>
           </ul>
+          <div className="pb-3 pl-3 pt-3 text-xs flex-grow flex flex-col justify-end">
+            <p>App version: {appVersion}</p>
+            <p>Tauri version: {tauriVersion}</p>
+          </div>
         </nav>
         <div className="w-3/4 ml-auto pl-3">
           {showProgress && progress < 100 && <Progress Progress={progress} />}
