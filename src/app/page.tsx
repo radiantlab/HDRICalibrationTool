@@ -28,7 +28,8 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showProgress, setShowProgress] = useState<boolean>(false);
   // to enable the progress set this to false
-  const [progressButton, setProgressButton] = useState<boolean>(false);
+  const [progressButton, setProgressButton] = useState<boolean>(true);
+  const [processError, setProcessError] = useState<boolean>(false);
 
   // Error checking display
   const [response_error, set_response_error] = useState<boolean>(false);
@@ -103,6 +104,7 @@ export default function Home() {
   function ResetProgress() {
     setShowProgress(false);
     setProgressButton(false)
+    setProcessError(false)
   }
   
   // DIALOG FUNCTIONS
@@ -318,6 +320,7 @@ export default function Home() {
   const handleGenerateHDRImage = () => {
     // Progress
     setShowProgress(true);
+    setProcessError(false);
     invoke<string>("pipeline", {
       radiancePath: settings.radiancePath,
       hdrgenPath: settings.hdrgenPath,
@@ -337,9 +340,12 @@ export default function Home() {
       verticalAngle: viewSettings.vv,
       horizontalAngle: viewSettings.vh,
     })
-      .then((result) => console.log("Success. Result: ", result))
+      .then((result: any) => console.log("Success. Result: ", result))
       .then(() => setProgressButton(true))
-      .catch(console.error)
+      .catch((error: any) => {
+        console.error
+        setProcessError(true)
+      })
   };
 
   return (
@@ -395,7 +401,8 @@ export default function Home() {
           {showProgress &&
             <div className="bg-gray-300 fixed w-6/12 h-56 top-56 text-center text-xl p-10">
               {!progressButton && <h2>Your Images Are Being Generated</h2>}
-              {progressButton && <div><h2>Process Finished</h2><button onClick={() => ResetProgress()} className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded">Okay</button></div>}
+              {progressButton && !processError && <div><h2>Process Finished</h2><button onClick={() => ResetProgress()} className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded">Okay</button></div>}
+              {progressButton && processError && <div><h2>Error</h2><button onClick={() => ResetProgress()} className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded">Okay</button></div>}
             </div>
           }
           <h1 className="font-bold pt-10">Configuration</h1>
