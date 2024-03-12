@@ -316,8 +316,8 @@ export default function Home() {
       <div>
         <nav className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
           <div className="flex px-5 pb-5 items-center">
-            {/* <img src="favicon.ico" className=" object-contain w-12 mr-5"/> */}
-            <h1 className="text-xl h-max text">{appName}</h1>
+            <img src="SunApertureOrange.png" className=" object-contain h-14 mr-3"/>
+            <h1 className="text-xl text h-max">{appName}</h1>
           </div>
           <ul>
             <li className="font-bold pt-5 pl-5">Navigation Configuration</li>
