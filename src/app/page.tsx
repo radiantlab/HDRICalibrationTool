@@ -11,6 +11,7 @@ import Progress from "./progress";
 import { ResponseType } from "@tauri-apps/api/http";
 import SaveConfigDialog from "./save-config-dialog";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
+import LoadConfigDialog from "./load-config-dialog";
 
 const DEBUG = true;
 
@@ -61,6 +62,8 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showProgress, setShowProgress] = useState<boolean>(false);
   const [showSaveConfigDialog, setShowSaveConfigDialog] =
+    useState<boolean>(false);
+  const [showLoadConfigDialog, setShowLoadConfigDialog] =
     useState<boolean>(false);
 
   const [settings, setSettings] = useState({
@@ -295,6 +298,24 @@ export default function Home() {
       .catch(console.error);
   };
 
+  function setConfig(config: any) {
+    setResponsePaths(config.responsePaths);
+    set_fe_correctionPaths(config.fe_correctionPaths);
+    set_v_correctionPaths(config.v_correctionPaths);
+    set_nd_correctionPaths(config.nd_correctionPaths);
+    set_cf_correctionPaths(config.cf_correctionPaths);
+    setViewSettings({
+      diameter: config.diameter,
+      xleft: config.xleft,
+      ydown: config.ydown,
+      // xres: viewSettings.xres,
+      // yres: viewSettings.yres,
+      targetRes: config.targetRes,
+      vh: config.vh,
+      vv: config.vv,
+    });
+  }
+
   const [appVersion, setAppVersion] = useState<string>("");
   const [appName, setAppName] = useState<string>("");
   const [tauriVersion, setTauriVersion] = useState<string>("");
@@ -316,7 +337,10 @@ export default function Home() {
       <div>
         <nav className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
           <div className="flex px-5 pb-5 items-center">
-            <img src="SunApertureOrange.png" className=" object-contain h-14 mr-3"/>
+            <img
+              src="SunApertureOrange.png"
+              className=" object-contain h-14 mr-3"
+            />
             <h1 className="text-xl text h-max">{appName}</h1>
           </div>
           <ul>
@@ -369,6 +393,23 @@ export default function Home() {
                 />
               )}
             </li>
+            <li className="pt-5 pl-5">
+              <button
+                onClick={() => setShowLoadConfigDialog(!showLoadConfigDialog)}
+                className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+              >
+                Load Configuration
+              </button>
+              {showLoadConfigDialog && (
+                <LoadConfigDialog
+                  setConfig={setConfig}
+                  toggleDialog={() =>
+                    setShowLoadConfigDialog(!showLoadConfigDialog)
+                  }
+                />
+              )}
+            </li>
+
             <li className="pt-10 pl-5">
               <button
                 className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
@@ -480,6 +521,7 @@ export default function Home() {
           </div>
           <div id="c_r_v">
             <CroppingResizingViewSettings
+              viewSettings={viewSettings}
               handleChange={handleViewSettingsChange}
             />
           </div>
