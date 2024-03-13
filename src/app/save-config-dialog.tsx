@@ -1,18 +1,35 @@
 import { useState } from "react";
 
-
-// Modal used for saving the currently entered configuration to localStorage 
+// Modal used for saving the currently entered configuration to localStorage
 export default function SaveConfigDialog({ config, toggleDialog }: any) {
   const [configName, setConfigName] = useState<string>("");
   const [showError, setShowError] = useState<boolean>(false);
 
   // Saves configuration to localStorage with the specified name
-  function saveConfig() {
+  async function saveConfig() {
     if (configName.trim() != "") {
       // If name field is not empty
       config["name"] = configName;
       let savedConfigs = JSON.parse(localStorage.getItem("configs") || "[]");
-      savedConfigs.push(config);
+
+      // Search for existing config with this name
+      let index = savedConfigs.findIndex((c: any) => c.name === configName);
+
+      if (index != -1) {
+        // If configuration already exists, confirm if user wants to overwrite it.
+        let overwriteConfig = await confirm(
+          `You already have a saved configuration with the name ${configName}. Do you want to overwrite this configuration?`
+        );
+
+        // User does not want to overwrite their previously saved config. Exit.
+        if (!overwriteConfig) {
+          return;
+        }
+
+        savedConfigs[index] = config;
+      } else {
+        savedConfigs.push(config);
+      }
       localStorage.setItem("configs", JSON.stringify(savedConfigs));
       console.log(
         "Saved configs: ",
@@ -45,10 +62,11 @@ export default function SaveConfigDialog({ config, toggleDialog }: any) {
               </h2>
               <div className="flex flex-row space-x-5">
                 <div className="mb-4">
-                  <p>This will save the current configuration so it can be loaded later.</p>
-                  <label className="font-bold block mb-2">
-                    Enter a name:
-                  </label>
+                  <p>
+                    This will save the current configuration so it can be loaded
+                    later.
+                  </p>
+                  <label className="font-bold block mb-2">Enter a name:</label>
                   <input
                     name="configName"
                     type="text"
