@@ -62,9 +62,14 @@ export default function SaveConfigDialog({ config, toggleDialog }: any) {
               </h2>
               <div className="flex flex-row space-x-5">
                 <div className="mb-4">
-                  <p>
+                  <p className="text-left">
                     This will save the current configuration so it can be loaded
                     later.
+                  </p>
+                  <p className="text-left text-sm py-5 max-w-lg">
+                    Note: This will only save paths to the calibration
+                    files, so the configuration will not work correctly if the
+                    files are moved.
                   </p>
                   <label className="font-bold block mb-2">Enter a name:</label>
                   <input
@@ -81,7 +86,7 @@ export default function SaveConfigDialog({ config, toggleDialog }: any) {
                   )}
                 </div>
               </div>
-              <div>
+              <div className="space-x-5">
                 <button
                   type="button"
                   className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"

@@ -87,7 +87,7 @@ export default function LoadConfigDialog({ setConfig, toggleDialog }: any) {
                   )}
                 </div>
               </div>
-              <div>
+              <div className="space-x-5">
                 <button
                   type="button"
                   className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
