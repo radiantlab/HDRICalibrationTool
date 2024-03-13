@@ -320,7 +320,6 @@ export default function Home() {
   const handleGenerateHDRImage = () => {
     // Progress
     setShowProgress(true);
-    setProcessError(false);
     invoke<string>("pipeline", {
       radiancePath: settings.radiancePath,
       hdrgenPath: settings.hdrgenPath,
