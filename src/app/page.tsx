@@ -10,6 +10,8 @@ import { ResponseType } from "@tauri-apps/api/http";
 
 const DEBUG = true;
 
+const fakePipeline = false;
+
 export default function Home() {
   // Holds the fisheye coordinates and view settings
   const [viewSettings, setViewSettings] = useState({
@@ -28,7 +30,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [showProgress, setShowProgress] = useState<boolean>(false);
   // to enable the progress set this to false
-  const [progressButton, setProgressButton] = useState<boolean>(true);
+  const [progressButton, setProgressButton] = useState<boolean>(false);
   const [processError, setProcessError] = useState<boolean>(false);
 
   // Error checking display
@@ -340,10 +342,18 @@ export default function Home() {
       horizontalAngle: viewSettings.vh,
     })
       .then((result: any) => console.log("Success. Result: ", result))
-      .then(() => setProgressButton(true))
+      .then(() => {
+        if (!fakePipeline) {
+          setProgressButton(true)
+        }
+        
+      } )
       .catch((error: any) => {
         console.error
-        setProcessError(true)
+        if (!fakePipeline) {
+          setProcessError(true)
+        }
+        
       })
   };
 
@@ -399,9 +409,10 @@ export default function Home() {
         <div className="w-3/4 ml-auto pl-3">
           {showProgress &&
             <div className="bg-gray-300 fixed w-6/12 h-56 top-56 text-center text-xl p-10">
+              {fakePipeline && <div><button className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded" onClick={() => setProgressButton(true)}>Success</button><button className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded" onClick={() => setProcessError(true)}>Error</button></div>}
               {!progressButton && <h2>Your Images Are Being Generated</h2>}
               {progressButton && !processError && <div><h2>Process Finished</h2><button onClick={() => ResetProgress()} className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded">Okay</button></div>}
-              {progressButton && processError && <div><h2>Error</h2><button onClick={() => ResetProgress()} className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded">Okay</button></div>}
+              {!progressButton && processError && <div><h2>Error</h2><button onClick={() => ResetProgress()} className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded">Okay</button></div>}
             </div>
           }
           <h1 className="font-bold pt-10">Configuration</h1>
