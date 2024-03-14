@@ -30,8 +30,6 @@ export default function Home() {
 
   // DISPLAY STATES
 
-  const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [showProgress, setShowProgress] = useState<boolean>(false);
   // to enable the progress set this to false
   const [progressButton, setProgressButton] = useState<boolean>(false);
   const [processError, setProcessError] = useState<boolean>(false);
