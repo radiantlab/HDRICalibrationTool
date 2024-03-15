@@ -7,6 +7,9 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Settings from "./settings";
 import { ResponseType } from "@tauri-apps/api/http";
+import SaveConfigDialog from "./save-config-dialog";
+import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
+import LoadConfigDialog from "./load-config-dialog";
 
 const DEBUG = true;
 
@@ -15,8 +18,8 @@ const fakePipeline = false;
 export default function Home() {
   // Holds the fisheye coordinates and view settings
   const [viewSettings, setViewSettings] = useState({
-    xres: "",
-    yres: "",
+    // xres: "",
+    // yres: "",
     diameter: "",
     xleft: "",
     ydown: "",
@@ -27,8 +30,6 @@ export default function Home() {
 
   // DISPLAY STATES
 
-  const [showSettings, setShowSettings] = useState<boolean>(false);
-  const [showProgress, setShowProgress] = useState<boolean>(false);
   // to enable the progress set this to false
   const [progressButton, setProgressButton] = useState<boolean>(false);
   const [processError, setProcessError] = useState<boolean>(false);
@@ -67,9 +68,17 @@ export default function Home() {
   const [cf_correctionPaths, set_cf_correctionPaths] = useState<string>("");
   const [images, setImages] = useState<File[]>([]);
 
+  const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showProgress, setShowProgress] = useState<boolean>(false);
+  const [showSaveConfigDialog, setShowSaveConfigDialog] =
+    useState<boolean>(false);
+  const [showLoadConfigDialog, setShowLoadConfigDialog] =
+    useState<boolean>(false);
+
   const [settings, setSettings] = useState({
     radiancePath: "/usr/local/radiance/bin/",
     hdrgenPath: "/usr/local/bin/",
+    raw2hdrPath: "/usr/local/bin/",
     outputPath: "/home/hdri-app/",
     tempPath: "/tmp/",
   });
@@ -325,6 +334,7 @@ export default function Home() {
     invoke<string>("pipeline", {
       radiancePath: settings.radiancePath,
       hdrgenPath: settings.hdrgenPath,
+      raw2hdrPath: settings.raw2hdrPath,
       outputPath: settings.outputPath,
       tempPath: settings.tempPath,
       inputImages: devicePaths,
@@ -357,10 +367,51 @@ export default function Home() {
       })
   };
 
+  function setConfig(config: any) {
+    setResponsePaths(config.responsePaths);
+    set_fe_correctionPaths(config.fe_correctionPaths);
+    set_v_correctionPaths(config.v_correctionPaths);
+    set_nd_correctionPaths(config.nd_correctionPaths);
+    set_cf_correctionPaths(config.cf_correctionPaths);
+    setViewSettings({
+      diameter: config.diameter,
+      xleft: config.xleft,
+      ydown: config.ydown,
+      // xres: viewSettings.xres,
+      // yres: viewSettings.yres,
+      targetRes: config.targetRes,
+      vh: config.vh,
+      vv: config.vv,
+    });
+  }
+
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [appName, setAppName] = useState<string>("");
+  const [tauriVersion, setTauriVersion] = useState<string>("");
+
+  // Retrieves app name, app version, and tauri version from Tauri API
+  useEffect(() => {
+    async function fetchAppInfo() {
+      setAppVersion(await getVersion());
+      setAppName(await getName());
+      setTauriVersion(await getTauriVersion());
+    }
+    fetchAppInfo();
+  }, []);
+
+  const progress: number = 100;
+
   return (
     <main className="bg-white flex min-h-screen flex-col items-center justify-between text-black">
       <div>
-        <nav className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full">
+        <nav className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
+          <div className="flex px-5 pb-5 items-center">
+            <img
+              src="SunApertureOrange.png"
+              className=" object-contain h-14 mr-3"
+            />
+            <h1 className="text-xl text h-max">{appName}</h1>
+          </div>
           <ul>
             <li className="font-bold pt-5 pl-5">Navigation Configuration</li>
             <li className="pt-5 pl-5">
@@ -381,6 +432,53 @@ export default function Home() {
             <li className="pt-5 pl-5">
               <a href="#cf">Calibration Factor Correction</a>
             </li>
+            <li className="pt-5 pl-5">
+              <button
+                onClick={() => setShowSaveConfigDialog((prev) => !prev)}
+                className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+              >
+                Save Configuration
+              </button>
+              {showSaveConfigDialog && (
+                <SaveConfigDialog
+                  config={{
+                    responsePaths: responsePaths,
+                    fe_correctionPaths: fe_correctionPaths,
+                    v_correctionPaths: v_correctionPaths,
+                    nd_correctionPaths: nd_correctionPaths,
+                    cf_correctionPaths: cf_correctionPaths,
+                    diameter: viewSettings.diameter,
+                    xleft: viewSettings.xleft,
+                    ydown: viewSettings.ydown,
+                    // xres: viewSettings.xres,
+                    // yres: viewSettings.yres,
+                    targetRes: viewSettings.targetRes,
+                    vh: viewSettings.vh,
+                    vv: viewSettings.vv,
+                  }}
+                  toggleDialog={() =>
+                    setShowSaveConfigDialog(!showSaveConfigDialog)
+                  }
+                />
+              )}
+            </li>
+            <li className="pt-5 pl-5">
+              <button
+                onClick={() => setShowLoadConfigDialog(!showLoadConfigDialog)}
+                className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+              >
+                Load Configuration
+              </button>
+              {showLoadConfigDialog && (
+                <LoadConfigDialog
+                  setConfig={setConfig}
+                  toggleDialog={() =>
+                    setShowLoadConfigDialog(!showLoadConfigDialog)
+                  }
+                />
+              )}
+            </li>
+
             <li className="pt-10 pl-5">
               <button
                 className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
@@ -405,6 +503,10 @@ export default function Home() {
               </button>
             </li>
           </ul>
+          <div className="pb-3 pl-3 pt-3 text-xs flex-grow flex flex-col justify-end">
+            <p>App version: {appVersion}</p>
+            <p>Tauri version: {tauriVersion}</p>
+          </div>
         </nav>
         <div className="w-3/4 ml-auto pl-3">
           {showProgress &&
@@ -498,6 +600,7 @@ export default function Home() {
           </div>
           <div id="c_r_v">
             <CroppingResizingViewSettings
+              viewSettings={viewSettings}
               handleChange={handleViewSettingsChange}
             />
           </div>
