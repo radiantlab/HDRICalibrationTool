@@ -34,6 +34,7 @@ pub const DEBUG: bool = true;
 pub struct ConfigSettings {
     radiance_path: PathBuf,
     hdrgen_path: PathBuf,
+    raw2hdr_path: PathBuf,
     output_path: PathBuf,
     temp_path: PathBuf,
 }
@@ -43,6 +44,8 @@ pub struct ConfigSettings {
 //      The path to radiance binaries
 // hdrgen_path:
 //      The path to the hdrgen binary
+// raw2hdr_path:
+//      The path to the raw2hdr binary
 // output_path: (NOT CURRENTLY USED)
 //      Place for final HDR image to be stored
 // temp_path: (CURRENTLY WHERE OUTPUTS ARE STORED)
@@ -71,6 +74,7 @@ pub struct ConfigSettings {
 pub async fn pipeline(
     radiance_path: String,
     hdrgen_path: String,
+    raw2hdr_path: String,
     output_path: String,
     temp_path: String,
     input_images: Vec<String>,
@@ -99,6 +103,7 @@ pub async fn pipeline(
         println!("Pipeline module called...");
         println!("\tradiance path: {radiance_path}");
         println!("\thdrgen path: {hdrgen_path}");
+        println!("\raw2hdr path: {raw2hdr_path}");
         println!("\toutput path: {output_path}");
         println!("\ttemp path: {temp_path}");
         println!("\tinput images: {:?}", input_images);
@@ -122,6 +127,7 @@ pub async fn pipeline(
     let mut config_settings = ConfigSettings {
         radiance_path: Path::new(&radiance_path).to_owned(),
         hdrgen_path: Path::new(&hdrgen_path).to_owned(),
+        raw2hdr_path: Path::new(&raw2hdr_path).to_owned(),
         output_path: Path::new(&output_path).to_owned(),
         temp_path: Path::new(&temp_path).to_owned(),
     };
@@ -239,6 +245,7 @@ pub fn get_images_from_dir(input_dir: &String) -> Vec<String> {
             || entry.extension().unwrap_or_default() == "jpeg"
             || entry.extension().unwrap_or_default() == "JPEG"
             || entry.extension().unwrap_or_default() == "CR2"
+            || entry.extension().unwrap_or_default() == "cr2"
         {
             let x = entry.into_os_string().into_string().unwrap_or_default();
             input_image_paths.push(x);

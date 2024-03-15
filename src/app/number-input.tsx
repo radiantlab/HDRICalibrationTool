@@ -1,6 +1,7 @@
 export default function NumberInput({
   handleChange,
   name,
+  value,
   label,
   placeholder,
   defaultValue,
@@ -11,6 +12,7 @@ export default function NumberInput({
       <input
         onChange={handleChange}
         name={name}
+        value={value}
         type="number"
         placeholder={placeholder}
         defaultValue={defaultValue}

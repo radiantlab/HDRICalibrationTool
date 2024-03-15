@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.1.0"
+version = "2.0.0"
 description = "A Tauri App"
 authors = ["you"]
 license = ""
@@ -17,7 +17,7 @@ tauri-build = { version = "1.5.0", features = [] }
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.5.2", features = [ "dialog-all", "protocol-all"] }
+tauri = { version = "1.5.2", features = [ "app-show", "app-hide", "dialog-all", "protocol-all"] }
 chrono = "0.4.33"
 
 [features]
