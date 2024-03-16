@@ -5,7 +5,7 @@ The purpose of this application is to give the user a graphical user interface f
 This application runs on MacOS, Windows and Linux.
 
 ## Getting Started
-The user must install [Radiance](https://www.radiance-online.org/) as well as [HDRGen](http://www.anyhere.com/) to their local machine and have access to their location. After the dependencies have been installed, install the program based on the platform you are using by clicking this [link](https://github.com/shantimorrell/HDRICalibrationTool-Capstone/actions/runs/8283470432). There will be a build for each platform. After installation, extract the contents of the zipped folder to a desired location. Open the installed folder/bundle and the first folder in here will contain the installation for your platform. Continue the installation process. This will install the application on your desktop..
+The user must install [Radiance](https://www.radiance-online.org/) as well as [HDRGen](http://www.anyhere.com/) to their local machine and have access to their location. After the dependencies have been installed, install the program based on the platform you are using by clicking this [link](https://github.com/shantimorrell/HDRICalibrationTool-Capstone/actions/runs/8283470432). There will be a build for each platform. After installation, extract the contents of the zipped folder to a desired location. Open the installed folder/bundle and the first folder in here will contain the installation for your platform. Continue the installation process. This will install the application on your desktop.
 
 ## Use
 **Uploading Images**
@@ -18,7 +18,7 @@ Upload the response file that should have a file extension of rsp and fill in th
 
 **Uploading Calibration Files**
 
-Select the calibration files for the remaining fields. These should have a cal file extension.
+Select the calibration files for the remaining fields. These should have a cal file extension..
 
 **Settings**
 
