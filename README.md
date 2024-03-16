@@ -6,6 +6,7 @@ This application runs on MacOS, Windows and Linux.
 
 ## Getting Started
 The user must install [Radiance](https://www.radiance-online.org/) as well as [HDRGen](http://www.anyhere.com/) to their local machine and have acces to their location. After the dependencies have been installed, Install the program based on the platform you are using by clicking this [link](https://github.com/shantimorrell/HDRICalibrationTool-Capstone/actions/runs/8283470432).
+
 **MacOS**
 
 **Windows**
