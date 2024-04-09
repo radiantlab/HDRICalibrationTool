@@ -36,7 +36,7 @@ pub struct ConfigSettings {
     hdrgen_path: PathBuf,
     raw2hdr_path: PathBuf,
     output_path: PathBuf,
-    temp_path: PathBuf,
+    temp_path: PathBuf, // used to store temp path in output dir, i.e. "output_path/tmp/"
 }
 
 // Runs the radiance and hdrgen pipeline.
@@ -46,10 +46,8 @@ pub struct ConfigSettings {
 //      The path to the hdrgen binary
 // raw2hdr_path:
 //      The path to the raw2hdr binary
-// output_path: (NOT CURRENTLY USED)
+// output_path:
 //      Place for final HDR image to be stored
-// temp_path: (CURRENTLY WHERE OUTPUTS ARE STORED)
-//      Place for intermediate HDR image outputs to be stored
 // input_images:
 //      vector of the paths to the input images. Input images must be in .JPG format.
 // response_function:
@@ -76,7 +74,6 @@ pub async fn pipeline(
     hdrgen_path: String,
     raw2hdr_path: String,
     output_path: String,
-    temp_path: String,
     input_images: Vec<String>,
     response_function: String,
     fisheye_correction_cal: String,
@@ -105,7 +102,6 @@ pub async fn pipeline(
         println!("\thdrgen path: {hdrgen_path}");
         println!("\raw2hdr path: {raw2hdr_path}");
         println!("\toutput path: {output_path}");
-        println!("\ttemp path: {temp_path}");
         println!("\tinput images: {:?}", input_images);
         println!("\tresponse function: {response_function}");
         println!("\tfisheye correction cal: {fisheye_correction_cal}");
@@ -129,26 +125,23 @@ pub async fn pipeline(
         hdrgen_path: Path::new(&hdrgen_path).to_owned(),
         raw2hdr_path: Path::new(&raw2hdr_path).to_owned(),
         output_path: Path::new(&output_path).to_owned(),
-        temp_path: Path::new(&temp_path).to_owned(),
+        temp_path: Path::new(&output_path).join("tmp").to_owned(),
     };
 
-    let create_temp_dir_result = create_dir_all(config_settings.temp_path.as_path());
-    let create_output_dir_result = create_dir_all(config_settings.output_path.as_path());
+    // Creates output directory with /tmp subdirectory
+    let create_dirs_result = create_dir_all(&config_settings.temp_path);
 
-    if create_temp_dir_result.is_err() && create_output_dir_result.is_err() {
-        return Result::Err(("Error creating temp and output directories.").to_string());
-    } else if create_temp_dir_result.is_err() {
-        return Result::Err(("Error creating temp directory.").to_string());
-    } else if create_output_dir_result.is_err() {
-        return Result::Err(("Error creating output directory.").to_string());
+    if create_dirs_result.is_err() {
+        return Result::Err(("Error creating tmp and output directories.").to_string());
     }
 
     if is_directory {
         for input_dir in &input_images {
             // println!("TEMP PATH {:?}", &temp_path);
 
-            config_settings.temp_path =
-                Path::new(&temp_path).join(Path::new(input_dir).file_name().unwrap());
+            config_settings.temp_path = Path::new(&config_settings.output_path)
+                .join("tmp")
+                .join(Path::new(input_dir).file_name().unwrap());
 
             if create_dir_all(&config_settings.temp_path).is_err() {
                 return Result::Err(
