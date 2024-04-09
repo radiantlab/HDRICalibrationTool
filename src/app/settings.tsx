@@ -59,18 +59,6 @@ export default function Settings({
                       className="placeholder:text-right no-spinner w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
                     ></input>
                   </div>
-                  <div className="mb-4">
-                    <label className="font-bold block mb-2">
-                      Temp Path (debug only)
-                    </label>
-                    <input
-                      name="tempPath"
-                      type="text"
-                      value={settings.tempPath}
-                      onChange={handleChange}
-                      className="placeholder:text-right no-spinner w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
-                    ></input>
-                  </div>
                 </div>
               </div>
               <h2 className="font-bold pr-5 mb-10 border-b-gray-900 border-b-2 w-fit pb-2 text-2xl">
