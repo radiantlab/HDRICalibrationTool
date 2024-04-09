@@ -12,11 +12,11 @@ export default function Settings({
           <div className="border border-black shadow-2xl bg-white p-10">
             <h1 className="font-bold text-4xl text-center mt-10">Settings</h1>
             <div>
-              <h2 className="font-bold pr-5 mb-10 border-b-2 border-b-gray-900 w-fit pb-2 text-2xl">
+              <h2 className="font-bold pr-5 my-10 border-b-2 border-b-gray-900 w-fit pb-2 text-2xl">
                 External Utilities Settings
               </h2>
               <div>
-                <div className="flex flex-row space-x-5">
+                <div className="flex flex-col space-x-5">
                   <div className="mb-4">
                     <label className="font-bold block mb-2">
                       Radiance Path (binary)
@@ -30,7 +30,7 @@ export default function Settings({
                     ></input>
                   </div>
                   <div className="mb-4">
-                    <label className="font-bold block mb-2">hdrgen Path</label>
+                    <label className="font-bold block mb-2">HDRgen Path</label>
                     <input
                       name="hdrgenPath"
                       type="text"
@@ -61,9 +61,9 @@ export default function Settings({
                   </div>
                 </div>
               </div>
-              <h2 className="font-bold pr-5 mb-10 border-b-gray-900 border-b-2 w-fit pb-2 text-2xl">
+              {/* <h2 className="font-bold pr-5 mb-10 border-b-gray-900 border-b-2 w-fit pb-2 text-2xl">
                 App Settings
-              </h2>
+              </h2> */}
               <div>
                 {/* <div className="flex flex-row space-x-5 items-center">
                     <label className="block mb-2">Show Image Previews</label>
