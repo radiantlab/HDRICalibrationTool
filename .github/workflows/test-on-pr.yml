@@ -1,6 +1,8 @@
 # This workflow builds the app when triggered by a pull request to main and is used for 
 # validation of pull requests. Assets are uploaded upon completion.
 
+# Created using https://github.com/tauri-apps/tauri-action/blob/dev/examples/test-build-only.yml 
+
 name: test-on-pr
 on:
   pull_request:
