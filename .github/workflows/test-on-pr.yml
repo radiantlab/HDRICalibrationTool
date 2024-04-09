@@ -1,9 +1,12 @@
-name: Build
+# This workflow builds the app when triggered by a pull request to main and is used for 
+# validation of pull requests. Assets are uploaded upon completion.
+
+name: test-on-pr
 on:
   pull_request:
     branches:
       - main
-      
+
 jobs:
   build-tauri:
     permissions:
@@ -31,13 +34,13 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: './src-tauri -> target'
+          workspaces: "./src-tauri -> target"
 
       - name: Sync node version and setup cache
         uses: actions/setup-node@v4
         with:
-          node-version: 'lts/*'
-          cache: 'npm' # Set this to npm, yarn or pnpm.
+          node-version: "lts/*"
+          cache: "npm" # Set this to npm, yarn or pnpm.
 
       - name: Install frontend dependencies
         # If you don't have `beforeBuildCommand` configured you may want to build your frontend here too.
@@ -48,14 +51,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # with:
-          # tagName: ${{ github.ref_name }} # This only works if your workflow triggers on new tags.
-          # releaseName: 'App Name v__VERSION__' # tauri-action replaces \_\_VERSION\_\_ with the app version.
-          # releaseBody: 'See the assets to download and install this version.'
-          # releaseDraft: true
-          # prerelease: false
+        # tagName: ${{ github.ref_name }} # This only works if your workflow triggers on new tags.
+        # releaseName: 'App Name v__VERSION__' # tauri-action replaces \_\_VERSION\_\_ with the app version.
+        # releaseBody: 'See the assets to download and install this version.'
+        # releaseDraft: true
+        # prerelease: false
 
-      - name: Upload build artifacts
+      - name: Upload build artifact - Ubuntu
+        if: matrix.platform == 'ubuntu-20.04'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}-build
-          path: src-tauri/target/release/
+          path: src-tauri/target/release/bundle/deb/*.deb
+
+      - name: Upload build artifact - Mac
+        if: matrix.platform == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-build
+          path: src-tauri/target/release/bundle/dmg/*.dmg
+
+      - name: Upload build artifact - Windows
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-build
+          path: src-tauri/target/release/bundle/msi/*.msi
