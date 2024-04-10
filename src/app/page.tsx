@@ -477,6 +477,7 @@ export default function Home() {
               {showSettings && (
                 <Settings
                   settings={settings}
+                  setSettings={setSettings}
                   handleChange={handleSettingsChange}
                   toggleDialog={() => setShowSettings(!showSettings)}
                 />
