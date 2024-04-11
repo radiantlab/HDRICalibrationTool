@@ -1,36 +1,24 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+## Introduction
+The purpose of this application is to give the user a graphical user interface for the Radiance/HDRGen pipeline process. The program works by taking in multiple LDR image files and calibration files in order to return light calculated images containing radiance, luminance and color. The application is intended for interior light design researchers who are concerned with how lighting in a room affects visual discomfort.
+
+## Platforms
+This application runs on MacOS, Windows and Linux.
 
 ## Getting Started
+The user must install [Radiance](https://www.radiance-online.org/) as well as [HDRGen](http://www.anyhere.com/) to their local machine and have access to their location. After the dependencies have been installed, install the [HDRI Calibration Interface](https://github.com/shantimorrell/HDRICalibrationTool-Capstone/actions/runs/8283470432). There will be a build for each platform. After installation, extract the contents of the zipped folder to a desired location. Open the installed `folder/bundle` and the first folder in here will contain the installation for your platform. Continue the installation process. This will install the application on your desktop.
 
-First, run the development server:
+## Use
+### Uploading Images
+Open the application created by the installer in the previous step. You should be able to see the main page of the program. Next you will need to upload the images in the image selection section by clicking the select button. Optionally, you can select a folder that contains the images you will be uploading. The filetypes supported are JPG, JPEG and raw image format. After uploading the images, you should see a preview of the images and the image count should reflect the number of uploaded images.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### Uploading Response File and Image Information
+Upload the response file that should have a file extension of rsp and fill in the image data for the cropping, resizing and view settings.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Uploading Calibration Files
+Select the calibration files for the remaining fields. These should have a cal file extension.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Settings
+Click on the settings tab in the left hand navigation sidebar and you should see a settings display appear. For the Radiance path, give the path to the Radiance binaries. This would be something like `/usr/local/radiance/bin/` with usr being the name of the user on the computer. The HDRGen path should point to /usr/local/bin and the output should point to the location to which you want the output images to go to.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+### Generate Images
+Once settings are entered, you can close the settings and click the Generate HDR Image button in the navigation sidebar which will give a message about the process that will either complete or give an error.
