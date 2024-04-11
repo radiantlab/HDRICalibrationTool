@@ -80,7 +80,6 @@ export default function Home() {
     hdrgenPath: "/usr/local/bin/",
     raw2hdrPath: "/usr/local/bin/",
     outputPath: "/home/hdri-app/",
-    tempPath: "/tmp/",
   });
 
   const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,10 +113,10 @@ export default function Home() {
   // Reset progress
   function ResetProgress() {
     setShowProgress(false);
-    setProgressButton(false)
-    setProcessError(false)
+    setProgressButton(false);
+    setProcessError(false);
   }
-  
+
   // DIALOG FUNCTIONS
 
   // Open a file dialog window using the tauri api and update the images array with the results
@@ -166,12 +165,11 @@ export default function Home() {
     if (response === null) {
       // user cancelled the selection
     } else {
-      console.log("Extension " + Extensions(response[0]))
-      set_response_error(false)
+      console.log("Extension " + Extensions(response[0]));
+      set_response_error(false);
       if (Extensions(response[0]) !== "rsp") {
         set_response_error(true);
-      }
-      else {
+      } else {
         setResponsePaths(response[0]);
       }
     }
@@ -187,12 +185,11 @@ export default function Home() {
     if (fe_correction === null) {
       // user cancelled the selection
     } else {
-      console.log(fe_correction[0])
-      set_fe_error(false)
+      console.log(fe_correction[0]);
+      set_fe_error(false);
       if (Extensions(fe_correction[0]) !== "cal") {
         set_fe_error(true);
-      }
-      else {
+      } else {
         set_fe_correctionPaths(fe_correction[0]);
       }
     }
@@ -208,11 +205,10 @@ export default function Home() {
     if (v_correction === null) {
       // user cancelled the selection
     } else {
-      set_v_error(false)
+      set_v_error(false);
       if (Extensions(v_correction[0]) !== "cal") {
         set_v_error(true);
-      }
-      else {
+      } else {
         set_v_correctionPaths(v_correction[0]);
       }
     }
@@ -228,11 +224,10 @@ export default function Home() {
     if (nd_correction === null) {
       // user cancelled the selection
     } else {
-      set_nd_error(false)
+      set_nd_error(false);
       if (Extensions(nd_correction[0]) !== "cal") {
         set_nd_error(true);
-      }
-      else {
+      } else {
         set_nd_correctionPaths(nd_correction[0]);
       }
     }
@@ -248,14 +243,12 @@ export default function Home() {
     if (cf_correction === null) {
       // user cancelled the selection
     } else {
-      set_cf_error(false)
+      set_cf_error(false);
       if (Extensions(cf_correction[0]) !== "cal") {
         set_cf_error(true);
-      }
-      else {
+      } else {
         set_cf_correctionPaths(cf_correction[0]);
       }
-      
     }
     if (DEBUG) {
       console.log("cf_correction: ", cf_correction);
@@ -323,8 +316,6 @@ export default function Home() {
   const fakeHdrgenPath = "/usr/local/bin/";
   // Hardcoded output path
   const fakeOutputPath = "../output/";
-  // Hardcoded temp path
-  const fakeTempPath = "../tmp/";
 
   // Calls the BE pipeline function with the input images the user
   // selected, and hardcoded data for the rest of the inputs
@@ -336,7 +327,6 @@ export default function Home() {
       hdrgenPath: settings.hdrgenPath,
       raw2hdrPath: settings.raw2hdrPath,
       outputPath: settings.outputPath,
-      tempPath: settings.tempPath,
       inputImages: devicePaths,
       responseFunction: responsePaths,
       fisheyeCorrectionCal: fe_correctionPaths,
@@ -354,17 +344,15 @@ export default function Home() {
       .then((result: any) => console.log("Process finished. Result: ", result))
       .then(() => {
         if (!fakePipeline) {
-          setProgressButton(true)
+          setProgressButton(true);
         }
-        
-      } )
-      .catch((error: any) => {
-        console.error
-        if (!fakePipeline) {
-          setProcessError(true)
-        }
-        
       })
+      .catch((error: any) => {
+        console.error;
+        if (!fakePipeline) {
+          setProcessError(true);
+        }
+      });
   };
 
   function setConfig(config: any) {
@@ -489,6 +477,7 @@ export default function Home() {
               {showSettings && (
                 <Settings
                   settings={settings}
+                  setSettings={setSettings}
                   handleChange={handleSettingsChange}
                   toggleDialog={() => setShowSettings(!showSettings)}
                 />
@@ -509,14 +498,49 @@ export default function Home() {
           </div>
         </nav>
         <div className="w-3/4 ml-auto pl-3">
-          {showProgress &&
+          {showProgress && (
             <div className="bg-gray-300 fixed w-6/12 h-56 top-56 text-center text-xl p-10">
-              {fakePipeline && <div><button className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded" onClick={() => setProgressButton(true)}>Process completed</button><button className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded" onClick={() => setProcessError(true)}>Error</button></div>}
+              {fakePipeline && (
+                <div>
+                  <button
+                    className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                    onClick={() => setProgressButton(true)}
+                  >
+                    Process completed
+                  </button>
+                  <button
+                    className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                    onClick={() => setProcessError(true)}
+                  >
+                    Error
+                  </button>
+                </div>
+              )}
               {!progressButton && <h2>Your Images Are Being Generated</h2>}
-              {progressButton && !processError && <div><h2>Process Finished</h2><button onClick={() => ResetProgress()} className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded">Okay</button></div>}
-              {!progressButton && processError && <div><h2>Error</h2><button onClick={() => ResetProgress()} className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded">Okay</button></div>}
+              {progressButton && !processError && (
+                <div>
+                  <h2>Process Finished</h2>
+                  <button
+                    onClick={() => ResetProgress()}
+                    className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                  >
+                    Okay
+                  </button>
+                </div>
+              )}
+              {!progressButton && processError && (
+                <div>
+                  <h2>Error</h2>
+                  <button
+                    onClick={() => ResetProgress()}
+                    className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                  >
+                    Okay
+                  </button>
+                </div>
+              )}
             </div>
-          }
+          )}
           <h1 className="font-bold pt-10">Configuration</h1>
           <h2 className="font-bold pt-5" id="image_selection">
             Image Selection
@@ -587,10 +611,11 @@ export default function Home() {
             Select File
           </button>
           <div>
-            {response_error &&
-            <div>
-              <p>Please only enter files ending in rsp</p>
-            </div>}
+            {response_error && (
+              <div>
+                <p>Please only enter files ending in rsp</p>
+              </div>
+            )}
             {responsePaths && (
               <div>
                 {Paths(responsePaths)}{" "}
@@ -614,10 +639,11 @@ export default function Home() {
             Select File
           </button>
           <div>
-            {fe_error &&
+            {fe_error && (
               <div>
                 <p>Please only enter files ending in cal</p>
-              </div>}
+              </div>
+            )}
             {fe_correctionPaths && (
               <div>
                 {Paths(fe_correctionPaths)}{" "}
@@ -635,10 +661,11 @@ export default function Home() {
             Select File
           </button>
           <div>
-            {v_error &&
-                <div>
-                  <p>Please only enter files ending in cal</p>
-                </div>}
+            {v_error && (
+              <div>
+                <p>Please only enter files ending in cal</p>
+              </div>
+            )}
             {v_correctionPaths && (
               <div>
                 {Paths(v_correctionPaths)}{" "}
@@ -656,10 +683,11 @@ export default function Home() {
             Select File
           </button>
           <div>
-            {nd_error &&
+            {nd_error && (
               <div>
                 <p>Please only enter files ending in cal</p>
-              </div>}
+              </div>
+            )}
             {nd_correctionPaths && (
               <div>
                 {Paths(nd_correctionPaths)}{" "}
@@ -677,10 +705,11 @@ export default function Home() {
             Select File
           </button>
           <div>
-          {cf_error &&
+            {cf_error && (
               <div>
                 <p>Please only enter files ending in cal</p>
-              </div>}
+              </div>
+            )}
             {cf_correctionPaths && (
               <div>
                 {Paths(cf_correctionPaths)}{" "}
