@@ -256,6 +256,17 @@ export default function Home() {
   }
 
   // DELETE FUNCTIONS
+  
+  const reset = () => {
+    setImages([]);
+    setDevicePaths([]);
+    setAssetPaths([]);
+  }
+
+  const directory_checked  = () => {
+    setDirectorySelected((prev) => !prev);
+    reset();
+  }
 
   const handleImageDelete = (index: number) => {
     const updatedImages = images.slice();
@@ -401,7 +412,7 @@ export default function Home() {
             <h1 className="text-xl text h-max">{appName}</h1>
           </div>
           <ul>
-            <li className="font-bold pt-5 pl-5">Navigation Configuration</li>
+            <li className="font-bold pt-5 pl-5">Navigation</li>
             <li className="pt-5 pl-5">
               <a href="#image_selection">Image Selection</a>
             </li>
@@ -542,6 +553,7 @@ export default function Home() {
             </div>
           )}
           <h1 className="font-bold pt-10">Configuration</h1>
+          <button onClick={reset} className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit">Delete Images/Directories</button>
           <h2 className="font-bold pt-5" id="image_selection">
             Image Selection
           </h2>
@@ -556,7 +568,7 @@ export default function Home() {
               <input
                 type="checkbox"
                 checked={directorySelected}
-                onChange={() => setDirectorySelected((prev) => !prev)}
+                onChange={directory_checked}
               />
               <label>Select directories</label>
             </div>
