@@ -100,22 +100,23 @@ export default function Settings({
                       >
                         Output Path
                       </label>
-                      <input
-                        id="outputPathTextbox"
-                        name="outputPathTextbox"
-                        aria-label="Output Path"
-                        type="text"
-                        value={settings.outputPath}
-                        onChange={handleChange}
-                        className="placeholder:text-right w-max shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
-                      ></input>
-                      <button
-                        aria-label="Select Directory for Output"
-                        onClick={dialog}
-                        className="ml-4 bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
-                      >
-                        Select Directory
-                      </button>
+                      <div className="flex flex-col flex-grow space-y-2">
+                        <button
+                          aria-label="Select Directory for Output"
+                          onClick={dialog}
+                          className="w-max bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
+                        >
+                          Select Directory
+                        </button>
+                        <input
+                          id="outputPathTextbox"
+                          name="outputPathTextbox"
+                          type="text"
+                          value={settings.outputPath}
+                          onChange={handleChange}
+                          className="placeholder:text-right w-full shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+                        ></input>
+                      </div>
                     </div>
                   </div>
                 </div>
