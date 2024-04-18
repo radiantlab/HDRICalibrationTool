@@ -39,58 +39,84 @@ export default function Settings({
                 External Utilities Settings
               </h2>
               <div>
-                <div className="flex flex-col space-x-5">
-                  <div className="mb-4">
-                    <label className="font-bold block mb-2">
+                <div className="flex flex-col space-y-5">
+                  <div className="flex flex-row items-center justify-between">
+                    <label
+                      htmlFor="radiancePath"
+                      className="font-bold block h-full mr-5"
+                    >
                       Radiance Path (binary)
                     </label>
                     <input
+                      id="radiancePath"
                       name="radiancePath"
                       type="text"
                       value={settings.radiancePath}
                       onChange={handleChange}
-                      className="placeholder:text-right no-spinner w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+                      className="flex-grow placeholder:text-right w-max shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
                     ></input>
                   </div>
-                  <div className="mb-4">
-                    <label className="font-bold block mb-2">HDRgen Path</label>
+                  <div className="flex flex-row items-center justify-between">
+                    <label
+                      htmlFor="hdrgenPath"
+                      className="font-bold block h-full mr-5"
+                    >
+                      HDRgen Path
+                    </label>
                     <input
+                      id="hdrgenPath"
                       name="hdrgenPath"
                       type="text"
                       value={settings.hdrgenPath}
                       onChange={handleChange}
-                      className="placeholder:text-right no-spinner w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+                      className="flex-grow placeholder:text-right w-max shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
                     ></input>
                   </div>
-                  <div className="mb-4">
-                    <label className="font-bold block mb-2">raw2hdr Path</label>
+                  <div className="flex flex-row items-center justify-between">
+                    <label
+                      htmlFor="raw2hdrPath"
+                      className="font-bold block h-full mr-5"
+                    >
+                      raw2hdr Path
+                    </label>
                     <input
+                      id="raw2hdrPath"
                       name="raw2hdrPath"
                       type="text"
                       value={settings.raw2hdrPath}
                       onChange={handleChange}
-                      className="placeholder:text-right no-spinner w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+                      className="flex-grow placeholder:text-right w-max shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
                     ></input>
                   </div>
-                  <div className="mb-4">
-                    <label className="font-bold block mb-2">Output Path</label>
-                    <p className="pb-2">
+                  <div>
+                    <p className="pb-2 pt-8">
                       Select the directory or type the path where the HDR images
                       will be saved.
                     </p>
-                    <input
-                      name="outputPath"
-                      type="text"
-                      value={settings.outputPath}
-                      onChange={handleChange}
-                      className="placeholder:text-right no-spinner w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
-                    ></input>
-                    <button
-                      onClick={dialog}
-                      className="ml-4 bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
-                    >
-                      Select Directory
-                    </button>
+                    <div className="flex flex-row items-center justify-between">
+                      <label
+                        htmlFor="outputPathTextbox"
+                        className="font-bold block h-full mr-5"
+                      >
+                        Output Path
+                      </label>
+                      <input
+                        id="outputPathTextbox"
+                        name="outputPathTextbox"
+                        aria-label="Output Path"
+                        type="text"
+                        value={settings.outputPath}
+                        onChange={handleChange}
+                        className="placeholder:text-right w-max shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+                      ></input>
+                      <button
+                        aria-label="Select Directory for Output"
+                        onClick={dialog}
+                        className="ml-4 bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
+                      >
+                        Select Directory
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -103,7 +129,7 @@ export default function Settings({
                     <input type="checkbox" defaultChecked={true}></input>
                 </div> */}
               </div>
-              <div>
+              <div className="pt-10">
                 <button
                   type="button"
                   className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
