@@ -256,17 +256,17 @@ export default function Home() {
   }
 
   // DELETE FUNCTIONS
-  
+
   const reset = () => {
     setImages([]);
     setDevicePaths([]);
     setAssetPaths([]);
-  }
+  };
 
-  const directory_checked  = () => {
+  const directory_checked = () => {
     setDirectorySelected((prev) => !prev);
     reset();
-  }
+  };
 
   const handleImageDelete = (index: number) => {
     const updatedImages = images.slice();
@@ -403,38 +403,42 @@ export default function Home() {
   return (
     <main className="bg-white flex min-h-screen flex-col items-center justify-between text-black">
       <div>
-        <nav className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
-          <div className="flex px-5 pb-5 items-center">
-            <img
-              src="SunApertureOrange.png"
-              className=" object-contain h-14 mr-3"
-            />
-            <h1 className="text-xl text h-max">{appName}</h1>
-          </div>
-          <ul>
-            <li className="font-bold pt-5 pl-5">Navigation</li>
-            <li className="pt-5 pl-5">
-              <a href="#image_selection">Image Selection</a>
-            </li>
-            <li className="pt-5 pl-5">
-              <a href="#response">Response File</a>
-            </li>
-            <li className="pt-5 pl-5">
-              <a href="#c_r_v">Cropping, Resizing, and View Settings</a>
-            </li>
-            <li className="pt-5 pl-5">
-              <a href="#v">Vignetting Correction</a>
-            </li>
-            <li className="pt-5 pl-5">
-              <a href="#nd">Neutral Density Correction</a>
-            </li>
-            <li className="pt-5 pl-5">
-              <a href="#cf">Calibration Factor Correction</a>
-            </li>
-            <li className="pt-5 pl-5">
+        <div className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
+          <nav>
+            <div className="flex px-5 pb-5 items-center">
+              <img
+                src="SunApertureOrange.png"
+                className=" object-contain h-14 mr-3"
+              />
+              <h1 className="text-xl text h-max">{appName}</h1>
+            </div>
+            <ul>
+              <li className="font-bold pt-5 pl-5">Navigation</li>
+              <li className="pt-5 pl-5">
+                <a href="#image_selection">Image Selection</a>
+              </li>
+              <li className="pt-5 pl-5">
+                <a href="#response">Response File</a>
+              </li>
+              <li className="pt-5 pl-5">
+                <a href="#c_r_v">Cropping, Resizing, and View Settings</a>
+              </li>
+              <li className="pt-5 pl-5">
+                <a href="#v">Vignetting Correction</a>
+              </li>
+              <li className="pt-5 pl-5">
+                <a href="#nd">Neutral Density Correction</a>
+              </li>
+              <li className="pt-5 pl-5">
+                <a href="#cf">Calibration Factor Correction</a>
+              </li>
+            </ul>
+          </nav>
+          <div className="flex flex-col pt-10 pl-5 space-y-8">
+            <div className="space-y-3">
               <button
                 onClick={() => setShowSaveConfigDialog((prev) => !prev)}
-                className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                className="w-max bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
               >
                 Save Configuration
               </button>
@@ -460,11 +464,9 @@ export default function Home() {
                   }
                 />
               )}
-            </li>
-            <li className="pt-5 pl-5">
               <button
                 onClick={() => setShowLoadConfigDialog(!showLoadConfigDialog)}
-                className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                className="w-max bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
               >
                 Load Configuration
               </button>
@@ -476,38 +478,33 @@ export default function Home() {
                   }
                 />
               )}
-            </li>
-
-            <li className="pt-10 pl-5">
-              <button
-                className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
-                onClick={() => setShowSettings(!showSettings)}
-              >
-                Settings
-              </button>
-              {showSettings && (
-                <Settings
-                  settings={settings}
-                  setSettings={setSettings}
-                  handleChange={handleSettingsChange}
-                  toggleDialog={() => setShowSettings(!showSettings)}
-                />
-              )}
-            </li>
-            <li className="pt-5 pl-5">
-              <button
-                onClick={handleGenerateHDRImage}
-                className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
-              >
-                Generate HDR Image
-              </button>
-            </li>
-          </ul>
+            </div>
+            <button
+              className="w-max bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+              onClick={() => setShowSettings(!showSettings)}
+            >
+              Settings
+            </button>
+            {showSettings && (
+              <Settings
+                settings={settings}
+                setSettings={setSettings}
+                handleChange={handleSettingsChange}
+                toggleDialog={() => setShowSettings(!showSettings)}
+              />
+            )}
+            <button
+              onClick={handleGenerateHDRImage}
+              className="w-max bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+            >
+              Generate HDR Image
+            </button>
+          </div>
           <div className="pb-3 pl-3 pt-3 text-xs flex-grow flex flex-col justify-end">
             <p>App version: {appVersion}</p>
             <p>Tauri version: {tauriVersion}</p>
           </div>
-        </nav>
+        </div>
         <div className="w-3/4 ml-auto pl-3">
           {showProgress && (
             <div className="bg-gray-300 fixed w-6/12 h-56 top-56 text-center text-xl p-10">
@@ -553,7 +550,12 @@ export default function Home() {
             </div>
           )}
           <h1 className="font-bold pt-10">Configuration</h1>
-          <button onClick={reset} className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit">Delete Images/Directories</button>
+          <button
+            onClick={reset}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
+          >
+            Delete Images/Directories
+          </button>
           <h2 className="font-bold pt-5" id="image_selection">
             Image Selection
           </h2>
