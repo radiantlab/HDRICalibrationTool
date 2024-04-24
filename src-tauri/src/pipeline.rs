@@ -14,8 +14,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use chrono::Utc; // For getting UTC and formatting in ISO 8601
-
 use crop::crop;
 use header_editing::header_editing;
 use merge_exposures::merge_exposures;
@@ -49,7 +47,7 @@ pub struct ConfigSettings {
 // output_path:
 //      Place for final HDR image to be stored. Temp dir is created within the ouput dir.
 // input_images:
-//      vector of the paths to the input images, or the input directories if batch processing. 
+//      vector of the paths to the input images, or the input directories if batch processing.
 //      Input images must be in .JPG format or .CR2 format.
 // response_function:
 //      string for the path to the camera response function (.rsp)
@@ -93,8 +91,6 @@ pub async fn pipeline(
     vertical_angle: String,
     horizontal_angle: String,
 ) -> Result<String, String> {
-    let time = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
-
     let is_directory = if input_images.len() > 0 {
         Path::new(&input_images[0]).is_dir()
     } else {
@@ -120,8 +116,6 @@ pub async fn pipeline(
         } else {
             println!("User selected images, not directories.");
         }
-
-        println!("\nSystem time: {}", time);
     }
 
     // Add path to radiance and temp directory info to config settings
