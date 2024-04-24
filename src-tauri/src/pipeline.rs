@@ -9,7 +9,7 @@ mod resize;
 mod vignetting_effect_correction;
 
 use std::{
-    fs::{self, copy, create_dir, create_dir_all},
+    fs::{self, copy, create_dir_all},
     io,
     path::{Path, PathBuf},
 };
@@ -47,15 +47,20 @@ pub struct ConfigSettings {
 // raw2hdr_path:
 //      The path to the raw2hdr binary
 // output_path:
-//      Place for final HDR image to be stored
+//      Place for final HDR image to be stored. Temp dir is created within the ouput dir.
 // input_images:
-//      vector of the paths to the input images. Input images must be in .JPG format.
+//      vector of the paths to the input images, or the input directories if batch processing. 
+//      Input images must be in .JPG format or .CR2 format.
 // response_function:
-//      string for the path to the camera response function, must be a .rsp file
+//      string for the path to the camera response function (.rsp)
 // fisheye_correction_cal:
-//      a string for the fisheye correction calibration file
+//      a string for the path to fisheye correction calibration file (.cal)
 // vignetting_correction_cal:
-//      a string for the vignetting correction calibration file
+//      a string for the path to vignetting correction calibration file (.cal)
+// photometric_adjustment_cal:
+//      a string for the path to photometric adjustment calibration file (.cal)
+// neutral_density_cal:
+//      a string for the path to neutral density adjustment calibration file (.cal)
 // diameter:
 //      the fisheye view diameter in pixels
 // xleft:
