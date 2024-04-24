@@ -106,25 +106,30 @@ pub async fn pipeline(
         println!("\tinput images: {:?}", input_images);
         println!("\tresponse function: {response_function}");
         println!("\tfisheye correction cal: {fisheye_correction_cal}");
+        println!("\tvignetting correction cal: {vignetting_correction_cal}");
+        println!("\tphotometric adjustment cal: {photometric_adjustment_cal}");
+        println!("\tneutral density cal: {neutral_density_cal}");
         println!("\tdiameter: {diameter}");
         println!("\txleft: {xleft}");
         println!("\tydown: {ydown}");
+        println!("\txdim: {xdim}");
+        println!("\tydim: {ydim}");
 
-        println!("\n\n");
+        println!("\n\nPROCESSING MODE");
         if is_directory {
-            println!("User selected directories.");
+            println!("\tUser selected directories. (Batch processing)");
         } else {
-            println!("User selected images, not directories.");
+            println!("\tUser selected images. (Single scene)");
         }
     }
 
-    // Add path to radiance and temp directory info to config settings
+    // Add paths to radiance, hdrgen, raw2hdr, and output and temp directories to config settings
     let mut config_settings = ConfigSettings {
         radiance_path: Path::new(&radiance_path).to_owned(),
         hdrgen_path: Path::new(&hdrgen_path).to_owned(),
         raw2hdr_path: Path::new(&raw2hdr_path).to_owned(),
         output_path: Path::new(&output_path).to_owned(),
-        temp_path: Path::new(&output_path).join("tmp").to_owned(),
+        temp_path: Path::new(&output_path).join("tmp").to_owned(), // Temp directory is located in output directory
     };
 
     // Creates output directory with /tmp subdirectory
@@ -135,9 +140,11 @@ pub async fn pipeline(
     }
 
     if is_directory {
-        for input_dir in &input_images {
-            // println!("TEMP PATH {:?}", &temp_path);
+        // Directories were selected (batch processing)
 
+        // Run pipeline for each directory selected
+        for input_dir in &input_images {
+            // Create a subdirectory inside tmp for this directory with input images (same name as input dir)
             config_settings.temp_path = Path::new(&config_settings.output_path)
                 .join("tmp")
                 .join(Path::new(input_dir).file_name().unwrap());
@@ -148,7 +155,10 @@ pub async fn pipeline(
                 );
             }
 
+            // Grab all JPG or CR2 images from the directory and ignore all other files
             let input_images_from_dir = get_images_from_dir(&input_dir);
+
+            // Run the HDRGen and Radiance pipeline on the input images
             let result = process_image_set(
                 &config_settings,
                 input_images_from_dir,
@@ -169,10 +179,13 @@ pub async fn pipeline(
                 return result;
             }
 
+            // Set output file name to be the same as the input directory name (i.e. <dir_name>.hdr)
             let mut output_file_name = config_settings
                 .output_path
                 .join(Path::new(input_dir).file_name().unwrap());
             output_file_name.set_extension("hdr");
+
+            // Copy the final output hdr image to output directory
             let copy_result = copy(
                 &config_settings.temp_path.join("output9.hdr"),
                 output_file_name,
@@ -184,6 +197,9 @@ pub async fn pipeline(
             }
         }
     } else {
+        // Individual images were selected (single scene)
+
+        // Run the HDRGen and Radiance pipeline on the images
         let result = process_image_set(
             &config_settings,
             input_images,
@@ -204,10 +220,9 @@ pub async fn pipeline(
             return result;
         }
 
-        // let output_file_name =  config_settings.output_path.join("output_".to_owned() + &time + ".hdr");
         let output_file_name = config_settings.output_path.join("output.hdr");
 
-        // output_file_name.set_extension("hdr");
+        // Copy the final output hdr image to output directory
         let copy_result = copy(
             &config_settings.temp_path.join("output9.hdr"),
             output_file_name,
