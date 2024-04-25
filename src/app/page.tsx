@@ -10,41 +10,43 @@ import { ResponseType } from "@tauri-apps/api/http";
 import SaveConfigDialog from "./save-config-dialog";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import LoadConfigDialog from "./load-config-dialog";
-import { type } from "@tauri-apps/api/os";
 
 const DEBUG = true;
 
 const fakePipeline = false;
 
 export default function Home() {
-
-  // Updates radiance, hdrgen, and raw2hdr paths in settings to match default os type
-  async function getDefaultPath() {
-    const osType = await type()
-
-    // Default path for Linux or Mac is /usr/local/bin
-    let defaultPath = "/usr/local/bin"
-
-    // If Windows, update default path
-    if (osType == "Windows_NT") {
-      defaultPath = "C:\\bin"
-    }
-
-    let updatedSettings = {
-      radiancePath: defaultPath,
-      hdrgenPath: defaultPath,
-      raw2hdrPath: defaultPath,
-      outputPath: settings.outputPath,
-    }
-    setSettings(updatedSettings)
-  }
-
-  // Get the default paths for the os
+  // Get default binary paths to populate settings fields based on OS
   useEffect(() => {
-    getDefaultPath()
-  }, [])
+    let osPlatform = "";
 
+    // Make a call to the backend to get OS platform
+    invoke<string>("query_os_platform", {})
+      .then((platform: any) => {
+        if (DEBUG) {
+          console.log("OS platform successfully queried:", platform);
+        }
 
+        // Default path for macOS and Linux
+        let defaultPath = "/usr/local/bin";
+
+        // If platform is windows, update default path
+        if (osPlatform === "windows") {
+          defaultPath = "C:\\bin";
+        }
+
+        // Update settings
+        setSettings({
+          radiancePath: defaultPath,
+          hdrgenPath: defaultPath,
+          raw2hdrPath: defaultPath,
+          outputPath: settings.outputPath,
+        });
+      })
+      .catch(() => {
+        console.error;
+      });
+  }, []);
 
   // Holds the fisheye coordinates and view settings
   const [viewSettings, setViewSettings] = useState({
@@ -106,15 +108,9 @@ export default function Home() {
     useState<boolean>(false);
 
   const [settings, setSettings] = useState({
-    // radiancePath: defaultPath,
-    // hdrgenPath: defaultPath,
-    // raw2hdrPath: defaultPath,
     radiancePath: "",
     hdrgenPath: "",
     raw2hdrPath: "",
-    // radiancePath: "/usr/local/radiance/bin/",
-    // hdrgenPath: "/usr/local/bin/",
-    // raw2hdrPath: "/usr/local/bin/",
     outputPath: "/home/hdri-app/",
   });
 
