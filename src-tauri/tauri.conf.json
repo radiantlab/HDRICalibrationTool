@@ -13,20 +13,21 @@
   "tauri": {
     "allowlist": {
       "all": false,
+      "os": {
+        "all": true
+      },
       "dialog": {
-        "all": true, 
-        "ask": true, 
-        "confirm": true, 
-        "message": true, 
+        "all": true,
+        "ask": true,
+        "confirm": true,
+        "message": true,
         "open": true,
         "save": true
       },
       "protocol": {
         "all": true,
         "asset": true,
-        "assetScope": [
-          "**"
-        ]
+        "assetScope": ["**"]
       },
       "app": {
         "show": true,
