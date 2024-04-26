@@ -16,6 +16,38 @@ const DEBUG = true;
 const fakePipeline = false;
 
 export default function Home() {
+  // Get default binary paths to populate settings fields based on OS
+  useEffect(() => {
+    let osPlatform = "";
+
+    // Make a call to the backend to get OS platform
+    invoke<string>("query_os_platform", {})
+      .then((platform: any) => {
+        if (DEBUG) {
+          console.log("OS platform successfully queried:", platform);
+        }
+
+        // Default path for macOS and Linux
+        let defaultPath = "/usr/local/bin";
+
+        // If platform is windows, update default path
+        if (osPlatform === "windows") {
+          defaultPath = "C:\\bin";
+        }
+
+        // Update settings
+        setSettings({
+          radiancePath: defaultPath,
+          hdrgenPath: defaultPath,
+          raw2hdrPath: defaultPath,
+          outputPath: settings.outputPath,
+        });
+      })
+      .catch(() => {
+        console.error;
+      });
+  }, []);
+
   // Holds the fisheye coordinates and view settings
   const [viewSettings, setViewSettings] = useState({
     // xres: "",
@@ -76,9 +108,9 @@ export default function Home() {
     useState<boolean>(false);
 
   const [settings, setSettings] = useState({
-    radiancePath: "/usr/local/radiance/bin/",
-    hdrgenPath: "/usr/local/bin/",
-    raw2hdrPath: "/usr/local/bin/",
+    radiancePath: "",
+    hdrgenPath: "",
+    raw2hdrPath: "",
     outputPath: "/home/hdri-app/",
   });
 

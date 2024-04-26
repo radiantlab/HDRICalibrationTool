@@ -113,7 +113,7 @@ export default function Settings({
                           name="outputPathTextbox"
                           type="text"
                           value={settings.outputPath}
-                          onChange={handleChange}
+                          onChange={(e) => handleUpdateOutputPath(e.target.value)}
                           className="placeholder:text-right w-full shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
                         ></input>
                       </div>
