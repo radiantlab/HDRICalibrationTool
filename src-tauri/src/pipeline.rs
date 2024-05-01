@@ -236,15 +236,22 @@ pub async fn pipeline(
     return Result::Ok(("Completed image generation.").to_string());
 }
 
+/*
+ * Retrieves all JPG and CR2 images from a directory, ignoring other files or directories.
+ * Does not check for images to be of the same format.
+ */
 pub fn get_images_from_dir(input_dir: &String) -> Vec<String> {
     // TODO: Find code that doesn't panic? i.e. Don't use unwrap()?
     // Taken from example code at https://doc.rust-lang.org/std/fs/fn.read_dir.html
+
+    // Get everything in the directory (all files and directories)
     let entries = fs::read_dir(input_dir)
         .unwrap()
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>, io::Error>>()
         .unwrap();
 
+    // Find the files that have a JPG or CR2 extension
     let mut input_image_paths: Vec<String> = Vec::new();
     for entry in entries {
         if entry.extension().unwrap_or_default() == "jpg"
@@ -258,9 +265,16 @@ pub fn get_images_from_dir(input_dir: &String) -> Vec<String> {
             input_image_paths.push(x);
         }
     }
+
+    // Return the paths to the JPG and CR2 images
     input_image_paths
 }
 
+/*
+ * Run the HDRGen and Radiance pipeline on one set of LDR images
+ * Returns a Result<String, String> either indicating images processed successfully
+ * or representing an error, which is passed to the frontend in the pipeline function.
+ */
 pub fn process_image_set(
     config_settings: &ConfigSettings,
     input_images: Vec<String>,
@@ -277,6 +291,7 @@ pub fn process_image_set(
     vertical_angle: String,
     horizontal_angle: String,
 ) -> Result<String, String> {
+    // Merge exposures
     // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
     let merge_exposures_result = merge_exposures(
         &config_settings,
@@ -396,6 +411,7 @@ pub fn process_image_set(
         vignetting_correction_cal,
     );
 
+    // If the command encountered an error, abort pipeline
     if vignetting_effect_correction_result.is_err() {
         return vignetting_effect_correction_result;
     }
@@ -416,6 +432,7 @@ pub fn process_image_set(
         neutral_density_cal,
     );
 
+    // If the command encountered an error, abort pipeline
     if neutral_density_result.is_err() {
         return neutral_density_result;
     }
@@ -436,6 +453,7 @@ pub fn process_image_set(
         photometric_adjustment_cal,
     );
 
+    // If the command encountered an error, abort pipeline
     if photometric_adjustment_result.is_err() {
         return photometric_adjustment_result;
     }
@@ -457,9 +475,11 @@ pub fn process_image_set(
         horizontal_angle,
     );
 
+    // If the command encountered an error, abort pipeline
     if header_editing_result.is_err() {
         return header_editing_result;
     }
 
+    // Pipeline has completed successfully. Return Ok
     return Result::Ok(("Image set processed.").to_string());
 }
