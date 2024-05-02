@@ -1,11 +1,10 @@
 use crate::pipeline::DEBUG;
+use std::fs::File;
 use std::process::Command;
 use std::process::Stdio;
-use std::fs::File;
 // use regex::Regex;
 
 use super::ConfigSettings;
-
 
 // Header Editing
 // config_settings:
@@ -30,28 +29,6 @@ pub fn header_editing(
         println!("header_editing() was called with parameters:\n\tvertical_angle: {vertical_angle}\n\thorizontal_angle: {horizontal_angle}");
     }
 
-    /*
-    TODO: Looking into using regex instead of sed, so this can run on Windows without a problem.
-    // Get the header info
-    let mut command_header_get = Command::new(config_settings.radiance_path.to_string() + "getinfo");
-
-    // Add arguments
-    command_header_get.args([
-        input_file,
-    ]);
-
-    // Run the command
-    command_header_get.status.unwrap();
-
-    // And remove the line containing the VIEW angles
-    let re = Regex::new(r".*VIEW=.*");
-    let freshFile = re.replace_all(String::from_utf8_lossy(&command.stdout));
-
-    // Modify the input file to show these changes
-    let fileClearedInput = File::create(&input_file).unwrap();
-    fileClearedInput.write_all(freshFile);
-    */
-
     // Apply the new header
     let mut command = Command::new(config_settings.radiance_path.join("getinfo"));
 
@@ -62,10 +39,22 @@ pub fn header_editing(
     ]);
 
     // Set up piping of the input and output file
-    let file = File::create(&output_file).unwrap();
-    let fileinput = File::open(&input_file).unwrap();
+    let file_output_result = File::create(&output_file);
+    if file_output_result.is_err() {
+        return Err("Error, creating output file for header editing command failed.".into());
+    }
+
+    let file = file_output_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
+
+    let file_input_result = File::open(&input_file);
+    if file_input_result.is_err() {
+        return Err("Error, creating input file for header editing command failed.".into());
+    }
+
+    let file_input = file_input_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
+
     let stdio_out = Stdio::from(file);
-    let stdio_in = Stdio::from(fileinput);
+    let stdio_in = Stdio::from(file_input);
     command.stdout(stdio_out);
     command.stdin(stdio_in);
 
@@ -73,10 +62,7 @@ pub fn header_editing(
     let status = command.status();
 
     if DEBUG {
-        println!(
-            "\nHeader editing command exit status: {:?}\n",
-            status
-        );
+        println!("\nHeader editing command exit status: {:?}\n", status);
     }
 
     // Return a Result object to indicate whether command was successful
@@ -85,9 +71,6 @@ pub fn header_editing(
         Ok(output_file.into())
     } else {
         // On error, return an error message
-        Err(
-            "Error, non-zero exit status. Header editing command (getinfo) failed."
-                .into(),
-        )
+        Err("Error, non-zero exit status. Header editing command (getinfo) failed.".into())
     }
 }

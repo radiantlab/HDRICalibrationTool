@@ -1,10 +1,9 @@
 use crate::pipeline::DEBUG;
+use std::fs::File;
 use std::process::Command;
 use std::process::Stdio;
-use std::fs::File;
 
 use super::ConfigSettings;
-
 
 // Photometric Adjustments
 // config_settings:
@@ -38,7 +37,13 @@ pub fn photometric_adjustment(
     ]);
 
     // Set up piping of output to file
-    let file = File::create(&output_file).unwrap();
+    let file_result = File::create(&output_file);
+    if file_result.is_err() {
+        return Err("Error, creating output file for photometric adjustment command failed.".into());
+    }
+
+    let file = file_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
+
     let stdio = Stdio::from(file);
     command.stdout(stdio);
 
@@ -60,9 +65,6 @@ pub fn photometric_adjustment(
         Ok(output_file.into())
     } else {
         // On error, return an error message
-        Err(
-            "Error, non-zero exit status. Photometric adjustment command (pcomb) failed."
-                .into(),
-        )
+        Err("Error, non-zero exit status. Photometric adjustment command (pcomb) failed.".into())
     }
 }
