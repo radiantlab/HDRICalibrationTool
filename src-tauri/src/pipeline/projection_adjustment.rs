@@ -34,7 +34,13 @@ pub fn projection_adjustment(
     command.args(["-f", fisheye_correction_cal.as_str(), input_file.as_str()]);
 
     // Direct command's output to specifed output file
-    let file = File::create(&output_file).unwrap();
+    let file_result = File::create(&output_file);
+    if file_result.is_err() {
+        return Err("Error, creating output file for projection adjustment command failed.".into());
+    }
+
+    let file = file_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
+
     let stdio = Stdio::from(file);
     command.stdout(stdio);
 

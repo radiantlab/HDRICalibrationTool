@@ -147,7 +147,7 @@ pub async fn pipeline(
             // Create a subdirectory inside tmp for this directory with input images (same name as input dir)
             config_settings.temp_path = Path::new(&config_settings.output_path)
                 .join("tmp")
-                .join(Path::new(input_dir).file_name().unwrap());
+                .join(Path::new(input_dir).file_name().unwrap_or_default());
 
             if create_dir_all(&config_settings.temp_path).is_err() {
                 return Result::Err(
@@ -156,7 +156,11 @@ pub async fn pipeline(
             }
 
             // Grab all JPG or CR2 images from the directory and ignore all other files
-            let input_images_from_dir = get_images_from_dir(&input_dir);
+            let input_images_from_dir_result = get_images_from_dir(&input_dir);
+            if input_images_from_dir_result.is_err() {
+                return Err(input_images_from_dir_result.unwrap_err());
+            }
+            let input_images_from_dir = input_images_from_dir_result.unwrap();
 
             // Run the HDRGen and Radiance pipeline on the input images
             let result = process_image_set(
@@ -182,7 +186,7 @@ pub async fn pipeline(
             // Set output file name to be the same as the input directory name (i.e. <dir_name>.hdr)
             let mut output_file_name = config_settings
                 .output_path
-                .join(Path::new(input_dir).file_name().unwrap());
+                .join(Path::new(input_dir).file_name().unwrap_or_default());
             output_file_name.set_extension("hdr");
 
             // Copy the final output hdr image to output directory
@@ -240,16 +244,26 @@ pub async fn pipeline(
  * Retrieves all JPG and CR2 images from a directory, ignoring other files or directories.
  * Does not check for images to be of the same format.
  */
-pub fn get_images_from_dir(input_dir: &String) -> Vec<String> {
-    // TODO: Find code that doesn't panic? i.e. Don't use unwrap()?
+pub fn get_images_from_dir(input_dir: &String) -> Result<Vec<String>, String> {
     // Taken from example code at https://doc.rust-lang.org/std/fs/fn.read_dir.html
 
     // Get everything in the directory (all files and directories)
-    let entries = fs::read_dir(input_dir)
+    let read_dir_result = fs::read_dir(input_dir);
+    if read_dir_result.is_err() {
+        return Err(format!("Error reading input directory: {input_dir}."));
+    }
+
+    let collect_files_result = read_dir_result
         .unwrap()
         .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, io::Error>>()
-        .unwrap();
+        .collect::<Result<Vec<_>, io::Error>>();
+    if collect_files_result.is_err() {
+        return Err(format!(
+            "Error getting input directory contents: {input_dir}."
+        ));
+    }
+
+    let entries = collect_files_result.unwrap();
 
     // Find the files that have a JPG or CR2 extension
     let mut input_image_paths: Vec<String> = Vec::new();
@@ -267,7 +281,7 @@ pub fn get_images_from_dir(input_dir: &String) -> Vec<String> {
     }
 
     // Return the paths to the JPG and CR2 images
-    input_image_paths
+    Ok(input_image_paths)
 }
 
 /*
