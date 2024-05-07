@@ -1,7 +1,8 @@
+import { writeTextFile } from "@tauri-apps/api/fs";
 import { useState } from "react";
 
 // Modal used for saving the currently entered configuration to localStorage
-export default function SaveConfigDialog({ config, toggleDialog }: any) {
+export default function SaveConfigDialog({ config, configFilePath, savedConfigs, toggleDialog }: any) {
   const [configName, setConfigName] = useState<string>("");
   const [showError, setShowError] = useState<boolean>(false);
 
@@ -10,7 +11,6 @@ export default function SaveConfigDialog({ config, toggleDialog }: any) {
     if (configName.trim() != "") {
       // If name field is not empty
       config["name"] = configName;
-      let savedConfigs = JSON.parse(localStorage.getItem("configs") || "[]");
 
       // Search for existing config with this name
       let index = savedConfigs.findIndex((c: any) => c.name === configName);
@@ -30,11 +30,10 @@ export default function SaveConfigDialog({ config, toggleDialog }: any) {
       } else {
         savedConfigs.push(config);
       }
-      localStorage.setItem("configs", JSON.stringify(savedConfigs));
-      console.log(
-        "Saved configs: ",
-        JSON.parse(localStorage.getItem("configs") || "[]")
-      );
+
+      // Save updated configurations to config file
+      await writeTextFile(configFilePath, JSON.stringify(savedConfigs))
+
       handleCloseModal();
     } else {
       // If name field is empty or contains only white space, show error message

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
 // Modal used for loading a saved configuration
-export default function LoadConfigDialog({ setConfig, toggleDialog }: any) {
-  const defaultSelectMessage = "-- select a config --";
+export default function LoadConfigDialog({ setConfig, savedConfigs, toggleDialog }: any) {
+  const defaultSelectMessage = "-- select a configuration --";
 
   const [configName, setConfigName] = useState<string>(defaultSelectMessage);
   const [showError, setShowError] = useState<boolean>(false);
@@ -32,11 +32,6 @@ export default function LoadConfigDialog({ setConfig, toggleDialog }: any) {
     // setShowError(false);
     toggleDialog();
   }
-
-  const [savedConfigs, setSavedConfigs] = useState<any>([]);
-  useEffect(() => {
-    setSavedConfigs(JSON.parse(localStorage.getItem("configs") || "[]"));
-  }, []);
 
   return (
     <>
