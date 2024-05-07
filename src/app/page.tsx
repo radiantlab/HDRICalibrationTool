@@ -21,16 +21,16 @@ export default function Home() {
           console.log("OS platform successfully queried:", platform);
         }
         // Default path for macOS and Linux
-        let defaultPath = "/usr/local/bin";
+        let radianceDefaultPath = "/usr/local/radiance/bin";
         // If platform is windows, update default path
         if (osPlatform === "windows") {
-          defaultPath = "C:\\bin";
+          radianceDefaultPath = "C:\\Radiance\\bin";
         }
         // Update settings
         setSettings({
-          radiancePath: defaultPath,
-          hdrgenPath: defaultPath,
-          raw2hdrPath: defaultPath,
+          radiancePath: radianceDefaultPath,
+          hdrgenPath: "",
+          raw2hdrPath: "",
           outputPath: settings.outputPath,
         });
       })
