@@ -6,6 +6,7 @@ import Images from "./images";
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Navigation from "./navigation";
 import Response_and_correction from "./response_and_correction";
+import { appDataDir } from "@tauri-apps/api/path";
 
 const DEBUG = true;
 const fakePipeline = false;
@@ -14,24 +15,25 @@ export default function Home() {
   // Get default binary paths to populate settings fields based on OS
   useEffect(() => {
     let osPlatform = "";
-    // Make a call to the backend to get OS platform
+    // Make a call to the backend to get OS platform and set Radiance path
     invoke<string>("query_os_platform", {})
-      .then((platform: any) => {
+      .then(async (platform: any) => {
         if (DEBUG) {
           console.log("OS platform successfully queried:", platform);
         }
-        // Default path for macOS and Linux
+        // Default Radiance path for macOS and Linux
         let radianceDefaultPath = "/usr/local/radiance/bin";
-        // If platform is windows, update default path
+        // If platform is windows, update default Radiance path
         if (osPlatform === "windows") {
           radianceDefaultPath = "C:\\Radiance\\bin";
         }
+
         // Update settings
         setSettings({
           radiancePath: radianceDefaultPath,
           hdrgenPath: "",
           raw2hdrPath: "",
-          outputPath: settings.outputPath,
+          outputPath: await appDataDir(), // appDataDir queries Tauri for suggested place to store files 
         });
       })
       .catch(() => {
@@ -73,7 +75,7 @@ export default function Home() {
     radiancePath: "",
     hdrgenPath: "",
     raw2hdrPath: "",
-    outputPath: "/home/hdri-app/",
+    outputPath: "",
   });
 
   const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
