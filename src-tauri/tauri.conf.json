@@ -16,6 +16,11 @@
       "path": {
         "all": true
       },
+      "fs": {
+        "writeFile": true,
+        "readFile": true,
+        "scope": ["**"]
+      },
       "os": {
         "all": true
       },

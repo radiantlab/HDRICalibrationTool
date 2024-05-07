@@ -4,6 +4,8 @@ import SaveConfigDialog from "./save-config-dialog"
 import LoadConfigDialog from "./load-config-dialog"
 import Settings from "./settings"
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
+import { appConfigDir, join } from "@tauri-apps/api/path"
+import { readTextFile } from "@tauri-apps/api/fs"
 
 export default function Navigation({
     responsePaths,
@@ -32,16 +34,27 @@ export default function Navigation({
     const [appVersion, setAppVersion] = useState<string>("");
     const [appName, setAppName] = useState<string>("");
     const [tauriVersion, setTauriVersion] = useState<string>("");
+    const [configFilePath, setConfigFilePath] = useState<string>("")
+    const [savedConfigs, setSavedConfigs] = useState<[]>()
 
-      // Retrieves app name, app version, and tauri version from Tauri API
-  useEffect(() => {
-    async function fetchAppInfo() {
-      setAppVersion(await getVersion());
-      setAppName(await getName());
-      setTauriVersion(await getTauriVersion());
-    }
-    fetchAppInfo();
-  }, []);
+    // Retrieves app name, app version, and tauri version from Tauri API
+    useEffect(() => {
+        async function fetchAppInfo() {
+        setAppVersion(await getVersion());
+        setAppName(await getName());
+        setTauriVersion(await getTauriVersion());
+        }
+
+        async function getSavedConfigs() {
+            let configFile = await join(await appConfigDir(), "configurations.json");
+            let configFileData = JSON.parse(await readTextFile(configFile))
+            setConfigFilePath(configFile)
+            setSavedConfigs(configFileData)
+        }
+
+        fetchAppInfo();
+        getSavedConfigs();
+    }, []);
     return(
         <div>
             <div className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
@@ -100,6 +113,8 @@ export default function Navigation({
                             vh: viewSettings.vh,
                             vv: viewSettings.vv,
                         }}
+                        configFilePath={configFilePath}
+                        savedConfigs={savedConfigs}
                         toggleDialog={() =>
                             setShowSaveConfigDialog(!showSaveConfigDialog)
                         }
@@ -114,6 +129,7 @@ export default function Navigation({
                     {showLoadConfigDialog && (
                         <LoadConfigDialog
                         setConfig={setConfig}
+                        savedConfigs={savedConfigs}
                         toggleDialog={() =>
                             setShowLoadConfigDialog(!showLoadConfigDialog)
                         }
