@@ -19,6 +19,7 @@
       "fs": {
         "writeFile": true,
         "readFile": true,
+        "exists": true,
         "scope": ["**"]
       },
       "os": {

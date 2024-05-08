@@ -5,7 +5,7 @@ import LoadConfigDialog from "./load-config-dialog"
 import Settings from "./settings"
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import { appConfigDir, join } from "@tauri-apps/api/path"
-import { readTextFile } from "@tauri-apps/api/fs"
+import { exists, readTextFile } from "@tauri-apps/api/fs"
 
 export default function Navigation({
     responsePaths,
@@ -47,7 +47,10 @@ export default function Navigation({
 
         async function getSavedConfigs() {
             let configFile = await join(await appConfigDir(), "configurations.json");
-            let configFileData = JSON.parse(await readTextFile(configFile))
+            let configFileData = []
+            if (await exists(configFile)) {
+                configFileData = JSON.parse(await readTextFile(configFile))
+            }
             setConfigFilePath(configFile)
             setSavedConfigs(configFileData)
         }
