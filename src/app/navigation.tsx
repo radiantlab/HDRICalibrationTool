@@ -4,6 +4,7 @@ import SaveConfigDialog from "./save-config-dialog"
 import LoadConfigDialog from "./load-config-dialog"
 import Settings from "./settings"
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
+import { invoke } from "@tauri-apps/api/tauri"
 
 export default function Navigation({
     responsePaths,
@@ -34,14 +35,23 @@ export default function Navigation({
     const [tauriVersion, setTauriVersion] = useState<string>("");
     const [savedConfigs, setSavedConfigs] = useState<[]>([]);
 
-    // Retrieves app name, app version, and tauri version from Tauri API
+    
+    // Loads the saved configurations from app config dir using a backend command
+    async function getSavedConfigs() {
+        const json: string = await invoke("get_saved_configs");
+        const configs = JSON.parse(json).configurations;
+        setSavedConfigs(configs);
+    }
+
     useEffect(() => {
+        // Retrieves app name, app version, and tauri version from Tauri API
         async function fetchAppInfo() {
         setAppVersion(await getVersion());
         setAppName(await getName());
         setTauriVersion(await getTauriVersion());
         }
 
+        getSavedConfigs();
         fetchAppInfo();
     }, []);
     return(
@@ -88,21 +98,22 @@ export default function Navigation({
                     {showSaveConfigDialog && (
                         <SaveConfigDialog
                         config={{
-                            responsePaths: responsePaths,
-                            feCorrectionPaths: fe_correctionPaths,
-                            vCorrectionPaths: v_correctionPaths,
-                            ndCorrectionPaths: nd_correctionPaths,
-                            cfCorrectionPaths: cf_correctionPaths,
+                            response_paths: responsePaths,
+                            fe_correction_paths: fe_correctionPaths,
+                            v_correction_paths: v_correctionPaths,
+                            nd_correction_paths: nd_correctionPaths,
+                            cf_correction_paths: cf_correctionPaths,
                             diameter: viewSettings.diameter,
                             xleft: viewSettings.xleft,
                             ydown: viewSettings.ydown,
                             // xres: viewSettings.xres,
                             // yres: viewSettings.yres,
-                            targetRes: viewSettings.targetRes,
+                            target_res: viewSettings.targetRes,
                             vh: viewSettings.vh,
                             vv: viewSettings.vv,
                         }}
                         savedConfigs={savedConfigs}
+                        setSavedConfigs={setSavedConfigs}
                         toggleDialog={() =>
                             setShowSaveConfigDialog(!showSaveConfigDialog)
                         }
@@ -118,6 +129,7 @@ export default function Navigation({
                         <LoadConfigDialog
                         setConfig={setConfig}
                         savedConfigs={savedConfigs}
+                        getSavedConfigs={getSavedConfigs}
                         toggleDialog={() =>
                             setShowLoadConfigDialog(!showLoadConfigDialog)
                         }

@@ -17,6 +17,10 @@ use get_default_output_path::get_default_output_path;
 mod save_config;
 use save_config::save_config;
 
+// Command to retrieve saved configurations
+mod get_saved_configs;
+use get_saved_configs::get_saved_configs;
+
 use std::env;
 
 // Hardcoded radiance and hdrgen paths for backend testing
@@ -117,7 +121,8 @@ fn main() {
             pipeline, 
             query_os_platform, 
             get_default_output_path, 
-            save_config
+            save_config,
+            get_saved_configs
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
