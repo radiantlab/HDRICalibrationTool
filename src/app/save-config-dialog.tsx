@@ -5,13 +5,15 @@ import { useState } from "react";
 export default function SaveConfigDialog({
   config,
   savedConfigs,
+  setSavedConfigs,
   toggleDialog,
 }: any) {
   const [configName, setConfigName] = useState<string>("");
   const [showError, setShowError] = useState<boolean>(false);
 
-  // Saves configuration to localStorage with the specified name
+  // Saves configuration to app's config directory using backend command
   async function saveConfig() {
+    let updatedSavedConfigs = savedConfigs;
     if (configName.trim() != "") {
       // If name field is not empty
       config["name"] = configName;
@@ -30,13 +32,24 @@ export default function SaveConfigDialog({
           return;
         }
 
-        savedConfigs[index] = config;
+        updatedSavedConfigs[index] = config;
       } else {
-        savedConfigs.push(config);
+        updatedSavedConfigs.push(config);
       }
 
-      const result = await invoke("save_config", config);
-      console.log(result);
+      // Save configuration locally
+      setSavedConfigs(updatedSavedConfigs);
+
+      // Save configuration to the file system for retrieval later
+      invoke("save_config", config)
+        .then((result) => {
+          alert(result);
+          console.log(result);
+        })
+        .catch((e) => {
+          alert("An error occured while saving the configuration.");
+          console.error(e);
+        });
 
       handleCloseModal();
     } else {

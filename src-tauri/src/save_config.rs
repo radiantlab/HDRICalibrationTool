@@ -22,7 +22,7 @@ struct Config {
     vv: String,
 }
 
-#[tauri::command]
+#[tauri::command(rename_all = "snake_case")]
 pub async fn save_config(
     app_handle: tauri::AppHandle,
     name: String,
@@ -67,8 +67,6 @@ pub async fn save_config(
         None => return Err("Error saving config".to_string()),
     };
 
-    println!("\n\n\n\nAPP CONFIG DIR: {app_config_dir}\n\n\n\n");
-
     let dir = Path::new(app_config_dir)
         .join("configurations")
         .join(&config.name);
@@ -79,8 +77,8 @@ pub async fn save_config(
     let mut is_error = false;
     if config.response_paths != "" {
         is_error =
-            is_error || copy(&config.response_paths, &dir.join("responseFunction.rsp")).is_err();
-        config.response_paths = "responseFunction.rsp".to_string();
+            is_error || copy(&config.response_paths, &dir.join("response_function.rsp")).is_err();
+        config.response_paths = "response_function.rsp".to_string();
     };
 
     if config.fe_correction_paths != "" {
@@ -119,6 +117,7 @@ pub async fn save_config(
     }
 
     Ok(format!(
-        "Successfully saved configuration to {app_config_dir}"
+        "Successfully saved configuration to {}",
+        dir.display()
     ))
 }

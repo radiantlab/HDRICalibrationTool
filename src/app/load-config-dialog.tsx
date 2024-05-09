@@ -1,13 +1,22 @@
 import { useEffect, useState } from "react";
 
 // Modal used for loading a saved configuration
-export default function LoadConfigDialog({ setConfig, savedConfigs, toggleDialog }: any) {
+export default function LoadConfigDialog({
+  setConfig,
+  savedConfigs,
+  getSavedConfigs,
+  toggleDialog,
+}: any) {
   const defaultSelectMessage = "-- select a configuration --";
 
   const [configName, setConfigName] = useState<string>(defaultSelectMessage);
   const [showError, setShowError] = useState<boolean>(false);
 
-  // // Loads configuration to localStorage with the specified name
+  useEffect(() => {
+    getSavedConfigs();
+  }, []);
+
+  // Loads configuration with the specified name
   function handleLoadConfig() {
     // If the user did not make a choice and left default option selected, show error
     if (configName == defaultSelectMessage) {

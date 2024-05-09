@@ -147,18 +147,18 @@ export default function Home() {
   };
 
   function setConfig(config: any) {
-    setResponsePaths(config.responsePaths);
-    set_fe_correctionPaths(config.fe_correctionPaths);
-    set_v_correctionPaths(config.v_correctionPaths);
-    set_nd_correctionPaths(config.nd_correctionPaths);
-    set_cf_correctionPaths(config.cf_correctionPaths);
+    setResponsePaths(config.response_paths);
+    set_fe_correctionPaths(config.fe_correction_paths);
+    set_v_correctionPaths(config.v_correction_paths);
+    set_nd_correctionPaths(config.nd_correction_paths);
+    set_cf_correctionPaths(config.cf_correction_paths);
     setViewSettings({
       diameter: config.diameter,
       xleft: config.xleft,
       ydown: config.ydown,
       // xres: viewSettings.xres,
       // yres: viewSettings.yres,
-      targetRes: config.targetRes,
+      targetRes: config.target_res,
       vh: config.vh,
       vv: config.vv,
     });
