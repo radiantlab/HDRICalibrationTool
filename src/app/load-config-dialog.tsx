@@ -64,7 +64,6 @@ export default function LoadConfigDialog({ setConfig, savedConfigs, toggleDialog
                     onChange={(e) => {
                       setConfigName(e.target.value);
                     }}
-                    defaultValue={defaultSelectMessage}
                   >
                     <option value={defaultSelectMessage}>
                       {defaultSelectMessage}

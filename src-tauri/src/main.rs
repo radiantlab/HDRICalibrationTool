@@ -9,6 +9,14 @@ use pipeline::pipeline;
 mod query_os_platform;
 use query_os_platform::query_os_platform;
 
+// Command to get app's data directory
+mod get_default_output_path;
+use get_default_output_path::get_default_output_path;
+
+// Command to save configuration
+mod save_config;
+use save_config::save_config;
+
 use std::env;
 
 // Hardcoded radiance and hdrgen paths for backend testing
@@ -105,7 +113,12 @@ fn main() {
 
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![pipeline, query_os_platform])
+        .invoke_handler(tauri::generate_handler![
+            pipeline, 
+            query_os_platform, 
+            get_default_output_path, 
+            save_config
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -6,7 +6,6 @@ import Images from "./images";
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Navigation from "./navigation";
 import Response_and_correction from "./response_and_correction";
-import { appDataDir } from "@tauri-apps/api/path";
 
 const DEBUG = true;
 const fakePipeline = false;
@@ -33,7 +32,7 @@ export default function Home() {
           radiancePath: radianceDefaultPath,
           hdrgenPath: "",
           raw2hdrPath: "",
-          outputPath: await appDataDir(), // appDataDir queries Tauri for suggested place to store files 
+          outputPath: await invoke("get_default_output_path") // queries backend for suggested place to store files
         });
       })
       .catch(() => {
