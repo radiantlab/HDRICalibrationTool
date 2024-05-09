@@ -1,8 +1,12 @@
-import { writeTextFile } from "@tauri-apps/api/fs";
+import { invoke } from "@tauri-apps/api/tauri";
 import { useState } from "react";
 
 // Modal used for saving the currently entered configuration to localStorage
-export default function SaveConfigDialog({ config, configFilePath, savedConfigs, toggleDialog }: any) {
+export default function SaveConfigDialog({
+  config,
+  savedConfigs,
+  toggleDialog,
+}: any) {
   const [configName, setConfigName] = useState<string>("");
   const [showError, setShowError] = useState<boolean>(false);
 
@@ -31,8 +35,8 @@ export default function SaveConfigDialog({ config, configFilePath, savedConfigs,
         savedConfigs.push(config);
       }
 
-      // Save updated configurations to config file
-      await writeTextFile(configFilePath, JSON.stringify(savedConfigs))
+      const result = await invoke("save_config", config);
+      console.log(result);
 
       handleCloseModal();
     } else {
@@ -66,9 +70,9 @@ export default function SaveConfigDialog({ config, configFilePath, savedConfigs,
                     later.
                   </p>
                   <p className="text-left text-sm py-5 max-w-lg">
-                    Note: This will only save paths to the calibration
-                    files, so the configuration will not work correctly if the
-                    files are moved.
+                    Note: This will only save paths to the calibration files, so
+                    the configuration will not work correctly if the files are
+                    moved.
                   </p>
                   <label className="font-bold block mb-2">Enter a name:</label>
                   <input

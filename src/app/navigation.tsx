@@ -4,8 +4,6 @@ import SaveConfigDialog from "./save-config-dialog"
 import LoadConfigDialog from "./load-config-dialog"
 import Settings from "./settings"
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
-import { appConfigDir, join } from "@tauri-apps/api/path"
-import { exists, readTextFile } from "@tauri-apps/api/fs"
 
 export default function Navigation({
     responsePaths,
@@ -34,8 +32,7 @@ export default function Navigation({
     const [appVersion, setAppVersion] = useState<string>("");
     const [appName, setAppName] = useState<string>("");
     const [tauriVersion, setTauriVersion] = useState<string>("");
-    const [configFilePath, setConfigFilePath] = useState<string>("")
-    const [savedConfigs, setSavedConfigs] = useState<[]>()
+    const [savedConfigs, setSavedConfigs] = useState<[]>([]);
 
     // Retrieves app name, app version, and tauri version from Tauri API
     useEffect(() => {
@@ -45,18 +42,7 @@ export default function Navigation({
         setTauriVersion(await getTauriVersion());
         }
 
-        async function getSavedConfigs() {
-            let configFile = await join(await appConfigDir(), "configurations.json");
-            let configFileData = []
-            if (await exists(configFile)) {
-                configFileData = JSON.parse(await readTextFile(configFile))
-            }
-            setConfigFilePath(configFile)
-            setSavedConfigs(configFileData)
-        }
-
         fetchAppInfo();
-        getSavedConfigs();
     }, []);
     return(
         <div>
@@ -103,10 +89,10 @@ export default function Navigation({
                         <SaveConfigDialog
                         config={{
                             responsePaths: responsePaths,
-                            fe_correctionPaths: fe_correctionPaths,
-                            v_correctionPaths: v_correctionPaths,
-                            nd_correctionPaths: nd_correctionPaths,
-                            cf_correctionPaths: cf_correctionPaths,
+                            feCorrectionPaths: fe_correctionPaths,
+                            vCorrectionPaths: v_correctionPaths,
+                            ndCorrectionPaths: nd_correctionPaths,
+                            cfCorrectionPaths: cf_correctionPaths,
                             diameter: viewSettings.diameter,
                             xleft: viewSettings.xleft,
                             ydown: viewSettings.ydown,
@@ -116,7 +102,6 @@ export default function Navigation({
                             vh: viewSettings.vh,
                             vv: viewSettings.vv,
                         }}
-                        configFilePath={configFilePath}
                         savedConfigs={savedConfigs}
                         toggleDialog={() =>
                             setShowSaveConfigDialog(!showSaveConfigDialog)
