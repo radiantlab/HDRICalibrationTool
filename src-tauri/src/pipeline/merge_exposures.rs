@@ -6,11 +6,10 @@ use std::{
 
 use super::ConfigSettings;
 
-// const RAW: bool = true;
-
-// Merges multiple LDR images into an HDR image using hdrgen.
+// Merges multiple LDR images into an HDR image using hdrgen. Can run in either regular mode,
+// with JPG images, or raw mode with .CR2 images.
 // input_images:
-//    vector of the paths to the input images. Input images must be in .JPG format.
+//    vector of the paths to the input images. Input images must be in .JPG or .CR2 format.
 // response_function:
 //    string for the path to the camera response function, must be a .rsp file
 // output_path:
