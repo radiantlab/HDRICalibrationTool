@@ -1,10 +1,9 @@
 use crate::pipeline::DEBUG;
+use std::fs::File;
 use std::process::Command;
 use std::process::Stdio;
-use std::fs::File;
 
 use super::ConfigSettings;
-
 
 // Neutral Density Filter
 // config_settings:
@@ -23,21 +22,25 @@ pub fn neutral_density(
     neutral_density: String,
 ) -> Result<String, String> {
     if DEBUG {
-        println!("neutral_density() was called with parameters:\n\t neutral_density: {neutral_density}");
+        println!(
+            "neutral_density() was called with parameters:\n\t neutral_density: {neutral_density}"
+        );
     }
 
     // Command to run
     let mut command = Command::new(config_settings.radiance_path.join("pcomb"));
 
     // Add arguments
-    command.args([
-        "-f",
-        neutral_density.as_str(),
-        input_file.as_str(),
-    ]);
+    command.args(["-f", neutral_density.as_str(), input_file.as_str()]);
 
     // Set up piping of output to file
-    let file = File::create(&output_file).unwrap();
+    let file_result = File::create(&output_file);
+    if file_result.is_err() {
+        return Err("Error, creating output file for neutral density command failed.".into());
+    }
+
+    let file = file_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
+
     let stdio = Stdio::from(file);
     command.stdout(stdio);
 
@@ -57,9 +60,6 @@ pub fn neutral_density(
         Ok(output_file.into())
     } else {
         // On error, return an error message
-        Err(
-            "Error, non-zero exit status. Neutral density filter command (pcomb) failed."
-                .into(),
-        )
+        Err("Error, non-zero exit status. Neutral density filter command (pcomb) failed.".into())
     }
 }

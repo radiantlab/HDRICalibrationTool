@@ -38,7 +38,15 @@ pub fn vignetting_effect_correction(
     ]);
 
     // Direct command's output to specifed output file
-    let file = File::create(&output_file).unwrap();
+    let file_result = File::create(&output_file);
+    if file_result.is_err() {
+        return Err(
+            "Error, creating output file for vignetting effect correction command failed.".into(),
+        );
+    }
+
+    let file = file_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
+
     let stdio = Stdio::from(file);
     command.stdout(stdio);
 

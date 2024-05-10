@@ -9,12 +9,10 @@ mod resize;
 mod vignetting_effect_correction;
 
 use std::{
-    fs::{self, copy, create_dir, create_dir_all},
+    fs::{self, copy, create_dir_all},
     io,
     path::{Path, PathBuf},
 };
-
-use chrono::Utc; // For getting UTC and formatting in ISO 8601
 
 use crop::crop;
 use header_editing::header_editing;
@@ -47,15 +45,20 @@ pub struct ConfigSettings {
 // raw2hdr_path:
 //      The path to the raw2hdr binary
 // output_path:
-//      Place for final HDR image to be stored
+//      Place for final HDR image to be stored. Temp dir is created within the ouput dir.
 // input_images:
-//      vector of the paths to the input images. Input images must be in .JPG format.
+//      vector of the paths to the input images, or the input directories if batch processing.
+//      Input images must be in .JPG format or .CR2 format.
 // response_function:
-//      string for the path to the camera response function, must be a .rsp file
+//      string for the path to the camera response function (.rsp)
 // fisheye_correction_cal:
-//      a string for the fisheye correction calibration file
+//      a string for the path to fisheye correction calibration file (.cal)
 // vignetting_correction_cal:
-//      a string for the vignetting correction calibration file
+//      a string for the path to vignetting correction calibration file (.cal)
+// photometric_adjustment_cal:
+//      a string for the path to photometric adjustment calibration file (.cal)
+// neutral_density_cal:
+//      a string for the path to neutral density adjustment calibration file (.cal)
 // diameter:
 //      the fisheye view diameter in pixels
 // xleft:
@@ -88,8 +91,6 @@ pub async fn pipeline(
     vertical_angle: String,
     horizontal_angle: String,
 ) -> Result<String, String> {
-    let time = Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string();
-
     let is_directory = if input_images.len() > 0 {
         Path::new(&input_images[0]).is_dir()
     } else {
@@ -105,27 +106,30 @@ pub async fn pipeline(
         println!("\tinput images: {:?}", input_images);
         println!("\tresponse function: {response_function}");
         println!("\tfisheye correction cal: {fisheye_correction_cal}");
+        println!("\tvignetting correction cal: {vignetting_correction_cal}");
+        println!("\tphotometric adjustment cal: {photometric_adjustment_cal}");
+        println!("\tneutral density cal: {neutral_density_cal}");
         println!("\tdiameter: {diameter}");
         println!("\txleft: {xleft}");
         println!("\tydown: {ydown}");
+        println!("\txdim: {xdim}");
+        println!("\tydim: {ydim}");
 
-        println!("\n\n");
+        println!("\n\nPROCESSING MODE");
         if is_directory {
-            println!("User selected directories.");
+            println!("\tUser selected directories. (Batch processing)");
         } else {
-            println!("User selected images, not directories.");
+            println!("\tUser selected images. (Single scene)");
         }
-
-        println!("\nSystem time: {}", time);
     }
 
-    // Add path to radiance and temp directory info to config settings
+    // Add paths to radiance, hdrgen, raw2hdr, and output and temp directories to config settings
     let mut config_settings = ConfigSettings {
         radiance_path: Path::new(&radiance_path).to_owned(),
         hdrgen_path: Path::new(&hdrgen_path).to_owned(),
         raw2hdr_path: Path::new(&raw2hdr_path).to_owned(),
         output_path: Path::new(&output_path).to_owned(),
-        temp_path: Path::new(&output_path).join("tmp").to_owned(),
+        temp_path: Path::new(&output_path).join("tmp").to_owned(), // Temp directory is located in output directory
     };
 
     // Creates output directory with /tmp subdirectory
@@ -136,12 +140,14 @@ pub async fn pipeline(
     }
 
     if is_directory {
-        for input_dir in &input_images {
-            // println!("TEMP PATH {:?}", &temp_path);
+        // Directories were selected (batch processing)
 
+        // Run pipeline for each directory selected
+        for input_dir in &input_images {
+            // Create a subdirectory inside tmp for this directory with input images (same name as input dir)
             config_settings.temp_path = Path::new(&config_settings.output_path)
                 .join("tmp")
-                .join(Path::new(input_dir).file_name().unwrap());
+                .join(Path::new(input_dir).file_name().unwrap_or_default());
 
             if create_dir_all(&config_settings.temp_path).is_err() {
                 return Result::Err(
@@ -149,7 +155,14 @@ pub async fn pipeline(
                 );
             }
 
-            let input_images_from_dir = get_images_from_dir(&input_dir);
+            // Grab all JPG or CR2 images from the directory and ignore all other files
+            let input_images_from_dir_result = get_images_from_dir(&input_dir);
+            if input_images_from_dir_result.is_err() {
+                return Err(input_images_from_dir_result.unwrap_err());
+            }
+            let input_images_from_dir = input_images_from_dir_result.unwrap();
+
+            // Run the HDRGen and Radiance pipeline on the input images
             let result = process_image_set(
                 &config_settings,
                 input_images_from_dir,
@@ -170,10 +183,13 @@ pub async fn pipeline(
                 return result;
             }
 
+            // Set output file name to be the same as the input directory name (i.e. <dir_name>.hdr)
             let mut output_file_name = config_settings
                 .output_path
-                .join(Path::new(input_dir).file_name().unwrap());
+                .join(Path::new(input_dir).file_name().unwrap_or_default());
             output_file_name.set_extension("hdr");
+
+            // Copy the final output hdr image to output directory
             let copy_result = copy(
                 &config_settings.temp_path.join("output9.hdr"),
                 output_file_name,
@@ -185,6 +201,9 @@ pub async fn pipeline(
             }
         }
     } else {
+        // Individual images were selected (single scene)
+
+        // Run the HDRGen and Radiance pipeline on the images
         let result = process_image_set(
             &config_settings,
             input_images,
@@ -205,10 +224,9 @@ pub async fn pipeline(
             return result;
         }
 
-        // let output_file_name =  config_settings.output_path.join("output_".to_owned() + &time + ".hdr");
         let output_file_name = config_settings.output_path.join("output.hdr");
 
-        // output_file_name.set_extension("hdr");
+        // Copy the final output hdr image to output directory
         let copy_result = copy(
             &config_settings.temp_path.join("output9.hdr"),
             output_file_name,
@@ -222,15 +240,32 @@ pub async fn pipeline(
     return Result::Ok(("Completed image generation.").to_string());
 }
 
-pub fn get_images_from_dir(input_dir: &String) -> Vec<String> {
-    // TODO: Find code that doesn't panic? i.e. Don't use unwrap()?
+/*
+ * Retrieves all JPG and CR2 images from a directory, ignoring other files or directories.
+ * Does not check for images to be of the same format.
+ */
+pub fn get_images_from_dir(input_dir: &String) -> Result<Vec<String>, String> {
     // Taken from example code at https://doc.rust-lang.org/std/fs/fn.read_dir.html
-    let entries = fs::read_dir(input_dir)
+
+    // Get everything in the directory (all files and directories)
+    let read_dir_result = fs::read_dir(input_dir);
+    if read_dir_result.is_err() {
+        return Err(format!("Error reading input directory: {input_dir}."));
+    }
+
+    let collect_files_result = read_dir_result
         .unwrap()
         .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, io::Error>>()
-        .unwrap();
+        .collect::<Result<Vec<_>, io::Error>>();
+    if collect_files_result.is_err() {
+        return Err(format!(
+            "Error getting input directory contents: {input_dir}."
+        ));
+    }
 
+    let entries = collect_files_result.unwrap();
+
+    // Find the files that have a JPG or CR2 extension
     let mut input_image_paths: Vec<String> = Vec::new();
     for entry in entries {
         if entry.extension().unwrap_or_default() == "jpg"
@@ -244,9 +279,16 @@ pub fn get_images_from_dir(input_dir: &String) -> Vec<String> {
             input_image_paths.push(x);
         }
     }
-    input_image_paths
+
+    // Return the paths to the JPG and CR2 images
+    Ok(input_image_paths)
 }
 
+/*
+ * Run the HDRGen and Radiance pipeline on one set of LDR images
+ * Returns a Result<String, String> either indicating images processed successfully
+ * or representing an error, which is passed to the frontend in the pipeline function.
+ */
 pub fn process_image_set(
     config_settings: &ConfigSettings,
     input_images: Vec<String>,
@@ -263,6 +305,7 @@ pub fn process_image_set(
     vertical_angle: String,
     horizontal_angle: String,
 ) -> Result<String, String> {
+    // Merge exposures
     // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
     let merge_exposures_result = merge_exposures(
         &config_settings,
@@ -382,6 +425,7 @@ pub fn process_image_set(
         vignetting_correction_cal,
     );
 
+    // If the command encountered an error, abort pipeline
     if vignetting_effect_correction_result.is_err() {
         return vignetting_effect_correction_result;
     }
@@ -402,6 +446,7 @@ pub fn process_image_set(
         neutral_density_cal,
     );
 
+    // If the command encountered an error, abort pipeline
     if neutral_density_result.is_err() {
         return neutral_density_result;
     }
@@ -422,6 +467,7 @@ pub fn process_image_set(
         photometric_adjustment_cal,
     );
 
+    // If the command encountered an error, abort pipeline
     if photometric_adjustment_result.is_err() {
         return photometric_adjustment_result;
     }
@@ -443,9 +489,11 @@ pub fn process_image_set(
         horizontal_angle,
     );
 
+    // If the command encountered an error, abort pipeline
     if header_editing_result.is_err() {
         return header_editing_result;
     }
 
+    // Pipeline has completed successfully. Return Ok
     return Result::Ok(("Image set processed.").to_string());
 }
