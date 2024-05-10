@@ -1,16 +1,22 @@
+import { invoke } from "@tauri-apps/api/tauri";
 import { useState } from "react";
 
 // Modal used for saving the currently entered configuration to localStorage
-export default function SaveConfigDialog({ config, toggleDialog }: any) {
+export default function SaveConfigDialog({
+  config,
+  savedConfigs,
+  setSavedConfigs,
+  toggleDialog,
+}: any) {
   const [configName, setConfigName] = useState<string>("");
   const [showError, setShowError] = useState<boolean>(false);
 
-  // Saves configuration to localStorage with the specified name
+  // Saves configuration to app's config directory using backend command
   async function saveConfig() {
+    let updatedSavedConfigs = savedConfigs;
     if (configName.trim() != "") {
       // If name field is not empty
       config["name"] = configName;
-      let savedConfigs = JSON.parse(localStorage.getItem("configs") || "[]");
 
       // Search for existing config with this name
       let index = savedConfigs.findIndex((c: any) => c.name === configName);
@@ -26,15 +32,25 @@ export default function SaveConfigDialog({ config, toggleDialog }: any) {
           return;
         }
 
-        savedConfigs[index] = config;
+        updatedSavedConfigs[index] = config;
       } else {
-        savedConfigs.push(config);
+        updatedSavedConfigs.push(config);
       }
-      localStorage.setItem("configs", JSON.stringify(savedConfigs));
-      console.log(
-        "Saved configs: ",
-        JSON.parse(localStorage.getItem("configs") || "[]")
-      );
+
+      // Save configuration locally
+      setSavedConfigs(updatedSavedConfigs);
+
+      // Save configuration to the file system for retrieval later
+      invoke("save_config", config)
+        .then((result) => {
+          alert(result);
+          console.log(result);
+        })
+        .catch((e) => {
+          alert("An error occured while saving the configuration.");
+          console.error(e);
+        });
+
       handleCloseModal();
     } else {
       // If name field is empty or contains only white space, show error message
@@ -67,9 +83,9 @@ export default function SaveConfigDialog({ config, toggleDialog }: any) {
                     later.
                   </p>
                   <p className="text-left text-sm py-5 max-w-lg">
-                    Note: This will only save paths to the calibration
-                    files, so the configuration will not work correctly if the
-                    files are moved.
+                    Note: This will only save paths to the calibration files, so
+                    the configuration will not work correctly if the files are
+                    moved.
                   </p>
                   <label className="font-bold block mb-2">Enter a name:</label>
                   <input
