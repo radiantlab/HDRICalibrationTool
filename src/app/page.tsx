@@ -14,24 +14,25 @@ export default function Home() {
   // Get default binary paths to populate settings fields based on OS
   useEffect(() => {
     let osPlatform = "";
-    // Make a call to the backend to get OS platform
+    // Make a call to the backend to get OS platform and set Radiance path
     invoke<string>("query_os_platform", {})
-      .then((platform: any) => {
+      .then(async (platform: any) => {
         if (DEBUG) {
           console.log("OS platform successfully queried:", platform);
         }
-        // Default path for macOS and Linux
-        let defaultPath = "/usr/local/bin";
-        // If platform is windows, update default path
+        // Default Radiance path for macOS and Linux
+        let radianceDefaultPath = "/usr/local/radiance/bin";
+        // If platform is windows, update default Radiance path
         if (osPlatform === "windows") {
-          defaultPath = "C:\\bin";
+          radianceDefaultPath = "C:\\Radiance\\bin";
         }
+
         // Update settings
         setSettings({
-          radiancePath: defaultPath,
-          hdrgenPath: defaultPath,
-          raw2hdrPath: defaultPath,
-          outputPath: settings.outputPath,
+          radiancePath: radianceDefaultPath,
+          hdrgenPath: "",
+          raw2hdrPath: "",
+          outputPath: await invoke("get_default_output_path") // queries backend for suggested place to store files
         });
       })
       .catch(() => {
@@ -73,7 +74,7 @@ export default function Home() {
     radiancePath: "",
     hdrgenPath: "",
     raw2hdrPath: "",
-    outputPath: "/home/hdri-app/",
+    outputPath: "",
   });
 
   const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,18 +147,18 @@ export default function Home() {
   };
 
   function setConfig(config: any) {
-    setResponsePaths(config.responsePaths);
-    set_fe_correctionPaths(config.fe_correctionPaths);
-    set_v_correctionPaths(config.v_correctionPaths);
-    set_nd_correctionPaths(config.nd_correctionPaths);
-    set_cf_correctionPaths(config.cf_correctionPaths);
+    setResponsePaths(config.response_paths);
+    set_fe_correctionPaths(config.fe_correction_paths);
+    set_v_correctionPaths(config.v_correction_paths);
+    set_nd_correctionPaths(config.nd_correction_paths);
+    set_cf_correctionPaths(config.cf_correction_paths);
     setViewSettings({
       diameter: config.diameter,
       xleft: config.xleft,
       ydown: config.ydown,
       // xres: viewSettings.xres,
       // yres: viewSettings.yres,
-      targetRes: config.targetRes,
+      targetRes: config.target_res,
       vh: config.vh,
       vv: config.vv,
     });

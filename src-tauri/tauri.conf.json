@@ -13,6 +13,18 @@
   "tauri": {
     "allowlist": {
       "all": false,
+      "path": {
+        "all": true
+      },
+      "fs": {
+        "writeFile": true,
+        "readFile": true,
+        "copyFile": true,
+        "createDir": true,
+        "exists": true,
+        "readDir": true,
+        "scope": ["**"]
+      },
       "os": {
         "all": true
       },
