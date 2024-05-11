@@ -63,35 +63,35 @@ export default function Navigation({
                         src="SunApertureOrange.png"
                         className=" object-contain h-14 mr-3"
                     />
-                    <h1 className="text-xl text h-max">{appName}</h1>
+                    <h1 className="text-xl text h-max font-bold">{appName}</h1>
                     </div>
                     <ul>
-                    <li className="font-bold pt-5 pl-5">Navigation</li>
-                    <li className="pt-5 pl-5">
+                    <li className="font-bold pt-2 pl-5">Navigation</li>
+                    <li className="pt-2 pl-5">
                         <a href="#image_selection">Image Selection</a>
                     </li>
-                    <li className="pt-5 pl-5">
+                    <li className="pt-2 pl-5">
                         <a href="#response">Response File</a>
                     </li>
-                    <li className="pt-5 pl-5">
+                    <li className="pt-2 pl-5">
                         <a href="#c_r_v">Cropping, Resizing, and View Settings</a>
                     </li>
-                    <li className="pt-5 pl-5">
+                    <li className="pt-2 pl-5">
                         <a href="#v">Vignetting Correction</a>
                     </li>
-                    <li className="pt-5 pl-5">
+                    <li className="pt-2 pl-5">
                         <a href="#nd">Neutral Density Correction</a>
                     </li>
-                    <li className="pt-5 pl-5">
+                    <li className="pt-2 pl-5">
                         <a href="#cf">Calibration Factor Correction</a>
                     </li>
                     </ul>
                 </nav>
-                <div className="flex flex-col pt-10 pl-5 space-y-8">
+                <div className="flex flex-col pt-24 pl-5 space-y-8">
                     <div className="space-y-3">
                     <button
                         onClick={() => setShowSaveConfigDialog((prev: any) => !prev)}
-                        className="w-max bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                        className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
                     >
                         Save Configuration
                     </button>
@@ -119,9 +119,10 @@ export default function Navigation({
                         }
                         />
                     )}
+                    <div></div>
                     <button
                         onClick={() => setShowLoadConfigDialog(!showLoadConfigDialog)}
-                        className="w-max bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                        className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
                     >
                         Load Configuration
                     </button>
@@ -137,7 +138,7 @@ export default function Navigation({
                     )}
                     </div>
                     <button
-                    className="w-max bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                    className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-14 border-gray-400 rounded"
                     onClick={() => setShowSettings(!showSettings)}
                     >
                     Settings
@@ -152,7 +153,7 @@ export default function Navigation({
                     )}
                     <button
                     onClick={handleGenerateHDRImage}
-                    className="w-max bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                    className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
                     >
                     Generate HDR Image
                     </button>
@@ -168,13 +169,13 @@ export default function Navigation({
                     {fakePipeline && (
                         <div>
                         <button
-                            className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                            className="bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
                             onClick={() => setProgressButton(true)}
                         >
                             Process completed
                         </button>
                         <button
-                            className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                            className="bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
                             onClick={() => setProcessError(true)}
                         >
                             Error
@@ -187,7 +188,7 @@ export default function Navigation({
                         <h2>Process Finished</h2>
                         <button
                             onClick={() => ResetProgress()}
-                            className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                            className="bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
                         >
                             Okay
                         </button>
@@ -198,7 +199,7 @@ export default function Navigation({
                         <h2>Error</h2>
                         <button
                             onClick={() => ResetProgress()}
-                            className="bg-gray-700 hover:bg-gray-400 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
+                            className="bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
                         >
                             Okay
                         </button>
