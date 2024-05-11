@@ -91,7 +91,9 @@
         "height": 768,
         "resizable": true,
         "title": "HDRI Calibration Interface",
-        "width": 1024
+        "width": 1024,
+        "minWidth": 1024,
+        "minHeight": 768
       }
     ]
   }
