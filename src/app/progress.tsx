@@ -37,7 +37,7 @@ export default function Progress({
                     {progressButton && !processError && (
                         <div>
                             <h2>Process Finished</h2>
-                            <div>Please Check Your Output Directory</div>
+                            <div>Please Check The Output Directory</div>
                             <button
                                 onClick={() => ResetProgress()}
                                 className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 m-10 border-gray-400 rounded h-fit"
