@@ -77,13 +77,13 @@ export default function Settings({
                       htmlFor="raw2hdrPath"
                       className="font-bold block h-full mr-5"
                     >
-                      raw2hdr Path
+                      dcraw_emu Path
                     </label>
                     <input
-                      id="raw2hdrPath"
-                      name="raw2hdrPath"
+                      id="dcrawEmuPath"
+                      name="dcrawEmuPath"
                       type="text"
-                      value={settings.raw2hdrPath}
+                      value={settings.dcrawEmuPath}
                       onChange={handleChange}
                       className="flex-grow placeholder:text-right w-max shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
                     ></input>

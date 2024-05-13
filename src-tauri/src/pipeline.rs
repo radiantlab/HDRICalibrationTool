@@ -32,7 +32,7 @@ pub const DEBUG: bool = true;
 pub struct ConfigSettings {
     radiance_path: PathBuf,
     hdrgen_path: PathBuf,
-    raw2hdr_path: PathBuf,
+    dcraw_emu_path: PathBuf,
     output_path: PathBuf,
     temp_path: PathBuf, // used to store temp path in output dir, i.e. "output_path/tmp/"
 }
@@ -42,8 +42,8 @@ pub struct ConfigSettings {
 //      The path to radiance binaries
 // hdrgen_path:
 //      The path to the hdrgen binary
-// raw2hdr_path:
-//      The path to the raw2hdr binary
+// dcraw_emu_path:
+//      The path to the dcraw_emu binary, used for converting raw images to tiff format
 // output_path:
 //      Place for final HDR image to be stored. Temp dir is created within the ouput dir.
 // input_images:
@@ -75,7 +75,7 @@ pub struct ConfigSettings {
 pub async fn pipeline(
     radiance_path: String,
     hdrgen_path: String,
-    raw2hdr_path: String,
+    dcraw_emu_path: String,
     output_path: String,
     input_images: Vec<String>,
     response_function: String,
@@ -91,6 +91,11 @@ pub async fn pipeline(
     vertical_angle: String,
     horizontal_angle: String,
 ) -> Result<String, String> {
+    // Return error if pipeline was called with no input images
+    if input_images.len() == 0 {
+        return Err("No input images were provided.".into());
+    }
+
     let is_directory = if input_images.len() > 0 {
         Path::new(&input_images[0]).is_dir()
     } else {
@@ -101,7 +106,7 @@ pub async fn pipeline(
         println!("Pipeline module called...");
         println!("\tradiance path: {radiance_path}");
         println!("\thdrgen path: {hdrgen_path}");
-        println!("\raw2hdr path: {raw2hdr_path}");
+        println!("\tdcraw_emu path: {dcraw_emu_path}");
         println!("\toutput path: {output_path}");
         println!("\tinput images: {:?}", input_images);
         println!("\tresponse function: {response_function}");
@@ -127,7 +132,7 @@ pub async fn pipeline(
     let mut config_settings = ConfigSettings {
         radiance_path: Path::new(&radiance_path).to_owned(),
         hdrgen_path: Path::new(&hdrgen_path).to_owned(),
-        raw2hdr_path: Path::new(&raw2hdr_path).to_owned(),
+        dcraw_emu_path: Path::new(&dcraw_emu_path).to_owned(),
         output_path: Path::new(&output_path).to_owned(),
         temp_path: Path::new(&output_path).join("tmp").to_owned(), // Temp directory is located in output directory
     };
@@ -265,13 +270,17 @@ pub fn get_images_from_dir(input_dir: &String) -> Result<Vec<String>, String> {
 
     let entries = collect_files_result.unwrap();
 
-    // Find the files that have a JPG or CR2 extension
+    // Find the files that have a JPG, TIFF, or CR2 extension
     let mut input_image_paths: Vec<String> = Vec::new();
     for entry in entries {
         if entry.extension().unwrap_or_default() == "jpg"
             || entry.extension().unwrap_or_default() == "JPG"
             || entry.extension().unwrap_or_default() == "jpeg"
             || entry.extension().unwrap_or_default() == "JPEG"
+            || entry.extension().unwrap_or_default() == "tiff"
+            || entry.extension().unwrap_or_default() == "TIFF"
+            || entry.extension().unwrap_or_default() == "tif"
+            || entry.extension().unwrap_or_default() == "TIF"
             || entry.extension().unwrap_or_default() == "CR2"
             || entry.extension().unwrap_or_default() == "cr2"
         {
