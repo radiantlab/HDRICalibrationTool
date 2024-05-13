@@ -17,14 +17,7 @@ export default function Navigation({
     settings,
     setSettings,
     handleSettingsChange,
-    handleGenerateHDRImage,
-    showProgress,
-    fakePipeline,
-    setProgressButton,
-    setProcessError,
-    progressButton,
-    processError,
-    ResetProgress
+    handleGenerateHDRImage
     
 }: any) {
     const [showSaveConfigDialog, setShowSaveConfigDialog] = useState<boolean>(false);
@@ -163,51 +156,6 @@ export default function Navigation({
                     <p>Tauri version: {tauriVersion}</p>
                 </div>
                 </div>
-                <div className="w-3/4 ml-auto pl-3">
-                {showProgress && (
-                    <div className="bg-gray-300 fixed w-6/12 h-56 top-56 text-center text-xl p-10">
-                    {fakePipeline && (
-                        <div>
-                        <button
-                            className="bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
-                            onClick={() => setProgressButton(true)}
-                        >
-                            Process completed
-                        </button>
-                        <button
-                            className="bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
-                            onClick={() => setProcessError(true)}
-                        >
-                            Error
-                        </button>
-                        </div>
-                    )}
-                    {!progressButton && <h2>Your Images Are Being Generated</h2>}
-                    {progressButton && !processError && (
-                        <div>
-                        <h2>Process Finished</h2>
-                        <button
-                            onClick={() => ResetProgress()}
-                            className="bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
-                        >
-                            Okay
-                        </button>
-                        </div>
-                    )}
-                    {!progressButton && processError && (
-                        <div>
-                        <h2>Error</h2>
-                        <button
-                            onClick={() => ResetProgress()}
-                            className="bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-2 border-gray-400 rounded"
-                        >
-                            Okay
-                        </button>
-                        </div>
-                    )}
-                </div>
-            )}
-            </div>
         </div>
     )
 }
