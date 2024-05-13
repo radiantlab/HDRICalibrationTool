@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { open } from "@tauri-apps/api/dialog";
 import { Paths } from "./string_functions";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
+import { Extensions } from "./string_functions";
 
 export default function Images({
     devicePaths,
@@ -18,6 +19,8 @@ export default function Images({
     let selected: any | any[] = [];
     // Holds the temporary asset paths selected by the user during the dialog function
     let assets: any[] = [];
+    // Error checking display
+    const [image_error, set_image_error] = useState<boolean>(false);
 
     // Open a file dialog window using the tauri api and update the images array with the results
     async function dialog() {
@@ -28,20 +31,23 @@ export default function Images({
             });
         } else {
             selected = await open({
-                multiple: true,
-                filters: [
-                    {
-                        name: "Image",
-                        extensions: ["jpg", "jpeg", "JPG", "JPEG", "CR2"],
-                    },
-                ],
+                multiple: true
             });
         }
         if (Array.isArray(selected)) {
-            assets = selected.map((item: any) => convertFileSrc(item));
+            set_image_error(false)
+            for (let i = 0; i < selected.length; i++) {
+                if (Extensions(selected[i]) != "jpg" && Extensions(selected[i]) != "jpeg" && Extensions(selected[i]) != "JPG" && Extensions(selected[i]) != "JPEG" && Extensions(selected[i]) != "CR2") {
+                    set_image_error(true)
+                } else {
+                    assets = assets.concat(convertFileSrc(selected[i]))
+
+                }
+            }
             setImages(images.concat(assets));
             setDevicePaths(devicePaths.concat(selected));
             setAssetPaths(assetPaths.concat(assets));
+            
         } else if (selected === null) {
             // user cancelled the selection
         } else {
@@ -102,6 +108,7 @@ export default function Images({
             <h2 className="font-bold pt-5" id="image_selection">
                 Image Selection
             </h2>
+            {image_error && <div>Please only enter valid image types: jpg, jpeg, cr2</div>}
             <div className="flex flex-row">
                 <button
                     onClick={dialog}
