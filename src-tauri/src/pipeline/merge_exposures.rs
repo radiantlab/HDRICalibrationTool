@@ -1,13 +1,16 @@
 use crate::pipeline::DEBUG;
 use std::{
+    fs::copy,
     path::Path,
     process::{Command, ExitStatus},
 };
 
 use super::ConfigSettings;
 
-// Merges multiple LDR images into an HDR image using hdrgen. Can run in either regular mode,
-// with JPG images, or raw mode with .CR2 images.
+// Merges multiple LDR images into an HDR image using hdrgen. If images are in JPG or TIFF format,
+// runs hdrgen command regularly. If images are not in JPG or TIFF format, converts the inputs
+// to TIFF raw images first using dcraw_emu, then runs hdrgen.
+// 
 // input_images:
 //    vector of the paths to the input images. Input images must be in .JPG or .CR2 format.
 // response_function:
@@ -17,7 +20,7 @@ use super::ConfigSettings;
 #[tauri::command]
 pub fn merge_exposures(
     config_settings: &ConfigSettings,
-    input_images: Vec<String>,
+    mut input_images: Vec<String>,
     response_function: String,
     output_path: String,
 ) -> Result<String, String> {
@@ -25,13 +28,17 @@ pub fn merge_exposures(
         println!("merge_exposures Tauri command was called!");
     }
 
-    // Check whether images are in raw format
+    // Check whether images are in raw format that needs to be converted to TIF
     let first_image_ext = Path::new(&input_images[0]).extension().unwrap_or_default();
-    let raw_images: bool = if input_images.len() > 0
+    let convert_to_tiff: bool = if input_images.len() > 0
         && (first_image_ext == "jpg"
             || first_image_ext == "JPG"
             || first_image_ext == "jpeg"
-            || first_image_ext == "JPEG")
+            || first_image_ext == "JPEG"
+            || first_image_ext == "tiff"
+            || first_image_ext == "TIFF"
+            || first_image_ext == "tif"
+            || first_image_ext == "TIF")
     {
         false
     } else {
@@ -40,47 +47,95 @@ pub fn merge_exposures(
 
     if DEBUG {
         println!(
-            "\n\nMerge exposures running in {} MODE...\n\n",
-            if raw_images { "RAW" } else { "JPG" }
+            "\n\nMerge exposures {}...\n\n",
+            if convert_to_tiff {
+                "CONVERTING TO TIFF"
+            } else {
+                "NOT CONVERTING TO TIFF"
+            }
         );
     }
 
     let mut command: Command;
-    if raw_images {
-        // Create a new command for raw2hdr
-        command = Command::new(config_settings.raw2hdr_path.join("raw2hdr"));
 
-        // Add output path for HDR image
-        command.arg("-o");
-        command.arg(format!("{}", output_path));
+    // If raw image format other than TIFF, need to first convert them to TIFF to be used by hdrgen
+    if convert_to_tiff {
+        let mut index = 1;
+        for input_image in &input_images {
+            // Create a new command for dcraw_emu
+            command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
 
-        // Add input raw LDR images as args
-        for input_image in input_images {
-            command.arg(format!("{}", input_image));
+            // Add command arguments
+            command.args([
+                "-T",
+                "-o",
+                "1",
+                "-W",
+                "-j",
+                "-q",
+                "3",
+                "-g",
+                "2",
+                "0",
+                "-t",
+                "0",
+                "-b",
+                "1.1",
+                "-Z",
+                config_settings
+                    .temp_path
+                    .join(format!("input{}.tiff", index))
+                    .display()
+                    .to_string()
+                    .as_str(),
+                format!("{}", input_image).as_str(),
+            ]);
+
+            let status: Result<ExitStatus, std::io::Error> = command.status();
+
+            if !status.is_ok() || !status.unwrap_or(ExitStatus::default()).success() {
+                // On error, return an error message
+                return Err("Error, non-zero exit status. dcraw_emu command (converting to tiff images) failed.".into());
+            }
+
+            index += 1;
         }
-    } else {
-        // Create a new command for hdrgen
-        command = Command::new(config_settings.hdrgen_path.join("hdrgen"));
 
-        // Add input LDR images as args
-        for input_image in input_images {
-            command.arg(format!("{}", input_image));
+        // Update input images vector to contain the newly converted tiff images instead
+        let mut new_inputs = Vec::new();
+        for i in 1..input_images.len() + 1 {
+            new_inputs.push(
+                config_settings
+                    .temp_path
+                    .join(format!("input{}.tiff", i))
+                    .display()
+                    .to_string(),
+            );
         }
 
-        // Add output path for HDR image
-        command.arg("-o");
-        command.arg(format!("{}", output_path));
+        input_images = new_inputs;
+    }
 
-        // // Add camera response function
+    // Create a new command for hdrgen
+    command = Command::new(config_settings.hdrgen_path.join("hdrgen"));
+
+    // Add input LDR images as args
+    for input_image in input_images {
+        command.arg(format!("{}", input_image));
+    }
+
+    // Add output path for HDR image
+    command.arg("-o");
+    command.arg(format!("{}", output_path));
+
+    // Add camera response function if user provided one
+    if response_function != "" {
         command.arg("-r");
         command.arg(format!("{}", response_function));
-
-        // Add remaining flags for hdrgen step
-        command.arg("-a");
-        command.arg("-e");
-        command.arg("-f");
-        command.arg("-g");
     }
+
+    // Add remaining flags for hdrgen step
+    command.args(["-a", "-e", "-f", "-g", "-F"]);
 
     // Run the command
     let status: Result<ExitStatus, std::io::Error> = command.status();
@@ -92,11 +147,7 @@ pub fn merge_exposures(
     // Return a Result object to indicate whether hdrgen command was successful
     if !status.is_ok() || !status.unwrap_or(ExitStatus::default()).success() {
         // On error, return an error message
-        Err(format!(
-            "Error, non-zero exit status. {} command failed.",
-            if raw_images { "raw2hdr" } else { "hdrgen" }
-        )
-        .into())
+        Err("Error, non-zero exit status. hdrgen command failed.".into())
     } else {
         // On success, return output path of HDR image
         Ok(output_path.into())
