@@ -9,6 +9,7 @@ import Response_and_correction from "./response_and_correction";
 import Progress from "./progress";
 
 const DEBUG = true;
+
 const fakePipeline = false;
 
 export default function Home() {
