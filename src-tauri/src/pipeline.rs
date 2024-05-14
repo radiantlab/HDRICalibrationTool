@@ -167,6 +167,10 @@ pub async fn pipeline(
             }
             let input_images_from_dir = input_images_from_dir_result.unwrap();
 
+            if input_images_from_dir.len() == 0 {
+                return Err("All directories must contain at least one LDR image".to_string());
+            }
+
             // Run the HDRGen and Radiance pipeline on the input images
             let result = process_image_set(
                 &config_settings,
@@ -207,6 +211,13 @@ pub async fn pipeline(
         }
     } else {
         // Individual images were selected (single scene)
+
+        // Ensure images are a supported format
+        for input_image in &input_images {
+            if !is_supported_format(&PathBuf::from(input_image)) {
+                return Err("Unsupported image format.".to_string());
+            }
+        }
 
         // Run the HDRGen and Radiance pipeline on the images
         let result = process_image_set(
@@ -273,17 +284,7 @@ pub fn get_images_from_dir(input_dir: &String) -> Result<Vec<String>, String> {
     // Find the files that have a JPG, TIFF, or CR2 extension
     let mut input_image_paths: Vec<String> = Vec::new();
     for entry in entries {
-        if entry.extension().unwrap_or_default() == "jpg"
-            || entry.extension().unwrap_or_default() == "JPG"
-            || entry.extension().unwrap_or_default() == "jpeg"
-            || entry.extension().unwrap_or_default() == "JPEG"
-            || entry.extension().unwrap_or_default() == "tiff"
-            || entry.extension().unwrap_or_default() == "TIFF"
-            || entry.extension().unwrap_or_default() == "tif"
-            || entry.extension().unwrap_or_default() == "TIF"
-            || entry.extension().unwrap_or_default() == "CR2"
-            || entry.extension().unwrap_or_default() == "cr2"
-        {
+        if is_supported_format(&entry) {
             let x = entry.into_os_string().into_string().unwrap_or_default();
             input_image_paths.push(x);
         }
@@ -505,4 +506,22 @@ pub fn process_image_set(
 
     // Pipeline has completed successfully. Return Ok
     return Result::Ok(("Image set processed.").to_string());
+}
+
+fn is_supported_format(entry: &PathBuf) -> bool {
+    let supported_extensions: Vec<&str> = Vec::from([
+        "jpg", "jpeg", "3fr", "ari", "arw", "bay", "braw", "crw", "cr2", "cr3", "cap", "data",
+        "dcs", "dcr", "dng", "drf", "eip", "erf", "fff", "gpr", "iiq", "k25", "kdc", "mdc", "mef",
+        "mos", "mrw", "nef", "nrw", "obm", "orf", "pef", "ptx", "pxn", "r3d", "raf", "raw", "rwl",
+        "rw2", "rwz", "sr2", "srf", "srw", "tif", "tiff", "x3f",
+    ]);
+    let entry_ext = entry.extension().unwrap_or_default().to_ascii_lowercase();
+
+    for i in supported_extensions {
+        if entry_ext == i {
+            return true;
+        }
+    }
+
+    return false;
 }

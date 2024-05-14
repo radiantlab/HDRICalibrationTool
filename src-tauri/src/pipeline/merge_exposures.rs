@@ -10,7 +10,7 @@ use super::ConfigSettings;
 // Merges multiple LDR images into an HDR image using hdrgen. If images are in JPG or TIFF format,
 // runs hdrgen command regularly. If images are not in JPG or TIFF format, converts the inputs
 // to TIFF raw images first using dcraw_emu, then runs hdrgen.
-// 
+//
 // input_images:
 //    vector of the paths to the input images. Input images must be in .JPG or .CR2 format.
 // response_function:
@@ -29,21 +29,7 @@ pub fn merge_exposures(
     }
 
     // Check whether images are in raw format that needs to be converted to TIF
-    let first_image_ext = Path::new(&input_images[0]).extension().unwrap_or_default();
-    let convert_to_tiff: bool = if input_images.len() > 0
-        && (first_image_ext == "jpg"
-            || first_image_ext == "JPG"
-            || first_image_ext == "jpeg"
-            || first_image_ext == "JPEG"
-            || first_image_ext == "tiff"
-            || first_image_ext == "TIFF"
-            || first_image_ext == "tif"
-            || first_image_ext == "TIF")
-    {
-        false
-    } else {
-        true
-    };
+    let convert_to_tiff: bool = input_images.len() > 0 && is_raw(&input_images[0]);
 
     if DEBUG {
         println!(
@@ -151,5 +137,21 @@ pub fn merge_exposures(
     } else {
         // On success, return output path of HDR image
         Ok(output_path.into())
+    }
+}
+
+// Returns a boolean representing whether the image file is in raw format. Returns false if JPG or TIF.
+fn is_raw(file_name: &String) -> bool {
+    let image_ext = Path::new(file_name)
+        .extension()
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+
+    if image_ext == "jpg" || image_ext == "jpeg" || image_ext == "tiff" || image_ext == "tif" {
+        // Image is JPG or TIF
+        false
+    } else {
+        // Image is in raw format
+        true
     }
 }
