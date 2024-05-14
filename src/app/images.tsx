@@ -9,6 +9,7 @@ export default function Images({
     setDevicePaths
 }: any) {
     const DEBUG = true;
+    const valid_extensions = ["jpg", "jpeg", "tif", "tiff", "JPG", "JPEG", "TIF", "TIFF", "CR2"]
 
     // Represents the value of the checkbox for whether user wants to select directories instead of images
     const [directorySelected, setDirectorySelected] = useState<boolean>(false);
@@ -36,12 +37,17 @@ export default function Images({
         }
         if (Array.isArray(selected)) {
             set_image_error(false)
+            let valid = false
             for (let i = 0; i < selected.length; i++) {
-                if (Extensions(selected[i]) != "jpg" && Extensions(selected[i]) != "jpeg" && Extensions(selected[i]) != "JPG" && Extensions(selected[i]) != "JPEG" && Extensions(selected[i]) != "CR2") {
-                    set_image_error(true)
-                } else {
+                for (let j = 0; j < valid_extensions.length; j++) {
+                    if (Extensions(selected[i]) == valid_extensions[j]) {
+                        valid = true
+                    }
+                }
+                if (valid) {
                     assets = assets.concat(convertFileSrc(selected[i]))
-
+                } else {
+                    set_image_error(true)
                 }
             }
             setImages(images.concat(assets));
@@ -108,7 +114,7 @@ export default function Images({
             <h2 className="font-bold pt-5" id="image_selection">
                 Image Selection
             </h2>
-            {image_error && <div>Please only enter valid image types: jpg, jpeg, cr2</div>}
+            {image_error && <div>Please only enter valid image types: jpg, jpeg, tif, tiff cr2</div>}
             <div className="flex flex-row">
                 <button
                     onClick={dialog}
