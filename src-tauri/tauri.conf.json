@@ -88,12 +88,12 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 768,
+        "height": 800,
         "resizable": true,
         "title": "HDRI Calibration Interface",
         "width": 1024,
         "minWidth": 1024,
-        "minHeight": 768
+        "minHeight": 800
       }
     ]
   }
