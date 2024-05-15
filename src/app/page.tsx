@@ -31,7 +31,7 @@ export default function Home() {
         setSettings({
           radiancePath: radianceDefaultPath,
           hdrgenPath: "",
-          raw2hdrPath: "",
+          dcrawEmuPath: "",
           outputPath: await invoke("get_default_output_path") // queries backend for suggested place to store files
         });
       })
@@ -73,7 +73,7 @@ export default function Home() {
   const [settings, setSettings] = useState({
     radiancePath: "",
     hdrgenPath: "",
-    raw2hdrPath: "",
+    dcrawEmuPath: "",
     outputPath: "",
   });
 
@@ -116,7 +116,7 @@ export default function Home() {
     invoke<string>("pipeline", {
       radiancePath: settings.radiancePath,
       hdrgenPath: settings.hdrgenPath,
-      raw2hdrPath: settings.raw2hdrPath,
+      dcrawEmuPath: settings.dcrawEmuPath,
       outputPath: settings.outputPath,
       inputImages: devicePaths,
       responseFunction: responsePaths,
