@@ -96,6 +96,7 @@ export default function Images({
         setImages([]);
         setDevicePaths([]);
         setAssetPaths([]);
+        set_image_error(false);
     };
 
     function directory_checked() {
