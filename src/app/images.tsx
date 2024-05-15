@@ -114,7 +114,7 @@ export default function Images({
             <h2 className="font-bold pt-5" id="image_selection">
                 Image Selection
             </h2>
-            {image_error && !directorySelected <div>Please only enter valid image types: jpg, jpeg, tif, tiff cr2</div>}
+            {image_error && !directorySelected && <div>Please only enter valid image types: jpg, jpeg, tif, tiff cr2</div>}
             <div className="flex flex-row">
                 <button
                     onClick={dialog}
