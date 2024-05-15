@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import { open } from "@tauri-apps/api/dialog";
 import { Paths } from "./string_functions";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
+import { Extensions } from "./string_functions";
 
 export default function Images({
     devicePaths,
     setDevicePaths
 }: any) {
     const DEBUG = true;
+    const valid_extensions = ["jpg", "jpeg", "tif", "tiff", "JPG", "JPEG", "TIF", "TIFF", "CR2"]
 
     // Represents the value of the checkbox for whether user wants to select directories instead of images
     const [directorySelected, setDirectorySelected] = useState<boolean>(false);
@@ -18,6 +20,8 @@ export default function Images({
     let selected: any | any[] = [];
     // Holds the temporary asset paths selected by the user during the dialog function
     let assets: any[] = [];
+    // Error checking display
+    const [image_error, set_image_error] = useState<boolean>(false);
 
     // Open a file dialog window using the tauri api and update the images array with the results
     async function dialog() {
@@ -28,20 +32,28 @@ export default function Images({
             });
         } else {
             selected = await open({
-                multiple: true,
-                filters: [
-                    {
-                        name: "Image",
-                        extensions: ["jpg", "jpeg", "JPG", "JPEG", "CR2"],
-                    },
-                ],
+                multiple: true
             });
         }
         if (Array.isArray(selected)) {
-            assets = selected.map((item: any) => convertFileSrc(item));
+            set_image_error(false)
+            let valid = false
+            for (let i = 0; i < selected.length; i++) {
+                for (let j = 0; j < valid_extensions.length; j++) {
+                    if (Extensions(selected[i]) == valid_extensions[j]) {
+                        valid = true
+                    }
+                }
+                if (valid) {
+                    assets = assets.concat(convertFileSrc(selected[i]))
+                } else {
+                    set_image_error(true)
+                }
+            }
             setImages(images.concat(assets));
             setDevicePaths(devicePaths.concat(selected));
             setAssetPaths(assetPaths.concat(assets));
+            
         } else if (selected === null) {
             // user cancelled the selection
         } else {
@@ -84,6 +96,7 @@ export default function Images({
         setImages([]);
         setDevicePaths([]);
         setAssetPaths([]);
+        set_image_error(false);
     };
 
     function directory_checked() {
@@ -102,6 +115,7 @@ export default function Images({
             <h2 className="font-bold pt-5" id="image_selection">
                 Image Selection
             </h2>
+            {image_error && !directorySelected && <div>Please only enter valid image types: jpg, jpeg, tif, tiff cr2</div>}
             <div className="flex flex-row">
                 <button
                     onClick={dialog}
