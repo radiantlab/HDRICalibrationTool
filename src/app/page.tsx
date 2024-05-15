@@ -6,8 +6,10 @@ import Images from "./images";
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Navigation from "./navigation";
 import Response_and_correction from "./response_and_correction";
+import Progress from "./progress";
 
 const DEBUG = true;
+
 const fakePipeline = false;
 
 export default function Home() {
@@ -179,15 +181,18 @@ export default function Home() {
           setSettings={setSettings}
           handleSettingsChange={handleSettingsChange}
           handleGenerateHDRImage={handleGenerateHDRImage}
-          showProgress={showProgress}
-          fakePipeline={fakePipeline}
-          setProgressButton={setProgressButton}
-          setProcessError={setProcessError}
-          progressButton={progressButton}
-          processError={processError}
-          ResetProgress={ResetProgress} />
+        />
         <div className="w-3/4 ml-auto pl-3">
           <h1 className="font-bold pt-10">Configuration</h1>
+          <Progress 
+            showProgress = {showProgress}
+            fakePipeline = {fakePipeline}
+            setProgressButton = {setProgressButton}
+            setProcessError = {setProcessError}
+            progressButton = {progressButton}
+            processError = {processError}
+            ResetProgress = {ResetProgress}
+          />
           <Images devicePaths={devicePaths} setDevicePaths={setDevicePaths} />
           <div id="c_r_v">
             <CroppingResizingViewSettings

@@ -27,7 +27,7 @@ export default function Settings({
   };
 
   return (
-    <>
+    <div>
       {/* ----->  Taken from Tailwind CSS example: https://tailwindui.com/components/application-ui/overlays/dialogs */}
       <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
         <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
@@ -144,6 +144,6 @@ export default function Settings({
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
