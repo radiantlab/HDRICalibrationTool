@@ -69,7 +69,6 @@ export default function CroppingResizingViewSettings({
             value={viewSettings.targetRes}
             label="Target Width/Height (resizing)"
             placeholder="pixels"
-            defaultValue="1000"
             handleChange={handleChange}
           />
         </div>
