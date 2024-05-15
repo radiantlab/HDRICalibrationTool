@@ -28,6 +28,7 @@ struct SavedConfigs {
     configurations: Vec<Config>,
 }
 
+// Retrieves saved configurations by looking for directories in "{app_config_dir}/configurations/".
 #[tauri::command]
 pub async fn get_saved_configs(app_handle: tauri::AppHandle) -> Result<String, String> {
     let mut saved_configs = SavedConfigs {
@@ -50,6 +51,7 @@ pub async fn get_saved_configs(app_handle: tauri::AppHandle) -> Result<String, S
 
     let dir = Path::new(app_config_dir).join("configurations");
 
+    // If the configurations directory doesn't exist, return JSON with empty config list
     if !dir.exists() {
         return match to_string(&saved_configs) {
             Ok(v) => Ok(v.to_string()),
@@ -71,6 +73,8 @@ pub async fn get_saved_configs(app_handle: tauri::AppHandle) -> Result<String, S
         Err(_) => return Err("Error getting saved configs".to_string()),
     };
 
+    // Look through all subdirectories in {app_config_dir}/configurations/ and add to vector of saved configs if
+    // it contains a valid configuration
     for entry in dir_contents {
         match process_configuration(entry) {
             Some(config) => saved_configs.configurations.push(config),
@@ -78,6 +82,7 @@ pub async fn get_saved_configs(app_handle: tauri::AppHandle) -> Result<String, S
         };
     }
 
+    // Convert saved configurations to JSON
     let saved_configs_json = match to_string(&saved_configs) {
         Ok(v) => v,
         Err(_) => return Err("Error getting saved configs: Could not convert to JSON.".to_string()),
@@ -86,17 +91,22 @@ pub async fn get_saved_configs(app_handle: tauri::AppHandle) -> Result<String, S
     return Ok(saved_configs_json.to_string());
 }
 
+// Processes a directory to determine if it contains a valid configuration.
+// Returns Some(Config) if valid, otherwise None.
 fn process_configuration(dir: PathBuf) -> Option<Config> {
+    // Try to read the configuration.json file. Not a valid configuration dir if fails
     let config_info = match read_to_string(dir.join("configuration.json")) {
         Ok(v) => v,
         Err(_) => return None,
     };
 
+    // Try to parse the JSON string into a config obj, not a valid configuration if it fails
     let mut config_obj: Config = match from_str(&config_info) {
         Ok(v) => v,
         Err(_) => return None,
     };
 
+    // If config includes response function, check there's a file existing with a matching name
     if config_obj.response_paths != "" {
         config_obj.response_paths = dir
             .join(config_obj.response_paths)
@@ -107,6 +117,7 @@ fn process_configuration(dir: PathBuf) -> Option<Config> {
         }
     }
 
+    // If config includes fisheye correction calibration file, check there's a file existing with a matching name
     if config_obj.fe_correction_paths != "" {
         config_obj.fe_correction_paths = dir
             .join(config_obj.fe_correction_paths)
@@ -117,6 +128,7 @@ fn process_configuration(dir: PathBuf) -> Option<Config> {
         }
     }
 
+    // If config includes vignetting effect correction calibration file, check there's a file existing with a matching name
     if config_obj.v_correction_paths != "" {
         config_obj.v_correction_paths = dir
             .join(config_obj.v_correction_paths)
@@ -126,6 +138,8 @@ fn process_configuration(dir: PathBuf) -> Option<Config> {
             return None;
         }
     }
+
+    // If config includes neutral density correction calibration file, check there's a file existing with a matching name
     if config_obj.nd_correction_paths != "" {
         config_obj.nd_correction_paths = dir
             .join(config_obj.nd_correction_paths)
@@ -135,6 +149,8 @@ fn process_configuration(dir: PathBuf) -> Option<Config> {
             return None;
         }
     }
+
+    // If config includes calibration factor calibration file, check there's a file existing with a matching name
     if config_obj.cf_correction_paths != "" {
         config_obj.cf_correction_paths = dir
             .join(config_obj.cf_correction_paths)
@@ -145,5 +161,6 @@ fn process_configuration(dir: PathBuf) -> Option<Config> {
         }
     }
 
+    // Configuration is valid, return the parsed Config object
     return Some(config_obj);
 }

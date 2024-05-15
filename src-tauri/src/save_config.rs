@@ -22,6 +22,9 @@ struct Config {
     vv: String,
 }
 
+// Saves a configuration, which includes view settings, response function, and calibration files.
+// Configuration is saved to "{app_config_dir}/configurations/{config_name}".
+// Writes a JSON file containing relative paths of the copied files, the configuration name, and the view settings.
 #[tauri::command(rename_all = "snake_case")]
 pub async fn save_config(
     app_handle: tauri::AppHandle,
@@ -67,6 +70,7 @@ pub async fn save_config(
         None => return Err("Error saving config".to_string()),
     };
 
+    // Create directory for configuration where path is {app_config_dir}/configurations/{config_name}
     let dir = Path::new(app_config_dir)
         .join("configurations")
         .join(&config.name);
@@ -74,6 +78,8 @@ pub async fn save_config(
         return Err("Error saving config.".to_string());
     }
 
+    // For any included response function/calibration file, copy file into configuration, renaming file
+    // and updating config to have relative paths of the response function and calibration files
     let mut is_error = false;
     if config.response_paths != "" {
         is_error =
@@ -105,17 +111,21 @@ pub async fn save_config(
         config.cf_correction_paths = "cf_correction.cal".to_string();
     };
 
+    // Convert the config to JSON string
     let json = match to_string(&config) {
         Ok(v) => v,
         Err(_) => return Err("Error saving config: Could not convert to JSON.".to_string()),
     };
 
+    // Write the configuration JSON file
     is_error = is_error || write(&dir.join("configuration.json"), json).is_err();
 
+    // Check if error occurred anywhere in the process
     if is_error {
         return Err("Error saving config.".to_string());
     }
 
+    // Otherwise return success method with path of saved config
     Ok(format!(
         "Successfully saved configuration to {}",
         dir.display()
