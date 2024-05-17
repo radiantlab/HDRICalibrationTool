@@ -1,3 +1,13 @@
+<img src="public/splash.png" alt="HDRI Calibration Interface" />
+
+[![License](https://img.shields.io/badge/license-GPLv3-blue)](./LICENSE)
+[![website](https://img.shields.io/badge/website-Radiant%20Lab-green.svg)](https://www.clotildepierson.com/software)
+[![Tauri](https://img.shields.io/badge/Tauri-v1.5.2-yellow.svg)](https://tauri.app/)
+[![Rust](https://img.shields.io/badge/Rust-v1.60-darkred.svg)](https://www.rust-lang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-v14.0.1-darkgrey.svg)](https://nextjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v3.3.0-lightblue.svg)](https://nextjs.org/)
+
+
 ## Introduction
 The purpose of this application is to give the user a graphical user interface for the Radiance/HDRGen pipeline process. The program works by taking in multiple LDR image files and calibration files in order to return light calculated images containing radiance, luminance and color. The application is intended for interior light design researchers who are concerned with how lighting in a room affects visual discomfort.
 
@@ -22,3 +32,19 @@ Click on the settings tab in the left hand navigation sidebar and you should see
 
 ### Generate Images
 Once settings are entered, you can close the settings and click the Generate HDR Image button in the navigation sidebar which will give a message about the process that will either complete or give an error.
+
+## Acknowledgements
+
+### Authors
+- Dr. Clotilde Pierson (Oregon State University)
+- Alex Ulbrich (Oregon State University)
+
+### Contributors
+  #### 2022 - 2023 Development Team
+  - Xiangyu “Joey” Li
+  - Liam Zimmermann
+  - Nathaniel Klump
+
+  #### 2023 - 2024 Development Team
+  - Jacob Springer 
+  - Shanti Morrell
