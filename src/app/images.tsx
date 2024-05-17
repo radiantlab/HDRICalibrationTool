@@ -9,7 +9,12 @@ export default function Images({
     setDevicePaths
 }: any) {
     const DEBUG = true;
-    const valid_extensions = ["jpg", "jpeg", "tif", "tiff", "JPG", "JPEG", "TIF", "TIFF", "CR2"]
+    const valid_extensions = [
+        "jpg", "jpeg", "3fr", "ari", "arw", "bay", "braw", "crw", "cr2", "cr3", "cap", "data",
+        "dcs", "dcr", "dng", "drf", "eip", "erf", "fff", "gpr", "iiq", "k25", "kdc", "mdc", "mef",
+        "mos", "mrw", "nef", "nrw", "obm", "orf", "pef", "ptx", "pxn", "r3d", "raf", "raw", "rwl",
+        "rw2", "rwz", "sr2", "srf", "srw", "tif", "tiff", "x3f",
+    ];
 
     // Represents the value of the checkbox for whether user wants to select directories instead of images
     const [directorySelected, setDirectorySelected] = useState<boolean>(false);
@@ -40,7 +45,7 @@ export default function Images({
             let valid = false
             for (let i = 0; i < selected.length; i++) {
                 for (let j = 0; j < valid_extensions.length; j++) {
-                    if (Extensions(selected[i]) == valid_extensions[j]) {
+                    if (Extensions(selected[i]).toLowerCase() == valid_extensions[j]) {
                         valid = true
                     }
                 }
@@ -115,7 +120,7 @@ export default function Images({
             <h2 className="font-bold pt-5" id="image_selection">
                 Image Selection
             </h2>
-            {image_error && !directorySelected && <div>Please only enter valid image types: jpg, jpeg, tif, tiff cr2</div>}
+            {image_error && !directorySelected && <div>Please only enter valid image types: jpg, jpeg, tif, tiff, or raw image formats</div>}
             <div className="flex flex-row">
                 <button
                     onClick={dialog}
