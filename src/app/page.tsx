@@ -40,6 +40,8 @@ export default function Home() {
       .catch(() => {
         console.error;
       });
+
+    alert("Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images.")
   }, []);
 
   // Holds the fisheye coordinates and view settings
