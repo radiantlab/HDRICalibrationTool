@@ -54,7 +54,12 @@ export default function Progress({
                             {!progressButton && processError && (
                                 <div>
                                     <h2>Error</h2>
-                                    <div>Please Ensure Inputs Are Correct</div>
+                                    <p className=" text-sm pt-1">
+                                        There was an error with the pipeline. Please make sure all
+                                        the inputs are correct, and that you have entered the
+                                        paths for the HDRGen and dcraw_emu binaries in the 
+                                        settings.
+                                    </p>
                                     <button
                                         onClick={() => ResetProgress()}
                                         className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 m-10 border-gray-400 rounded h-fit"
