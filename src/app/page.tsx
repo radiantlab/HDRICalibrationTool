@@ -114,9 +114,30 @@ export default function Home() {
 
   // Calls the BE pipeline function with the input images the user
   // selected, and hardcoded data for the rest of the inputs
-  const handleGenerateHDRImage = () => {
+  const handleGenerateHDRImage = async () => {
+    // Validate inputs
+    if (!allInputsEntered()) {
+      // If a calibration file or view setting is missing, or the user hasn't selected input images/dirs, display error and abort
+      alert(
+        "You must enter all calibration files and view settings and select input images or directories before generating an HDR image."
+      );
+      return;
+    } else if (!responsePaths) {
+      // If the user didn't select a response function, 
+      // display a warning that the output HDR image might be inaccurate if converting from JPEG
+      // and ask for confirmation before proceeding with pipeline call
+      let proceed = await confirm(
+        "Warning: No response function selected. If you're converting JPEG images, the automatically generated response function may result in an inaccurate HDR image. Continue anyway?"
+      );
+      if (!proceed) {
+        return;
+      }
+    }
+
     // Progress
     setShowProgress(true);
+
+    // Call pipeline
     invoke<string>("pipeline", {
       radiancePath: settings.radiancePath,
       hdrgenPath: settings.hdrgenPath,
@@ -148,6 +169,26 @@ export default function Home() {
           setProcessError(true);
         }
       });
+  };
+
+  function allInputsEntered() {
+    if (
+      devicePaths.length === 0 || 
+      !fe_correctionPaths ||
+      !v_correctionPaths ||
+      !cf_correctionPaths ||
+      !nd_correctionPaths ||
+      !viewSettings.diameter ||
+      !viewSettings.xleft ||
+      !viewSettings.ydown ||
+      !viewSettings.targetRes ||
+      !viewSettings.vh ||
+      !viewSettings.vv
+    ) {
+      return false;
+    } else {
+      return true;
+    }
   };
 
   function setConfig(config: any) {
