@@ -28,6 +28,8 @@ export default function Images({
     // Error checking display
     const [image_error, set_image_error] = useState<boolean>(false);
 
+    const [rawImagesSelected, setRawImagesSelected] = useState<boolean>(false);
+
     // Open a file dialog window using the tauri api and update the images array with the results
     async function dialog() {
         if (directorySelected == true) {
@@ -109,6 +111,17 @@ export default function Images({
         reset();
     };
 
+    // Update flag for whether raw images are selected (to determine whether to show image previews)
+    useEffect(() => {
+        setRawImagesSelected(false)
+        for (let i = 0; i < images.length; i++) {
+            const ext = Extensions(String(images[i])).toLowerCase()
+            if (ext !== "jpeg" && ext !== "jpg" && ext !== "tif" && ext !== "tiff") {
+                setRawImagesSelected(true)
+            }
+        }
+    }, [images])
+
     return (
         <div>
             <button
@@ -137,9 +150,10 @@ export default function Images({
                     <label>Select directories</label>
                 </div>
             </div>
-            {directorySelected ? (
+            {directorySelected || rawImagesSelected ? (
                 <div>
-                    <div>Directory count: {devicePaths.length}</div>
+                    {directorySelected && <div>Directory count: {devicePaths.length}</div>}
+                    {rawImagesSelected && <div>Image count: {devicePaths.length}</div>}
                     <div className="directory-preview flex flex-wrap flex-col">
                         {devicePaths.map((path: any, index: any) => (
                             <div

@@ -9,31 +9,35 @@
 
 
 ## Introduction
-The purpose of this application is to give the user a graphical user interface for the Radiance/HDRGen pipeline process. The program works by taking in multiple LDR image files and calibration files in order to return light calculated images containing radiance, luminance and color. The application is intended for interior light design researchers who are concerned with how lighting in a room affects visual discomfort.
+This application provides a graphical user interface for the creation and calibration of High Dynamic Range (HDR) images using Radiance, hdrgen, and dcraw_emu according to the pipeline process published [here](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319). The program works by taking in multiple LDR image files as well as some calibration information related to the camera/lens used, in order to return calibrated HDR images, also called luminance maps. The application is intended for lighting and daylighting professionals or researchers who are interested in studying the indoor visual environment and especially discomfort glare.
 
 ## Platforms
-This application runs on MacOS, Windows and Linux.
+This application runs on macOS, Windows and Linux.
 
 ## Getting Started
-The user must install [Radiance](https://www.radiance-online.org/) as well as [HDRGen](http://www.anyhere.com/) to their local machine and have access to their location. After the dependencies have been installed, install the [HDRI Calibration Interface](https://github.com/shantimorrell/HDRICalibrationTool-Capstone/actions/runs/8283470432). There will be a build for each platform. After installation, extract the contents of the zipped folder to a desired location. Open the installed `folder/bundle` and the first folder in here will contain the installation for your platform. Continue the installation process. This will install the application on your desktop.
+Install [Radiance](https://www.radiance-online.org/), [hdrgen](http://www.anyhere.com/), and the [dcraw_emu binary from LibRaw](https://www.libraw.org/download) to your local machine and note where these tools are located (the folder path). After these dependencies have been installed, install the [HDRI Calibration Interface](https://github.com/radiantlab/HDRICalibrationTool/releases/latest).
 
 ## Use
 ### Uploading Images
-Open the application created by the installer in the previous step. You should be able to see the main page of the program. Next you will need to upload the images in the image selection section by clicking the select button. Optionally, you can select a folder that contains the images you will be uploading. The filetypes supported are JPG, JPEG and raw image format. After uploading the images, you should see a preview of the images and the image count should reflect the number of uploaded images.
+Open the application created by the installer in the previous step. You should be able to see the main page of the program. Next you will need to upload the images in the image selection section by clicking the select button. Optionally, you can select a folder that contains the images you will be uploading. The filetypes supported are JPG, TIF, and raw image formats. After uploading the images, you should see a list of the images and the image count should reflect the number of uploaded images.
 
 ### Uploading Response File and Image Information
-Upload the response file that should have a file extension of rsp and fill in the image data for the cropping, resizing and view settings.
+Upload the response file that should have a file extension of `.rsp` and fill in the image data for the cropping, resizing and view settings.
 
 ### Uploading Calibration Files
-Select the calibration files for the remaining fields. These should have a cal file extension.
+Upload the calibration files for the remaining fields. These should have a `.cal` file extension.
 
 ### Settings
-Click on the settings tab in the left hand navigation sidebar and you should see a settings display appear. For the Radiance path, give the path to the Radiance binaries. This would be something like `/usr/local/radiance/bin/` with usr being the name of the user on the computer. The HDRGen path should point to /usr/local/bin and the output should point to the location to which you want the output images to go to.
+Click on the settings tab in the left hand navigation sidebar and you should see a settings display appear. For the Radiance path, give the path to the Radiance binaries. This would be something like `/usr/local/radiance/bin/` on macOS or Linux and `C:\Radiance\bin` on Windows. For hdrgen and dcraw_emu, provide the path to the folder where hdrgen and dcraw_emu were installed. These should be something like `/usr/local/bin`. Lastly, the output should point to the folder to which you want the output images to be saved to.
 
 ### Generate Images
-Once settings are entered, you can close the settings and click the Generate HDR Image button in the navigation sidebar which will give a message about the process that will either complete or give an error.
+Once settings are entered, you can close the settings and click the Generate HDR Image button in the navigation sidebar. A message will let you know about the process or give you an error if something is wrong.
+
+## Additional Resources
+For further guidance about creating and calibrating HDR images, please consult [Tutorial: Luminance Maps for Daylighting Studies from High Dynamic Range Photography](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319) by Clotilde Pierson, Coralie Cauwerts, Magali Bodart, and Jan Wienold.
 
 ## Acknowledgements
+This app builds upon the scene processing and simulation strengths of existing programs such as Radiance, hdrgen, and LibRaw.
 
 ### Authors
 - Dr. Clotilde Pierson (Oregon State University)
