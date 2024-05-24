@@ -28,7 +28,7 @@ Run `npm install` and wait for dependencies to install.
 Run `npm run tauri dev`. This will install the Tauri dependencies and launch the application once complete.
 
 ## File Structure
-Forntend: `src/app/(component)` every component of the application is split into its own file (settings, input images, cropping resizing...) which are then used by `page.tsx` and handled by `layout.tsx`. Each file in the front end has the same structure (function declaration, parameters, display states, function states, functions and HTML)
+Frontend: `src/app/(component)` every component of the application is split into its own file (settings, input images, cropping resizing...) which are then used by `page.tsx` and handled by `layout.tsx`. Each file in the front end has the same structure (function declaration, parameters, display states, function states, functions and HTML)
 
 Backend: `src-tauri` contains the `tauri.conf.json` file which handles app title, app size, list of api functions and other configuration settings. `src-tauri/src/pipeline.rs` contains the main functionality for HDRGen. Additional pipeline functions are stored in `src-tauri/src/pipeline` these functions include handling cropping, neutral density, nullification of exposure values and others.
 
