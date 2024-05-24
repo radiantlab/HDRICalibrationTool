@@ -16,9 +16,9 @@ Frontend: [Next.js](https://nextjs.org/) (no installation needed)
 
 Styling: [Tailwind CSS](https://tailwindcss.com/docs/guides/nextjs) (no installation needed)
 
-Next.js and Tailwind CSS depend on the installation of [nodejs](https://nodejs.org/en).
+Next.js and Tailwind CSS depend on the installation of [nodejs](https://nodejs.org/en)
 
-Backend: [Rust](https://www.rust-lang.org/)
+Backend: [Rust](https://www.rust-lang.org/) for Windows, Rust uses the Visual Studio C++ Build Tools
 
 ## Installation
 In order to create a working environment, first clone the repository and cd into `HDRICalibrationTool-Capstone`.
