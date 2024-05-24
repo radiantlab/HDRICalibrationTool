@@ -10,7 +10,15 @@
 # For Developers
 
 ## Dependencies
-This project uses [Tauri](https://tauri.app/) which depends on [Next.js](https://nextjs.org/) (no installation needed) for the frontend, [Rust](https://www.rust-lang.org/) for the backend and [Tailwind CSS](https://tailwindcss.com/docs/guides/nextjs) (no installation needed) for styling. Next.js and Tailwind CSS depend on the installation of [nodejs](https://nodejs.org/en).
+This project utilizes [Tauri](https://tauri.app/) (no installation needed) which uses these frameworks:
+
+Frontend: [Next.js](https://nextjs.org/) (no installation needed)
+
+Styling: [Tailwind CSS](https://tailwindcss.com/docs/guides/nextjs) (no installation needed)
+
+Next.js and Tailwind CSS depend on the installation of [nodejs](https://nodejs.org/en).
+
+Backend: [Rust](https://www.rust-lang.org/)
 
 ## Installation
 In order to create a working environment, first clone the repository and cd into `HDRICalibrationTool-Capstone`.
@@ -22,7 +30,10 @@ Run `npm run tauri dev`. This will install the Tauri dependencies and launch the
 ## File Structure
 Forntend: `src/app/(component)` every component of the application is split into its own file (settings, input images, cropping resizing...) which are then used by `page.tsx` and handled by `layout.tsx`. Each file in the front end has the same structure (function declaration, parameters, display states, function states, functions and HTML)
 
-Backend: `src-tauri` contains the `tauri.conf.json` file which handles app title, app size, list of api functions and other configuration settings. `src-tauri/src/pipeline.rs` contains the main functionality for HDRGen.
+Backend: `src-tauri` contains the `tauri.conf.json` file which handles app title, app size, list of api functions and other configuration settings. `src-tauri/src/pipeline.rs` contains the main functionality for HDRGen. Additional pipeline functions are stored in `src-tauri/src/pipeline` these functions include handling cropping, neutral density, nullification of exposure values and others.
 
 ## Contribution
 Contribution to the repo is limited to those working on the Architectural Lighting Design Capstone Project.
+
+### Project Backlog
+In order to contribute, navigate to Projects in the repo begin with a draft issue. Then convert the draft to an issue and place that issue in either the backlog, ready or in progress. If working on a selected issue, assign yourself to that issue and be sure to update the progress of the issue in the review and done section. Next, create a branch titled issue and the issue number (issue number one would be titled issue1). Once changes are complete, push changes and open a PR. Every PR must be reviewed by at least one team member and successfully build. Once changes have been approved and merged, feature branches should be deleted. Try to only have one branch open at a time.
