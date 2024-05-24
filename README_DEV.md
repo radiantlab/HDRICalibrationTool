@@ -18,7 +18,7 @@ Styling: [Tailwind CSS](https://tailwindcss.com/docs/guides/nextjs) (no installa
 
 Next.js and Tailwind CSS depend on the installation of [nodejs](https://nodejs.org/en)
 
-Backend: [Rust](https://www.rust-lang.org/) for Windows, Rust uses the Visual Studio C++ Build Tools
+Backend: [Rust](https://www.rust-lang.org/). On Windows, Rust uses the Visual Studio C++ Build Tools
 
 ## Installation
 In order to create a working environment, first clone the repository and cd into `HDRICalibrationTool-Capstone`.
@@ -36,4 +36,4 @@ Backend: `src-tauri` contains the `tauri.conf.json` file which handles app title
 Contribution to the repo is limited to those working on the Architectural Lighting Design Capstone Project.
 
 ### Project Backlog
-In order to contribute, navigate to Projects in the repo begin with a draft issue. Then convert the draft to an issue and place that issue in either the backlog, ready or in progress. If working on a selected issue, assign yourself to that issue and be sure to update the progress of the issue in the review and done section. Next, create a branch titled issue and the issue number (issue number one would be titled issue1). Once changes are complete, push changes and open a PR. Every PR must be reviewed by at least one team member and successfully build. Once changes have been approved and merged, feature branches should be deleted. Try to only have one branch open at a time.
+In order to contribute, navigate to Projects in the repo and begin with a draft issue. Then convert the draft to an issue and place that issue in either the backlog, ready or in progress. If working on a selected issue, assign yourself to that issue and be sure to update the progress of the issue in the review and done section. Next, create a branch titled issue and the issue number (issue number one would be titled issue1). Once changes are complete, push changes and open a PR. Every PR must be reviewed by at least one team member and successfully build. Once changes have been approved and merged, feature branches should be deleted. Try to only have one branch open at a time.
