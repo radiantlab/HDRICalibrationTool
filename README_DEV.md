@@ -5,7 +5,7 @@
 [![Tauri](https://img.shields.io/badge/Tauri-v1.5.2-yellow.svg)](https://tauri.app/)
 [![Rust](https://img.shields.io/badge/Rust-v1.60-darkred.svg)](https://www.rust-lang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-v14.0.1-darkgrey.svg)](https://nextjs.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v3.3.0-lightblue.svg)](https://tailwindcss.com/docs/guides/nextjs)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v3.3.0-lightblue.svg)](https://tailwindcss.com/)
 
 # For Developers
 
@@ -20,10 +20,12 @@ Next.js and Tailwind CSS depend on the installation of [nodejs](https://nodejs.o
 
 Backend: [Rust](https://www.rust-lang.org/) On Windows, Rust uses the Visual Studio C++ Build Tools
 
+Other: [Radiance](https://www.radiance-online.org/), [hdrgen](http://www.anyhere.com/)
+
 ## Installation
 In order to create a working environment, first clone the repository and cd into `HDRICalibrationTool-Capstone`.
 
-Run `npm install` and wait for dependencies to install.
+Run `npm install` and wait for dependencies to install (pnpm, bun and yarn will work as well).
 
 Run `npm run tauri dev`. This will install the Tauri dependencies and launch the application once complete.
 
