@@ -1,2 +1,0 @@
-New in v1.0.0:
-- App released!

@@ -1,59 +1,54 @@
-# HDRI-Calibration-Tool
+<img src="public/splash.png" alt="HDRI Calibration Interface" />
+
+[![License](https://img.shields.io/badge/license-GPLv3-blue)](./LICENSE)
+[![website](https://img.shields.io/badge/website-Radiant%20Lab-green.svg)](https://www.clotildepierson.com/software)
+[![Tauri](https://img.shields.io/badge/Tauri-v1.5.2-yellow.svg)](https://tauri.app/)
+[![Rust](https://img.shields.io/badge/Rust-v1.60-darkred.svg)](https://www.rust-lang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-v14.0.1-darkgrey.svg)](https://nextjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v3.3.0-lightblue.svg)](https://tailwindcss.com/)
 
 
----
-## About
-The HDRI Calibration Tool was designed to automate the process of merging multiple LDR images together and generating an HDR image. It is not a standalone app, and is meant to be used alongside the app Radiance. This is an entirely free,open-sourced application developed by a small group of computer science students.
+## Introduction
+This application provides a graphical user interface for the creation and calibration of High Dynamic Range (HDR) images using Radiance, hdrgen, and dcraw_emu according to the pipeline process published [here](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319). The program works by taking in multiple LDR image files as well as some calibration information related to the camera/lens used, in order to return calibrated HDR images, also called luminance maps. The application is intended for lighting and daylighting professionals or researchers who are interested in studying the indoor visual environment and especially discomfort glare.
 
-To read more about the process of generating an HDR image from LDR image input, see the research paper by Clotilde Pierson [here](https://doi.org/10.1080/15502724.2019.1684319).
+## Platforms
+This application runs on macOS, Windows and Linux.
 
+## Getting Started
+Install [Radiance](https://www.radiance-online.org/), [hdrgen](http://www.anyhere.com/), and the [dcraw_emu binary from LibRaw](https://www.libraw.org/download) to your local machine and note where these tools are located (the folder path). After these dependencies have been installed, install the [HDRI Calibration Interface](https://github.com/radiantlab/HDRICalibrationTool/releases/latest).
 
----
-## Other Documentation
-If you have any difficulty using the application, please check out our [github Wiki](https://github.com/XiangyuLijoey/HDRICalibrationTool/wiki) for more information.
+## Use
+### Uploading Images
+Open the application created by the installer in the previous step. You should be able to see the main page of the program. Next you will need to upload the images in the image selection section by clicking the select button. Optionally, you can select a folder that contains the images you will be uploading. The filetypes supported are JPG, TIF, and raw image formats. After uploading the images, you should see a list of the images and the image count should reflect the number of uploaded images.
 
-Additionally, the GitHub Wiki includes OS-specific information regarding installation, troubleshooting, and setting up a development environment to make changes to the app.
+### Uploading Response File and Image Information
+Upload the response file that should have a file extension of `.rsp` and fill in the image data for the cropping, resizing and view settings.
 
-A step-by-step guide on using the app is also on the wiki, with a formatting guide for the calibration and response function files.
+### Uploading Calibration Files
+Upload the calibration files for the remaining fields. These should have a `.cal` file extension.
 
-It also includes information about the development of this project including libraries used, more info about the radiance_pipeline submodule, using Figma to prototype and test design on users, and documentation for functions in some of the files.
+### Settings
+Click on the settings tab in the left hand navigation sidebar and you should see a settings display appear. For the Radiance path, give the path to the Radiance binaries. This would be something like `/usr/local/radiance/bin/` on macOS or Linux and `C:\Radiance\bin` on Windows. For hdrgen and dcraw_emu, provide the path to the folder where hdrgen and dcraw_emu were installed. These should be something like `/usr/local/bin`. Lastly, the output should point to the folder to which you want the output images to be saved to.
 
+### Generate Images
+Once settings are entered, you can close the settings and click the Generate HDR Image button in the navigation sidebar. A message will let you know about the process or give you an error if something is wrong.
 
----
-## To Run
+## Additional Resources
+For further guidance about creating and calibrating HDR images, please consult [Tutorial: Luminance Maps for Daylighting Studies from High Dynamic Range Photography](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319) by Clotilde Pierson, Coralie Cauwerts, Magali Bodart, and Jan Wienold.
 
-Prerequisite: [HDRGen](http://www.anyhere.com/), [Radiance](https://www.radiance-online.org/).
+## Acknowledgements
+This app builds upon the scene processing and simulation strengths of existing programs such as Radiance, hdrgen, and LibRaw.
 
-### Windows
-This app has been tested on Windows 10. For Windows users, unzip the code, and in the root directory, run the executable "HDRICalibrationTool.exe". ***Please do not remove this file from this directory, else it will not run.*** Feel free to make a shortcut of the executable and move that to a more accessible location.
+### Authors
+- Dr. Clotilde Pierson (Oregon State University)
+- Alex Ulbrich (Oregon State University)
 
-### MacOS
-Note that you will need an SSH key set up in Github to get the submodule. You may also need to install `qt6-base` or `qt6` from your package manager software.
-```bash
-$ git clone https://github.com/XiangyuLijoey/HDRICalibrationTool.git
-$ cd HDRICalibrationTool
-$ git submodule update --init --recursive --remote
-$ pip3 install -r requirements.txt
-$ python3 main.py
-```
-### Linux
-See the [wiki](https://github.com/XiangyuLijoey/HDRICalibrationTool/wiki/Linux)
+### Contributors
+  #### 2022 - 2023 Development Team
+  - Xiangyu “Joey” Li
+  - Liam Zimmermann
+  - Nathaniel Klump
 
----
-## Examples
-For example input LDR images, camera lens settings, calibration files, response function files, and output HDR images, see the \examples directory in the root directory.
-
-
----
-## Credits
-Project partner: Clotilde Pierson
-
-Development team:
-* Nathaniel Klump
-* Liam Zimmermann
-* Xiangyu "Joey" Li
-
-
----
-## Licensing Info
-For licensing, see LICENSE.txt in the root directory.
+  #### 2023 - 2024 Development Team
+  - Jacob Springer 
+  - Shanti Morrell
