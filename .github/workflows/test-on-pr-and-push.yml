@@ -11,6 +11,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 # This workflow will build your tauri app without uploading it anywhere.
 
