@@ -17,7 +17,9 @@ This application runs on macOS (Intel and Apple Silicon), Windows, and Ubuntu.
 
 ## Getting Started
 
-Install [Radiance](https://www.radiance-online.org/), [hdrgen](http://www.anyhere.com/), and the [dcraw_emu](https://www.libraw.org/download) to your local machine and note where these tools are located (the folder path). After these dependencies have been installed, install the [HDRI Calibration Interface](https://github.com/radiantlab/HDRICalibrationTool/releases/latest).
+Install [Radiance](https://www.radiance-online.org/), [hdrgen](http://www.anyhere.com/), and the [dcraw_emu](https://www.libraw.org/download) to your local machine and note where these tools are located (the folder path). After these dependencies have been installed, install the [HDRI Calibration Interface](https://github.com/radiantlab/HDRICalibrationTool/releases/latest) for your operating system.
+
+Note that the binaries are unsigned and might be flagged as untrusted by your operating system. On macOS, you need to right click on the application and select Open to have the option to run it.
 
 ## Use
 

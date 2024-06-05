@@ -80,55 +80,53 @@ export default function Navigation({
             </li>
           </ul>
         </nav>
-        <div className="flex flex-col pt-24 ml-5 space-y-3">
-          <div className="space-y-3">
-            <button
-              onClick={() => setShowSaveConfigDialog((prev: any) => !prev)}
-              className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
-            >
-              Save Configuration
-            </button>
-            {showSaveConfigDialog && (
-              <SaveConfigDialog
-                config={{
-                  response_paths: responsePaths,
-                  fe_correction_paths: fe_correctionPaths,
-                  v_correction_paths: v_correctionPaths,
-                  nd_correction_paths: nd_correctionPaths,
-                  cf_correction_paths: cf_correctionPaths,
-                  diameter: viewSettings.diameter,
-                  xleft: viewSettings.xleft,
-                  ydown: viewSettings.ydown,
-                  // xres: viewSettings.xres,
-                  // yres: viewSettings.yres,
-                  target_res: viewSettings.targetRes,
-                  vh: viewSettings.vh,
-                  vv: viewSettings.vv,
-                }}
-                savedConfigs={savedConfigs}
-                setSavedConfigs={setSavedConfigs}
-                toggleDialog={() =>
-                  setShowSaveConfigDialog(!showSaveConfigDialog)
-                }
-              />
-            )}
-            <button
-              onClick={() => setShowLoadConfigDialog(!showLoadConfigDialog)}
-              className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
-            >
-              Load Configuration
-            </button>
-            {showLoadConfigDialog && (
-              <LoadConfigDialog
-                setConfig={setConfig}
-                savedConfigs={savedConfigs}
-                getSavedConfigs={getSavedConfigs}
-                toggleDialog={() =>
-                  setShowLoadConfigDialog(!showLoadConfigDialog)
-                }
-              />
-            )}
-          </div>
+        <div className="flex flex-col pt-24 gap-3 items-center">
+          <button
+            onClick={() => setShowSaveConfigDialog((prev: any) => !prev)}
+            className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
+          >
+            Save Configuration
+          </button>
+          {showSaveConfigDialog && (
+            <SaveConfigDialog
+              config={{
+                response_paths: responsePaths,
+                fe_correction_paths: fe_correctionPaths,
+                v_correction_paths: v_correctionPaths,
+                nd_correction_paths: nd_correctionPaths,
+                cf_correction_paths: cf_correctionPaths,
+                diameter: viewSettings.diameter,
+                xleft: viewSettings.xleft,
+                ydown: viewSettings.ydown,
+                // xres: viewSettings.xres,
+                // yres: viewSettings.yres,
+                target_res: viewSettings.targetRes,
+                vh: viewSettings.vh,
+                vv: viewSettings.vv,
+              }}
+              savedConfigs={savedConfigs}
+              setSavedConfigs={setSavedConfigs}
+              toggleDialog={() =>
+                setShowSaveConfigDialog(!showSaveConfigDialog)
+              }
+            />
+          )}
+          <button
+            onClick={() => setShowLoadConfigDialog(!showLoadConfigDialog)}
+            className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
+          >
+            Load Configuration
+          </button>
+          {showLoadConfigDialog && (
+            <LoadConfigDialog
+              setConfig={setConfig}
+              savedConfigs={savedConfigs}
+              getSavedConfigs={getSavedConfigs}
+              toggleDialog={() =>
+                setShowLoadConfigDialog(!showLoadConfigDialog)
+              }
+            />
+          )}
           <button
             className="w-max bg-gray-400 hover:bg-gray-500 text-gray-800 font-semibold py-1 px-14 border-gray-400 rounded"
             onClick={() => setShowSettings(!showSettings)}
