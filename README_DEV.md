@@ -24,7 +24,7 @@ It also relies on the following software/binaries:
 - [hdrgen](http://www.anyhere.com/)
 - [dcraw_emu](https://www.libraw.org/)
 
-## Installation
+## Development
 
 In order to create a working environment, first clone the repository, and `cd` into `HDRICalibrationTool`.
 
@@ -33,6 +33,14 @@ Make sure you have the latest [Node.js](https://nodejs.org/en) installed, includ
 Run `npm install` and wait for dependencies to install (`pnpm`, `bun`, and `yarn` can work as well).
 
 Run `npm run tauri dev`. This will launch the application.
+
+## Build
+
+For the `tauri build` command to get the arguments, you need to prepend an extra `--`, such as:
+
+```sh
+npm run tauri build -- --target universal-apple-darwin
+```
 
 ## File Structure
 
