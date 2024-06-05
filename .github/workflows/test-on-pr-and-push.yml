@@ -22,11 +22,11 @@ jobs:
       matrix:
         include:
           - platform: 'macos-latest'
-            target: 'universal-apple-darwin'
+            args: '--target universal-apple-darwin'
           - platform: 'ubuntu-22.04'
-            target: ''
+            args: ''
           - platform: 'windows-latest'
-            target: ''
+            args: ''
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -59,8 +59,8 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-            args: ${{ matrix.target && '--target ' + matrix.target || '' }}
+        with:
+          args: ${{ matrix.args }}
 
       - name: Upload build artifact - Ubuntu
         if: matrix.platform == 'ubuntu-22.04'
