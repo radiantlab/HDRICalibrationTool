@@ -51,7 +51,7 @@ export default function LoadConfigDialog({
           <div className="border border-black shadow-2xl bg-white p-10">
             {/* <h1 className="font-bold text-4xl text-center mt-10">Save Configuration</h1> */}
             <div>
-              <h2 className="font-bold pr-5 mb-10 border-b-2 border-b-gray-900 w-fit pb-2 text-2xl">
+              <h2 className="font-bold w-fit mb-4 text-2xl">
                 Load Configuration
               </h2>
               <div className="flex flex-row space-x-5">
@@ -100,7 +100,7 @@ export default function LoadConfigDialog({
                 </button>
                 <button
                   type="button"
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+                  className="bg-osu-beaver-orange hover:bg-osu-luminance text-white font-semibold py-1 px-2 border-gray-400 rounded"
                   onClick={handleLoadConfig}
                 >
                   Load
