@@ -70,10 +70,10 @@ export default function SaveConfigDialog({
       <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
         <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
           {/* <-----  */}
-          <div className="border border-black shadow-2xl bg-white p-10">
+          <div className="border border-black shadow-2xl bg-white p-6">
             {/* <h1 className="font-bold text-4xl text-center mt-10">Save Configuration</h1> */}
             <div>
-              <h2 className="font-bold pr-5 mb-10 border-b-2 border-b-gray-900 w-fit pb-2 text-2xl">
+              <h2 className="font-bold my-4 w-fit text-2xl">
                 Save Configuration
               </h2>
               <div className="flex flex-row space-x-5">
@@ -112,7 +112,7 @@ export default function SaveConfigDialog({
                 </button>
                 <button
                   type="button"
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+                  className="bg-osu-beaver-orange hover:bg-osu-luminance text-white font-semibold py-1 px-2 border-gray-400 rounded"
                   onClick={saveConfig}
                 >
                   Save
