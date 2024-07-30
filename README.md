@@ -2,8 +2,8 @@
 
 [![License](https://img.shields.io/badge/license-GPLv3-blue)](./LICENSE)
 [![website](https://img.shields.io/badge/website-Radiant%20Lab-green.svg)](https://www.clotildepierson.com/software)
-[![Tauri](https://img.shields.io/badge/Tauri-v1.5.2-yellow.svg)](https://tauri.app/)
-[![Rust](https://img.shields.io/badge/Rust-v1.60-darkred.svg)](https://www.rust-lang.org/)
+[![Tauri](https://img.shields.io/badge/Tauri-v1.6.0-yellow.svg)](https://tauri.app/)
+[![Rust](https://img.shields.io/badge/Rust-v1.80.0-darkred.svg)](https://www.rust-lang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-v14.0.1-darkgrey.svg)](https://nextjs.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v3.3.0-lightblue.svg)](https://tailwindcss.com/)
 
