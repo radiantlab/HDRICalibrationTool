@@ -33,10 +33,10 @@ export default function Settings({
         <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
           {/* <-----  */}
           <div className="border border-black shadow-2xl bg-white p-10">
-            <h1 className="font-bold text-4xl text-center mt-10">Settings</h1>
+            <h1 className="font-bold text-3xl mt-3 w-fit">Settings</h1>
             <div>
-              <h2 className="font-bold pr-5 my-10 border-b-2 border-b-gray-900 w-fit pb-2 text-2xl">
-                External Utilities Settings
+              <h2 className="my-6 border-b-gray-900 w-fit text-2xl">
+                External Utilities
               </h2>
               <div>
                 <div className="flex flex-col space-y-5">
@@ -45,7 +45,7 @@ export default function Settings({
                       htmlFor="radiancePath"
                       className="font-bold block h-full mr-5"
                     >
-                      Radiance Path (binary)
+                      radiance path (bin)
                     </label>
                     <input
                       id="radiancePath"
@@ -61,7 +61,7 @@ export default function Settings({
                       htmlFor="hdrgenPath"
                       className="font-bold block h-full mr-5"
                     >
-                      HDRgen Path
+                      hdrgen path
                     </label>
                     <input
                       id="hdrgenPath"
@@ -77,7 +77,7 @@ export default function Settings({
                       htmlFor="raw2hdrPath"
                       className="font-bold block h-full mr-5"
                     >
-                      dcraw_emu Path
+                      dcraw_emu path
                     </label>
                     <input
                       id="dcrawEmuPath"
@@ -88,18 +88,17 @@ export default function Settings({
                       className="flex-grow placeholder:text-right w-max shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
                     ></input>
                   </div>
+                </div>
+                <div>
+                  <h2 className="border-b-gray-900 w-fit mt-6 mb-2 text-2xl">
+                    Output Directory
+                  </h2>
                   <div>
-                    <p className="pb-2 pt-8">
+                    <p className="mb-6 italic">
                       Select the directory or type the path where the HDR images
                       will be saved.
                     </p>
                     <div className="flex flex-row items-center justify-between">
-                      <label
-                        htmlFor="outputPathTextbox"
-                        className="font-bold block h-full mr-5"
-                      >
-                        Output Path
-                      </label>
                       <div className="flex flex-col flex-grow space-y-2">
                         <button
                           aria-label="Select Directory for Output"
@@ -113,7 +112,9 @@ export default function Settings({
                           name="outputPathTextbox"
                           type="text"
                           value={settings.outputPath}
-                          onChange={(e) => handleUpdateOutputPath(e.target.value)}
+                          onChange={(e) =>
+                            handleUpdateOutputPath(e.target.value)
+                          }
                           className="placeholder:text-right w-full shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
                         ></input>
                       </div>

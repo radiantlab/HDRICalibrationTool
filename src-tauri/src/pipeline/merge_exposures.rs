@@ -1,6 +1,5 @@
 use crate::pipeline::DEBUG;
 use std::{
-    fs::copy,
     path::Path,
     process::{Command, ExitStatus},
 };
