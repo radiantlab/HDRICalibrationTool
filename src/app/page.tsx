@@ -7,6 +7,7 @@ import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Navigation from "./navigation";
 import Response_and_correction from "./response_and_correction";
 import Progress from "./progress";
+import { exists } from "@tauri-apps/api/fs"
 
 const DEBUG = true;
 
@@ -115,6 +116,13 @@ export default function Home() {
   // Calls the BE pipeline function with the input images the user
   // selected, and hardcoded data for the rest of the inputs
   const handleGenerateHDRImage = async () => {
+
+    if(!await missingImage()){
+      alert(
+        "Image files are not found"
+      );
+      return;
+    }
     // Validate inputs
     if (!allInputsEntered()) {
       // If a calibration file or view setting is missing, or the user hasn't selected input images/dirs, display error and abort
@@ -170,6 +178,23 @@ export default function Home() {
         }
       });
   };
+
+  // Function to validate that image is provided, and in an expected path
+  async function missingImage(){
+    if( devicePaths.length === 0) {
+      return false;
+    }
+
+    // Check if all provided paths exist
+    for (const path of devicePaths){
+      const isValid = await exists(path);
+      if (!isValid){
+        console.error('File not found');
+        return false;
+      }
+    }
+    return true;
+  }
 
   function allInputsEntered() {
     if (
