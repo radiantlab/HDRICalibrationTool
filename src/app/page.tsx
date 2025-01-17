@@ -119,7 +119,7 @@ export default function Home() {
 
     if(!await missingImage()){
       alert(
-        "Image files are not found"
+        "LDR Image files are not found. Check the directory if they have been moved or deleted"
       );
       return;
     }
@@ -127,7 +127,7 @@ export default function Home() {
     if (!allInputsEntered()) {
       // If a calibration file or view setting is missing, or the user hasn't selected input images/dirs, display error and abort
       alert(
-        "You must enter all calibration files and view settings and select input images or directories before generating an HDR image."
+        "You must enter all required calibration files and view settings and select input images or directories before generating an HDR image."
       );
       return;
     } else if (!responsePaths) {
