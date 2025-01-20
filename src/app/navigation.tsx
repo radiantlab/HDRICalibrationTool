@@ -18,6 +18,7 @@ export default function Navigation({
   setSettings,
   handleSettingsChange,
   handleGenerateHDRImage,
+  setView,
 }: any) {
   const [showSaveConfigDialog, setShowSaveConfigDialog] =
     useState<boolean>(false);
@@ -28,6 +29,7 @@ export default function Navigation({
   const [appName, setAppName] = useState<string>("");
   const [tauriVersion, setTauriVersion] = useState<string>("");
   const [savedConfigs, setSavedConfigs] = useState<[]>([]);
+  const [activeSection, setActiveSection] = useState<string>("image");
 
   // Loads the saved configurations from app config dir using a backend command
   async function getSavedConfigs() {
@@ -47,6 +49,11 @@ export default function Navigation({
     getSavedConfigs();
     fetchAppInfo();
   }, []);
+
+  const handleSectionChange = (section: string) => {
+    setActiveSection(section);
+    setView(section);
+  }
   return (
     <div>
       <div className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
@@ -59,7 +66,12 @@ export default function Navigation({
             <h1 className="text-xl text h-max font-bold">{appName}</h1>
           </div>
           <ul>
-            <li className="font-bold pt-2 ml-5">Navigation</li>
+            <li
+              className={`font-bold p-1 m-5 cursor-pointer ${activeSection === "image" ? "active-section" : ""}`}
+              onClick={() => handleSectionChange("image")}
+            >
+              Image Configuration
+            </li>
             <li className="pt-2 ml-5">
               <a href="#image_selection">Image Selection</a>
             </li>
@@ -77,6 +89,12 @@ export default function Navigation({
             </li>
             <li className="pt-2 ml-5">
               <a href="#cf">Calibration Factor Correction</a>
+            </li>
+            <li
+              className={`font-bold p-1 m-5 cursor-pointer ${activeSection === "usability" ? "active-section" : ""}`}
+              onClick={() => handleSectionChange("usability")}
+            >
+              Usability Configuration
             </li>
           </ul>
         </nav>
