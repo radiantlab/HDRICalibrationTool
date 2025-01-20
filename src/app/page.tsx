@@ -7,6 +7,7 @@ import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Navigation from "./navigation";
 import Response_and_correction from "./response_and_correction";
 import Progress from "./progress";
+import Usability from "./usability";
 
 const DEBUG = true;
 
@@ -209,6 +210,9 @@ export default function Home() {
     });
   }
 
+  // temporary implementation of navigation between config views
+  const [currView, setCurrView] = useState("image");
+
   return (
     <main className="bg-white flex min-h-screen flex-col items-center justify-between text-black">
       <div>
@@ -224,37 +228,45 @@ export default function Home() {
           setSettings={setSettings}
           handleSettingsChange={handleSettingsChange}
           handleGenerateHDRImage={handleGenerateHDRImage}
+          setView={setCurrView}
         />
+
         <div className="w-3/4 ml-auto pl-3">
-          <h1 className="font-bold pt-10">Configuration</h1>
-          <Progress 
-            showProgress = {showProgress}
-            fakePipeline = {fakePipeline}
-            setProgressButton = {setProgressButton}
-            setProcessError = {setProcessError}
-            progressButton = {progressButton}
-            processError = {processError}
-            ResetProgress = {ResetProgress}
-          />
-          <Images devicePaths={devicePaths} setDevicePaths={setDevicePaths} />
-          <div id="c_r_v">
-            <CroppingResizingViewSettings
-              viewSettings={viewSettings}
-              handleChange={handleViewSettingsChange}
-            />
-            <Response_and_correction
-              responsePaths={responsePaths}
-              fe_correctionPaths={fe_correctionPaths}
-              v_correctionPaths={v_correctionPaths}
-              nd_correctionPaths={nd_correctionPaths}
-              cf_correctionPaths={cf_correctionPaths}
-              setResponsePaths={setResponsePaths}
-              set_fe_correctionPaths={set_fe_correctionPaths}
-              set_v_correctionPaths={set_v_correctionPaths}
-              set_nd_correctionPaths={set_nd_correctionPaths}
-              set_cf_correctionPaths={set_cf_correctionPaths}
-            />
-          </div>
+        {currView === "image" ? (
+            <>
+              <h1 className="text-2xl font-bold mb-5 pt-10">Image Configuration</h1>
+              <Progress
+                showProgress={showProgress}
+                fakePipeline={fakePipeline}
+                setProgressButton={setProgressButton}
+                setProcessError={setProcessError}
+                progressButton={progressButton}
+                processError={processError}
+                ResetProgress={ResetProgress}
+              />
+              <Images devicePaths={devicePaths} setDevicePaths={setDevicePaths} />
+              <div id="c_r_v">
+                <CroppingResizingViewSettings
+                  viewSettings={viewSettings}
+                  handleChange={handleViewSettingsChange}
+                />
+                <Response_and_correction
+                  responsePaths={responsePaths}
+                  fe_correctionPaths={fe_correctionPaths}
+                  v_correctionPaths={v_correctionPaths}
+                  nd_correctionPaths={nd_correctionPaths}
+                  cf_correctionPaths={cf_correctionPaths}
+                  setResponsePaths={setResponsePaths}
+                  set_fe_correctionPaths={set_fe_correctionPaths}
+                  set_v_correctionPaths={set_v_correctionPaths}
+                  set_nd_correctionPaths={set_nd_correctionPaths}
+                  set_cf_correctionPaths={set_cf_correctionPaths}
+                />
+              </div>
+            </>
+          ) : currView === "usability" ? (
+            <Usability />
+          ) : null}
         </div>
       </div>
     </main>
