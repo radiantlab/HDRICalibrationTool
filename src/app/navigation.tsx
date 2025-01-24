@@ -96,6 +96,15 @@ export default function Navigation({
             >
               Usability Configuration
             </li>
+            <li className="pt-2 ml-5">
+              <a href="">Experience Level</a>
+            </li>
+            <li className="pt-2 ml-5">
+              <a href="">View Mode</a>
+            </li>
+            <li className="pt-2 ml-5">
+              <a href="">Debug console</a>
+            </li>
           </ul>
         </nav>
         <div className="flex flex-col pt-24 gap-3 items-center">
