@@ -116,10 +116,10 @@ export default function Home() {
   // selected, and hardcoded data for the rest of the inputs
   const handleGenerateHDRImage = async () => {
     // Validate inputs
-    if (!allInputsEntered()) {
-      // If a calibration file or view setting is missing, or the user hasn't selected input images/dirs, display error and abort
+    if (!allRequiredInputsEntered()) {
+      // If a view setting is missing or the user hasn't selected input images/dirs, display error and abort
       alert(
-        "You must enter all calibration files and view settings and select input images or directories before generating an HDR image."
+        "You must enter all view settings and select input images or directories before generating an HDR image."
       );
       return;
     } else if (!responsePaths) {
@@ -127,7 +127,16 @@ export default function Home() {
       // display a warning that the output HDR image might be inaccurate if converting from JPEG
       // and ask for confirmation before proceeding with pipeline call
       let proceed = await confirm(
-        "Warning: No response function selected. If you're converting JPEG images, the automatically generated response function may result in an inaccurate HDR image. Continue anyway?"
+        "Warning: No response function selected. If you're converting JPEG images, the automatically generated response function may result in an inaccurate HDR image. Do you wish to proceed?"
+      );
+      if (!proceed) {
+        return;
+      }
+    } else if (!allCalibrationFilesEntered()) {
+      // If the user didn't enter one or more calibration files, display a warning that the output HDR image
+      // might be inaccurate. 
+      let proceed = await confirm(
+        "Warning: one or more calibration files were not entered. This may result in an inaccurate HDR image. Do you wish to proceed?"
       );
       if (!proceed) {
         return;
@@ -171,13 +180,9 @@ export default function Home() {
       });
   };
 
-  function allInputsEntered() {
+  function allRequiredInputsEntered() {
     if (
-      devicePaths.length === 0 || 
-      !fe_correctionPaths ||
-      !v_correctionPaths ||
-      !cf_correctionPaths ||
-      !nd_correctionPaths ||
+      devicePaths.length === 0 ||
       !viewSettings.diameter ||
       !viewSettings.xleft ||
       !viewSettings.ydown ||
@@ -186,10 +191,21 @@ export default function Home() {
       !viewSettings.vv
     ) {
       return false;
-    } else {
-      return true;
     }
-  };
+    return true;
+  }
+
+  function allCalibrationFilesEntered() {
+    if (
+      !fe_correctionPaths ||
+      !v_correctionPaths ||
+      !cf_correctionPaths ||
+      !nd_correctionPaths
+    ) {
+      return false;
+    }
+    return true;
+  }
 
   function setConfig(config: any) {
     setResponsePaths(config.response_paths);

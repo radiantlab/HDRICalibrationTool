@@ -200,7 +200,7 @@ pub async fn pipeline(
 
             // Copy the final output hdr image to output directory
             let copy_result = copy(
-                &config_settings.temp_path.join("output9.hdr"),
+                &config_settings.temp_path.join("header_editing.hdr"),
                 output_file_name,
             );
             if copy_result.is_err() {
@@ -244,7 +244,7 @@ pub async fn pipeline(
 
         // Copy the final output hdr image to output directory
         let copy_result = copy(
-            &config_settings.temp_path.join("output9.hdr"),
+            &config_settings.temp_path.join("header_editing.hdr"),
             output_file_name,
         );
         if copy_result.is_err() {
@@ -323,7 +323,7 @@ pub fn process_image_set(
         response_function,
         config_settings
             .temp_path
-            .join("output1.hdr")
+            .join("merge_exposures.hdr")
             .display()
             .to_string(),
     );
@@ -338,12 +338,12 @@ pub fn process_image_set(
         &config_settings,
         config_settings
             .temp_path
-            .join("output1.hdr")
+            .join("merge_exposures.hdr")
             .display()
             .to_string(),
         config_settings
             .temp_path
-            .join("output2.hdr")
+            .join("nullify_exposure_value.hdr")
             .display()
             .to_string(),
     );
@@ -358,12 +358,12 @@ pub fn process_image_set(
         &config_settings,
         config_settings
             .temp_path
-            .join("output2.hdr")
+            .join("nullify_exposure_value.hdr")
             .display()
             .to_string(),
         config_settings
             .temp_path
-            .join("output3.hdr")
+            .join("crop.hdr")
             .display()
             .to_string(),
         diameter,
@@ -381,12 +381,12 @@ pub fn process_image_set(
         &config_settings,
         config_settings
             .temp_path
-            .join("output3.hdr")
+            .join("crop.hdr")
             .display()
             .to_string(),
         config_settings
             .temp_path
-            .join("output4.hdr")
+            .join("resize.hdr")
             .display()
             .to_string(),
         xdim,
@@ -398,101 +398,123 @@ pub fn process_image_set(
         return resize_result;
     }
 
-    // Apply the projection adjustment to the HDR image
-    let projection_adjustment_result = projection_adjustment(
-        &config_settings,
-        config_settings
-            .temp_path
-            .join("output4.hdr")
-            .display()
-            .to_string(),
-        config_settings
-            .temp_path
-            .join("output5.hdr")
-            .display()
-            .to_string(),
-        fisheye_correction_cal,
-    );
+    /* Start Calibration Files - able to be skipped in some instances */
 
-    // If the command to apply projection adjustment encountered an error, abort pipeline
-    if projection_adjustment_result.is_err() {
-        return projection_adjustment_result;
+    let mut next_path = "resize.hdr";
+
+    if fisheye_correction_cal.len() > 0 {
+        // Apply the projection adjustment to the HDR image
+        let projection_adjustment_result = projection_adjustment(
+            &config_settings,
+            config_settings
+                .temp_path
+                .join(next_path)
+                .display()
+                .to_string(),
+            config_settings
+                .temp_path
+                .join("projection_adjustment.hdr")
+                .display()
+                .to_string(),
+            fisheye_correction_cal,
+        );
+
+        // If the command to apply projection adjustment encountered an error, abort pipeline
+        if projection_adjustment_result.is_err() {
+            return projection_adjustment_result;
+        }
+
+        next_path = "projection_adjustment.hdr"
     }
 
-    // Correct for the vignetting effect
-    let vignetting_effect_correction_result = vignetting_effect_correction(
-        &config_settings,
-        config_settings
-            .temp_path
-            .join("output5.hdr")
-            .display()
-            .to_string(),
-        config_settings
-            .temp_path
-            .join("output6.hdr")
-            .display()
-            .to_string(),
-        vignetting_correction_cal,
-    );
+    if vignetting_correction_cal.len() > 0 {
+        // Correct for the vignetting effect
+        let vignetting_effect_correction_result = vignetting_effect_correction(
+            &config_settings,
+            config_settings
+                .temp_path
+                .join(next_path)
+                .display()
+                .to_string(),
+            config_settings
+                .temp_path
+                .join("vignetting_correction.hdr")
+                .display()
+                .to_string(),
+            vignetting_correction_cal,
+        );
 
-    // If the command encountered an error, abort pipeline
-    if vignetting_effect_correction_result.is_err() {
-        return vignetting_effect_correction_result;
+        // If the command encountered an error, abort pipeline
+        if vignetting_effect_correction_result.is_err() {
+            return vignetting_effect_correction_result;
+        }
+
+        next_path = "vignetting_correction.hdr";
     }
 
-    // Apply the neutral density filter.
-    let neutral_density_result: Result<String, String> = neutral_density(
-        &config_settings,
-        config_settings
-            .temp_path
-            .join("output6.hdr")
-            .display()
-            .to_string(),
-        config_settings
-            .temp_path
-            .join("output7.hdr")
-            .display()
-            .to_string(),
-        neutral_density_cal,
-    );
+    if neutral_density_cal.len() > 0 {
+        // Apply the neutral density filter.
+        let neutral_density_result: Result<String, String> = neutral_density(
+            &config_settings,
+            config_settings
+                .temp_path
+                .join(next_path)
+                .display()
+                .to_string(),
+            config_settings
+                .temp_path
+                .join("neutral_density.hdr")
+                .display()
+                .to_string(),
+            neutral_density_cal,
+        );
 
-    // If the command encountered an error, abort pipeline
-    if neutral_density_result.is_err() {
-        return neutral_density_result;
+        // If the command encountered an error, abort pipeline
+        if neutral_density_result.is_err() {
+            return neutral_density_result;
+        }
+
+        next_path = "neutral_density.hdr";
     }
 
-    // Correct for photometric adjustments
-    let photometric_adjustment_result = photometric_adjustment(
-        &config_settings,
-        config_settings
-            .temp_path
-            .join("output7.hdr")
-            .display()
-            .to_string(),
-        config_settings
-            .temp_path
-            .join("output8.hdr")
-            .display()
-            .to_string(),
-        photometric_adjustment_cal,
-    );
+    if photometric_adjustment_cal.len() > 0 {
+        // Correct for photometric adjustments
+        let photometric_adjustment_result = photometric_adjustment(
+            &config_settings,
+            config_settings
+                .temp_path
+                .join(next_path)
+                .display()
+                .to_string(),
+            config_settings
+                .temp_path
+                .join("photometric_adjustment.hdr")
+                .display()
+                .to_string(),
+            photometric_adjustment_cal,
+        );
 
-    // If the command encountered an error, abort pipeline
-    if photometric_adjustment_result.is_err() {
-        return photometric_adjustment_result;
+        // If the command encountered an error, abort pipeline
+        if photometric_adjustment_result.is_err() {
+            return photometric_adjustment_result;
+        }
+
+        next_path = "photometric_adjustment.hdr";
     }
+
+    /* End Calibration Files */
 
     // Edit the header
     let header_editing_result = header_editing(
         &config_settings,
         config_settings
             .temp_path
-            .join("output8.hdr")
+            .join(next_path)
             .display()
             .to_string(),
         config_settings
             .temp_path
-            .join("output9.hdr")
+            .join("header_editing.hdr")
             .display()
             .to_string(),
         vertical_angle,
