@@ -220,6 +220,7 @@ export default function Home() {
       };
     }
 
+    if (!responsePaths) missingInputs.push("Response path file");
     if (!fe_correctionPaths) missingInputs.push("Fisheye correction file");
     if (!v_correctionPaths) missingInputs.push("Vignetting correction file");
     if (!cf_correctionPaths) missingInputs.push("Calibration factor file");
