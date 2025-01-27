@@ -35,14 +35,16 @@ export default function Home() {
           radiancePath: radianceDefaultPath,
           hdrgenPath: "",
           dcrawEmuPath: "",
-          outputPath: await invoke("get_default_output_path") // queries backend for suggested place to store files
+          outputPath: await invoke("get_default_output_path"), // queries backend for suggested place to store files
         });
       })
       .catch(() => {
         console.error;
       });
 
-    alert("Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images.")
+    alert(
+      "Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images."
+    );
   }, []);
 
   // Holds the fisheye coordinates and view settings
@@ -124,7 +126,7 @@ export default function Home() {
       );
       return;
     } else if (!responsePaths) {
-      // If the user didn't select a response function, 
+      // If the user didn't select a response function,
       // display a warning that the output HDR image might be inaccurate if converting from JPEG
       // and ask for confirmation before proceeding with pipeline call
       let proceed = await confirm(
@@ -174,7 +176,7 @@ export default function Home() {
 
   function allInputsEntered() {
     if (
-      devicePaths.length === 0 || 
+      devicePaths.length === 0 ||
       !fe_correctionPaths ||
       !v_correctionPaths ||
       !cf_correctionPaths ||
@@ -190,7 +192,7 @@ export default function Home() {
     } else {
       return true;
     }
-  };
+  }
 
   function setConfig(config: any) {
     setResponsePaths(config.response_paths);
@@ -214,7 +216,8 @@ export default function Home() {
   const [currView, setCurrView] = useState("image");
 
   return (
-    <main className="bg-white flex min-h-screen flex-col items-center justify-between text-black">
+    // <main  className="bg-white flex min-h-screen flex-col items-center justify-between text-black">
+    <main>
       <div>
         <Navigation
           responsePaths={responsePaths}
@@ -232,9 +235,11 @@ export default function Home() {
         />
 
         <div className="w-3/4 ml-auto pl-3">
-        {currView === "image" ? (
+          {currView === "image" ? (
             <>
-              <h1 className="text-2xl font-bold mb-5 pt-10">Image Configuration</h1>
+              <h1 className="text-2xl font-bold mb-5 pt-10">
+                Image Configuration
+              </h1>
               <Progress
                 showProgress={showProgress}
                 fakePipeline={fakePipeline}
@@ -244,7 +249,10 @@ export default function Home() {
                 processError={processError}
                 ResetProgress={ResetProgress}
               />
-              <Images devicePaths={devicePaths} setDevicePaths={setDevicePaths} />
+              <Images
+                devicePaths={devicePaths}
+                setDevicePaths={setDevicePaths}
+              />
               <div id="c_r_v">
                 <CroppingResizingViewSettings
                   viewSettings={viewSettings}

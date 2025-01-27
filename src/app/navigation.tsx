@@ -53,7 +53,7 @@ export default function Navigation({
   const handleSectionChange = (section: string) => {
     setActiveSection(section);
     setView(section);
-  }
+  };
   return (
     <div>
       <div className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
@@ -67,7 +67,9 @@ export default function Navigation({
           </div>
           <ul>
             <li
-              className={`font-bold p-1 m-5 cursor-pointer ${activeSection === "image" ? "active-section" : ""}`}
+              className={`font-bold p-1 m-5 cursor-pointer ${
+                activeSection === "image" ? "active-section" : ""
+              }`}
               onClick={() => handleSectionChange("image")}
             >
               Image Configuration
@@ -91,7 +93,9 @@ export default function Navigation({
               <a href="#cf">Calibration Factor Correction</a>
             </li>
             <li
-              className={`font-bold p-1 m-5 cursor-pointer ${activeSection === "usability" ? "active-section" : ""}`}
+              className={`font-bold p-1 m-5 cursor-pointer ${
+                activeSection === "usability" ? "active-section" : ""
+              }`}
               onClick={() => handleSectionChange("usability")}
             >
               Usability Configuration
