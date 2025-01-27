@@ -7,7 +7,7 @@ import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Navigation from "./navigation";
 import Response_and_correction from "./response_and_correction";
 import Progress from "./progress";
-import { exists } from "@tauri-apps/api/fs"
+import { exists } from "@tauri-apps/api/fs";
 
 const DEBUG = true;
 
@@ -35,14 +35,16 @@ export default function Home() {
           radiancePath: radianceDefaultPath,
           hdrgenPath: "",
           dcrawEmuPath: "",
-          outputPath: await invoke("get_default_output_path") // queries backend for suggested place to store files
+          outputPath: await invoke("get_default_output_path"), // queries backend for suggested place to store files
         });
       })
       .catch(() => {
         console.error;
       });
 
-    alert("Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images.")
+    alert(
+      "Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images."
+    );
   }, []);
 
   // Holds the fisheye coordinates and view settings
@@ -116,23 +118,20 @@ export default function Home() {
   // Calls the BE pipeline function with the input images the user
   // selected, and hardcoded data for the rest of the inputs
   const handleGenerateHDRImage = async () => {
-
-    if(!await missingImage()){
-      alert(
-        "Image files are not found"
-      );
+    if (!(await missingImage())) {
+      alert("Image files are not found");
       return;
     }
 
     const { isValid, missingInputs } = allInputsEntered();
 
-      // Abort if no input images or directories are provided
+    // Abort if no input images or directories are provided
     if (!isValid) {
       alert(
         "No input images or directories were provided. Please select at least one input image or directory to proceed."
-    );
-    return;
-  }
+      );
+      return;
+    }
 
     if (missingInputs.length > 0) {
       const proceed = await confirm(
@@ -143,10 +142,8 @@ export default function Home() {
       if (!proceed) {
         return; // Abort if the user chooses not to proceed
       }
-    }
-
-    else if (!responsePaths) {
-      // If the user didn't select a response function, 
+    } else if (!responsePaths) {
+      // If the user didn't select a response function,
       // display a warning that the output HDR image might be inaccurate if converting from JPEG
       // and ask for confirmation before proceeding with pipeline call
       let proceed = await confirm(
@@ -194,16 +191,16 @@ export default function Home() {
       });
   };
 
-  async function missingImage(){
-    if( devicePaths.length === 0) {
+  async function missingImage() {
+    if (devicePaths.length === 0) {
       return false;
     }
 
     // Check if all provided paths exist
-    for (const path of devicePaths){
+    for (const path of devicePaths) {
       const isValid = await exists(path);
-      if (!isValid){
-        console.error('File not found');
+      if (!isValid) {
+        console.error("File not found");
         return false;
       }
     }
@@ -224,14 +221,31 @@ export default function Home() {
     if (!fe_correctionPaths) missingInputs.push("Fisheye correction file");
     if (!v_correctionPaths) missingInputs.push("Vignetting correction file");
     if (!cf_correctionPaths) missingInputs.push("Calibration factor file");
-    if (!nd_correctionPaths) missingInputs.push("Neutral density correction file");
-    if (!viewSettings.diameter) missingInputs.push("Diameter in Cropping, Resizing, and View Settings");
-    if (!viewSettings.xleft) missingInputs.push("x-left coordinate in Cropping, Resizing, and View Settings");
-    if (!viewSettings.ydown) missingInputs.push("y-down coordinate in Cropping, Resizing, and View Settings");
-    if (!viewSettings.targetRes) missingInputs.push("Target resolution in Cropping, Resizing, and View Settings");
-    if (!viewSettings.vh) missingInputs.push("Horizontal angle in Cropping, Resizing, and View Settings");
-    if (!viewSettings.vv) missingInputs.push("Vertical angle in Cropping, Resizing, and View Settings");
-  
+    if (!nd_correctionPaths)
+      missingInputs.push("Neutral density correction file");
+    if (!viewSettings.diameter)
+      missingInputs.push("Diameter in Cropping, Resizing, and View Settings");
+    if (!viewSettings.xleft)
+      missingInputs.push(
+        "x-left coordinate in Cropping, Resizing, and View Settings"
+      );
+    if (!viewSettings.ydown)
+      missingInputs.push(
+        "y-down coordinate in Cropping, Resizing, and View Settings"
+      );
+    if (!viewSettings.targetRes)
+      missingInputs.push(
+        "Target resolution in Cropping, Resizing, and View Settings"
+      );
+    if (!viewSettings.vh)
+      missingInputs.push(
+        "Horizontal angle in Cropping, Resizing, and View Settings"
+      );
+    if (!viewSettings.vv)
+      missingInputs.push(
+        "Vertical angle in Cropping, Resizing, and View Settings"
+      );
+
     return {
       isValid: true,
       missingInputs,
@@ -274,14 +288,14 @@ export default function Home() {
         />
         <div className="w-3/4 ml-auto pl-3">
           <h1 className="font-bold pt-10">Configuration</h1>
-          <Progress 
-            showProgress = {showProgress}
-            fakePipeline = {fakePipeline}
-            setProgressButton = {setProgressButton}
-            setProcessError = {setProcessError}
-            progressButton = {progressButton}
-            processError = {processError}
-            ResetProgress = {ResetProgress}
+          <Progress
+            showProgress={showProgress}
+            fakePipeline={fakePipeline}
+            setProgressButton={setProgressButton}
+            setProcessError={setProcessError}
+            progressButton={progressButton}
+            processError={processError}
+            ResetProgress={ResetProgress}
           />
           <Images devicePaths={devicePaths} setDevicePaths={setDevicePaths} />
           <div id="c_r_v">
