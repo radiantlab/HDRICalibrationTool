@@ -1,8 +1,11 @@
 import { open } from "@tauri-apps/api/dialog";
+import { invoke } from "@tauri-apps/api/tauri";
 
 export default function Settings({
   settings,
   setSettings,
+  saveDisabled,
+  setSaveDisabled,
   handleChange,
   toggleDialog,
 }: any) {
@@ -24,6 +27,12 @@ export default function Settings({
     const updatedSettings = JSON.parse(JSON.stringify(settings));
     updatedSettings["outputPath"] = directory;
     setSettings(updatedSettings);
+  };
+
+  const savePaths = () => {
+    invoke("write_binary_paths", {hdrgenPath: settings.hdrgenPath, dcrawEmuPath: settings.dcrawEmuPath})
+      .catch(() => console.error ); 
+    setSaveDisabled(true);
   };
 
   return (
@@ -138,6 +147,15 @@ export default function Settings({
                   onClick={toggleDialog}
                 >
                   Close
+                </button>
+                <button
+                  type="button"
+                  id="save-button"
+                  className="bg-gray-300 hover:bg-gray-400 disabled:bg-gray-600 disabled:hover:bg-gray-600 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+                  onClick={savePaths}
+                  disabled={saveDisabled}
+                >
+                  Save
                 </button>
                 <div className="pt-2"></div>
               </div>
