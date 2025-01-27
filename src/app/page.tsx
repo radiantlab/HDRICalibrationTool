@@ -115,28 +115,23 @@ export default function Home() {
   // Calls the BE pipeline function with the input images the user
   // selected, and hardcoded data for the rest of the inputs
   const handleGenerateHDRImage = async () => {
-    // Validate inputs
-    if (!allRequiredInputsEntered()) {
-      // If a view setting is missing or the user hasn't selected input images/dirs, display error and abort
+    const { isValid, missingInputs } = allInputsEntered();
+
+    // Handle missing mandatory inputs
+    if (!isValid) {
       alert(
-        "You must enter all view settings and select input images or directories before generating an HDR image."
+        `The following required inputs are missing:\n\n- ${missingInputs.join(
+          "\n- "
+        )}\n\nPlease provide these inputs before proceeding.`
       );
       return;
-    } else if (!responsePaths) {
+    }
+    else if (!responsePaths) {
       // If the user didn't select a response function, 
       // display a warning that the output HDR image might be inaccurate if converting from JPEG
       // and ask for confirmation before proceeding with pipeline call
       let proceed = await confirm(
-        "Warning: No response function selected. If you're converting JPEG images, the automatically generated response function may result in an inaccurate HDR image. Do you wish to proceed?"
-      );
-      if (!proceed) {
-        return;
-      }
-    } else if (!allCalibrationFilesEntered()) {
-      // If the user didn't enter one or more calibration files, display a warning that the output HDR image
-      // might be inaccurate. 
-      let proceed = await confirm(
-        "Warning: one or more calibration files were not entered. This may result in an inaccurate HDR image. Do you wish to proceed?"
+        "Warning: No response function selected. If you're converting JPEG images, the automatically generated response function may result in an inaccurate HDR image. Continue anyway?"
       );
       if (!proceed) {
         return;
@@ -153,7 +148,7 @@ export default function Home() {
       dcrawEmuPath: settings.dcrawEmuPath,
       outputPath: settings.outputPath,
       inputImages: devicePaths,
-      responseFunction: responsePaths,
+      responseFunction: responsePaths || null, // Handle missing responsePaths
       fisheyeCorrectionCal: fe_correctionPaths,
       vignettingCorrectionCal: v_correctionPaths,
       photometricAdjustmentCal: cf_correctionPaths,
@@ -180,31 +175,25 @@ export default function Home() {
       });
   };
 
-  function allRequiredInputsEntered() {
-    if (
-      devicePaths.length === 0 ||
-      !viewSettings.diameter ||
-      !viewSettings.xleft ||
-      !viewSettings.ydown ||
-      !viewSettings.targetRes ||
-      !viewSettings.vh ||
-      !viewSettings.vv
-    ) {
-      return false;
-    }
-    return true;
-  }
-
-  function allCalibrationFilesEntered() {
-    if (
-      !fe_correctionPaths ||
-      !v_correctionPaths ||
-      !cf_correctionPaths ||
-      !nd_correctionPaths
-    ) {
-      return false;
-    }
-    return true;
+  function allInputsEntered() {
+    const missingInputs = [];
+  
+    if (devicePaths.length === 0) missingInputs.push("Input images or directories");
+    if (!fe_correctionPaths) missingInputs.push("Fisheye correction file");
+    if (!v_correctionPaths) missingInputs.push("Vignetting correction file");
+    if (!cf_correctionPaths) missingInputs.push("Calibration factor file");
+    if (!nd_correctionPaths) missingInputs.push("Neutral density correction file");
+    if (!viewSettings.diameter) missingInputs.push("Diameter in Cropping, Resizing, and View Settings");
+    if (!viewSettings.xleft) missingInputs.push("x-left coordinate in Cropping, Resizing, and View Settings");
+    if (!viewSettings.ydown) missingInputs.push("y-down coordinate in Cropping, Resizing, and View Settings");
+    if (!viewSettings.targetRes) missingInputs.push("Target resolution in Cropping, Resizing, and View Settings");
+    if (!viewSettings.vh) missingInputs.push("Horizontal angle in Cropping, Resizing, and View Settings");
+    if (!viewSettings.vv) missingInputs.push("Vertical angle in Cropping, Resizing, and View Settings");
+  
+    return {
+      isValid: missingInputs.length === 0,
+      missingInputs,
+    };
   }
 
   function setConfig(config: any) {
