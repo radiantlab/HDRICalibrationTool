@@ -30,18 +30,23 @@ export default function Home() {
           radianceDefaultPath = "C:\\Radiance\\bin";
         }
 
-        // Update settings
+        // Get the saved paths to binaries and update settings
+        const contents = await invoke<string>("read_binary_paths", {});
+        let contentsObject;
+        if (contents) { contentsObject = JSON.parse(contents); }
+        else { contentsObject = {hdrgenpath: "", dcrawemupath: "" }; }
         setSettings({
           radiancePath: radianceDefaultPath,
-          hdrgenPath: "",
-          dcrawEmuPath: "",
-          outputPath: await invoke("get_default_output_path"), // queries backend for suggested place to store files
+          hdrgenPath: contentsObject.hdrgenpath,
+          dcrawEmuPath: contentsObject.dcrawemupath,
+          outputPath: await invoke("get_default_output_path") // queries backend for suggested place to store files
         });
+        if (!contentsObject.hdrgenpath || !contentsObject.dcrawemupath) 
+          { alert("Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images."); }
       })
       .catch(() => {
         console.error;
       });
-
     alert(
       "Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images."
     );
@@ -84,10 +89,14 @@ export default function Home() {
     outputPath: "",
   });
 
+  // Used to disable the save button when no changes have been made to settings
+  const [saveDisabled, setSaveDisabled] = useState(true)
+
   const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const updatedSettings = JSON.parse(JSON.stringify(settings));
     updatedSettings[event.currentTarget.name] = event.currentTarget.value;
     setSettings(updatedSettings);
+    setSaveDisabled(false);
   };
 
   // Reset progress
@@ -283,6 +292,8 @@ export default function Home() {
           setConfig={setConfig}
           settings={settings}
           setSettings={setSettings}
+          saveDisabled={saveDisabled}
+          setSaveDisabled={setSaveDisabled}
           handleSettingsChange={handleSettingsChange}
           handleGenerateHDRImage={handleGenerateHDRImage}
         />
