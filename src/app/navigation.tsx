@@ -1,44 +1,16 @@
-import React from "react";
-import { useState, useEffect } from "react";
-import SaveConfigDialog from "./save-config-dialog";
-import LoadConfigDialog from "./load-config-dialog";
-import Settings from "./settings";
-import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
-import { invoke } from "@tauri-apps/api/tauri";
+"use client";
 
-export default function Navigation({
-  responsePaths,
-  fe_correctionPaths,
-  v_correctionPaths,
-  nd_correctionPaths,
-  cf_correctionPaths,
-  viewSettings,
-  setConfig,
-  settings,
-  setSettings,
-  saveDisabled,
-  setSaveDisabled,
-  handleSettingsChange,
-  handleGenerateHDRImage,
-  setView,
-}: any) {
-  const [showSaveConfigDialog, setShowSaveConfigDialog] =
-    useState<boolean>(false);
-  const [showLoadConfigDialog, setShowLoadConfigDialog] =
-    useState<boolean>(false);
-  const [showSettings, setShowSettings] = useState<boolean>(false);
+import React from "react";
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
+
+export default function Navigation() {
   const [appVersion, setAppVersion] = useState<string>("");
   const [appName, setAppName] = useState<string>("");
   const [tauriVersion, setTauriVersion] = useState<string>("");
-  const [savedConfigs, setSavedConfigs] = useState<[]>([]);
-  const [activeSection, setActiveSection] = useState<string>("image");
-
-  // Loads the saved configurations from app config dir using a backend command
-  async function getSavedConfigs() {
-    const json: string = await invoke("get_saved_configs");
-    const configs = JSON.parse(json).configurations;
-    setSavedConfigs(configs);
-  }
+  const pathname = usePathname();
 
   useEffect(() => {
     // Retrieves app name, app version, and tauri version from Tauri API
@@ -48,146 +20,27 @@ export default function Navigation({
       setTauriVersion(await getTauriVersion());
     }
 
-    getSavedConfigs();
     fetchAppInfo();
   }, []);
 
-  const handleSectionChange = (section: string) => {
-    setActiveSection(section);
-    setView(section);
-  };
   return (
-    <div>
-      <div className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
-        <nav>
-          <div className="flex mx-5 mb-5 items-center">
-            <img
-              src="SunApertureOrange.png"
-              className=" object-contain h-14 mr-3"
-            />
-            <h1 className="text-xl text h-max font-bold">{appName}</h1>
-          </div>
-          <ul>
-            <li
-              className={`font-bold p-1 m-5 cursor-pointer ${
-                activeSection === "image" ? "active-section" : ""
-              }`}
-              onClick={() => handleSectionChange("image")}
-            >
-              Image Configuration
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="#image_selection">Image Selection</a>
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="#response">Response File</a>
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="#c_r_v">Cropping, Resizing, and View Settings</a>
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="#v">Vignetting Correction</a>
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="#nd">Neutral Density Correction</a>
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="#cf">Calibration Factor Correction</a>
-            </li>
-            <li
-              className={`font-bold p-1 m-5 cursor-pointer ${
-                activeSection === "usability" ? "active-section" : ""
-              }`}
-              onClick={() => handleSectionChange("usability")}
-            >
-              Usability Configuration
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="">Experience Level</a>
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="">View Mode</a>
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="">Debug console</a>
-            </li>
-          </ul>
-        </nav>
-        <div className="flex flex-col pt-24 gap-3 items-center">
-          <button
-            onClick={() => setShowSaveConfigDialog((prev: any) => !prev)}
-            className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
-          >
-            Save Configuration
-          </button>
-          {showSaveConfigDialog && (
-            <SaveConfigDialog
-              config={{
-                response_paths: responsePaths,
-                fe_correction_paths: fe_correctionPaths,
-                v_correction_paths: v_correctionPaths,
-                nd_correction_paths: nd_correctionPaths,
-                cf_correction_paths: cf_correctionPaths,
-                diameter: viewSettings.diameter,
-                xleft: viewSettings.xleft,
-                ydown: viewSettings.ydown,
-                // xres: viewSettings.xres,
-                // yres: viewSettings.yres,
-                target_res: viewSettings.targetRes,
-                vh: viewSettings.vh,
-                vv: viewSettings.vv,
-              }}
-              savedConfigs={savedConfigs}
-              setSavedConfigs={setSavedConfigs}
-              toggleDialog={() =>
-                setShowSaveConfigDialog(!showSaveConfigDialog)
-              }
-            />
-          )}
-          <button
-            onClick={() => setShowLoadConfigDialog(!showLoadConfigDialog)}
-            className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
-          >
-            Load Configuration
-          </button>
-          {showLoadConfigDialog && (
-            <LoadConfigDialog
-              setConfig={setConfig}
-              savedConfigs={savedConfigs}
-              getSavedConfigs={getSavedConfigs}
-              toggleDialog={() =>
-                setShowLoadConfigDialog(!showLoadConfigDialog)
-              }
-            />
-          )}
-          <button
-            className="w-max bg-gray-400 hover:bg-gray-500 text-gray-800 font-semibold py-1 px-14 border-gray-400 rounded"
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            Settings
-          </button>
-          {showSettings && (
-            <Settings
-              settings={settings}
-              setSettings={setSettings}
-              saveDisabled={saveDisabled}
-              setSaveDisabled={setSaveDisabled}
-              handleChange={handleSettingsChange}
-              toggleDialog={() => setShowSettings(!showSettings)}
-            />
-          )}
-          <button
-            onClick={handleGenerateHDRImage}
-            className="w-max bg-osu-beaver-orange hover:bg-osu-luminance text-white font-semibold py-1 px-2 border-gray-400 rounded"
-          >
-            Generate HDR Image
-          </button>
-        </div>
-        <div className="mb-3 ml-5 mt-3 text-xs flex-grow flex flex-col justify-end">
-          <p>App version: {appVersion}</p>
-          <p>Tauri version: {tauriVersion}</p>
-        </div>
+    <nav className="bg-gray-800 h-20 text-white grid grid-cols-4 fixed top-0 left-0 w-full z-10">
+      <div id="logo" className="flex items-center pl-4 col-span-1">
+        <img
+          src="SunApertureOrange.png"
+          className="object-contain h-10 mr-3"
+          alt="Logo"
+        />
+        <h1 className="text-l font-bold">{appName}</h1>
       </div>
-    </div>
+      <div id="link-container" className="border-l border-gray-300 flex items-center justify-start h-full w-full pr-4 col-span-3 gap-0">
+        <Link href="/home-page" className={`flex items-center justify-center h-full pl-8 pr-8 p-2 cursor-pointer max-w-xs ${pathname === "/home-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
+          Image Configuration
+        </Link>
+        <Link href="/usability-page" className={`flex items-center justify-center h-full pl-8 pr-8  p-2 cursor-pointer max-w-xs ${pathname === "/usability-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
+          Usability Settings
+        </Link>
+      </div>
+    </nav>
   );
 }

@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
-import Images from "./images";
-import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
-import Navigation from "./navigation";
-import Response_and_correction from "./response_and_correction";
-import Progress from "./progress";
-import Usability from "./usability";
+import Images from "../images";
+import CroppingResizingViewSettings from "../cropping-resizing-view-settings";
+import Sidebar from "./Sidebar";
+import Response_and_correction from "../response_and_correction";
+import Progress from "../progress";
+import Usability from "../usability-page/page";
 
 const DEBUG = true;
 
@@ -33,16 +33,22 @@ export default function Home() {
         // Get the saved paths to binaries and update settings
         const contents = await invoke<string>("read_binary_paths", {});
         let contentsObject;
-        if (contents) { contentsObject = JSON.parse(contents); }
-        else { contentsObject = {hdrgenpath: "", dcrawemupath: "" }; }
+        if (contents) {
+          contentsObject = JSON.parse(contents);
+        } else {
+          contentsObject = { hdrgenpath: "", dcrawemupath: "" };
+        }
         setSettings({
           radiancePath: radianceDefaultPath,
           hdrgenPath: contentsObject.hdrgenpath,
           dcrawEmuPath: contentsObject.dcrawemupath,
-          outputPath: await invoke("get_default_output_path") // queries backend for suggested place to store files
+          outputPath: await invoke("get_default_output_path"), // queries backend for suggested place to store files
         });
-        if (!contentsObject.hdrgenpath || !contentsObject.dcrawemupath) 
-          { alert("Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images."); }
+        if (!contentsObject.hdrgenpath || !contentsObject.dcrawemupath) {
+          alert(
+            "Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images."
+          );
+        }
       })
       .catch(() => {
         console.error;
@@ -87,7 +93,7 @@ export default function Home() {
   });
 
   // Used to disable the save button when no changes have been made to settings
-  const [saveDisabled, setSaveDisabled] = useState(true)
+  const [saveDisabled, setSaveDisabled] = useState(true);
 
   const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const updatedSettings = JSON.parse(JSON.stringify(settings));
@@ -143,7 +149,7 @@ export default function Home() {
       }
     } else if (!allCalibrationFilesEntered()) {
       // If the user didn't enter one or more calibration files, display a warning that the output HDR image
-      // might be inaccurate. 
+      // might be inaccurate.
       let proceed = await confirm(
         "Warning: one or more calibration files were not entered. This may result in an inaccurate HDR image. Do you wish to proceed?"
       );
@@ -234,14 +240,10 @@ export default function Home() {
     });
   }
 
-  // temporary implementation of navigation between config views
-  const [currView, setCurrView] = useState("image");
-
   return (
-    // <main  className="bg-white flex min-h-screen flex-col items-center justify-between text-black">
-    <main>
-      <div>
-        <Navigation
+    <div className="bg-white text-black grid grid-cols-4 min-h-screen">
+      <div className="col-span-1 bg-gray-300">
+        <Sidebar
           responsePaths={responsePaths}
           fe_correctionPaths={fe_correctionPaths}
           v_correctionPaths={v_correctionPaths}
@@ -255,52 +257,39 @@ export default function Home() {
           setSaveDisabled={setSaveDisabled}
           handleSettingsChange={handleSettingsChange}
           handleGenerateHDRImage={handleGenerateHDRImage}
-          setView={setCurrView}
         />
-
-        <div className="w-3/4 ml-auto pl-3">
-          {currView === "image" ? (
-            <>
-              <h1 className="text-2xl font-bold mb-5 pt-10">
-                Image Configuration
-              </h1>
-              <Progress
-                showProgress={showProgress}
-                fakePipeline={fakePipeline}
-                setProgressButton={setProgressButton}
-                setProcessError={setProcessError}
-                progressButton={progressButton}
-                processError={processError}
-                ResetProgress={ResetProgress}
-              />
-              <Images
-                devicePaths={devicePaths}
-                setDevicePaths={setDevicePaths}
-              />
-              <div id="c_r_v">
-                <CroppingResizingViewSettings
-                  viewSettings={viewSettings}
-                  handleChange={handleViewSettingsChange}
-                />
-                <Response_and_correction
-                  responsePaths={responsePaths}
-                  fe_correctionPaths={fe_correctionPaths}
-                  v_correctionPaths={v_correctionPaths}
-                  nd_correctionPaths={nd_correctionPaths}
-                  cf_correctionPaths={cf_correctionPaths}
-                  setResponsePaths={setResponsePaths}
-                  set_fe_correctionPaths={set_fe_correctionPaths}
-                  set_v_correctionPaths={set_v_correctionPaths}
-                  set_nd_correctionPaths={set_nd_correctionPaths}
-                  set_cf_correctionPaths={set_cf_correctionPaths}
-                />
-              </div>
-            </>
-          ) : currView === "usability" ? (
-            <Usability />
-          ) : null}
-        </div>
       </div>
-    </main>
+      <main className="col-span-3 p-4">
+        <h1 className="text-2xl font-bold mb-5 pt-10">Image Configuration</h1>
+        <Progress
+          showProgress={showProgress}
+          fakePipeline={fakePipeline}
+          setProgressButton={setProgressButton}
+          setProcessError={setProcessError}
+          progressButton={progressButton}
+          processError={processError}
+          ResetProgress={ResetProgress}
+        />
+        <Images devicePaths={devicePaths} setDevicePaths={setDevicePaths} />
+        <div id="c_r_v">
+          <CroppingResizingViewSettings
+            viewSettings={viewSettings}
+            handleChange={handleViewSettingsChange}
+          />
+          <Response_and_correction
+            responsePaths={responsePaths}
+            fe_correctionPaths={fe_correctionPaths}
+            v_correctionPaths={v_correctionPaths}
+            nd_correctionPaths={nd_correctionPaths}
+            cf_correctionPaths={cf_correctionPaths}
+            setResponsePaths={setResponsePaths}
+            set_fe_correctionPaths={set_fe_correctionPaths}
+            set_v_correctionPaths={set_v_correctionPaths}
+            set_nd_correctionPaths={set_nd_correctionPaths}
+            set_cf_correctionPaths={set_cf_correctionPaths}
+          />
+        </div>
+      </main>
+    </div>
   );
 }
