@@ -2,11 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
-import Images from "../images";
-import CroppingResizingViewSettings from "../cropping-resizing-view-settings";
+import Images from "./images";
+import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Sidebar from "./Sidebar";
-import Response_and_correction from "../response_and_correction";
-import Progress from "../progress";
+import Response_and_correction from "./response_and_correction";
+import Progress from "./progress";
 
 const DEBUG = true;
 

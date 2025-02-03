@@ -1,4 +1,4 @@
-import NumberInput from "./home-page/number-input";
+import NumberInput from "./number-input";
 
 export default function CroppingResizingViewSettings({
   viewSettings,
