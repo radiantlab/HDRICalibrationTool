@@ -34,11 +34,14 @@ export default function Navigation() {
         <h1 className="text-l font-bold">{appName}</h1>
       </div>
       <div id="link-container" className="border-l border-gray-300 flex items-center justify-start h-full w-full pr-4 col-span-3 gap-0">
-        <Link href="/home-page" className={`flex items-center justify-center h-full pl-8 pr-8 p-2 cursor-pointer max-w-xs ${pathname === "/home-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
+        <Link href="/home-page" className={`flex items-center justify-center min-w-[180px] h-full p-2 cursor-pointer ${pathname === "/home-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
           Image Configuration
         </Link>
-        <Link href="/usability-page" className={`flex items-center justify-center h-full pl-8 pr-8  p-2 cursor-pointer max-w-xs ${pathname === "/usability-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
-          Usability Settings
+        <Link href="/usability-page" className={`flex items-center justify-center min-w-[180px] h-full  p-2 cursor-pointer ${pathname === "/usability-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
+          Usability
+        </Link>
+        <Link href="/settings-page" className={`flex items-center justify-center min-w-[180px] h-full  p-2 cursor-pointer ${pathname === "/usability-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
+          Settings
         </Link>
       </div>
     </nav>

@@ -51,6 +51,8 @@ export default function Sidebar({
     //fetchAppInfo();
   }, []);
 
+  // TODO: Make sidebar generic so it can be applied in other tabs without needing new components
+
   return (
     <div>
       <div className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
