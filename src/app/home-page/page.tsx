@@ -7,7 +7,6 @@ import CroppingResizingViewSettings from "../cropping-resizing-view-settings";
 import Sidebar from "./Sidebar";
 import Response_and_correction from "../response_and_correction";
 import Progress from "../progress";
-import Usability from "../usability-page/page";
 
 const DEBUG = true;
 
