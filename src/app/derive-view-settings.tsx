@@ -19,23 +19,21 @@ export default function DeriveViewSettings({
 
     // toggle on/off for image derivation view
     const [active, setActive] = useState<boolean>(false);
-    // for scaling derived values to match original image proportions
+    // original image dimensions
     const [ogSize, setOgSize] = useState<any>([]);
-    // asset path to selected image
-    const [selected, setSelected] = useState<any>('');
     // list of images for display
     const [images, setImages] = useState<File[]>([]);
     // toggle on/off for image selection view
     const[select, setSelect] = useState<boolean>(false);
-
-    let list: any | any[] = [];
+    
+    const [check, setCheck] = useState<any>('');
 
     /**
      * Retrive files/directories the user selected from the Image Selection
      * of the application. Set 'select' to true.  
      */
     async function listImages() {
-        list = [];
+        let list: any[] = [];
 
         // ensure devicePaths not empty before proceeding 
         if (devicePaths.length < 1) {
@@ -63,8 +61,7 @@ export default function DeriveViewSettings({
             }
         }
 
-        // if list is empty (directory/directories contained no valid images)
-        // (temporary - plan to implement more checks in images)
+        // if list is empty 
         if (list.length < 1) {
             alert("Unable to retrieve images.");
             return;
@@ -80,12 +77,36 @@ export default function DeriveViewSettings({
      * @param im selected image file
      */
     function onSelected(im: string) {
-        // since img element already has a set width & height, the image has to be loaded
-        // separately in order to get its original dimensions
+        // check that there isn't currently and image on display
+        const c = document.querySelector('canvas');
+        if (c) document.getElementById('hold')?.removeChild(c);
+
+        // using canvas instead of img will help prevent possible stretching/warping
+        const canv = document.createElement('canvas');
+        const ctx = canv.getContext('2d');
+
         const image = new Image();
         image.onload = () => {
             setOgSize([image.width, image.height]); 
-            setSelected(im);
+            let w = image.width, h = image.height;
+
+            // scale image down
+            if (w > 720 || h > 720) {
+                while (w > 720) {
+                    w *= 0.80;
+                    h *= 0.80;
+                }
+                while (h > 720) {
+                    w *= 0.80;
+                    h *= 0.80;
+                }
+            }
+            
+            canv.width = w;
+            canv.height = h;
+            ctx?.drawImage(image, 0, 0, w, h);
+
+            document.getElementById('hold')?.appendChild(canv);
         }
         image.src = im;
         setActive(true);
@@ -105,8 +126,9 @@ export default function DeriveViewSettings({
         const mover = document.getElementById('mover');
         if (mover) {
             mover.style.cursor = 'grabbing';
-            mover.onmousemove = handleMoveDrag;
+            mover.onmousemove = handleMoveDrag; 
             mover.onmouseup = handleMoveUp;
+            window.onmouseup = handleMoveUp;
         }
     }
 
@@ -122,6 +144,7 @@ export default function DeriveViewSettings({
             mover.style.cursor = 'grab';
             mover.onmousemove = null;
             mover.onmouseup = null;
+            window.onmouseup = null;
         }
     }
 
@@ -137,8 +160,8 @@ export default function DeriveViewSettings({
         yp = ev.clientY;
         const lens = document.getElementById('lens');
         if (lens) {
-            lens.style.left = (lens.offsetLeft - left) + 'px';
-            lens.style.top = (lens.offsetTop - top) + 'px';
+            lens.style.left = (lens.offsetLeft - left) + 'px'; 
+            lens.style.top = (lens.offsetTop - top) + 'px'; 
         }
     }
 
@@ -156,10 +179,9 @@ export default function DeriveViewSettings({
         xp = ev.clientX;
         yp = ev.clientY;
         const lens = document.getElementById('lens'); 
-        const hold = document.getElementById('hold');
-        if (lens && hold) {
-            lens.onmousemove = handleResizeDrag; hold.onmousemove = handleResizeDrag;
-            lens.onmouseup = handleResizeUp; hold.onmouseup = handleResizeUp;
+        if (lens) {
+            lens.onmousemove = handleResizeDrag; window.onmousemove = handleResizeDrag;
+            lens.onmouseup = handleResizeUp; window.onmouseup = handleResizeUp;
         }
     }
 
@@ -170,8 +192,8 @@ export default function DeriveViewSettings({
         const lens = document.getElementById('lens');
         const hold = document.getElementById('hold');
         if (lens && hold) {
-            lens.onmousemove = null; hold.onmousemove = null;
-            lens.onmouseup = null; hold.onmouseup = null;
+            lens.onmousemove = null; window.onmousemove = null;
+            lens.onmouseup = null; window.onmouseup = null;
         }
     }
 
@@ -190,9 +212,9 @@ export default function DeriveViewSettings({
             // get distances from cur position to lens center and prev position to lens center
             let dist1 = Math.abs(center[0] - left) + Math.abs(center[1] - top);
             let dist2 = Math.abs(center[0] - xp) + Math.abs(center[1] - yp);
-
-            let amnt = Math.abs(left - xp) + Math.abs(top - yp);
+            
             let diam = Number(lens.style.height.slice(0, lens.style.height.indexOf('p')));
+            let amnt = Math.abs(left - xp) + Math.abs(top - yp);
 
             // if prev farther from center - shrink lens size
             if (dist1 > dist2) {
@@ -214,15 +236,15 @@ export default function DeriveViewSettings({
      */
     function handleDone() {
         const lens = document.getElementById('lens');
-        const image = document.getElementById('derive-img');
-        if (lens && image) {
-            let l_rect = lens.getBoundingClientRect(), i_rect = image.getBoundingClientRect();
+        const canv = document.querySelector('canvas');
+        if (lens && canv) {
+            let l_rect = lens.getBoundingClientRect(), i_rect = canv.getBoundingClientRect();
             let xOffset = Math.abs(l_rect.left - i_rect.left);
             let yOffset = Math.abs(i_rect.bottom - l_rect.bottom);
             let diam = l_rect.height;
 
             // if image was scaled down/up
-            if (i_rect.height > ogSize[1] || i_rect.height < ogSize[1]) {
+            if (i_rect.height != ogSize[1]) {
                 // scale diameter based on area of lens to area of image ratio
                 let curArea = Math.PI * (diam/2)**2;
                 let scaledArea = (ogSize[0] * ogSize[1]) * curArea / (i_rect.height * i_rect.width);
@@ -244,89 +266,93 @@ export default function DeriveViewSettings({
             };
             setViewSettings(updatedView);
         }
+    }
+
+    function handleCancel() {
         setActive(false);
+        const canv = document.querySelector('canvas');
+        if (canv) document.getElementById('hold')?.removeChild(canv);
     }
 
     return (
         <div>
-            <h3>Derive From Image (Optional)</h3>
-            <button
+            <button 
                 onClick={listImages}
-                className=""
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-1 px-2 border-2 border-gray-600 rounded h-fit my-[10px]"
             >
-                Select Image
+                Derive From Image (Optional)
             </button>
-            <div>
-                {select && (
-                    <div className="">
+            {select && (
+                <div className="space-x-5">
+                    <div className="flex flex-wrap">
                         {images.map((im: any) => (
-                            <div>
+                            <div className="m-[5px]">
                                 <img
                                     src={String(im)}
                                     alt=""
                                     width={100}
                                     height={100}
                                 />
-                                <button
+                                <div
                                     onClick={() => onSelected(String(im))}
-                                    className=""
+                                    className="text-center cursor-pointer"
                                 >
                                     Select
-                                </button>
-                            </div>
-                        ))}
-                        <button onClick={() => {setSelect(false)}}>Cancel</button>
-                    </div>
-                )}
-            </div>
-            <div>
-                {active && (
-                    <div className="flex flex-col space-x-5 pt-5">
-                        <div id="hold">
-                            <div
-                                style={{
-                                    border: 'solid red',
-                                    width: '100px',
-                                    height: '100px',
-                                    borderRadius: '50%',
-                                    position: 'absolute',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    display: 'flex',
-                                    cursor: 'move',
-                                }}
-                                // className="w-[100px] h-[100px] rounded-[50%] border-4 border-red-500 flex justify-center align-center cursor-move absolute"
-                                id="lens"
-                                onMouseDown={handleResizeDown}
-                            >
-                                <div
-                                    style={{fontSize: '20pt', color: 'red', textAlign: 'center', cursor: 'grab'}}
-                                    // className="text-[16pt] text-center text-red-500 cursor-grab"
-                                    id="mover"
-                                    onMouseDown={handleMoveDown}
-                                >
-                                    +
                                 </div>
                             </div>
-                            <img src={selected} alt="" id="derive-img" width={800} height={800}/>
-                        </div>
-                        <div className="flex flex-row space-x-5 pt-5">
-                            <button
-                                onClick={() => {setActive(false)}}
-                                className=""
+                        ))}
+                    </div>
+                    <button 
+                        onClick={() => {setSelect(false)}}
+                        className="font-semibold bg-gray-200 hover:bg-gray-300 py-1 px-2 text-gray-800 border-2 border-gray-500 rounded h-fit my-[10px]"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            )}
+            {active && (
+                <div className="flex flex-col space-x-5">
+                    <div id="hold">
+                        <div
+                            style={{
+                                border: 'solid red',
+                                width: '100px',
+                                height: '100px',
+                                borderRadius: '50%',
+                                position: 'absolute',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                display: 'flex',
+                                cursor: 'move'
+                            }}
+                            id="lens"
+                            onMouseDown={handleResizeDown}
+                        >
+                            <div
+                                style={{fontSize: '14pt', color: 'red', textAlign: 'center', cursor: 'grab'}}
+                                id="mover"
+                                onMouseDown={handleMoveDown}
                             >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDone}
-                                className=""
-                            >
-                                Done
-                            </button>
+                                +
+                            </div>
                         </div>
                     </div>
-                )}
-            </div>
+                    <div className="flex flex-row space-x-5 pt-5">
+                        <button
+                            onClick={handleCancel}
+                            className="font-semibold bg-gray-200 hover:bg-gray-300 py-1 px-2 text-gray-900 border-2 border-gray-500 rounded h-fit me-[14px] my-[5px]"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleDone}
+                            className="font-semibold bg-gray-200 hover:bg-gray-300 py-1 px-2 text-gray-900 border-2 border-gray-500 rounded h-fit me-[14px] my-[5px]"
+                        >
+                            Done
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
