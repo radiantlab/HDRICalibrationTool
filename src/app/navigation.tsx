@@ -16,6 +16,8 @@ export default function Navigation({
   setConfig,
   settings,
   setSettings,
+  saveDisabled,
+  setSaveDisabled,
   handleSettingsChange,
   handleGenerateHDRImage,
   setView,
@@ -168,6 +170,8 @@ export default function Navigation({
             <Settings
               settings={settings}
               setSettings={setSettings}
+              saveDisabled={saveDisabled}
+              setSaveDisabled={setSaveDisabled}
               handleChange={handleSettingsChange}
               toggleDialog={() => setShowSettings(!showSettings)}
             />

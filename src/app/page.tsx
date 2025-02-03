@@ -30,21 +30,23 @@ export default function Home() {
           radianceDefaultPath = "C:\\Radiance\\bin";
         }
 
-        // Update settings
+        // Get the saved paths to binaries and update settings
+        const contents = await invoke<string>("read_binary_paths", {});
+        let contentsObject;
+        if (contents) { contentsObject = JSON.parse(contents); }
+        else { contentsObject = {hdrgenpath: "", dcrawemupath: "" }; }
         setSettings({
           radiancePath: radianceDefaultPath,
-          hdrgenPath: "",
-          dcrawEmuPath: "",
-          outputPath: await invoke("get_default_output_path"), // queries backend for suggested place to store files
+          hdrgenPath: contentsObject.hdrgenpath,
+          dcrawEmuPath: contentsObject.dcrawemupath,
+          outputPath: await invoke("get_default_output_path") // queries backend for suggested place to store files
         });
+        if (!contentsObject.hdrgenpath || !contentsObject.dcrawemupath) 
+          { alert("Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images."); }
       })
       .catch(() => {
         console.error;
       });
-
-    alert(
-      "Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images."
-    );
   }, []);
 
   // Holds the fisheye coordinates and view settings
@@ -84,10 +86,14 @@ export default function Home() {
     outputPath: "",
   });
 
+  // Used to disable the save button when no changes have been made to settings
+  const [saveDisabled, setSaveDisabled] = useState(true)
+
   const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const updatedSettings = JSON.parse(JSON.stringify(settings));
     updatedSettings[event.currentTarget.name] = event.currentTarget.value;
     setSettings(updatedSettings);
+    setSaveDisabled(false);
   };
 
   // Reset progress
@@ -119,10 +125,10 @@ export default function Home() {
   // selected, and hardcoded data for the rest of the inputs
   const handleGenerateHDRImage = async () => {
     // Validate inputs
-    if (!allInputsEntered()) {
-      // If a calibration file or view setting is missing, or the user hasn't selected input images/dirs, display error and abort
+    if (!allRequiredInputsEntered()) {
+      // If a view setting is missing or the user hasn't selected input images/dirs, display error and abort
       alert(
-        "You must enter all calibration files and view settings and select input images or directories before generating an HDR image."
+        "You must enter all view settings and select input images or directories before generating an HDR image."
       );
       return;
     } else if (!responsePaths) {
@@ -130,7 +136,16 @@ export default function Home() {
       // display a warning that the output HDR image might be inaccurate if converting from JPEG
       // and ask for confirmation before proceeding with pipeline call
       let proceed = await confirm(
-        "Warning: No response function selected. If you're converting JPEG images, the automatically generated response function may result in an inaccurate HDR image. Continue anyway?"
+        "Warning: No response function selected. If you're converting JPEG images, the automatically generated response function may result in an inaccurate HDR image. Do you wish to proceed?"
+      );
+      if (!proceed) {
+        return;
+      }
+    } else if (!allCalibrationFilesEntered()) {
+      // If the user didn't enter one or more calibration files, display a warning that the output HDR image
+      // might be inaccurate. 
+      let proceed = await confirm(
+        "Warning: one or more calibration files were not entered. This may result in an inaccurate HDR image. Do you wish to proceed?"
       );
       if (!proceed) {
         return;
@@ -174,13 +189,9 @@ export default function Home() {
       });
   };
 
-  function allInputsEntered() {
+  function allRequiredInputsEntered() {
     if (
       devicePaths.length === 0 ||
-      !fe_correctionPaths ||
-      !v_correctionPaths ||
-      !cf_correctionPaths ||
-      !nd_correctionPaths ||
       !viewSettings.diameter ||
       !viewSettings.xleft ||
       !viewSettings.ydown ||
@@ -189,9 +200,20 @@ export default function Home() {
       !viewSettings.vv
     ) {
       return false;
-    } else {
-      return true;
     }
+    return true;
+  }
+
+  function allCalibrationFilesEntered() {
+    if (
+      !fe_correctionPaths ||
+      !v_correctionPaths ||
+      !cf_correctionPaths ||
+      !nd_correctionPaths
+    ) {
+      return false;
+    }
+    return true;
   }
 
   function setConfig(config: any) {
@@ -229,6 +251,8 @@ export default function Home() {
           setConfig={setConfig}
           settings={settings}
           setSettings={setSettings}
+          saveDisabled={saveDisabled}
+          setSaveDisabled={setSaveDisabled}
           handleSettingsChange={handleSettingsChange}
           handleGenerateHDRImage={handleGenerateHDRImage}
           setView={setCurrView}
