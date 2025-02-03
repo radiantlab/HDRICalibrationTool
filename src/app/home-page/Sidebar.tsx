@@ -57,27 +57,44 @@ export default function Sidebar({
     <div>
       <div className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
         <nav>
-          
-          <ul>
-            <li className="pt-2 ml-5">
-              <a href="#image_selection">Image Selection</a>
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="#response">Response File</a>
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="#c_r_v">Cropping, Resizing, and View Settings</a>
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="#v">Vignetting Correction</a>
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="#nd">Neutral Density Correction</a>
-            </li>
-            <li className="pt-2 ml-5">
-              <a href="#cf">Calibration Factor Correction</a>
-            </li>
-          </ul>
+          <div className="grid grid-cols-1 w-full">
+            <a
+              href="#image_selection"
+              className="flex pl-5 p-2 hover:bg-gray-400"
+            >
+              Image Selection
+            </a>
+            <a
+              href="#response"
+              className="flex pl-5 p-2 hover:bg-gray-400"
+            >
+              Response File
+            </a>
+            <a
+              href="#c_r_v"
+              className="flex pl-5 p-2 hover:bg-gray-400"
+            >
+              Cropping, Resizing, and View Settings
+            </a>
+            <a
+              href="#v"
+              className="flex pl-5 p-2 hover:bg-gray-400"
+            >
+              Vignetting Correction
+            </a>
+            <a
+              href="#nd"
+              className="flex pl-5 p-2 hover:bg-gray-400"
+            >
+              Neutral Density Correction
+            </a>
+            <a
+              href="#cf"
+              className="flex pl-5 p-2 hover:bg-gray-400"
+            >
+              Calibration Factor Correction
+            </a>
+          </div>
         </nav>
         <div className="flex flex-col pt-24 gap-3 items-center">
           <button
