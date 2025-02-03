@@ -1,8 +1,8 @@
 import React from "react";
 import { useState, useEffect } from "react";
-import SaveConfigDialog from "../save-config-dialog";
+import SaveConfigDialog from "./save-config-dialog";
 import LoadConfigDialog from "./load-config-dialog";
-import Settings from "../settings";
+import Settings from "./settings";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/tauri";
 
