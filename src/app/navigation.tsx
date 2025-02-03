@@ -8,7 +8,7 @@ import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 
 export default function Navigation() {
   const [appVersion, setAppVersion] = useState<string>("");
-  const [appName, setAppName] = useState<string>("");
+  const [appName, setAppName] = useState<string>("HDRI Calibration Interface");
   const [tauriVersion, setTauriVersion] = useState<string>("");
   const pathname = usePathname();
 
@@ -21,6 +21,7 @@ export default function Navigation() {
     }
 
     fetchAppInfo();
+    console.log("App Name:", appName);
   }, []);
 
   return (
