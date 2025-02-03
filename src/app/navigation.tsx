@@ -40,7 +40,7 @@ export default function Navigation() {
         <Link href="/usability-page" className={`flex items-center justify-center min-w-[180px] h-full  p-2 cursor-pointer ${pathname === "/usability-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
           Usability
         </Link>
-        <Link href="/settings-page" className={`flex items-center justify-center min-w-[180px] h-full  p-2 cursor-pointer ${pathname === "/usability-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
+        <Link href="/settings-page" className={`flex items-center justify-center min-w-[180px] h-full  p-2 cursor-pointer ${pathname === "/settings-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
           Settings
         </Link>
       </div>

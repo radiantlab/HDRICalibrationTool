@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useState } from "react";
 
@@ -13,14 +13,17 @@ export default function Usability() {
   };
 
   return (
-    <div>
-      <main  className="bg-white flex min-h-screen flex-col justify-between text-black">
+    <div className="bg-white text-black grid grid-cols-4 min-h-screen">
+      <div className="col-span-1 bg-gray-300">
+        {/* Empty div for the sidebar */}
+      </div>
+      <main className="col-span-3 p-4">
         <h1 className="text-2xl font-bold mb-5 pt-10">Usability Configuration</h1>
 
         {/* Experience Level Section */}
-        <div className="mb-10">
-          <h2 className="text-xl font-semibold mb-3">Experience Level</h2>
-          <div className="flex gap-5">
+        <div className="mb-5">
+          <h2 className="text-xl font-semibold mb-2">Experience Level</h2>
+          <div className="flex space-x-4">
             <label className="flex items-center">
               <input
                 type="radio"
@@ -47,9 +50,9 @@ export default function Usability() {
         </div>
 
         {/* View Mode Section */}
-        <div className="mb-10">
-          <h2 className="text-xl font-semibold mb-3">View Mode</h2>
-          <div className="flex gap-5">
+        <div className="mb-5">
+          <h2 className="text-xl font-semibold mb-2">View Mode</h2>
+          <div className="flex space-x-4">
             <label className="flex items-center">
               <input
                 type="radio"
@@ -76,17 +79,17 @@ export default function Usability() {
         </div>
 
         {/* Console Debug Section */}
-        <div>
-          <h2 className="text-xl font-semibold mb-3">Console Debug</h2>
+        <div className="mb-5">
+          <h2 className="text-xl font-semibold mb-2">Console Debug</h2>
           <textarea
             value={consoleInput}
             onChange={(e) => setConsoleInput(e.target.value)}
-            className="w-full h-40 p-2 border border-gray-300 rounded mb-3"
             placeholder="Enter command here..."
+            className="w-full p-2 border border-gray-300 rounded mb-2"
           />
           <button
             onClick={handleRunCommand}
-            className="bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-2 px-4 border-gray-400 rounded"
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
             RUN
           </button>
