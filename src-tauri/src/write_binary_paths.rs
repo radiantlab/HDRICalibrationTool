@@ -37,12 +37,6 @@ pub fn write_binary_paths(app_handle: tauri::AppHandle, hdrgenPath: String, dcra
         Some(v) => v,
         None => return Err(format!("Invalid UTF-8 in binary file path {:?}", paths_file)),
     };
-    // let dir = Path::new(app_config_dir)
-    //     .join("configurations")
-    //     .join(&config.name);
-    // if create_dir_all(&dir).is_err() {
-    //     return Err("Error saving config.".to_string());
-    // }
     
     // Write binary paths to file
     match fs::write(file_path, paths_string) {
