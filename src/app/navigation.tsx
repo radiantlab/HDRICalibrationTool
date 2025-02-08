@@ -100,8 +100,6 @@ export default function Navigation({
                 diameter: viewSettings.diameter,
                 xleft: viewSettings.xleft,
                 ydown: viewSettings.ydown,
-                // xres: viewSettings.xres,
-                // yres: viewSettings.yres,
                 target_res: viewSettings.targetRes,
                 vh: viewSettings.vh,
                 vv: viewSettings.vv,
