@@ -140,6 +140,13 @@ export default function Home() {
       if (!proceed) {
         return;
       }
+    } else if (viewSettings.vv !== viewSettings.vh) {
+      let proceed = await confirm(
+        "Warning: vv (Vertical Angle) and vh (Horizontal Angle) values do not match. Continue anyway?"
+      );
+      if (!proceed) {
+        return;
+      }
     }
 
     // Progress
