@@ -27,7 +27,10 @@ export default function DeriveViewSettings({
     const [images, setImages] = useState<File[]>([]);
     // toggle on/off for image selection view
     const [select, setSelect] = useState<boolean>(false);
-    const [ig, setIg] = useState<any>('');
+    // asset path for selected image
+    const [asset, setAsset] = useState<any>('');
+    // raw images used check
+    const [areRaw, setAreRaw] = useState<boolean>(false);
     
     const [check, setCheck] = useState<any>('');
 
@@ -58,7 +61,6 @@ export default function DeriveViewSettings({
                     rawList.push(devicePaths[i]);
                 }
                 else list.push(convertFileSrc(devicePaths[i]));
-                // list.push(convertFileSrc(devicePaths[i]));
             }
             // if directory
             else {
@@ -71,7 +73,6 @@ export default function DeriveViewSettings({
                             rawList.push(contents[j].path);
                         }
                         else list.push(convertFileSrc(contents[j].path));
-                        // list.push(convertFileSrc(contents[j].path));
                     }
                 }
             }
@@ -80,12 +81,12 @@ export default function DeriveViewSettings({
 
 
         if (rawList.length > 0) {
-            // setCheck("Here");
+            setAreRaw(true);
             const raw_dir: any = await invoke<string>("convert_raw_img", {dcraw: dcrawEmuPath, pths: rawList,});
-            // const conts = await readDir(raw_dir);
             for (let i = 0; i < raw_dir.length; i++) {
                 list.push(convertFileSrc(raw_dir[i]));
             }
+            setAreRaw(false);
         }
 
         // if list is empty 
@@ -106,49 +107,15 @@ export default function DeriveViewSettings({
      * @param im selected image file
      */
     function onSelected(im: string, idx: number) {
-        // check that there isn't currently and image on display
-        const c = document.querySelector('canvas');
-        if (c) document.getElementById('hold')?.removeChild(c);
-
-        setIg(im);
-
-        // using canvas instead of img will help prevent possible stretching/warping
-        // const canv = document.createElement('canvas');
-        // const ctx = canv.getContext('2d');
-
-        const ig_elm = document.getElementById('img');
+        setAsset(im);
 
         const image = new Image();
         image.onload = () => {
             setOgSize([image.width, image.height]); 
-
-            // let w = ogSize[0], h = ogSize[1];
-
-            // // scale image down
-            // if (w > 720 || h > 720) {
-            //     while (w > 720) {
-            //         w *= 0.80;
-            //         h *= 0.80;
-            //     }
-            //     while (h > 720) {
-            //         w *= 0.80;
-            //         h *= 0.80;
-            //     }
-            // }
-            
-            // canv.width = w;
-            // canv.height = h;
-            // ctx?.drawImage(image, 0, 0, w, h);
-
-            // document.getElementById('hold')?.appendChild(canv);
         }
-        // const lens = document.getElementById('lens');
-        // if (lens) lens.onmousedown = handleResizeDown;
-        // const mover = document.getElementById('mover');
-        // if (mover) mover.onmousedown = handleMoveDown;
         image.src = im;
         setActive(true);
-    }
+    };
 
     let left = 0, top = 0, xp = 0, yp = 0;
     let center: any[] = [0, 0];
@@ -184,7 +151,7 @@ export default function DeriveViewSettings({
             }
         }
         return false;
-    }
+    };
 
     /**
      * onmousedown event handler for moving the lens measurement div. 
@@ -209,7 +176,7 @@ export default function DeriveViewSettings({
             window.onmousemove = handleMoveDrag;
             // lens.onmousedown = null;
         }
-    }
+    };
 
     /**
      * onmouseup event handler for moving the lens measurement div. 
@@ -228,7 +195,7 @@ export default function DeriveViewSettings({
             window.onmousemove = null;
             // lens.onmousedown = handleResizeDown;
         }
-    }
+    };
 
     /**
      * onmousemove event handler for moving the lens measurement div.
@@ -247,7 +214,7 @@ export default function DeriveViewSettings({
                 lens.style.top = (lens.offsetTop - top) + 'px';
             }
         }
-    }
+    };
 
     /**
      * onmousedown event handler for resizing the lens measurment div. 
@@ -263,7 +230,6 @@ export default function DeriveViewSettings({
         xp = ev.clientX;
         yp = ev.clientY;
         const lens = document.getElementById('lens'); 
-        const canv = document.querySelector('canvas');
         const mover = document.getElementById('mover');
 
         const ig_elm = document.getElementById('img');
@@ -276,7 +242,7 @@ export default function DeriveViewSettings({
             window.onmouseup = handleResizeUp;
             // mover.onmousedown = null;
         }
-    }
+    };
 
     /**
      * onmouseup event handler for resizing the lens measurement div. 
@@ -291,7 +257,7 @@ export default function DeriveViewSettings({
             window.onmouseup = null;
             // mover.onmousedown = handleMoveDown;
         }
-    }
+    };
 
     /**
      * onmousemove event handler for resizing lens measurement div.
@@ -330,7 +296,7 @@ export default function DeriveViewSettings({
                 lens.style.top = (lens.offsetTop - (top - yp)) + 'px';
             }
         }
-    }
+    };
 
     /**
      * Ends interactive value derivation and calculates final outputs for the lens diameter,
@@ -369,7 +335,7 @@ export default function DeriveViewSettings({
             };
             setViewSettings(updatedView);
         }
-    }
+    };
 
     function handleCancel() {
         setActive(false);
@@ -395,7 +361,9 @@ export default function DeriveViewSettings({
             >
                 Derive From Image (Optional)
             </button>
-            <div>{"Bruh: " + check}</div>
+            {areRaw && (
+                <div>*Raw images may take longer to display than other image types*</div>
+            )}
             {select && (
                 <div className="space-x-5">
                     <div className="flex flex-wrap">
@@ -450,7 +418,7 @@ export default function DeriveViewSettings({
                                 +
                             </div>
                         </div>
-                        <img src={ig} alt="" id="img" width={700} height={700} />
+                        <img src={asset} alt="" id="img" width={600} height={600} />
                     </div>
                     <div className="flex flex-row justify-center item-center space-x-5 pt-5">
                         <button
@@ -460,7 +428,7 @@ export default function DeriveViewSettings({
                             Reset
                         </button>
                         <button
-                            onClick={handleCancel}
+                            onClick={() => {setActive(false)}}
                             className="font-semibold bg-gray-200 hover:bg-gray-300 py-1 px-2 text-gray-900 border-2 border-gray-500 rounded h-fit me-[14px] my-[5px]"
                         >
                             Cancel
