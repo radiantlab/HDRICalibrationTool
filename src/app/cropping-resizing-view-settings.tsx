@@ -6,6 +6,7 @@ export default function CroppingResizingViewSettings({
   handleChange,
   setViewSettings,
   devicePaths,
+  dcrawEmuPath,
 }: any) {
   return (
     <div>
@@ -16,6 +17,7 @@ export default function CroppingResizingViewSettings({
             viewSettings={viewSettings}
             setViewSettings={setViewSettings}
             devicePaths={devicePaths}
+            dcrawEmuPath={dcrawEmuPath}
           />
         </div>
         <div className="flex flex-row space-x-5 pt-5">

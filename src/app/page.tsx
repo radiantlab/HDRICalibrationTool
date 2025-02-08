@@ -265,6 +265,7 @@ export default function Home() {
               handleChange={handleViewSettingsChange}
               setViewSettings={setViewSettings}
               devicePaths={devicePaths}
+              dcrawEmuPath={settings.dcrawEmuPath}
             />
             <Response_and_correction
               responsePaths={responsePaths}
