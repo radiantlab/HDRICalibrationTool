@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { open } from "@tauri-apps/api/dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import { Paths } from "./string_functions";
-import { convertFileSrc } from "@tauri-apps/api/tauri";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { Extensions } from "./string_functions";
 
 export default function Images({

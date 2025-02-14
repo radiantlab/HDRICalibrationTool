@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import Images from "./images";
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Navigation from "./navigation";
 import Response_and_correction from "./response_and_correction";
 import Progress from "./progress";
-import { exists } from "@tauri-apps/api/fs";
+import { exists } from "@tauri-apps/plugin-fs";
 
 const DEBUG = true;
 

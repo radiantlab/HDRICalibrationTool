@@ -1,90 +1,14 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "productName": "HDRI Calibration Interface",
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
-    "devPath": "http://localhost:3000",
-    "distDir": "../out"
+    "frontendDist": "../out",
+    "devUrl": "http://localhost:3000/"
   },
-  "package": {
-    "productName": "HDRI Calibration Interface",
-    "version": "2.0.0"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "path": {
-        "all": true
-      },
-      "fs": {
-        "writeFile": true,
-        "readFile": true,
-        "copyFile": true,
-        "createDir": true,
-        "exists": true,
-        "readDir": true,
-        "scope": ["**"]
-      },
-      "os": {
-        "all": true
-      },
-      "dialog": {
-        "all": true,
-        "ask": true,
-        "confirm": true,
-        "message": true,
-        "open": true,
-        "save": true
-      },
-      "protocol": {
-        "all": true,
-        "asset": true,
-        "assetScope": ["**"]
-      },
-      "app": {
-        "show": true,
-        "hide": true
-      }
-    },
-    "bundle": {
-      "active": true,
-      "category": "DeveloperTool",
-      "copyright": "",
-      "deb": {
-        "depends": []
-      },
-      "externalBin": [],
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
-      "identifier": "hdricalibrationinterface",
-      "longDescription": "",
-      "macOS": {
-        "entitlements": null,
-        "exceptionDomain": "",
-        "frameworks": [],
-        "providerShortName": null,
-        "signingIdentity": null
-      },
-      "resources": [],
-      "shortDescription": "",
-      "targets": "all",
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": ""
-      }
-    },
-    "security": {
-      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost"
-    },
-    "updater": {
-      "active": false
-    },
+  "identifier": "hdricalibrationinterface",
+  "app": {
     "windows": [
       {
         "fullscreen": false,
@@ -96,5 +20,35 @@
         "minHeight": 800
       }
     ]
-  }
+  },
+  "bundle": {
+    "active": true,
+    "category": "DeveloperTool",
+    "copyright": "",
+    "targets": "all",
+    "externalBin": [],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "longDescription": "",
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
+    },
+    "resources": [],
+    "shortDescription": ""
+  },
+  "plugins": {}
 }
