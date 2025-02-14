@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { open } from "@tauri-apps/api/dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import { Paths, Extensions } from "./string_functions";
 
 export default function Response_and_correction({

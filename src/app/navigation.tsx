@@ -4,7 +4,7 @@ import SaveConfigDialog from "./save-config-dialog";
 import LoadConfigDialog from "./load-config-dialog";
 import Settings from "./settings";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 
 export default function Navigation({
   responsePaths,
