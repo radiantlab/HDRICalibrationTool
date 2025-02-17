@@ -47,9 +47,6 @@ export default function Home() {
       .catch(() => {
         console.error;
       });
-    alert(
-      "Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images."
-    );
   }, []);
 
   // Holds the fisheye coordinates and view settings
@@ -157,6 +154,13 @@ export default function Home() {
       // and ask for confirmation before proceeding with pipeline call
       let proceed = await confirm(
         "Warning: No response function selected. If you're converting JPEG images, the automatically generated response function may result in an inaccurate HDR image. Continue anyway?"
+      );
+      if (!proceed) {
+        return;
+      }
+    } else if (viewSettings.vv !== viewSettings.vh) {
+      let proceed = await confirm(
+        "Warning: vv (Vertical Angle) and vh (Horizontal Angle) values do not match. Continue anyway?"
       );
       if (!proceed) {
         return;
