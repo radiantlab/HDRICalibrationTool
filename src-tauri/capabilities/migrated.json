@@ -7,6 +7,36 @@
   ],
   "permissions": [
     "core:default",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "args": [
+            "-T",
+            "-o",
+            "1",
+            "-W",
+            "-j",
+            "-q",
+            "3",
+            "-g",
+            "2",
+            "0",
+            "-t",
+            "0",
+            "-b",
+            "1.1",
+            "-Z",
+            {
+              "validator": "\\S+"
+            }
+          ],
+          "name": "binaries/dcraw_emu.exe",
+          "sidecar": true
+        }
+      ]
+    },
+    "shell:allow-open",
     "fs:allow-read-file",
     "fs:allow-write-file",
     "fs:allow-read-dir",
