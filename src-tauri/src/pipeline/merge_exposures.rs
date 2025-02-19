@@ -5,6 +5,7 @@ use std::{
 };
 
 use super::ConfigSettings;
+use tauri_plugin_shell::ShellExt;
 
 // Merges multiple LDR images into an HDR image using hdrgen. If images are in JPG or TIFF format,
 // runs hdrgen command regularly. If images are not in JPG or TIFF format, converts the inputs
@@ -18,6 +19,7 @@ use super::ConfigSettings;
 //    a string for the path and filename where the resulting HDR image will be saved.
 #[tauri::command]
 pub fn merge_exposures(
+    app: &tauri::AppHandle,
     config_settings: &ConfigSettings,
     mut input_images: Vec<String>,
     response_function: String,
@@ -42,16 +44,21 @@ pub fn merge_exposures(
     }
 
     let mut command: Command;
+    let mut sidecar_command: Command;
 
     // If raw image format other than TIFF, need to first convert them to TIFF to be used by hdrgen
     if convert_to_tiff {
         let mut index = 1;
         for input_image in &input_images {
-            // Create a new command for dcraw_emu
-            command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
+            /* Create a new command for dcraw_emu
+             * Command is created as sidecar which returns type 'tauri_plugin_shell::process::Command'
+             * 'Into::into()' converts this into type 'std::process::Command'
+             */
+            sidecar_command = app.shell().sidecar("dcraw_emu.exe").unwrap().into();
+            // command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
 
             // Add command arguments
-            command.args([
+            sidecar_command.args([
                 "-T",
                 "-o",
                 "1",
@@ -76,7 +83,8 @@ pub fn merge_exposures(
                 format!("{}", input_image).as_str(),
             ]);
 
-            let status: Result<ExitStatus, std::io::Error> = command.status();
+            let status: Result<ExitStatus, std::io::Error> = sidecar_command.status();
+            // let child = sidecar_command.spawn().unwrap();
 
             if !status.is_ok() || !status.unwrap_or(ExitStatus::default()).success() {
                 // On error, return an error message
