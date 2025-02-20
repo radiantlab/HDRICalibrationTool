@@ -43,6 +43,7 @@ pub fn merge_exposures(
         );
     }
 
+    // One command uses Tauri/Rusts built in Command type, the other uses Tauri's sidecar API -> eventually both should use sidecar
     let mut command: Command;
     let mut sidecar_command: Command;
 
@@ -54,11 +55,20 @@ pub fn merge_exposures(
              * Command is created as sidecar which returns type 'tauri_plugin_shell::process::Command'
              * 'Into::into()' converts this into type 'std::process::Command'
              */
-            sidecar_command = app.shell().sidecar("dcraw_emu.exe").unwrap().into();
+            sidecar_command = app.shell().sidecar("dcraw_emu").unwrap().into();
+            let sidecar_path = sidecar_command.get_program();
+            println!("Sidecar Path: {:?}", sidecar_path);
             // command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
 
             // Add command arguments
-            sidecar_command.args([
+            let output_arg = 
+                config_settings
+                    .temp_path
+                    .join(format!("input{}.tiff", index))
+                    .display()
+                    .to_string();
+            let input_arg = format!("{}", input_image);
+            let args = [
                 "-T",
                 "-o",
                 "1",
@@ -74,22 +84,48 @@ pub fn merge_exposures(
                 "-b",
                 "1.1",
                 "-Z",
-                config_settings
-                    .temp_path
-                    .join(format!("input{}.tiff", index))
-                    .display()
-                    .to_string()
-                    .as_str(),
-                format!("{}", input_image).as_str(),
-            ]);
+                &output_arg,
+                &input_arg
+            ];
 
-            let status: Result<ExitStatus, std::io::Error> = sidecar_command.status();
+            // sidecar_command.args([
+            //     "-T",
+            //     "-o",
+            //     "1",
+            //     "-W",
+            //     "-j",
+            //     "-q",
+            //     "3",
+            //     "-g",
+            //     "2",
+            //     "0",
+            //     "-t",
+            //     "0",
+            //     "-b",
+            //     "1.1",
+            //     "-Z",
+            //     config_settings
+            //         .temp_path
+            //         .join(format!("input{}.tiff", index))
+            //         .display()
+            //         .to_string()
+            //         .as_str(),
+            //     format!("{}", input_image).as_str(),
+            // ]);
+
+            println!("Executing sidecar with args: {:?} {:?}", sidecar_command.get_program(), args);
+            sidecar_command.args(args).spawn().expect("Failed to spawn sidecar process");
+            // let status: Result<ExitStatus, std::io::Error> = sidecar_command.status();
             // let child = sidecar_command.spawn().unwrap();
+            // match status {
+            //     Ok(status) => println!("Worked: {:?}", status),
+            //     Err(ref e) => println!("Error: {}", e),
+            // }
 
-            if !status.is_ok() || !status.unwrap_or(ExitStatus::default()).success() {
-                // On error, return an error message
-                return Err("Error, non-zero exit status. dcraw_emu command (converting to tiff images) failed.".into());
-            }
+            // if !status.is_ok() || !status.unwrap_or(ExitStatus::default()).success() {
+            //     // On error, return an error message
+            //     return Err("Error, non-zero exit status. dcraw_emu command (converting to tiff images) failed.".into());
+            // }
 
             index += 1;
         }
