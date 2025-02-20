@@ -31,7 +31,7 @@
               "validator": "\\S+"
             }
           ],
-          "name": "binaries/dcraw_emu.exe",
+          "name": "dcraw_emu",
           "sidecar": true
         }
       ]
