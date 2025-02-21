@@ -3,6 +3,7 @@ use std::{
     path::Path,
     process::{Command, ExitStatus},
 };
+use std::env;
 
 use super::ConfigSettings;
 use tauri_plugin_shell::ShellExt;
@@ -46,6 +47,7 @@ pub fn merge_exposures(
     // One command uses Tauri/Rusts built in Command type, the other uses Tauri's sidecar API -> eventually both should use sidecar
     let mut command: Command;
     let mut sidecar_command: Command;
+    let dcraw_emu_build_working_directory = env::current_exe().unwrap().parent().unwrap().join("binaries");
 
     // If raw image format other than TIFF, need to first convert them to TIFF to be used by hdrgen
     if convert_to_tiff {
@@ -57,7 +59,9 @@ pub fn merge_exposures(
              */
             sidecar_command = app.shell().sidecar("dcraw_emu").unwrap().into();
             let sidecar_path = sidecar_command.get_program();
-            println!("Sidecar Path: {:?}", sidecar_path);
+            // println!("Sidecar Path: {:?}", sidecar_path);
+            // println!("Absolute Exe. Path: {:?}", env::current_exe().unwrap().parent().unwrap().join("binaries"));
+            // println!("Absolute Exe. Path: {:?}", dcraw_emu_build_working_directory);
             // command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
 
             // Add command arguments
@@ -113,19 +117,21 @@ pub fn merge_exposures(
             //     format!("{}", input_image).as_str(),
             // ]);
 
-            println!("Executing sidecar with args: {:?} {:?}", sidecar_command.get_program(), args);
-            sidecar_command.args(args).spawn().expect("Failed to spawn sidecar process");
-            // let status: Result<ExitStatus, std::io::Error> = sidecar_command.status();
+            // println!("Executing sidecar with args: {:?} {:?}", sidecar_command.get_program(), args);
+            // sidecar_command.args(args).spawn().expect("Failed to spawn sidecar process");
+            sidecar_command.args(args);
+            sidecar_command.current_dir(&dcraw_emu_build_working_directory); // Set the working directory to find libraw.dll
+            let status: Result<ExitStatus, std::io::Error> = sidecar_command.status();
             // let child = sidecar_command.spawn().unwrap();
             // match status {
             //     Ok(status) => println!("Worked: {:?}", status),
             //     Err(ref e) => println!("Error: {}", e),
             // }
 
-            // if !status.is_ok() || !status.unwrap_or(ExitStatus::default()).success() {
-            //     // On error, return an error message
-            //     return Err("Error, non-zero exit status. dcraw_emu command (converting to tiff images) failed.".into());
-            // }
+            if !status.is_ok() || !status.unwrap_or(ExitStatus::default()).success() {
+                // On error, return an error message
+                return Err("Error, non-zero exit status. dcraw_emu command (converting to tiff images) failed.".into());
+            }
 
             index += 1;
         }
