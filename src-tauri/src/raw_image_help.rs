@@ -4,7 +4,7 @@ use std::{
     fs,
 };
 
-/// Converts raw images into .tiff images for front end use. , dcraw: String, pths: Vec<String>
+/// Converts raw images into .tiff images for front end use.
 #[tauri::command]
 pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: Vec<String>) -> Result<Vec<String>, String> {
     // Get app directory
@@ -51,7 +51,7 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
             "-b",
             "1.1",
             "-Z",
-            dir.join(format!("raw{}.tiff", i)).display().to_string().as_str(),
+            dir.join(format!("raw_to_tiff.tiff")).display().to_string().as_str(),
             format!("{}", pths[i]).as_str(),
         ]);
         
@@ -60,7 +60,7 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
             return Err("Convert to tiff failed (dcraw_emu)".to_string());
         }
 
-        tiffs.push(dir.join(format!("raw{}.tiff", i)).display().to_string());
+        tiffs.push(dir.join(format!("raw_to_tiff.tiff")).display().to_string());
     }
 
     return Ok(tiffs); 
