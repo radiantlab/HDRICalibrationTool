@@ -36,6 +36,10 @@ export default function Images({
             selected = await open({
                 multiple: true,
                 directory: true,
+                filters: [{
+                    name: 'Image',
+                    extensions: valid_extensions,
+                }],
             });
         } else {
             selected = await open({

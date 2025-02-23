@@ -3,6 +3,7 @@ import { convertFileSrc } from "@tauri-apps/api/tauri";
 import { Extensions } from "./string_functions";
 import { readDir } from '@tauri-apps/api/fs';
 import { invoke } from "@tauri-apps/api/tauri";
+import { open } from "@tauri-apps/api/dialog";
 
 const DEBUG = true;
 
@@ -23,82 +24,69 @@ export default function DeriveViewSettings({
     const [active, setActive] = useState<boolean>(false);
     // original image dimensions
     const [ogSize, setOgSize] = useState<any>([]);
-    // list of images for display
-    const [images, setImages] = useState<File[]>([]);
-    // toggle on/off for image selection view
-    const [select, setSelect] = useState<boolean>(false);
     // asset path for selected image
     const [asset, setAsset] = useState<any>('');
-    // raw images used check
-    const [areRaw, setAreRaw] = useState<boolean>(false);
     
     const [check, setCheck] = useState<any>('');
 
-    let selected: any[] = [];
+    let selected: any | any[] = [];
 
     /**
-     * Retrive files/directories the user selected from the Image Selection
-     * of the application. Set 'select' to true.  
+     * Dialog function to allow user to select an imgage to derive certain view setting values. If
+     * file selected is not in image set, display warning but allow for user to continue if desired. 
      */
-    async function listImages() {
-        setImages([]);
+    async function dialog() {
+        selected = await open({
+            multiple: false,
+            filters: [{
+                name: 'Image',
+                extensions: valid_extensions,
+            }],
+        });
 
-        let list: any[] = [];
-        let rawList: any[] = [];
-
-        // ensure devicePaths not empty before proceeding 
-        if (devicePaths.length < 1) {
-            alert("You must complete the Image Selection section in order to proceed.");
-            return;
-        }
-
-        for (let i = 0; i < devicePaths.length; i++) {
-            let devExt = Extensions(devicePaths[i]).toLowerCase();
-
-            // if image file
-            if (valid_extensions.includes(devExt)) {
-                if (devExt !== "jpeg" && devExt !== "jpg" && devExt !== "tif" && devExt !== "tiff") {
-                    rawList.push(devicePaths[i]);
-                }
-                else list.push(convertFileSrc(devicePaths[i]));
+        if (selected !== null) {
+            if (!valid_extensions.includes(Extensions(selected).toLowerCase())) {
+                alert("Invalid file type. Please only enter valid image types: jpg, jpeg, tif, tiff, or raw image formats.");
+                return;
             }
-            // if directory
-            else {
-                const contents = await readDir(devicePaths[i]);
-                for (let j = 0; j < contents.length; j++) {
-                    let ext = Extensions(contents[j].path).toLowerCase();
-                    // Only push if valid image type 
-                    if (valid_extensions.includes(ext)) {
-                        if (ext !== "jpeg" && ext !== "jpg" && ext !== "tif" && ext !== "tiff") {
-                            rawList.push(contents[j].path);
+
+            let match = false;
+            for (let i = 0; i < devicePaths.length; i++) {
+                let ext = Extensions(devicePaths[0]).toLowerCase();
+                if (!valid_extensions.includes(ext)) {
+                    let contents = await readDir(devicePaths[i]);
+                    for (let j = 0; j < contents.length; j++) {
+                        if (contents[j].path == selected) {
+                            match = true;
+                            break;
                         }
-                        else list.push(convertFileSrc(contents[j].path));
+                    }
+                } else {
+                    if (devicePaths[i] == selected) {
+                        match = true;
                     }
                 }
+                if (match) {
+                    break;
+                }
             }
-        }
-        setCheck(rawList.length);
 
-
-        if (rawList.length > 0) {
-            setAreRaw(true);
-            const raw_dir: any = await invoke<string>("convert_raw_img", {dcraw: dcrawEmuPath, pths: rawList,});
-            for (let i = 0; i < raw_dir.length; i++) {
-                list.push(convertFileSrc(raw_dir[i]));
+            if (!match) {
+                // let proceed = await confirm("Could not match file to selected images. Using an image from a different set will" +
+                //     " result in the wrong derived values. Continue anway?"
+                // );
+                // if (!proceed) return;
+                alert("Could not match selected file to provided LDR images.");
+                return;
             }
-            setAreRaw(false);
+
+            let ext = Extensions(selected).toLowerCase();
+            let tst: any[] = [selected];
+            if (ext !== "jpeg" && ext !== "jpg" && ext !== "tif" && ext !== "tiff") {
+                const tiff: any = await invoke<string>("convert_raw_img", {dcraw: dcrawEmuPath, pths: tst,});
+                onSelected(convertFileSrc(tiff[0]));
+            } else onSelected(convertFileSrc(selected));
         }
-
-        // if list is empty 
-        if (list.length < 1) {
-            alert("Unable to retrieve images.");
-            return;
-        }
-
-        selected = list;
-
-        setImages(selected);
-        setSelect(true);
     }
 
     /**
@@ -106,7 +94,7 @@ export default function DeriveViewSettings({
      * with target image. 
      * @param im selected image file
      */
-    function onSelected(im: string, idx: number) {
+    function onSelected(im: string) {
         setAsset(im);
 
         const image = new Image();
@@ -162,7 +150,6 @@ export default function DeriveViewSettings({
         xp = ev.clientX;
         yp = ev.clientY;
         const mover = document.getElementById('mover');
-        const canv = document.querySelector('canvas');
         const lens = document.getElementById('lens');
 
         const ig_elm = document.getElementById('img');
@@ -172,9 +159,8 @@ export default function DeriveViewSettings({
             mover.style.cursor = 'grabbing';
             mover.onmousemove = handleMoveDrag; 
             mover.onmouseup = handleMoveUp;
-            window.onmouseup = handleMoveUp;
             window.onmousemove = handleMoveDrag;
-            // lens.onmousedown = null;
+            window.onmouseup = handleMoveUp;
         }
     };
 
@@ -191,9 +177,8 @@ export default function DeriveViewSettings({
             mover.style.cursor = 'grab';
             mover.onmousemove = null;
             mover.onmouseup = null;
-            window.onmouseup = null;
             window.onmousemove = null;
-            // lens.onmousedown = handleResizeDown;
+            window.onmouseup = null;
         }
     };
 
@@ -230,17 +215,14 @@ export default function DeriveViewSettings({
         xp = ev.clientX;
         yp = ev.clientY;
         const lens = document.getElementById('lens'); 
-        const mover = document.getElementById('mover');
-
         const ig_elm = document.getElementById('img');
-        if (lens && ig_elm && mover) {
+        if (lens && ig_elm) {
             const rec = ig_elm.getBoundingClientRect();
             setBounds([rec.left, rec.right, rec.top, rec.bottom]);
             lens.onmousemove = handleResizeDrag; 
             window.onmousemove = handleResizeDrag;
             lens.onmouseup = handleResizeUp; 
             window.onmouseup = handleResizeUp;
-            // mover.onmousedown = null;
         }
     };
 
@@ -249,13 +231,11 @@ export default function DeriveViewSettings({
      */
     function handleResizeUp() {
         const lens = document.getElementById('lens');
-        const mover = document.getElementById('mover');
-        if (lens && mover) {
+        if (lens) {
             lens.onmousemove = null; 
             window.onmousemove = null;
             lens.onmouseup = null; 
             window.onmouseup = null;
-            // mover.onmousedown = handleMoveDown;
         }
     };
 
@@ -304,7 +284,6 @@ export default function DeriveViewSettings({
      */
     function handleDone() {
         const lens = document.getElementById('lens');
-        const canv = document.querySelector('canvas');
         const ig_elm = document.getElementById('img');
         if (lens && ig_elm) {
             let l_rect = lens.getBoundingClientRect(), i_rect = ig_elm.getBoundingClientRect();
@@ -337,61 +316,24 @@ export default function DeriveViewSettings({
         }
     };
 
-    function handleCancel() {
-        setActive(false);
-        const canv = document.querySelector('canvas');
-        if (canv) document.getElementById('hold')?.removeChild(canv);
-    }
-
     function handleReset() {
         const lens = document.getElementById('lens');
         if (lens) {
             lens.style.width = '100px';
             lens.style.height = '100px';
-            lens.style.left = bounds[0] - bounds[4]/2 + 'px';
-            lens.style.top = bounds[2] - bounds[5]/2 + 'px';
+            lens.style.left = bounds[0] + 'px';
+            lens.style.top = bounds[2] + 'px';
         }
     }
 
     return (
         <div>
             <button 
-                onClick={listImages}
+                onClick={dialog}
                 className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-1 px-2 border-2 border-gray-600 rounded h-fit my-[10px]"
             >
                 Derive From Image (Optional)
             </button>
-            {areRaw && (
-                <div>*Raw images may take longer to display than other image types*</div>
-            )}
-            {select && (
-                <div className="space-x-5">
-                    <div className="flex flex-wrap">
-                        {images.map((im: any, index: number) => (
-                            <div className="m-[5px]">
-                                <img
-                                    src={String(im)}
-                                    alt=""
-                                    width={100}
-                                    height={100}
-                                />
-                                <div
-                                    onClick={() => onSelected(String(im), index)}
-                                    className="text-center cursor-pointer"
-                                >
-                                    Select
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    <button 
-                        onClick={() => {setSelect(false)}}
-                        className="font-semibold bg-gray-200 hover:bg-gray-300 py-1 px-2 text-gray-800 border-2 border-gray-500 rounded h-fit my-[10px]"
-                    >
-                        Cancel
-                    </button>
-                </div>
-            )}
             {active && (
                 <div className="flex flex-col space-x-5">
                     <div id="hold" className="">
@@ -418,7 +360,7 @@ export default function DeriveViewSettings({
                                 +
                             </div>
                         </div>
-                        <img src={asset} alt="" id="img" width={600} height={600} />
+                        <img src={asset} alt="" id="img" width={650} height={650} />
                     </div>
                     <div className="flex flex-row justify-center item-center space-x-5 pt-5">
                         <button
@@ -442,7 +384,6 @@ export default function DeriveViewSettings({
                     </div>
                 </div>
             )}
-            <div>{ogSize + ''}</div>
         </div>
     )
 }
