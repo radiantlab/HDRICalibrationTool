@@ -38,9 +38,6 @@ export default function Navigation() {
         <Link href="/home-page" className={`flex items-center justify-center min-w-[180px] h-full p-2 cursor-pointer ${pathname === "/home-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
           Image Configuration
         </Link>
-        <Link href="/usability-page" className={`flex items-center justify-center min-w-[180px] h-full  p-2 cursor-pointer ${pathname === "/usability-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
-          Usability
-        </Link>
         <Link href="/settings-page" className={`flex items-center justify-center min-w-[180px] h-full  p-2 cursor-pointer ${pathname === "/settings-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
           Settings
         </Link>
