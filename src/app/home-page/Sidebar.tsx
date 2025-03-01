@@ -143,7 +143,7 @@ export default function Sidebar({
               }
             />
           )}
-          <button
+          {/* <button
             className="w-max bg-gray-400 hover:bg-gray-500 text-gray-800 font-semibold py-1 px-14 border-gray-400 rounded"
             onClick={() => setShowSettings(!showSettings)}
           >
@@ -158,7 +158,7 @@ export default function Sidebar({
               handleChange={handleSettingsChange}
               toggleDialog={() => setShowSettings(!showSettings)}
             />
-          )}
+          )} */}
           <button
             onClick={handleGenerateHDRImage}
             className="w-max bg-osu-beaver-orange hover:bg-osu-luminance text-white font-semibold py-1 px-2 border-gray-400 rounded"

@@ -7,12 +7,15 @@ import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import Sidebar from "./Sidebar";
 import Response_and_correction from "./response_and_correction";
 import Progress from "./progress";
+import { useSettingsStore } from "../stores/SettingsStore";
 
 const DEBUG = true;
 
 const fakePipeline = false;
 
 export default function Home() {
+  const { settings, setSettings } = useSettingsStore();
+
   // Get default binary paths to populate settings fields based on OS
   useEffect(() => {
     let osPlatform = "";
@@ -52,7 +55,7 @@ export default function Home() {
       .catch(() => {
         console.error;
       });
-  }, []);
+  }, [setSettings]);
 
   // Holds the fisheye coordinates and view settings
   const [viewSettings, setViewSettings] = useState({
@@ -84,19 +87,11 @@ export default function Home() {
   const [nd_correctionPaths, set_nd_correctionPaths] = useState<string>("");
   const [cf_correctionPaths, set_cf_correctionPaths] = useState<string>("");
 
-  const [settings, setSettings] = useState({
-    radiancePath: "",
-    hdrgenPath: "",
-    dcrawEmuPath: "",
-    outputPath: "",
-  });
-
   // Used to disable the save button when no changes have been made to settings
   const [saveDisabled, setSaveDisabled] = useState(true);
 
   const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const updatedSettings = JSON.parse(JSON.stringify(settings));
-    updatedSettings[event.currentTarget.name] = event.currentTarget.value;
+    const updatedSettings = { ...settings, [event.currentTarget.name]: event.currentTarget.value };
     setSettings(updatedSettings);
     setSaveDisabled(false);
   };
@@ -113,8 +108,7 @@ export default function Home() {
   const handleViewSettingsChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const updatedViewSettings = JSON.parse(JSON.stringify(viewSettings));
-    updatedViewSettings[event.currentTarget.name] = event.currentTarget.value;
+    const updatedViewSettings = { ...viewSettings, [event.currentTarget.name]: event.currentTarget.value };
     setViewSettings(updatedViewSettings);
   };
 
