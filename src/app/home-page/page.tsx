@@ -4,64 +4,21 @@ import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import Images from "./images";
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
-import Sidebar from "./Sidebar";
+import ButtonBar from "./button-bar";
 import Response_and_correction from "./response_and_correction";
 import Progress from "./progress";
 import { exists } from "@tauri-apps/api/fs";
-import { useSettingsStore } from "../stores/SettingsStore";
+import { useSettingsStore } from "../stores/settings-store";
 
 const DEBUG = true;
 
 const fakePipeline = false;
 
 export default function Home() {
-  const { settings, setSettings } = useSettingsStore();
-
-  // Get default binary paths to populate settings fields based on OS
-  useEffect(() => {
-    let osPlatform = "";
-    // Make a call to the backend to get OS platform and set Radiance path
-    invoke<string>("query_os_platform", {})
-      .then(async (platform: any) => {
-        if (DEBUG) {
-          console.log("OS platform successfully queried:", platform);
-        }
-        // Default Radiance path for macOS and Linux
-        let radianceDefaultPath = "/usr/local/radiance/bin";
-        // If platform is windows, update default Radiance path
-        if (osPlatform === "windows") {
-          radianceDefaultPath = "C:\\Radiance\\bin";
-        }
-
-        // Get the saved paths to binaries and update settings
-        const contents = await invoke<string>("read_binary_paths", {});
-        let contentsObject;
-        if (contents) {
-          contentsObject = JSON.parse(contents);
-        } else {
-          contentsObject = { hdrgenpath: "", dcrawemupath: "" };
-        }
-        setSettings({
-          radiancePath: radianceDefaultPath,
-          hdrgenPath: contentsObject.hdrgenpath,
-          dcrawEmuPath: contentsObject.dcrawemupath,
-          outputPath: await invoke("get_default_output_path"), // queries backend for suggested place to store files
-        });
-        if (!contentsObject.hdrgenpath || !contentsObject.dcrawemupath) {
-          alert(
-            "Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images."
-          );
-        }
-      })
-      .catch(() => {
-        console.error;
-      });
-  }, [setSettings]);
+  const { settings } = useSettingsStore();
 
   // Holds the fisheye coordinates and view settings
   const [viewSettings, setViewSettings] = useState({
-    // xres: "",
-    // yres: "",
     diameter: "",
     xleft: "",
     ydown: "",
@@ -77,7 +34,7 @@ export default function Home() {
 
   // PATH AND FILE INFORMATION
 
-  // const [imgDirs, setImgDirs] = useState<any[]>([]);
+// const [imgDirs, setImgDirs] = useState<any[]>([]);
   let imgDirs: any | any[] = [];
   // Holds the file paths for the backend
   const [devicePaths, setDevicePaths] = useState<any[]>([]);
@@ -87,15 +44,6 @@ export default function Home() {
   const [v_correctionPaths, set_v_correctionPaths] = useState<string>("");
   const [nd_correctionPaths, set_nd_correctionPaths] = useState<string>("");
   const [cf_correctionPaths, set_cf_correctionPaths] = useState<string>("");
-
-  // Used to disable the save button when no changes have been made to settings
-  const [saveDisabled, setSaveDisabled] = useState(true);
-
-  const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const updatedSettings = { ...settings, [event.currentTarget.name]: event.currentTarget.value };
-    setSettings(updatedSettings);
-    setSaveDisabled(false);
-  };
 
   // Reset progress
   function ResetProgress() {
@@ -275,8 +223,6 @@ export default function Home() {
       diameter: config.diameter,
       xleft: config.xleft,
       ydown: config.ydown,
-      // xres: viewSettings.xres,
-      // yres: viewSettings.yres,
       targetRes: config.target_res,
       vh: config.vh,
       vv: config.vv,
@@ -285,25 +231,8 @@ export default function Home() {
 
   return (
     <div className="bg-white text-black grid grid-cols-4 min-h-screen">
-      <div className="col-span-1 bg-gray-300">
-        <Sidebar
-          responsePaths={responsePaths}
-          fe_correctionPaths={fe_correctionPaths}
-          v_correctionPaths={v_correctionPaths}
-          nd_correctionPaths={nd_correctionPaths}
-          cf_correctionPaths={cf_correctionPaths}
-          viewSettings={viewSettings}
-          setConfig={setConfig}
-          settings={settings}
-          setSettings={setSettings}
-          saveDisabled={saveDisabled}
-          setSaveDisabled={setSaveDisabled}
-          handleSettingsChange={handleSettingsChange}
-          handleGenerateHDRImage={handleGenerateHDRImage}
-        />
-      </div>
-      <main className="col-span-3 p-4">
-        <h1 className="text-2xl font-bold mb-5 pt-10">Image Configuration</h1>
+      <main className="col-span-4 p-8 mb-10">
+        <h1 className="text-2xl font-bold mb-5">Image Configuration</h1>
         <Progress
           showProgress={showProgress}
           fakePipeline={fakePipeline}
@@ -333,6 +262,16 @@ export default function Home() {
           />
         </div>
       </main>
+      <ButtonBar
+        responsePaths={responsePaths}
+        fe_correctionPaths={fe_correctionPaths}
+        v_correctionPaths={v_correctionPaths}
+        nd_correctionPaths={nd_correctionPaths}
+        cf_correctionPaths={cf_correctionPaths}
+        viewSettings={viewSettings}
+        setConfig={setConfig}
+        handleGenerateHDRImage={handleGenerateHDRImage}
+      />
     </div>
   );
 }
