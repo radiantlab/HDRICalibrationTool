@@ -1,33 +1,37 @@
 "use client";
 
-import React, { useState } from "react";
-import { useSettingsStore } from "../stores/SettingsStore";
+import React, { useState, useEffect } from "react";
+import { useSettingsStore } from "../stores/settings-store";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 
 export default function SettingsPage() {
   const { settings, setSettings } = useSettingsStore();
+  const [localSettings, setLocalSettings] = useState(settings);
   const [saveDisabled, setSaveDisabled] = useState(true);
   const [experienceLevel, setExperienceLevel] = useState("standard");
   const [consoleInput, setConsoleInput] = useState("");
 
-  // PLACEHOLDER FOR ACTUAL CONSOLE COMMAND
+  useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings]);
+
   const handleRunCommand = () => {
     console.log("Command:", consoleInput);
   };
 
   const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const updatedSettings = {
-      ...settings,
+      ...localSettings,
       [event.currentTarget.name]: event.currentTarget.value,
     };
-    setSettings(updatedSettings);
+    setLocalSettings(updatedSettings);
     setSaveDisabled(false);
   };
 
   const handleUpdateOutputPath = (directory: string) => {
-    const updatedSettings = { ...settings, outputPath: directory };
-    setSettings(updatedSettings);
+    const updatedSettings = { ...localSettings, outputPath: directory };
+    setLocalSettings(updatedSettings);
   };
 
   const dialog = async () => {
@@ -41,37 +45,19 @@ export default function SettingsPage() {
   };
 
   const savePaths = () => {
+    setSettings(localSettings);
     invoke("write_binary_paths", {
-      hdrgenPath: settings.hdrgenPath,
-      dcrawEmuPath: settings.dcrawEmuPath,
+      hdrgenPath: localSettings.hdrgenPath,
+      dcrawEmuPath: localSettings.dcrawEmuPath,
     }).catch(() => console.error);
     setSaveDisabled(true);
+    alert("Changes saved.");
   };
 
   return (
     <div className="bg-white text-black grid grid-cols-4 min-h-screen">
-      <div className="col-span-1 bg-gray-300">
-        <div className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
-          <div className="flex flex-col pt-24 gap-3 items-center">
-            <button
-              type="button"
-              className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
-              onClick={savePaths}
-              disabled={saveDisabled}
-            >
-              Save
-            </button>
-            <button
-              type="button"
-              className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-      <main className="col-span-3 p-4">
-        <h1 className="text-2xl font-bold mb-5 pt-10">Settings</h1>
+      <main className="col-span-4 p-8 mb-10">
+        <h1 className="text-2xl font-bold mb-5">Settings</h1>
         <div>
           <h2 id="external_utilities" className="my-6 text-2xl">
             External Utilities
@@ -88,7 +74,7 @@ export default function SettingsPage() {
                 id="radiancePath"
                 name="radiancePath"
                 type="text"
-                value={settings.radiancePath}
+                value={localSettings.radiancePath}
                 onChange={handleSettingsChange}
                 className="flex-grow placeholder:text-right w-max shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
               ></input>
@@ -104,7 +90,7 @@ export default function SettingsPage() {
                 id="hdrgenPath"
                 name="hdrgenPath"
                 type="text"
-                value={settings.hdrgenPath}
+                value={localSettings.hdrgenPath}
                 onChange={handleSettingsChange}
                 className="flex-grow placeholder:text-right w-max shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
               ></input>
@@ -120,7 +106,7 @@ export default function SettingsPage() {
                 id="dcrawEmuPath"
                 name="dcrawEmuPath"
                 type="text"
-                value={settings.dcrawEmuPath}
+                value={localSettings.dcrawEmuPath}
                 onChange={handleSettingsChange}
                 className="flex-grow placeholder:text-right w-max shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
               ></input>
@@ -146,7 +132,7 @@ export default function SettingsPage() {
                 id="outputPathTextbox"
                 name="outputPathTextbox"
                 type="text"
-                value={settings.outputPath}
+                value={localSettings.outputPath}
                 onChange={(e) => handleUpdateOutputPath(e.target.value)}
                 className="placeholder:text-right w-full shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
               ></input>
@@ -202,6 +188,26 @@ export default function SettingsPage() {
           </div>
         </div>
       </main>
+      <div className="fixed bottom-0 left-0 w-full bg-gray-300 flex justify-around py-4">
+        <button
+          type="button"
+          className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
+        >
+          Clear Changes
+        </button>
+        <button
+          type="button"
+          className={`w-max font-semibold py-1 px-2 border-gray-400 rounded ${
+            saveDisabled
+              ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+              : "bg-osu-beaver-orange hover:bg-osu-luminance text-white"
+          }`}
+          onClick={savePaths}
+          disabled={saveDisabled}
+        >
+          Apply Changes
+        </button>
+      </div>
     </div>
   );
 }

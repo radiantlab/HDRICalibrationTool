@@ -2,7 +2,6 @@ import React from "react";
 import { useState, useEffect } from "react";
 import SaveConfigDialog from "./save-config-dialog";
 import LoadConfigDialog from "./load-config-dialog";
-import Settings from "./settings";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/tauri";
 
@@ -14,22 +13,15 @@ export default function Sidebar({
   cf_correctionPaths,
   viewSettings,
   setConfig,
-  settings,
-  setSettings,
-  saveDisabled,
-  setSaveDisabled,
-  handleSettingsChange,
   handleGenerateHDRImage,
-  setView,
 }: any) {
   const [showSaveConfigDialog, setShowSaveConfigDialog] =
     useState<boolean>(false);
   const [showLoadConfigDialog, setShowLoadConfigDialog] =
     useState<boolean>(false);
-  const [showSettings, setShowSettings] = useState<boolean>(false);
-  // const [appVersion, setAppVersion] = useState<string>("");
-  // const [appName, setAppName] = useState<string>("");
-  // const [tauriVersion, setTauriVersion] = useState<string>("");
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [appName, setAppName] = useState<string>("");
+  const [tauriVersion, setTauriVersion] = useState<string>("");
   const [savedConfigs, setSavedConfigs] = useState<[]>([]);
 
   // Loads the saved configurations from app config dir using a backend command
@@ -41,14 +33,14 @@ export default function Sidebar({
 
   useEffect(() => {
     // Retrieves app name, app version, and tauri version from Tauri API
-    // async function fetchAppInfo() {
-    //   setAppVersion(await getVersion());
-    //   setAppName(await getName());
-    //   setTauriVersion(await getTauriVersion());
-    // }
+    async function fetchAppInfo() {
+      setAppVersion(await getVersion());
+      setAppName(await getName());
+      setTauriVersion(await getTauriVersion());
+    }
 
     getSavedConfigs();
-    //fetchAppInfo();
+    fetchAppInfo();
   }, []);
 
   // TODO: Make sidebar generic so it can be applied in other tabs without needing new components
@@ -56,46 +48,6 @@ export default function Sidebar({
   return (
     <div>
       <div className="pt-10 bg-gray-300 fixed left-0 w-1/4 h-full flex flex-col">
-        <nav>
-          <div className="grid grid-cols-1 w-full">
-            <a
-              href="#image_selection"
-              className="flex pl-5 p-2 hover:bg-gray-400"
-            >
-              Image Selection
-            </a>
-            <a
-              href="#response"
-              className="flex pl-5 p-2 hover:bg-gray-400"
-            >
-              Response File
-            </a>
-            <a
-              href="#c_r_v"
-              className="flex pl-5 p-2 hover:bg-gray-400"
-            >
-              Cropping, Resizing, and View Settings
-            </a>
-            <a
-              href="#v"
-              className="flex pl-5 p-2 hover:bg-gray-400"
-            >
-              Vignetting Correction
-            </a>
-            <a
-              href="#nd"
-              className="flex pl-5 p-2 hover:bg-gray-400"
-            >
-              Neutral Density Correction
-            </a>
-            <a
-              href="#cf"
-              className="flex pl-5 p-2 hover:bg-gray-400"
-            >
-              Calibration Factor Correction
-            </a>
-          </div>
-        </nav>
         <div className="flex flex-col pt-24 gap-3 items-center">
           <button
             onClick={() => setShowSaveConfigDialog((prev: any) => !prev)}
@@ -143,32 +95,12 @@ export default function Sidebar({
               }
             />
           )}
-          {/* <button
-            className="w-max bg-gray-400 hover:bg-gray-500 text-gray-800 font-semibold py-1 px-14 border-gray-400 rounded"
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            Settings
-          </button>
-          {showSettings && (
-            <Settings
-              settings={settings}
-              setSettings={setSettings}
-              saveDisabled={saveDisabled}
-              setSaveDisabled={setSaveDisabled}
-              handleChange={handleSettingsChange}
-              toggleDialog={() => setShowSettings(!showSettings)}
-            />
-          )} */}
           <button
             onClick={handleGenerateHDRImage}
             className="w-max bg-osu-beaver-orange hover:bg-osu-luminance text-white font-semibold py-1 px-2 border-gray-400 rounded"
           >
             Generate HDR Image
           </button>
-        </div>
-        <div className="mb-3 ml-5 mt-3 text-xs flex-grow flex flex-col justify-end">
-          {/* <p>App version: {appVersion}</p>
-          <p>Tauri version: {tauriVersion}</p> */}
         </div>
       </div>
     </div>
