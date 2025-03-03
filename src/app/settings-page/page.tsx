@@ -71,8 +71,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="bg-white text-black grid grid-cols-4 min-h-screen">
-      <main className="col-span-4 p-8 mb-10">
+   <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
+      <main className="bg-white col-span-4 m-8 p-5 mb-10 rounded">
         <h1 className="text-2xl font-bold mb-5">Settings</h1>
         <h2 id="external_utilities" className="my-6 text-2xl">
           External Utilities

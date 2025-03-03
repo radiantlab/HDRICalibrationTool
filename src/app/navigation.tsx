@@ -34,11 +34,11 @@ export default function Navigation() {
         />
         <h1 className="text-l font-bold">{appName}</h1>
       </div>
-      <div id="link-container" className="border-l border-gray-300 flex items-center justify-start h-full w-full pr-4 col-span-3 gap-0">
-        <Link href="/home-page" className={`flex items-center justify-center min-w-[180px] h-full p-2 cursor-pointer ${pathname === "/home-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
+      <div id="link-container" className="border-l border-gray-300 flex items-center justify-around h-full w-full pr-4 col-span-3 gap-0">
+        <Link href="/home-page" className={`flex items-center justify-center w-full h-full p-2 cursor-pointer ${pathname === "/home-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
           Image Configuration
         </Link>
-        <Link href="/settings-page" className={`flex items-center justify-center min-w-[180px] h-full  p-2 cursor-pointer ${pathname === "/settings-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
+        <Link href="/settings-page" className={`flex items-center justify-center w-full h-full  p-2 cursor-pointer ${pathname === "/settings-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
           Settings
         </Link>
       </div>
