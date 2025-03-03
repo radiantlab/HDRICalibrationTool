@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
+import { useConfigStore } from "../stores/config-store";
 
 // Modal used for loading a saved configuration
 export default function LoadConfigDialog({
-  setConfig,
   savedConfigs,
   getSavedConfigs,
   toggleDialog,
 }: any) {
+  const { setConfig } = useConfigStore();
+
   const defaultSelectMessage = "-- select a configuration --";
 
   const [configName, setConfigName] = useState<string>(defaultSelectMessage);
@@ -30,7 +32,21 @@ export default function LoadConfigDialog({
 
       // Load saved config and close dialog
       if (selectedConfig) {
-        setConfig(selectedConfig);
+        setConfig({
+          responsePaths: selectedConfig.response_paths,
+          fe_correctionPaths: selectedConfig.fe_correction_paths,
+          v_correctionPaths: selectedConfig.v_correction_paths,
+          nd_correctionPaths: selectedConfig.nd_correction_paths,
+          cf_correctionPaths: selectedConfig.cf_correction_paths,
+          viewSettings: {
+            diameter: selectedConfig.diameter,
+            xleft: selectedConfig.xleft,
+            ydown: selectedConfig.ydown,
+            targetRes: selectedConfig.target_res,
+            vh: selectedConfig.vh,
+            vv: selectedConfig.vv,
+          },
+        });
         toggleDialog();
       }
     }

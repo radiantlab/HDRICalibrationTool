@@ -1,9 +1,9 @@
 import { invoke } from "@tauri-apps/api/tauri";
 import { useState } from "react";
+import { useConfigStore } from "../stores/config-store";
 
 // Modal used for saving the currently entered configuration to localStorage
 export default function SaveConfigDialog({
-  config,
   savedConfigs,
   setSavedConfigs,
   toggleDialog,
@@ -11,8 +11,31 @@ export default function SaveConfigDialog({
   const [configName, setConfigName] = useState<string>("");
   const [showError, setShowError] = useState<boolean>(false);
 
+  const {
+    viewSettings,
+    responsePaths,
+    fe_correctionPaths,
+    v_correctionPaths,
+    nd_correctionPaths,
+    cf_correctionPaths,
+  } = useConfigStore();
+
   // Saves configuration to app's config directory using backend command
   async function saveConfig() {
+    const config: any = {
+      response_paths: responsePaths,
+      fe_correction_paths: fe_correctionPaths,
+      v_correction_paths: v_correctionPaths,
+      nd_correction_paths: nd_correctionPaths,
+      cf_correction_paths: cf_correctionPaths,
+      diameter: viewSettings.diameter,
+      xleft: viewSettings.xleft,
+      ydown: viewSettings.ydown,
+      target_res: viewSettings.targetRes,
+      vh: viewSettings.vh,
+      vv: viewSettings.vv,
+    };
+
     let updatedSavedConfigs = savedConfigs;
     if (configName.trim() != "") {
       // If name field is not empty

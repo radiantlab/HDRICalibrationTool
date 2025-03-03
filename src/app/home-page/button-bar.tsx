@@ -3,22 +3,28 @@ import SaveConfigDialog from "./save-config-dialog";
 import LoadConfigDialog from "./load-config-dialog";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/tauri";
+import { useConfigStore } from "../stores/config-store";
 
-export default function ButtonBar({
-  responsePaths,
-  fe_correctionPaths,
-  v_correctionPaths,
-  nd_correctionPaths,
-  cf_correctionPaths,
-  viewSettings,
-  setConfig,
-  handleGenerateHDRImage,
-}: any) {
-  const [showSaveConfigDialog, setShowSaveConfigDialog] = useState<boolean>(false);
-  const [showLoadConfigDialog, setShowLoadConfigDialog] = useState<boolean>(false);
+export default function ButtonBar({ handleGenerateHDRImage }: any) {
+  const {
+    viewSettings,
+    responsePaths,
+    fe_correctionPaths,
+    v_correctionPaths,
+    nd_correctionPaths,
+    cf_correctionPaths,
+    setConfig,
+  } = useConfigStore();
+
+  const [showSaveConfigDialog, setShowSaveConfigDialog] =
+    useState<boolean>(false);
+  const [showLoadConfigDialog, setShowLoadConfigDialog] =
+    useState<boolean>(false);
+
   const [appVersion, setAppVersion] = useState<string>("");
   const [appName, setAppName] = useState<string>("");
   const [tauriVersion, setTauriVersion] = useState<string>("");
+
   const [savedConfigs, setSavedConfigs] = useState<[]>([]);
 
   // Loads the saved configurations from app config dir using a backend command
@@ -56,28 +62,14 @@ export default function ButtonBar({
       </button>
       {showSaveConfigDialog && (
         <SaveConfigDialog
-          config={{
-            response_paths: responsePaths,
-            fe_correction_paths: fe_correctionPaths,
-            v_correction_paths: v_correctionPaths,
-            nd_correction_paths: nd_correctionPaths,
-            cf_correction_paths: cf_correctionPaths,
-            diameter: viewSettings.diameter,
-            xleft: viewSettings.xleft,
-            ydown: viewSettings.ydown,
-            target_res: viewSettings.targetRes,
-            vh: viewSettings.vh,
-            vv: viewSettings.vv,
-          }}
           savedConfigs={savedConfigs}
           setSavedConfigs={setSavedConfigs}
           toggleDialog={() => setShowSaveConfigDialog(!showSaveConfigDialog)}
         />
       )}
-      
+
       {showLoadConfigDialog && (
         <LoadConfigDialog
-          setConfig={setConfig}
           savedConfigs={savedConfigs}
           getSavedConfigs={getSavedConfigs}
           toggleDialog={() => setShowLoadConfigDialog(!showLoadConfigDialog)}
