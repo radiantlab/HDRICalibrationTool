@@ -1,6 +1,6 @@
 import { invoke } from "@tauri-apps/api/tauri";
 import { useState } from "react";
-import { useConfigStore } from "../stores/config-store";
+import { useConfigStore } from "../../stores/config-store";
 
 // Modal used for saving the currently entered configuration to localStorage
 export default function SaveConfigDialog({

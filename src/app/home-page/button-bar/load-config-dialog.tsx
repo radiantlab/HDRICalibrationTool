@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useConfigStore } from "../stores/config-store";
+import { useConfigStore } from "../../stores/config-store";
 
 // Modal used for loading a saved configuration
 export default function LoadConfigDialog({
