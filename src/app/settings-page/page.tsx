@@ -72,7 +72,7 @@ export default function SettingsPage() {
 
   return (
    <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
-      <main className="bg-white col-span-4 m-8 p-5 mb-10 rounded">
+      <main className="bg-white col-span-4 m-8 mt-0 p-5 mb-10 border-l border-r border-gray-400">
         <h1 className="text-2xl font-bold mb-5">Settings</h1>
         <h2 id="external_utilities" className="my-6 text-2xl">
           External Utilities
@@ -216,7 +216,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </main>
-      <div className="fixed bottom-0 left-0 w-full bg-gray-300 flex justify-around py-4">
+      <div className="fixed bottom-0 left-0 w-full bg-gray-300 flex justify-around py-4 border-t border-gray-400">
         <button
           type="button"
           className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"

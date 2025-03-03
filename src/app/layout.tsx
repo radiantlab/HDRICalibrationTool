@@ -21,7 +21,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <Initialization />
         <Navigation />
-        <div className="pt-20">{children}</div>
+        <div>{children}</div>
       </body>
     </html>
   )

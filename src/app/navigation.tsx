@@ -4,41 +4,37 @@ import React from "react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
+import { getName } from "@tauri-apps/api/app";
 
 export default function Navigation() {
-  const [appVersion, setAppVersion] = useState<string>("");
   const [appName, setAppName] = useState<string>("HDRI Calibration Interface");
-  const [tauriVersion, setTauriVersion] = useState<string>("");
   const pathname = usePathname();
 
   useEffect(() => {
-    // Retrieves app name, app version, and tauri version from Tauri API
+    // Retrieves app name from Tauri API
     async function fetchAppInfo() {
-      setAppVersion(await getVersion());
       setAppName(await getName());
-      setTauriVersion(await getTauriVersion());
     }
-
     fetchAppInfo();
-    console.log("App Name:", appName);
   }, []);
 
   return (
-    <nav className="bg-gray-800 h-20 text-white grid grid-cols-4 fixed top-0 left-0 w-full z-10">
-      <div id="logo" className="flex items-center pl-4 col-span-1">
-        <img
-          src="SunApertureOrange.png"
-          className="object-contain h-10 mr-3"
-          alt="Logo"
-        />
-        <h1 className="text-l font-bold">{appName}</h1>
+    <nav className="bg-gray-300 text-black w-full z-10">
+      <div className="fixed h-20 top-0 left-0 w-full bg-gray-300 flex items-center justify-between p-4 border-b border-gray-400">
+        <div id="logo" className="flex items-center">
+          <img
+            src="SunApertureOrange.png"
+            className="object-contain h-10 mr-3"
+            alt="Logo"
+          />
+          <h1 className="text-2xl font-bold">{appName}</h1>
+        </div>
       </div>
-      <div id="link-container" className="border-l border-gray-300 flex items-center justify-around h-full w-full pr-4 col-span-3 gap-0">
-        <Link href="/home-page" className={`flex items-center justify-center w-full h-full p-2 cursor-pointer ${pathname === "/home-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
+      <div id="link-container" className="flex items-center justify-around h-12 ml-8 mr-8 mt-20 border-l border-r border-gray-400">
+        <Link href="/home-page" className={`flex items-center justify-center w-full h-full p-2 cursor-pointer ${pathname === "/home-page" ? "bg-white" : "hover:bg-gray-200"}`}>
           Image Configuration
         </Link>
-        <Link href="/settings-page" className={`flex items-center justify-center w-full h-full  p-2 cursor-pointer ${pathname === "/settings-page" ? "bg-gray-700" : ""} hover:bg-gray-600`}>
+        <Link href="/settings-page" className={`flex items-center justify-center w-full h-full p-2 cursor-pointer ${pathname === "/settings-page" ? "bg-white" : "hover:bg-gray-200"}`}>
           Settings
         </Link>
       </div>

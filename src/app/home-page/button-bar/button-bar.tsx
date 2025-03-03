@@ -11,19 +11,21 @@ export default function ButtonBar({ handleGenerateHDRImage }: any) {
     useState<boolean>(false);
 
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-gray-300 flex justify-around py-4">
-      <button
-        onClick={() => setShowLoadConfigDialog(!showLoadConfigDialog)}
-        className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
-      >
-        Load Configuration
-      </button>
-      <button
-        onClick={() => setShowSaveConfigDialog(!showSaveConfigDialog)}
-        className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
-      >
-        Save Configuration
-      </button>
+    <div className="fixed bottom-0 left-0 w-full bg-gray-300 flex justify-around py-4 border-t border-gray-400">
+      <div className="flex gap-10">
+        <button
+          onClick={() => setShowLoadConfigDialog(!showLoadConfigDialog)}
+          className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
+        >
+          Load Configuration
+        </button>
+        <button
+          onClick={() => setShowSaveConfigDialog(!showSaveConfigDialog)}
+          className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
+        >
+          Save Configuration
+        </button>
+      </div>
       {showSaveConfigDialog && (
         <SaveConfigDialog
           toggleDialog={() => setShowSaveConfigDialog(!showSaveConfigDialog)}
