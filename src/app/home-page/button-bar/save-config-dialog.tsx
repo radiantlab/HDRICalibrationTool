@@ -4,8 +4,8 @@ import { useConfigStore } from "../../stores/config-store";
 
 // Modal used for saving the currently entered configuration to localStorage
 export default function SaveConfigDialog({
-  savedConfigs,
-  setSavedConfigs,
+  //savedConfigs,
+  //setSavedConfigs,
   toggleDialog,
 }: any) {
   const [configName, setConfigName] = useState<string>("");
@@ -19,6 +19,12 @@ export default function SaveConfigDialog({
     nd_correctionPaths,
     cf_correctionPaths,
   } = useConfigStore();
+
+  async function getSavedConfigs(): Promise<any> {
+      const json: string = await invoke("get_saved_configs");
+      const configs = JSON.parse(json).configurations;
+      return configs;
+    }
 
   // Saves configuration to app's config directory using backend command
   async function saveConfig() {
@@ -36,6 +42,7 @@ export default function SaveConfigDialog({
       vv: viewSettings.vv,
     };
 
+    const savedConfigs = await getSavedConfigs();
     let updatedSavedConfigs = savedConfigs;
     if (configName.trim() != "") {
       // If name field is not empty
@@ -61,7 +68,7 @@ export default function SaveConfigDialog({
       }
 
       // Save configuration locally
-      setSavedConfigs(updatedSavedConfigs);
+      //setSavedConfigs(updatedSavedConfigs);
 
       // Save configuration to the file system for retrieval later
       invoke("save_config", config)

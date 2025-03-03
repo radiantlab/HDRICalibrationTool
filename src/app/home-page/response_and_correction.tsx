@@ -5,11 +5,6 @@ import { useConfigStore } from "../stores/config-store";
 
 export default function Response_and_correction() {
   const {
-    viewSettings,
-    progressButton,
-    processError,
-    showProgress,
-    devicePaths,
     responsePaths,
     fe_correctionPaths,
     v_correctionPaths,

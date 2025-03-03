@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useConfigStore } from "../../stores/config-store";
+import { invoke } from "@tauri-apps/api/tauri";
 
 // Modal used for loading a saved configuration
 export default function LoadConfigDialog({
-  savedConfigs,
-  getSavedConfigs,
+  // savedConfigs,
+  // getSavedConfigs,
   toggleDialog,
 }: any) {
   const { setConfig } = useConfigStore();
@@ -13,9 +14,15 @@ export default function LoadConfigDialog({
 
   const [configName, setConfigName] = useState<string>(defaultSelectMessage);
   const [showError, setShowError] = useState<boolean>(false);
+  const [savedConfigs, setSavedConfigs] = useState<[]>([]);
 
   useEffect(() => {
-    getSavedConfigs();
+    const fetchConfigs = async () => {
+      const json: string = await invoke("get_saved_configs");
+      const configs = JSON.parse(json).configurations;
+      setSavedConfigs(configs);
+    }
+    fetchConfigs();
   }, []);
 
   // Loads configuration with the specified name
@@ -26,7 +33,7 @@ export default function LoadConfigDialog({
     }
     // Otherwise look up the selected config
     else {
-      let selectedConfig = savedConfigs.find(
+      let selectedConfig: any = savedConfigs.find(
         (config: any) => config.name === configName
       );
 
