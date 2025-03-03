@@ -86,7 +86,7 @@ export default function Settings({
                       htmlFor="raw2hdrPath"
                       className="font-bold block h-full mr-5"
                     >
-                      dcraw_emu path
+                      dcraw_emu path - licensed under LGPL-2.1 - source code can be obtained from https://www.libraw.org/
                     </label>
                     <input
                       id="dcrawEmuPath"

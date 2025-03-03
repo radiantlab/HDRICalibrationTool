@@ -46,7 +46,7 @@ pub fn merge_exposures(
 
     // One command uses Tauri/Rusts built in Command type, the other uses Tauri's sidecar API -> eventually both should use sidecar
     let mut command: Command;
-    let mut sidecar_command: Command;
+    // let mut sidecar_command: Command;
     let dcraw_emu_build_working_directory = env::current_exe().unwrap().parent().unwrap().join("binaries");
 
     // If raw image format other than TIFF, need to first convert them to TIFF to be used by hdrgen
@@ -57,8 +57,7 @@ pub fn merge_exposures(
              * Command is created as sidecar which returns type 'tauri_plugin_shell::process::Command'
              * 'Into::into()' converts this into type 'std::process::Command'
              */
-            sidecar_command = app.shell().sidecar("dcraw_emu").unwrap().into();
-            let sidecar_path = sidecar_command.get_program();
+            // let sidecar_path = sidecar_command.get_program();
             // println!("Sidecar Path: {:?}", sidecar_path);
             // println!("Absolute Exe. Path: {:?}", env::current_exe().unwrap().parent().unwrap().join("binaries"));
             // println!("Absolute Exe. Path: {:?}", dcraw_emu_build_working_directory);
@@ -119,9 +118,21 @@ pub fn merge_exposures(
 
             // println!("Executing sidecar with args: {:?} {:?}", sidecar_command.get_program(), args);
             // sidecar_command.args(args).spawn().expect("Failed to spawn sidecar process");
-            sidecar_command.args(args);
-            sidecar_command.current_dir(&dcraw_emu_build_working_directory); // Set the working directory to find libraw.dll
-            let status: Result<ExitStatus, std::io::Error> = sidecar_command.status();
+            if config_settings.dcraw_emu_path.as_os_str().is_empty() {
+                command = app.shell().sidecar("dcraw_emu").unwrap().into();
+                command.current_dir(&dcraw_emu_build_working_directory); // Set the working directory to find libraw.dll
+                if DEBUG {
+                    let sidecar_path = command.get_program();
+                    println!("Executing bundled sidecar at: {:?}\n", sidecar_path);
+                }
+            } else {
+                if DEBUG {
+                    println!("Overwriting bundled sidecar, running command at: {:?}\n", config_settings.dcraw_emu_path.join("dcraw_emu"));
+                }
+                command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
+            }
+            command.args(args);
+            let status: Result<ExitStatus, std::io::Error> = command.status();
             // let child = sidecar_command.spawn().unwrap();
             // match status {
             //     Ok(status) => println!("Worked: {:?}", status),
