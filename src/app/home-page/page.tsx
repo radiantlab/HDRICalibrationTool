@@ -184,7 +184,7 @@ export default function Home() {
   return (
     <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
       <main className="bg-white col-span-4 m-8 mt-0 p-5 mb-10 border-l border-r border-gray-400">
-        <h1 className="text-2xl font-bold mb-5">Image Configuration</h1>
+        {/* <h1 className="text-2xl font-bold mb-5">Image Configuration</h1> */}
         <Progress fakePipeline={fakePipeline} />
         <Images />
         <div id="c_r_v">

@@ -5,6 +5,7 @@ import { useSettingsStore } from "../stores/settings-store";
 import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
+import SettingsButtonBar from "./settings-button-bar";
 
 export default function SettingsPage() {
   const { settings, setSettings } = useSettingsStore();
@@ -73,7 +74,7 @@ export default function SettingsPage() {
   return (
    <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
       <main className="bg-white col-span-4 m-8 mt-0 p-5 mb-10 border-l border-r border-gray-400">
-        <h1 className="text-2xl font-bold mb-5">Settings</h1>
+        {/* <h1 className="text-2xl font-bold mb-5">Settings</h1> */}
         <h2 id="external_utilities" className="my-6 text-2xl">
           External Utilities
         </h2>
@@ -193,7 +194,7 @@ export default function SettingsPage() {
           />
           <button
             onClick={handleRunCommand}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            className="w-max bg-osu-beaver-orange hover:bg-osu-luminance text-white font-semibold py-1 px-2 border-gray-400 rounded"
           >
             RUN
           </button>
@@ -216,26 +217,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </main>
-      <div className="fixed bottom-0 left-0 w-full bg-gray-300 flex justify-around py-4 border-t border-gray-400">
-        <button
-          type="button"
-          className="w-max bg-gray-600 hover:bg-gray-500 text-gray-300 font-semibold py-1 px-4 border-gray-400 rounded"
-        >
-          Clear Changes
-        </button>
-        <button
-          type="button"
-          className={`w-max font-semibold py-1 px-2 border-gray-400 rounded ${
-            saveDisabled
-              ? "bg-gray-400 text-gray-700 cursor-not-allowed"
-              : "bg-osu-beaver-orange hover:bg-osu-luminance text-white"
-          }`}
-          onClick={savePaths}
-          disabled={saveDisabled}
-        >
-          Apply Changes
-        </button>
-      </div>
+      <SettingsButtonBar saveDisabled={saveDisabled} savePaths={savePaths} />
     </div>
   );
 }
