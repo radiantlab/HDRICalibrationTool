@@ -3,18 +3,9 @@ import SaveConfigDialog from "./save-config-dialog";
 import LoadConfigDialog from "./load-config-dialog";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import { invoke } from "@tauri-apps/api/tauri";
-import { useConfigStore } from "../stores/config-store";
+import { useConfigStore } from "../../stores/config-store";
 
 export default function ButtonBar({ handleGenerateHDRImage }: any) {
-  const {
-    viewSettings,
-    responsePaths,
-    fe_correctionPaths,
-    v_correctionPaths,
-    nd_correctionPaths,
-    cf_correctionPaths,
-    setConfig,
-  } = useConfigStore();
 
   const [showSaveConfigDialog, setShowSaveConfigDialog] =
     useState<boolean>(false);

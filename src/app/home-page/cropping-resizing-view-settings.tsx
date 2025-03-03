@@ -20,20 +20,6 @@ export default function CroppingResizingViewSettings() {
       <h2 className="font-bold pt-5">Cropping, Resizing, and View Settings</h2>
       <div>
         <div className="flex flex-row space-x-5 pt-5">
-          {/* <NumberInput
-            name="xres"
-            value={viewSettings.xres}
-            label="Width (X resolution)"
-            placeholder="pixels"
-            handleChange={handleChange}
-          />
-          <NumberInput
-            name="yres"
-            value={viewSettings.yres}
-            label="Height (Y resolution)"
-            placeholder="pixels"
-            handleChange={handleChange}
-          /> */}
           <NumberInput
             name="diameter"
             value={viewSettings.diameter}

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import Images from "./images";
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
-import ButtonBar from "./button-bar";
+import ButtonBar from "./button-bar/button-bar";
 import Response_and_correction from "./response_and_correction";
 import Progress from "./progress";
 import { exists } from "@tauri-apps/api/fs";
