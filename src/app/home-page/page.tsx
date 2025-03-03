@@ -9,6 +9,7 @@ import Response_and_correction from "./response_and_correction";
 import Progress from "./progress";
 import { exists } from "@tauri-apps/api/fs";
 import { useSettingsStore } from "../stores/settings-store";
+import { useConfigStore } from "../stores/config-store";
 
 const DEBUG = true;
 
@@ -17,49 +18,16 @@ const fakePipeline = false;
 export default function Home() {
   const { settings } = useSettingsStore();
 
-  // Holds the fisheye coordinates and view settings
-  const [viewSettings, setViewSettings] = useState({
-    diameter: "",
-    xleft: "",
-    ydown: "",
-    vv: "",
-    vh: "",
-    targetRes: "1000",
-  });
-
-  // display states
-  const [progressButton, setProgressButton] = useState<boolean>(false);
-  const [processError, setProcessError] = useState<boolean>(false);
-  const [showProgress, setShowProgress] = useState<boolean>(false);
-
-  // PATH AND FILE INFORMATION
-
-// const [imgDirs, setImgDirs] = useState<any[]>([]);
-  let imgDirs: any | any[] = [];
-  // Holds the file paths for the backend
-  const [devicePaths, setDevicePaths] = useState<any[]>([]);
-  const [responsePaths, setResponsePaths] = useState<string>("");
-  // Correction files fe = fish eye, v= vignetting, nd = neutral density, cf = calibration factor
-  const [fe_correctionPaths, set_fe_correctionPaths] = useState<string>("");
-  const [v_correctionPaths, set_v_correctionPaths] = useState<string>("");
-  const [nd_correctionPaths, set_nd_correctionPaths] = useState<string>("");
-  const [cf_correctionPaths, set_cf_correctionPaths] = useState<string>("");
-
-  // Reset progress
-  function ResetProgress() {
-    setShowProgress(false);
-    setProgressButton(false);
-    setProcessError(false);
-  }
-
-  // Update view settings (for cropping, resizing, header editing)
-  // when the user enters updates a number input
-  const handleViewSettingsChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const updatedViewSettings = { ...viewSettings, [event.currentTarget.name]: event.currentTarget.value };
-    setViewSettings(updatedViewSettings);
-  };
+  const {
+    viewSettings,
+    devicePaths,
+    responsePaths,
+    fe_correctionPaths,
+    v_correctionPaths,
+    nd_correctionPaths,
+    cf_correctionPaths,
+    setConfig,
+  } = useConfigStore();
 
   // HARD CODED PATHS FOR TESTING
 
@@ -116,7 +84,7 @@ export default function Home() {
     }
 
     // Progress
-    setShowProgress(true);
+    setConfig({ showProgress: true });
 
     // Call pipeline
     invoke<string>("pipeline", {
@@ -141,13 +109,13 @@ export default function Home() {
       .then((result: any) => console.log("Process finished. Result: ", result))
       .then(() => {
         if (!fakePipeline) {
-          setProgressButton(true);
+          setConfig({ progressButton: true });
         }
       })
       .catch((error: any) => {
         console.error;
         if (!fakePipeline) {
-          setProcessError(true);
+          setConfig({ processError: true });
         }
       });
   };
@@ -213,65 +181,18 @@ export default function Home() {
     };
   }
 
-  function setConfig(config: any) {
-    setResponsePaths(config.response_paths);
-    set_fe_correctionPaths(config.fe_correction_paths);
-    set_v_correctionPaths(config.v_correction_paths);
-    set_nd_correctionPaths(config.nd_correction_paths);
-    set_cf_correctionPaths(config.cf_correction_paths);
-    setViewSettings({
-      diameter: config.diameter,
-      xleft: config.xleft,
-      ydown: config.ydown,
-      targetRes: config.target_res,
-      vh: config.vh,
-      vv: config.vv,
-    });
-  }
-
   return (
     <div className="bg-white text-black grid grid-cols-4 min-h-screen">
       <main className="col-span-4 p-8 mb-10">
         <h1 className="text-2xl font-bold mb-5">Image Configuration</h1>
-        <Progress
-          showProgress={showProgress}
-          fakePipeline={fakePipeline}
-          setProgressButton={setProgressButton}
-          setProcessError={setProcessError}
-          progressButton={progressButton}
-          processError={processError}
-          ResetProgress={ResetProgress}
-        />
-        <Images devicePaths={devicePaths} setDevicePaths={setDevicePaths} />
+        <Progress fakePipeline={fakePipeline} />
+        <Images />
         <div id="c_r_v">
-          <CroppingResizingViewSettings
-            viewSettings={viewSettings}
-            handleChange={handleViewSettingsChange}
-          />
-          <Response_and_correction
-            responsePaths={responsePaths}
-            fe_correctionPaths={fe_correctionPaths}
-            v_correctionPaths={v_correctionPaths}
-            nd_correctionPaths={nd_correctionPaths}
-            cf_correctionPaths={cf_correctionPaths}
-            setResponsePaths={setResponsePaths}
-            set_fe_correctionPaths={set_fe_correctionPaths}
-            set_v_correctionPaths={set_v_correctionPaths}
-            set_nd_correctionPaths={set_nd_correctionPaths}
-            set_cf_correctionPaths={set_cf_correctionPaths}
-          />
+          <CroppingResizingViewSettings />
+          <Response_and_correction />
         </div>
       </main>
-      <ButtonBar
-        responsePaths={responsePaths}
-        fe_correctionPaths={fe_correctionPaths}
-        v_correctionPaths={v_correctionPaths}
-        nd_correctionPaths={nd_correctionPaths}
-        cf_correctionPaths={cf_correctionPaths}
-        viewSettings={viewSettings}
-        setConfig={setConfig}
-        handleGenerateHDRImage={handleGenerateHDRImage}
-      />
+      <ButtonBar handleGenerateHDRImage={handleGenerateHDRImage} />
     </div>
   );
 }
