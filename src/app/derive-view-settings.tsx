@@ -106,7 +106,6 @@ export default function DeriveViewSettings({
     };
 
     let left = 0, top = 0, xp = 0, yp = 0;
-    let center: any[] = [0, 0];
     const [bounds, setBounds] = useState<any[]>([]);
 
     function checkBounds(l: any, t: any) {
@@ -159,8 +158,8 @@ export default function DeriveViewSettings({
             mover.style.cursor = 'grabbing';
             mover.onmousemove = handleMoveDrag; 
             mover.onmouseup = handleMoveUp;
-            window.onmousemove = handleMoveDrag;
-            window.onmouseup = handleMoveUp;
+            // window.onmousemove = handleMoveDrag;
+            // window.onmouseup = handleMoveUp;
         }
     };
 
@@ -169,16 +168,14 @@ export default function DeriveViewSettings({
      * @param ev MouseEvent
      */
     function handleMoveUp(ev: MouseEvent) {
-        center[0] = ev.clientX;
-        center[1] = ev.clientY;
         const mover = document.getElementById('mover');
         const lens = document.getElementById('lens');
         if (mover && lens) {
             mover.style.cursor = 'grab';
             mover.onmousemove = null;
             mover.onmouseup = null;
-            window.onmousemove = null;
-            window.onmouseup = null;
+            // window.onmousemove = null;
+            // window.onmouseup = null;
         }
     };
 
@@ -207,11 +204,6 @@ export default function DeriveViewSettings({
      */
     function handleResizeDown(ev: any) {
         ev.preventDefault();
-        // if resized before moved, base center off current position
-        if (center[0] == 0 && center[1] == 0) {
-            center[0] = ev.clientX;
-            center[1] = ev.clientY;
-        }
         xp = ev.clientX;
         yp = ev.clientY;
         const lens = document.getElementById('lens'); 
@@ -251,7 +243,7 @@ export default function DeriveViewSettings({
         yp = ev.clientY;
         const lens = document.getElementById('lens');
         if (lens) {
-            if (checkResizeBounds()) {
+            if (checkBounds(xp - left, yp - top) && checkResizeBounds()) {
                 let diam = Number(lens.style.height.slice(0, lens.style.height.indexOf('p')));
                 
                 let l_cent = lens.offsetLeft + diam/2;
