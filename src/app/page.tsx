@@ -51,8 +51,6 @@ export default function Home() {
 
   // Holds the fisheye coordinates and view settings
   const [viewSettings, setViewSettings] = useState({
-    // xres: "",
-    // yres: "",
     diameter: "",
     xleft: "",
     ydown: "",
@@ -275,8 +273,6 @@ export default function Home() {
       diameter: config.diameter,
       xleft: config.xleft,
       ydown: config.ydown,
-      // xres: viewSettings.xres,
-      // yres: viewSettings.yres,
       targetRes: config.target_res,
       vh: config.vh,
       vv: config.vv,
@@ -317,6 +313,9 @@ export default function Home() {
             <CroppingResizingViewSettings
               viewSettings={viewSettings}
               handleChange={handleViewSettingsChange}
+              setViewSettings={setViewSettings}
+              devicePaths={devicePaths}
+              dcrawEmuPath={settings.dcrawEmuPath}
             />
             <Response_and_correction
               responsePaths={responsePaths}
