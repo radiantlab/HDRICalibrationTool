@@ -80,11 +80,13 @@ export default function Images() {
   async function dialog() {
     if (directorySelected == true) {
       selected = await open({
+        title: "Select Image Directory",
         multiple: true,
         directory: true,
       });
     } else {
       selected = await open({
+        title: "Select Image File(s)",
         multiple: true,
       });
     }
