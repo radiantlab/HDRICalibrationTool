@@ -53,6 +53,7 @@ export default function SettingsPage() {
 
   const dialog = async () => {
     let directory = await open({
+      title: "Select Output Directory",
       multiple: false,
       directory: true,
     });
