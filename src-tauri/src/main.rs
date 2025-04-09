@@ -15,6 +15,10 @@ use read_binary_paths::read_binary_paths;
 mod write_binary_paths;
 use write_binary_paths::write_binary_paths;
 
+// Command to delete a saved config
+mod delete_config;
+use delete_config::delete_config;
+
 // Command to get app's data directory
 mod get_default_output_path;
 use get_default_output_path::get_default_output_path;
@@ -36,6 +40,7 @@ fn main() {
             query_os_platform, 
             read_binary_paths,
             write_binary_paths,
+            delete_config,
             get_default_output_path, 
             save_config,
             get_saved_configs

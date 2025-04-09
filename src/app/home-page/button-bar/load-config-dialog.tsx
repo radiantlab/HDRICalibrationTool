@@ -59,6 +59,20 @@ export default function LoadConfigDialog({
     }
   }
 
+  // Delete config and close dialog
+  function handleDeleteConfig() {
+    // If the user did not make a choice and left default option selected, show error
+    if (configName == defaultSelectMessage) {
+      setShowError(true);
+    }
+    // Otherwise delete the selected config
+    else {
+      invoke("delete_config", { configName: configName })
+        .catch((error) => console.log(error));
+      toggleDialog();
+    }
+  }
+
   // Close modal and reset error message
   function handleCloseModal() {
     // setShowError(false);
@@ -108,7 +122,7 @@ export default function LoadConfigDialog({
                   </select>
                   {showError && (
                     <p className=" text-red-600">
-                      You must select a configuration to load.
+                      You must select a configuration.
                     </p>
                   )}
                 </div>
@@ -127,6 +141,13 @@ export default function LoadConfigDialog({
                   onClick={handleLoadConfig}
                 >
                   Load
+                </button>
+                <button
+                  type="button"
+                  className="bg-red-700 hover:bg-red-900 text-white font-semibold py-1 px-2 border-gray-400 rounded"
+                  onClick={handleDeleteConfig}
+                >
+                  Delete
                 </button>
                 <div className="pt-2"></div>
               </div>
