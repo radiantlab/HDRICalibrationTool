@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { open } from "@tauri-apps/api/dialog";
 import { Paths, Extensions } from "./string_functions";
 import { useConfigStore } from "../stores/config-store";
+import { WebviewWindow } from "@tauri-apps/api/window";
 
 export default function Response_and_correction() {
   const {
@@ -60,6 +62,14 @@ export default function Response_and_correction() {
       console.log("response: ", response);
     }
   }
+
+  // async function webviewTest() {
+  //   const newWindow = new WebviewWindow("my-empty-window", {
+  //     title: "Edit Response File",
+  //     url: "/editor-page"
+  //     // url: "C:/Users/s1221/Desktop/College/2024-2025/Term_3/CS463/Repo/HDRICalibrationTool/src/app/home-page/test.html",
+  //   });
+  // }
 
   async function dialogFE() {
     fe_correction = await open({
@@ -168,6 +178,13 @@ export default function Response_and_correction() {
       >
         Select File
       </button>
+      { responsePaths && <Link href={ {pathname: "/editor-page", query: { filepath: responsePaths }}}>
+        <button
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+        >
+          Edit File
+        </button>
+      </Link> }
       <div>
         {response_error && (
           <div>
