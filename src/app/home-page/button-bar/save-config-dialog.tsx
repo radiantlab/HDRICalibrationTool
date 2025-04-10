@@ -1,7 +1,6 @@
 import { invoke } from "@tauri-apps/api/tauri";
 import { useState } from "react";
 import { useConfigStore } from "../../stores/config-store";
-import { setConfig } from "next/config";
 
 // Modal used for saving the currently entered configuration to localStorage
 export default function SaveConfigDialog({
@@ -147,14 +146,14 @@ export default function SaveConfigDialog({
                   className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
                   onClick={() => !saveNew ? setSaveNew(!saveNew) : handleCloseModal()}
                 >
-                  Cancel
+                  {!saveNew ? "No" : "Cancel"}
                 </button>
                 <button
                   type="button"
                   className="bg-osu-beaver-orange hover:bg-osu-luminance text-white font-semibold py-1 px-2 border-gray-400 rounded"
                   onClick={saveConfig}
                 >
-                  Save
+                  {!saveNew ? "Save Changes" : "Save"}
                 </button>
                 <div className="pt-2"></div>
               </div>
