@@ -7,6 +7,7 @@ export default function LoadConfigDialog({
   // savedConfigs,
   // getSavedConfigs,
   toggleDialog,
+  loaded,
   setLoaded
 }: any) {
   const { setConfig } = useConfigStore();
@@ -69,6 +70,7 @@ export default function LoadConfigDialog({
     }
     // Otherwise delete the selected config
     else {
+      if (configName === loaded) { setLoaded("") }
       invoke("delete_config", { configName: configName })
         .catch((error) => console.log(error));
       toggleDialog();

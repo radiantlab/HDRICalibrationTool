@@ -39,6 +39,7 @@ export default function ButtonBar({ handleGenerateHDRImage }: any) {
         {showLoadConfigDialog && (
           <LoadConfigDialog
             toggleDialog={() => setShowLoadConfigDialog(!showLoadConfigDialog)}
+            loaded={loaded}
             setLoaded={(name: string) => setLoaded(name)}
           />
         )}
