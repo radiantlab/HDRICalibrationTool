@@ -8,7 +8,8 @@ export default function SaveConfigDialog({
   //savedConfigs,
   //setSavedConfigs,
   toggleDialog,
-  loaded
+  loaded,
+  setLoaded
 }: any) {
   const [configName, setConfigName] = useState<string>("");
   const [showError, setShowError] = useState<boolean>(false);
@@ -80,6 +81,7 @@ export default function SaveConfigDialog({
           console.error(e);
         });
 
+      setLoaded(chosenName);
       handleCloseModal();
     } else {
       // If name field is empty or contains only white space, show error message
