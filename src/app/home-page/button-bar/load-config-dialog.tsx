@@ -7,6 +7,7 @@ export default function LoadConfigDialog({
   // savedConfigs,
   // getSavedConfigs,
   toggleDialog,
+  setLoaded
 }: any) {
   const { setConfig } = useConfigStore();
 
@@ -33,6 +34,7 @@ export default function LoadConfigDialog({
     }
     // Otherwise look up the selected config
     else {
+      setLoaded(configName);
       let selectedConfig: any = savedConfigs.find(
         (config: any) => config.name === configName
       );

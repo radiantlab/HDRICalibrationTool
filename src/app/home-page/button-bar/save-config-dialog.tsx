@@ -1,15 +1,18 @@
 import { invoke } from "@tauri-apps/api/tauri";
 import { useState } from "react";
 import { useConfigStore } from "../../stores/config-store";
+import { setConfig } from "next/config";
 
 // Modal used for saving the currently entered configuration to localStorage
 export default function SaveConfigDialog({
   //savedConfigs,
   //setSavedConfigs,
   toggleDialog,
+  loaded
 }: any) {
   const [configName, setConfigName] = useState<string>("");
   const [showError, setShowError] = useState<boolean>(false);
+  const [saveNew, setSaveNew] = useState<boolean>(!loaded); // flag to indicate whether user wants to save a new config or edit a loaded one
 
   const {
     viewSettings,
@@ -43,13 +46,13 @@ export default function SaveConfigDialog({
     };
 
     const savedConfigs = await getSavedConfigs();
-    let updatedSavedConfigs = savedConfigs;
-    if (configName.trim() != "") {
+    const chosenName = saveNew ? configName : loaded;
+    if (chosenName.trim() != "") {
       // If name field is not empty
-      config["name"] = configName;
+      config["name"] = chosenName;
 
       // Search for existing config with this name
-      let index = savedConfigs.findIndex((c: any) => c.name === configName);
+      let index = saveNew ? savedConfigs.findIndex((c: any) => c.name === configName) : -1;
 
       if (index != -1) {
         // If configuration already exists, confirm if user wants to overwrite it.
@@ -61,11 +64,7 @@ export default function SaveConfigDialog({
         if (!overwriteConfig) {
           return;
         }
-
-        updatedSavedConfigs[index] = config;
-      } else {
-        updatedSavedConfigs.push(config);
-      }
+      } 
 
       // Save configuration locally
       //setSavedConfigs(updatedSavedConfigs);
@@ -91,6 +90,7 @@ export default function SaveConfigDialog({
   // Close modal and reset error message
   function handleCloseModal() {
     setShowError(false);
+    if (loaded) { setSaveNew(true) }
     toggleDialog();
   }
 
@@ -117,26 +117,33 @@ export default function SaveConfigDialog({
                     the configuration will not work correctly if the files are
                     moved.
                   </p>
-                  <label className="font-bold block mb-2">Enter a name:</label>
-                  <input
-                    name="configName"
-                    type="text"
-                    value={configName}
-                    onChange={(e) => setConfigName(e.target.value)}
-                    className="placeholder:text-right no-spinner w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
-                  ></input>
-                  {showError && (
-                    <p className=" text-red-600">
-                      You must enter a name to save the configuration.
+                  {saveNew && <span>
+                    <label className="font-bold block mb-2">Enter a name:</label>
+                    <input
+                      name="configName"
+                      type="text"
+                      value={configName}
+                      onChange={(e) => setConfigName(e.target.value)}
+                      className="placeholder:text-right no-spinner w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+                    ></input>
+                    {showError && (
+                      <p className=" text-red-600">
+                        You must enter a name to save the configuration.
+                      </p>
+                    )}
+                  </span>}
+                  {!saveNew && <span>
+                    <p className=" text-red-600 m-4">
+                      Save changes to "{loaded}"?
                     </p>
-                  )}
+                  </span>}
                 </div>
               </div>
               <div className="space-x-5">
                 <button
                   type="button"
                   className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-                  onClick={handleCloseModal}
+                  onClick={() => !saveNew ? setSaveNew(!saveNew) : handleCloseModal()}
                 >
                   Cancel
                 </button>
