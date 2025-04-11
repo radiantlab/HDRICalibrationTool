@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import React, { useState } from "react";
 import { open } from "@tauri-apps/api/dialog";
-import { Paths, Extensions } from "./string_functions";
-import { useConfigStore } from "../stores/config-store";
-import { WebviewWindow } from "@tauri-apps/api/window";
+import { Paths, Extensions } from "../string_functions";
+import { useConfigStore } from "../../stores/config-store";
+import { FileEditor } from "./file_editor"; 
 
 export default function Response_and_correction() {
   const {
@@ -14,6 +13,19 @@ export default function Response_and_correction() {
     cf_correctionPaths,
     setConfig,
   } = useConfigStore();
+
+
+  const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
+  const [currentEditingFile, setCurrentEditingFile] = useState<string>("");
+
+  const openEditor = (filePath: string) => {
+    setCurrentEditingFile(filePath);
+    setIsEditorOpen(true);
+  };
+
+  const closeEditor = () => {
+    setIsEditorOpen(false);
+  };
 
   const setResponsePaths = (response: string) => {
     setConfig({ responsePaths: response });
@@ -62,14 +74,6 @@ export default function Response_and_correction() {
       console.log("response: ", response);
     }
   }
-
-  // async function webviewTest() {
-  //   const newWindow = new WebviewWindow("my-empty-window", {
-  //     title: "Edit Response File",
-  //     url: "/editor-page"
-  //     // url: "C:/Users/s1221/Desktop/College/2024-2025/Term_3/CS463/Repo/HDRICalibrationTool/src/app/home-page/test.html",
-  //   });
-  // }
 
   async function dialogFE() {
     fe_correction = await open({
@@ -178,13 +182,14 @@ export default function Response_and_correction() {
       >
         Select File
       </button>
-      { responsePaths && <Link href={ {pathname: "/editor-page", query: { filepath: responsePaths }}}>
+      { responsePaths && 
         <button
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          onClick={() => openEditor(responsePaths)}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
         >
           Edit File
         </button>
-      </Link> }
+      }
       <div>
         {response_error && (
           <div>
@@ -194,7 +199,12 @@ export default function Response_and_correction() {
         {responsePaths && (
           <div>
             {Paths(responsePaths)}{" "}
-            <button onClick={() => handleResponseDelete()}>Delete</button>
+            <button 
+              onClick={() => handleResponseDelete()} 
+              className="bg-gray-300 hover:bg-red-300 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+            >
+              Delete
+            </button>
           </div>
         )}
       </div>
@@ -207,6 +217,14 @@ export default function Response_and_correction() {
       >
         Select File
       </button>
+      { fe_correctionPaths && 
+        <button
+          onClick={() => openEditor(fe_correctionPaths)}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
+        >
+          Edit File
+        </button>
+      }
       <div>
         {fe_error && (
           <div>
@@ -216,7 +234,12 @@ export default function Response_and_correction() {
         {fe_correctionPaths && (
           <div>
             {Paths(fe_correctionPaths)}{" "}
-            <button onClick={() => handle_fe_delete()}>Delete</button>
+            <button 
+              onClick={() => handle_fe_delete()}
+              className="bg-gray-300 hover:bg-red-300 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+            >
+              Delete
+            </button>
           </div>
         )}
       </div>
@@ -229,6 +252,14 @@ export default function Response_and_correction() {
       >
         Select File
       </button>
+      { v_correctionPaths && 
+        <button
+          onClick={() => openEditor(v_correctionPaths)}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
+        >
+          Edit File
+        </button>
+      }
       <div>
         {v_error && (
           <div>
@@ -238,7 +269,12 @@ export default function Response_and_correction() {
         {v_correctionPaths && (
           <div>
             {Paths(v_correctionPaths)}{" "}
-            <button onClick={() => handle_v_delete()}>Delete</button>
+            <button 
+              onClick={() => handle_v_delete()}
+              className="bg-gray-300 hover:bg-red-300 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+            >
+              Delete
+            </button>
           </div>
         )}
       </div>
@@ -251,6 +287,14 @@ export default function Response_and_correction() {
       >
         Select File
       </button>
+      { nd_correctionPaths && 
+        <button
+          onClick={() => openEditor(nd_correctionPaths)}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
+        >
+          Edit File
+        </button>
+      }
       <div>
         {nd_error && (
           <div>
@@ -260,7 +304,12 @@ export default function Response_and_correction() {
         {nd_correctionPaths && (
           <div>
             {Paths(nd_correctionPaths)}{" "}
-            <button onClick={() => handle_nd_delete()}>Delete</button>
+            <button 
+              onClick={() => handle_nd_delete()}
+              className="bg-gray-300 hover:bg-red-300 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+            >
+              Delete
+            </button>
           </div>
         )}
       </div>
@@ -273,6 +322,14 @@ export default function Response_and_correction() {
       >
         Select File
       </button>
+      { cf_correctionPaths && 
+        <button
+          onClick={() => openEditor(cf_correctionPaths)}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
+        >
+          Edit File
+        </button>
+      }
       <div>
         {cf_error && (
           <div>
@@ -282,11 +339,22 @@ export default function Response_and_correction() {
         {cf_correctionPaths && (
           <div>
             {Paths(cf_correctionPaths)}{" "}
-            <button onClick={() => handle_cf_delete()}>Delete</button>
+            <button 
+              onClick={() => handle_cf_delete()}
+              className="bg-gray-300 hover:bg-red-300 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+            >
+              Delete
+            </button>
           </div>
         )}
         <div className="pt-5"></div>
       </div>
+
+      <FileEditor 
+        filePath={currentEditingFile} 
+        isOpen={isEditorOpen} 
+        onClose={closeEditor} 
+      />
     </div>
   );
 }

@@ -68,7 +68,7 @@ export default function LoadConfigDialog({
   return (
     <>
       {/* ----->  Taken from Tailwind CSS example: https://tailwindui.com/components/application-ui/overlays/dialogs */}
-      <div className="fixed inset-0 z-10 w-screen overflow-y-auto">
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-10 w-screen overflow-y-auto">
         <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
           {/* <-----  */}
           <div className="border border-black shadow-2xl bg-white p-10">
