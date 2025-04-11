@@ -11,6 +11,7 @@ export default function EditorPage() {
   const [tauriVersion, setTauriVersion] = useState<string>("");
   const [fileContents, setFileContents] = useState<string>("");
   const [text, setText] = useState<string>("");
+  const [lineCount, setLineCount] = useState<number>(1);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -42,23 +43,62 @@ export default function EditorPage() {
       .catch((error) => console.log("Error writing file contents: ", error));
   }
 
+  // Calculate line numbers whenever text changes
+  useEffect(() => {
+    if (fileContents) {
+      const lines = fileContents.split('\n').length;
+      setLineCount(lines);
+      setText(fileContents);
+    }
+  }, [fileContents]);
+
+  // Update line count when text changes
+  const handleTextChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = event.target.value;
+    setText(newText);
+    const lines = newText.split('\n').length;
+    setLineCount(lines);
+  };
+
+  // Generate line numbers
+  const renderLineNumbers = () => {
+    const numbers = [];
+    for (let i = 1; i <= lineCount; i++) {
+      numbers.push(
+        <div key={i} className="text-right pr-2 text-gray-500 select-none">
+          {i}
+        </div>
+      );
+    }
+    return numbers;
+  };
+
   return (
    <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
       <main className="bg-white col-span-4 m-8 mt-0 p-5 mb-10 border-l border-r border-gray-400">
         <button
           onClick={() => router.back()}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded mb-4"
         >
           Back
         </button>
-        <textarea 
-          className="w-full h-full" 
-          defaultValue={fileContents}
-          onChange={(event) => {setText(event.target.value)}}
-        ></textarea>
+        
+        <div className="flex border border-gray-300 rounded">
+          <div className="bg-gray-100 py-1 px-2">
+            {renderLineNumbers()}
+          </div>
+          <textarea 
+            className="w-full outline-none py-1 px-2 resize-none font-mono"
+            value={text}
+            onChange={handleTextChange}
+            style={{ minHeight: '70vh', lineHeight: '1.5' }}
+            wrap="off"
+          ></textarea>
+        </div>
+        
         <button
           onClick={saveChanges}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded mt-4"
         >
           Apply Changes
         </button>
