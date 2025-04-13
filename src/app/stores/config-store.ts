@@ -12,6 +12,7 @@ interface ConfigState {
   progressButton: boolean;
   processError: boolean;
   showProgress: boolean;
+  outputPath: string;
   devicePaths: any[];
   responsePaths: string;
   fe_correctionPaths: string;
@@ -33,6 +34,7 @@ export const useConfigStore = create<ConfigState>((set) => ({
   progressButton: false,
   processError: false,
   showProgress: false,
+  outputPath: '',
   devicePaths: [],
   responsePaths: '',
   fe_correctionPaths: '',
