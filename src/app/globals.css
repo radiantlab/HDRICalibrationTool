@@ -37,3 +37,8 @@ body {
     -webkit-appearance: none;
   }
 }
+
+
+.active-section {
+  background-color: #9d9d9d; /* Light gray background */
+}
