@@ -1,381 +1,295 @@
-import React, { useState } from "react";
-import { convertFileSrc } from "@tauri-apps/api/tauri";
-import { Extensions } from "./string_functions";
-import { readDir } from '@tauri-apps/api/fs';
-import { invoke } from "@tauri-apps/api/tauri";
-import { open } from "@tauri-apps/api/dialog";
-
-const DEBUG = true;
+import React, { useEffect, useRef, useState } from "react";
+import { useConfigStore } from "../stores/config-store";
+import * as THREE from 'three';
 
 export default function DeriveViewSettings({
-    viewSettings,
-    setViewSettings,
-    devicePaths,
-    dcrawEmuPath,
+    setActive,
+    asset,
 }: any) {
-    const valid_extensions = [
-        "jpg", "jpeg", "3fr", "ari", "arw", "bay", "braw", "crw", "cr2", "cr3", "cap", "data",
-        "dcs", "dcr", "dng", "drf", "eip", "erf", "fff", "gpr", "iiq", "k25", "kdc", "mdc", "mef",
-        "mos", "mrw", "nef", "nrw", "obm", "orf", "pef", "ptx", "pxn", "r3d", "raf", "raw", "rwl",
-        "rw2", "rwz", "sr2", "srf", "srw", "tif", "tiff", "x3f",
-    ];
+    const { viewSettings, setConfig } = useConfigStore();
+    // Original image dimensions
+    const [ogSize, setOgSize] = useState<any>([0,0]);
+    // Scaled image dimensions
+    const [scaledSize, setScaledSize] = useState<any>([0,0]);
 
-    // toggle on/off for image derivation view
-    const [active, setActive] = useState<boolean>(false);
-    // original image dimensions
-    const [ogSize, setOgSize] = useState<any>([]);
-    // asset path for selected image
-    const [asset, setAsset] = useState<any>('');
+    const canv = useRef<HTMLCanvasElement | null>(null);
+    const ctx = useRef<CanvasRenderingContext2D | null>(null);
+    const renderer = useRef<THREE.WebGLRenderer>();
+    const mousePos = useRef({
+        posX: 0,
+        posY: 0,
+    });
+    const texture = useRef<THREE.CanvasTexture>();
+
+    const [scene, setScene] = useState<THREE.Scene>();
+    const [cam, setCam] = useState<THREE.OrthographicCamera>();
     
-    const [check, setCheck] = useState<any>('');
+    const loader = new THREE.TextureLoader();
+    const [ogim, setOgim] = useState<any>(); // ogImg
 
-    let selected: any | any[] = [];
-
-    /**
-     * Dialog function to allow user to select an imgage to derive certain view setting values. If
-     * file selected is not in image set, display warning but allow for user to continue if desired. 
-     */
-    async function dialog() {
-        selected = await open({
-            multiple: false,
-            filters: [{
-                name: 'Image',
-                extensions: valid_extensions,
-            }],
-        });
-
-        if (selected !== null) {
-            if (!valid_extensions.includes(Extensions(selected).toLowerCase())) {
-                alert("Invalid file type. Please only enter valid image types: jpg, jpeg, tif, tiff, or raw image formats.");
-                return;
-            }
-
-            let match = false;
-            for (let i = 0; i < devicePaths.length; i++) {
-                let ext = Extensions(devicePaths[0]).toLowerCase();
-                if (!valid_extensions.includes(ext)) {
-                    let contents = await readDir(devicePaths[i]);
-                    for (let j = 0; j < contents.length; j++) {
-                        if (contents[j].path == selected) {
-                            match = true;
-                            break;
-                        }
-                    }
-                } else {
-                    if (devicePaths[i] == selected) {
-                        match = true;
-                    }
-                }
-                if (match) {
-                    break;
-                }
-            }
-
-            if (!match) {
-                // let proceed = await confirm("Could not match file to selected images. Using an image from a different set will" +
-                //     " result in the wrong derived values. Continue anway?"
-                // );
-                // if (!proceed) return;
-                alert("Could not match selected file to provided LDR images.");
-                return;
-            }
-
-            let ext = Extensions(selected).toLowerCase();
-            let tst: any[] = [selected];
-            if (ext !== "jpeg" && ext !== "jpg" && ext !== "tif" && ext !== "tiff") {
-                const tiff: any = await invoke<string>("convert_raw_img", {dcraw: dcrawEmuPath, pths: tst,});
-                onSelected(convertFileSrc(tiff[0]));
-            } else onSelected(convertFileSrc(selected));
-        }
-    }
+    let w: number, h: number;
 
     /**
-     * Function for image select click event. Activate interactive value derivation 
-     * with target image. 
-     * @param im selected image file
+     * Class for interactive circle to fit around fisheye lens of selected image. 
      */
-    function onSelected(im: string) {
-        setAsset(im);
+    class Lens {
+        x: number;
+        y: number;
+        radius: number;
+        isMoving: boolean;
+        isResizing: boolean;
 
-        const image = new Image();
-        image.onload = () => {
-            setOgSize([image.width, image.height]); 
+        constructor(x: number, y: number, radius: number) {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.isMoving = false;
+            this.isResizing = false;
         }
-        image.src = im;
-        setActive(true);
-    };
 
-    let left = 0, top = 0, xp = 0, yp = 0;
-    const [bounds, setBounds] = useState<any[]>([]);
-
-    function checkBounds(l: any, t: any) {
-        const lens = document.getElementById('lens');
-        if (lens) {
-            const rec = lens.getBoundingClientRect();
-            let lft = rec.left - l;
-            let right = rec.right - l;
-            let tp = rec.top - t;
-            let bottom = rec.bottom - t;
-
-            if (bounds[0] <= lft && bounds[1] >= right && 
-                bounds[2] <= tp && bounds[3] >= bottom
-            ) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    function checkResizeBounds() {
-        const lens = document.getElementById('lens');
-        if (lens) {
-            const rec = lens.getBoundingClientRect();
+        draw() {
             
-            if ((bounds[0] < rec.left) && (bounds[1] > rec.right) && 
-                (bounds[2] < rec.top)  && (bounds[3] > rec.bottom)
-            ) {
-                return true;
+            if (ctx.current && ogim) {
+                // Main circle
+                ctx.current.drawImage(ogim, 0, 0, scaledSize[0], scaledSize[1]);
+                ctx.current.beginPath();
+                ctx.current.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+                ctx.current.strokeStyle = 'red';
+                ctx.current.lineWidth = 2;
+                ctx.current.stroke();
+                // Cross hair
+                ctx.current.beginPath();
+                ctx.current.moveTo(this.x + 8, this.y);
+                ctx.current.lineTo(this.x - 8, this.y);
+                ctx.current.lineWidth = 3;
+                ctx.current.stroke();
+                ctx.current.beginPath();
+                ctx.current.moveTo(this.x, this.y + 8);
+                ctx.current.lineTo(this.x, this.y - 8);
+                ctx.current.lineWidth = 3;
+                ctx.current.stroke();
+                // Resize handel
+                ctx.current.beginPath();
+                ctx.current.arc(this.x + this.radius, this.y, 6, 0, 2 * Math.PI);
+                ctx.current.strokeStyle = 'dark blue'
+                ctx.current.fillStyle = 'blue';
+                ctx.current.fill();
             }
         }
-        return false;
-    };
 
-    /**
-     * onmousedown event handler for moving the lens measurement div. 
-     * @param ev MouseEvent
-     */
-    function handleMoveDown(ev: any) {
-        ev.preventDefault();
-        xp = ev.clientX;
-        yp = ev.clientY;
-        const mover = document.getElementById('mover');
-        const lens = document.getElementById('lens');
+        isInLens(px: number, py: number) {
+            const rx = px - this.x;
+            const ry = py - this.y;
+            return Math.sqrt(rx ** 2 + ry ** 2) <= this.radius;
+        }
 
-        const ig_elm = document.getElementById('img');
-        if (mover && ig_elm && lens) {
-            const rec = ig_elm.getBoundingClientRect();
-            setBounds([rec.left, rec.right, rec.top, rec.bottom, rec.width, rec.height]);
-            mover.style.cursor = 'grabbing';
-            mover.onmousemove = handleMoveDrag; 
-            mover.onmouseup = handleMoveUp;
-            // window.onmousemove = handleMoveDrag;
-            // window.onmouseup = handleMoveUp;
+        isOnHandle(px: number, py: number) {
+            const handleX = this.x + this.radius;
+            const dx = px - handleX;
+            const dy = py - this.y;
+            return Math.sqrt(dx ** 2 + dy ** 2) <= 6;
         }
     };
 
-    /**
-     * onmouseup event handler for moving the lens measurement div. 
-     * @param ev MouseEvent
-     */
-    function handleMoveUp(ev: MouseEvent) {
-        const mover = document.getElementById('mover');
-        const lens = document.getElementById('lens');
-        if (mover && lens) {
-            mover.style.cursor = 'grab';
-            mover.onmousemove = null;
-            mover.onmouseup = null;
-            // window.onmousemove = null;
-            // window.onmouseup = null;
-        }
-    };
+    const [lens, setLens] = useState<Lens>();
 
-    /**
-     * onmousemove event handler for moving the lens measurement div.
-     * @param ev MouseEvent
-     */
-    function handleMoveDrag(ev: MouseEvent) {
-        ev.preventDefault();
-        left = xp - ev.clientX;
-        top = yp - ev.clientY;
-        xp = ev.clientX;
-        yp = ev.clientY;
-        const lens = document.getElementById('lens');
-        if (lens) { 
-            if (checkBounds(left, top)) {
-                lens.style.left = (lens.offsetLeft - left) + 'px';
-                lens.style.top = (lens.offsetTop - top) + 'px';
-            }
-        }
-    };
+    // Canvas setup
+    useEffect(() => {
+        if (canv.current) {
+            const cont = canv.current.getContext('2d');
+            if (cont) ctx.current = cont;
+            loader.load(asset, (imgTexture) => {
+                const img = imgTexture.image;
+                setOgim(img);
+                setOgSize([img.width, img.height]);
 
-    /**
-     * onmousedown event handler for resizing the lens measurment div. 
-     * @param ev MouseEvent
-     */
-    function handleResizeDown(ev: any) {
-        ev.preventDefault();
-        xp = ev.clientX;
-        yp = ev.clientY;
-        const lens = document.getElementById('lens'); 
-        const ig_elm = document.getElementById('img');
-        if (lens && ig_elm) {
-            const rec = ig_elm.getBoundingClientRect();
-            setBounds([rec.left, rec.right, rec.top, rec.bottom]);
-            lens.onmousemove = handleResizeDrag; 
-            window.onmousemove = handleResizeDrag;
-            lens.onmouseup = handleResizeUp; 
-            window.onmouseup = handleResizeUp;
-        }
-    };
-
-    /**
-     * onmouseup event handler for resizing the lens measurement div. 
-     */
-    function handleResizeUp() {
-        const lens = document.getElementById('lens');
-        if (lens) {
-            lens.onmousemove = null; 
-            window.onmousemove = null;
-            lens.onmouseup = null; 
-            window.onmouseup = null;
-        }
-    };
-
-    /**
-     * onmousemove event handler for resizing lens measurement div.
-     * @param ev MouseEvent
-     */
-    function handleResizeDrag(ev: MouseEvent) {
-        ev.preventDefault();
-        left = xp;
-        top = yp;
-        xp = ev.clientX;
-        yp = ev.clientY;
-        const lens = document.getElementById('lens');
-        if (lens) {
-            if (checkBounds(xp - left, yp - top) && checkResizeBounds()) {
-                let diam = Number(lens.style.height.slice(0, lens.style.height.indexOf('p')));
-                
-                let l_cent = lens.offsetLeft + diam/2;
-                let t_cent = lens.offsetTop + diam/2;
-
-                // get distances from cur position to lens center and prev position to lens center
-                let dist1 = Math.abs(l_cent - left) + Math.abs(t_cent - top);
-                let dist2 = Math.abs(l_cent - xp) + Math.abs(t_cent - yp);
-                
-                let amnt = Math.abs(left - xp) + Math.abs(top - yp);
-
-                // if prev farther from center - shrink lens size
-                if (dist1 > dist2) {
-                    lens.style.width = (diam - amnt) + 'px'; lens.style.height = (diam - amnt) + 'px';
+                // Scale image down to fit window if necessary
+                w = img.width, h = img.height;
+                while (w > 900) {
+                    w *= 0.75;
+                    h *= 0.75;
                 }
-                // else increase lens size
-                else {
-                    lens.style.width = (diam + amnt) + 'px'; lens.style.height = (diam + amnt) + 'px';
+                setScaledSize([w, h]);
+                if (canv.current) {
+                    canv.current.width = w;
+                    canv.current.height = h;
                 }
-
-                lens.style.left = (lens.offsetLeft - (left - xp)) + 'px';
-                lens.style.top = (lens.offsetTop - (top - yp)) + 'px';
-            }
+                const curLens = new Lens(55, 55, 50);
+                curLens.draw();
+                setLens(curLens);
+            });
+            renderer.current = new THREE.WebGLRenderer();
+            renderer.current.setSize(window.innerWidth, window.innerHeight);
         }
-    };
+    }, [canv.current]);
 
-    /**
-     * Ends interactive value derivation and calculates final outputs for the lens diameter,
-     * xleft offset, and ydown offset. 
-     */
-    function handleDone() {
-        const lens = document.getElementById('lens');
-        const ig_elm = document.getElementById('img');
-        if (lens && ig_elm) {
-            let l_rect = lens.getBoundingClientRect(), i_rect = ig_elm.getBoundingClientRect();
-            let xOffset = Math.abs(l_rect.left - i_rect.left);
-            let yOffset = Math.abs(i_rect.bottom - l_rect.bottom);
-            let diam = l_rect.height;
+    // Setup scene and camera
+    useEffect(() => {
+        if (canv.current && renderer.current) {
+            texture.current = new THREE.CanvasTexture(canv.current);
+            const geo = new THREE.PlaneGeometry(w, h);
+            const mat = new THREE.MeshBasicMaterial({map: texture.current, transparent: true});
+            const plane = new THREE.Mesh(geo, mat);
 
-            // if image was scaled down/up
-            if (i_rect.height != ogSize[1]) {
-                // scale diameter based on area of lens to area of image ratio
-                let curArea = Math.PI * (diam/2)**2;
-                let scaledArea = (ogSize[0] * ogSize[1]) * curArea / (i_rect.height * i_rect.width);
-                diam = Math.sqrt(scaledArea / Math.PI) * 2;
+            const scn = new THREE.Scene();
+            scn.add(plane);
+            setScene(scn);
 
-                // scale x and y offsets based on their ratios to the width and length of image respectively 
-                let x = xOffset, y = yOffset;
-                xOffset = ogSize[0] * x / i_rect.width;
-                yOffset = ogSize[1] * y / i_rect.height;
-            }
+            const camr = new THREE.OrthographicCamera(
+                window.innerWidth / -2,
+                window.innerWidth / 2,
+                window.innerHeight / 2,
+                window.innerHeight / -2,
+                1,
+                1000
+            );
+            camr.position.z = 5;
+            setCam(camr)
+        }
+    }, [canv.current]);
 
-            const updatedView = {
-                diameter: Math.floor(diam) + '',
-                xleft: Math.floor(xOffset) + '',
-                ydown: Math.floor(yOffset) + '',
-                vv: viewSettings.vv,
-                vh: viewSettings.vh,
-                targetRes: viewSettings.targetRes,
+    //Interactive event handlers
+    useEffect(() => {
+        if (canv.current) {
+            const mouseDown = (ev: MouseEvent) => {
+                if (lens && canv.current) {
+                    mousePos.current = {
+                        posX: ev.clientX - canv.current.offsetLeft,
+                        posY: ev.clientY - (canv.current.offsetTop - window.scrollY),
+                    };
+                    if (lens.isOnHandle(mousePos.current.posX, mousePos.current.posY)) {
+                        lens.isResizing = true;
+                    }
+                    else if (lens.isInLens(mousePos.current.posX, mousePos.current.posY)) {
+                        lens.isMoving = true;
+                    }
+                }
             };
-            setViewSettings(updatedView);
+    
+            const mouseMove = (ev: MouseEvent) => {
+                if (canv.current && lens && texture.current) {
+                    mousePos.current = {
+                        posX: ev.clientX - canv.current.offsetLeft,
+                        posY: ev.clientY - (canv.current.offsetTop - window.scrollY),
+                    };
+                    if (lens.isMoving) {
+                        lens.x = mousePos.current.posX;
+                        lens.y = mousePos.current.posY;
+                        lens.draw();
+                        texture.current.needsUpdate = true;
+                    }
+                    else if (lens.isResizing) {
+                        let dx = lens.x - mousePos.current.posX;
+                        let dy = lens.y - mousePos.current.posY;
+                        lens.radius = Math.max(10, Math.sqrt(dx**2 + dy**2));
+                        lens.draw();
+                        texture.current.needsUpdate;
+                    }
+                }
+            };
+    
+            const mouseUp = (ev: MouseEvent) => {
+                if (lens && canv.current) {
+                    lens.isMoving = false;
+                    lens.isResizing = false;
+                    mousePos.current = {
+                        posX: ev.clientX - canv.current.offsetLeft,
+                        posY: ev.clientY - (canv.current.offsetTop - window.scrollY),
+                    };
+                }
+            }
+
+            canv.current.onmousedown = mouseDown;
+            canv.current.onmousemove = mouseMove;
+            canv.current.onmouseup = mouseUp;
         }
+    }, [canv.current, lens, texture.current])
+
+    // Handle window resize event
+    useEffect(() => {
+        const resized = () => {
+            if (renderer.current && cam) {
+                cam.top = window.innerHeight / 2;
+                cam.bottom = window.innerHeight / -2;
+                cam.right = window.innerWidth / 2;
+                cam.left = window.innerWidth / -2;
+                cam.updateProjectionMatrix();
+
+                renderer.current.setSize(window.innerWidth, window.innerHeight);
+            }
+        }
+        window.addEventListener('resize', resized);
+        return () => {
+            window.removeEventListener('resize', resized);
+        };
+    }, [renderer.current, cam]);
+
+    // Three.js animate
+    useEffect(() => {
+        if (renderer.current && scene && cam) {
+            const animate = () => {
+                if (scene && cam) {
+                    renderer.current?.render(scene, cam);
+                    window.requestAnimationFrame(animate);
+                }
+            };
+            animate();
+        }
+    }, [renderer.current, scene, cam]);
+
+    function handleOnCancel() {
+        setActive(false);
     };
 
-    function handleReset() {
-        const lens = document.getElementById('lens');
-        if (lens) {
-            lens.style.width = '100px';
-            lens.style.height = '100px';
-            lens.style.left = bounds[0] + 'px';
-            lens.style.top = bounds[2] + 'px';
+    // Update view settings with derived values
+    function handleOnDone() {
+        if (lens && canv.current) {
+            // Image did not need to be scaled down
+            let diam = lens.radius * 2;
+            let xOffset = lens.x - lens.radius;
+            let yOffset = canv.current.height - (lens.y + lens.radius);
+
+            // Image was scaled down
+            if (canv.current.width != ogSize[0]) {
+                // Calculate ratios for scaling
+                let curArea = Math.PI * lens.radius ** 2;
+                let scaledArea = (ogSize[0] * ogSize[1]) * curArea / (canv.current.width * canv.current.height);
+                diam = Math.floor(Math.sqrt(scaledArea / Math.PI)) * 2;
+
+                xOffset = Math.floor(ogSize[0] * xOffset / canv.current.width);
+                yOffset = Math.floor(ogSize[1] * yOffset / canv.current.height);
+            }
+
+            setConfig({
+                viewSettings: {
+                    diameter: diam + '',
+                    xleft: xOffset + '',
+                    ydown: yOffset + '',
+                    vv: viewSettings.vv,
+                    vh: viewSettings.vh,
+                    targetRes: viewSettings.targetRes,
+                },
+            });
         }
-    }
+    };
 
     return (
-        <div>
-            <button 
-                onClick={dialog}
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-1 px-2 border-2 border-gray-600 rounded h-fit my-[10px]"
-            >
-                Derive From Image (Optional)
-            </button>
-            {active && (
-                <div className="flex flex-col space-x-5">
-                    <div id="hold" className="">
-                        <div
-                            style={{
-                                border: 'solid red',
-                                width: '100px',
-                                height: '100px',
-                                borderRadius: '50%',
-                                position: 'absolute',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                display: 'flex',
-                                cursor: 'move'
-                            }}
-                            id="lens"
-                            onMouseDown={handleResizeDown}
-                        >
-                            <div
-                                style={{fontSize: '16pt', color: 'red', textAlign: 'center', cursor: 'grab'}}
-                                id="mover"
-                                onMouseDown={handleMoveDown}
-                            >
-                                +
-                            </div>
-                        </div>
-                        <img src={asset} alt="" id="img" width={650} height={650} />
-                    </div>
-                    <div className="flex flex-row justify-center item-center space-x-5 pt-5">
-                        <button
-                            onClick={handleReset}
-                            className="font-semibold bg-gray-200 hover:bg-gray-300 py-1 px-2 text-gray-900 border-2 border-gray-500 rounded h-fit me-[14px] my-[5px]"
-                        >
-                            Reset
-                        </button>
-                        <button
-                            onClick={() => {setActive(false)}}
-                            className="font-semibold bg-gray-200 hover:bg-gray-300 py-1 px-2 text-gray-900 border-2 border-gray-500 rounded h-fit me-[14px] my-[5px]"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleDone}
-                            className="font-semibold bg-gray-200 hover:bg-gray-300 py-1 px-2 text-gray-900 border-2 border-gray-500 rounded h-fit me-[14px] my-[5px]"
-                        >
-                            Done
-                        </button>
-                    </div>
-                </div>
-            )}
+        <div className="py-2">
+            <canvas ref={canv}></canvas>
+            <div className="flex flex-row space-x-5 pt-5">
+                <button
+                    onClick={handleOnDone} 
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 rounded h-fit"
+                >
+                    Done
+                </button>
+                <button
+                    onClick={handleOnCancel}
+                    className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 rounded h-fit"
+                >
+                    Cancel
+                </button>
+            </div>
         </div>
     )
 }
