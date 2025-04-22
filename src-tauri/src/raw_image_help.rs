@@ -2,7 +2,7 @@ use std::{
     path::Path, 
     process::{Command, ExitStatus},
     fs,
-};
+}; 
 
 /// Converts raw images into .tiff images for front end use.
 #[tauri::command]
@@ -19,8 +19,6 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
         Some(r) => r,
         None => return Err("Unable to get dir".to_string()),
     }; 
-    // println!("data_dir: {data_dir}");
-    // return data_dir.to_string();
 
     let _tst = fs::remove_dir_all(Path::new(data_dir).join("converted_raws"));
 
@@ -28,8 +26,6 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
     if fs::create_dir_all(&dir).is_err() {
         return Err("Couldn't create new directory".to_string());
     }
-    // let dcraw_path = Path::new(&dcraw).join("dcraw_emu");
-    // return dir.display().to_string();
 
     let mut cmd: Command;
     let mut tiffs: Vec<String> = Vec::new();
@@ -65,24 +61,3 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
 
     return Ok(tiffs); 
 }
-
-// Deletes converted image directory in app_data_dir.
-// #[tauri::command]
-// pub async fn clear_converted_imgs(app_handle: tauri::AppHandle) -> String {
-//     let b_res = app_handle.path_resolver().app_data_dir();
-//     let b = match b_res {
-//         Some(r) => r,
-//         None => return "Error finding data directory (binding)".to_string(),
-//     };
-
-//     let data_dir_res = b.to_str();
-//     let data_dir = match data_dir_res {
-//         Some(r) => r,
-//         None => return "Error finding data directory".to_string(),
-//     }; 
-
-//     let dir_path = Path::new(data_dir).join("converted_raws");
-//     let _res = fs::remove_dir_all(dir_path);
-
-//     return "Success".to_string();
-// }
