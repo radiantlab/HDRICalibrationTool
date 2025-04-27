@@ -184,14 +184,46 @@ export default function Home() {
   return (
     <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
       <main className="bg-white col-span-4 m-8 mt-0 p-5 mb-10 border-l border-r border-gray-400">
-        {/* <h1 className="text-2xl font-bold mb-5">Image Configuration</h1> */}
+        {/* Progress Bar */}
         <Progress fakePipeline={fakePipeline} />
-        <Images />
-        <div id="c_r_v">
-          <CroppingResizingViewSettings />
+
+        {/* Section 1 and 2 side-by-side */}
+        <div className="grid grid-cols-2 gap-5">
+          {/* Section 1 */}
+          <div className="border border-gray-300 rounded-lg p-4">
+            <h2 className="flex items-center font-semibold mb-4 text-lg">
+              <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
+                1
+              </span>
+              Image Selection & Preview
+            </h2>
+            <Images />
+          </div>
+
+          {/* Section 2 */}
+          <div className="border border-gray-300 rounded-lg p-4">
+            <h2 className="flex items-center font-semibold mb-4 text-lg">
+              <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
+                2
+              </span>
+              Geometry of Fisheye View
+            </h2>
+            <CroppingResizingViewSettings />
+          </div>
+        </div>
+
+        {/* Section 3 below */}
+        <div className="border border-gray-300 rounded-lg p-4 mt-5">
+          <h2 className="flex items-center font-semibold mb-4 text-lg">
+            <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
+              3
+            </span>
+            Correction Files
+          </h2>
           <Response_and_correction />
         </div>
       </main>
+
       <ButtonBar handleGenerateHDRImage={handleGenerateHDRImage} />
     </div>
   );
