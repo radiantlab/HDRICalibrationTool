@@ -105,6 +105,10 @@ export default function Home() {
       ydim: viewSettings.targetRes,
       verticalAngle: viewSettings.vv,
       horizontalAngle: viewSettings.vh,
+      scaleLimit: "",
+      scaleLabel: "0",
+      scaleLevels: "0",
+      legendDimensions: "0",
     })
       .then((result: any) => console.log("Process finished. Result: ", result))
       .then(() => {
@@ -113,7 +117,7 @@ export default function Home() {
         }
       })
       .catch((error: any) => {
-        console.error;
+        console.error(error);
         if (!fakePipeline) {
           setConfig({ processError: true });
         }
