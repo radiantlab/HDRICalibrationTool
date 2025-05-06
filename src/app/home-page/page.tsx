@@ -130,7 +130,7 @@ export default function Home() {
       const isValid = await exists(path);
       if (!isValid) {
         console.error("File not found");
-        return false;
+        return false; 
       }
     }
     return true;
@@ -182,15 +182,15 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
-      <main className="bg-white col-span-4 m-8 mt-0 p-5 mb-10 border-l border-r border-gray-400">
+    <div className="min-h-screen bg-gray-300 text-black pb-16 px-8 overflow-auto border-l border-r border-gray-400">
+      <main className="bg-white w-full+1 max-w-none p-6 border-l border-r border-gray-400 rounded-none shadow-none" style={{ marginLeft: "-1px", marginRight: "-1px" }}>
         {/* Progress Bar */}
         <Progress fakePipeline={fakePipeline} />
 
         {/* Section 1 and 2 side-by-side */}
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Section 1 */}
-          <div className="border border-gray-300 rounded-lg p-4">
+          <div className="border border-gray-300 rounded-lg p-4 px-6">
             <h2 className="flex items-center font-semibold mb-4 text-lg">
               <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
                 1
@@ -213,7 +213,7 @@ export default function Home() {
         </div>
 
         {/* Section 3 below */}
-        <div className="border border-gray-300 rounded-lg p-4 mt-5">
+       <div className="border border-gray-300 rounded-lg p-4 px-6 mt-5">
           <h2 className="flex items-center font-semibold mb-4 text-lg">
             <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
               3
