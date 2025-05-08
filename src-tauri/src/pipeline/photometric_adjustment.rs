@@ -52,6 +52,7 @@ pub fn photometric_adjustment(
     if status_result.is_err() {
         return Err("pipeline: photometric_adjustment: failed to start command.".into());
     }
+    let status = status_result.unwrap();
 
     if DEBUG {
         println!(
