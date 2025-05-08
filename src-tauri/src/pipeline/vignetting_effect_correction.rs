@@ -40,9 +40,7 @@ pub fn vignetting_effect_correction(
     // Direct command's output to specifed output file
     let file_result = File::create(&output_file);
     if file_result.is_err() {
-        return Err(
-            "Error, creating output file for vignetting effect correction command failed.".into(),
-        );
+        return Err("pipeline: vignetting_effect_correction: failed to create output file for 'pcomb' (vignetting effect correction) command.".into());
     }
 
     let file = file_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
@@ -51,7 +49,11 @@ pub fn vignetting_effect_correction(
     command.stdout(stdio);
 
     // Run the command
-    let status = command.status();
+    let status_result = command.status();
+    if status_result.is_err() {
+        return Err("pipeline: vignetting_effect_correction: failed to start command.".into());
+    }
+    let status = status_result.unwrap();
 
     if DEBUG {
         println!(
@@ -66,9 +68,6 @@ pub fn vignetting_effect_correction(
         Ok(output_file.into())
     } else {
         // On error, return an error message
-        Err(
-            "Error, non-zero exit status. Vignetting effect correction command (pcomb) failed."
-                .into(),
-        )
+        Err("PIPELINE ERROR: command 'pcomb' (vignetting effect correction) failed.".into());
     }
 }
