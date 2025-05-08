@@ -63,11 +63,11 @@ pub fn vignetting_effect_correction(
     }
 
     // Return a Result object to indicate whether command was successful
-    if status.is_ok() {
+    if status.success() {
         // On success, return output path of HDR image
         Ok(output_file.into())
     } else {
         // On error, return an error message
-        Err("PIPELINE ERROR: command 'pcomb' (vignetting effect correction) failed.".into());
+        Err("PIPELINE ERROR: command 'pcomb' (vignetting effect correction) failed.".into())
     }
 }

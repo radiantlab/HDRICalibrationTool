@@ -49,6 +49,7 @@ pub fn projection_adjustment(
     if status_result.is_err() {
         return Err("pipeline: projection_adjustment: failed to start command.".into());
     }
+    let status = status_result.unwrap();
 
     if DEBUG {
         println!(

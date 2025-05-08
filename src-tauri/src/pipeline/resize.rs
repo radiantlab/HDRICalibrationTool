@@ -58,6 +58,7 @@ pub fn resize(
     if status_result.is_err() {
         return Err("pipeline: resize: failed to start command.".into());
     }
+    let status = status_result.unwrap();
 
     if DEBUG {
         println!("\nResize command exit status: {:?}\n", status);
