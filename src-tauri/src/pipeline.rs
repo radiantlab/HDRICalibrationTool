@@ -199,16 +199,25 @@ pub async fn pipeline(
                 .output_path
                 .join(Path::new(input_dir).file_name().unwrap_or_default());
             output_file_name.set_extension("hdr");
+            let mut evalglare_file_name = config_settings
+                .output_path
+                .join(Path::new(input_dir).file_name().unwrap_or_default())
+                .join("_evalglare.txt");
 
             // Copy the final output hdr image to output directory
-            let copy_result = copy(
+            let mut copy_result = copy(
                 &config_settings.temp_path.join("header_editing.hdr"),
                 output_file_name,
             );
             if copy_result.is_err() {
-                return Result::Err(
-                    ("Error copying final hdr image to output directory.").to_string(),
-                );
+                return Result::Err(("Error copying final hdr image to output directory.").to_string());
+            }
+            copy_result = copy(
+                &config_settings.temp_path.join("evalglare_output.txt"),
+                evalglare_file_name,
+            );
+            if copy_result.is_err() {
+                return Result::Err(("Error copying evalglare value to output directory.").to_string());
             }
         }
     } else {
