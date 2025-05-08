@@ -113,7 +113,7 @@ export default function Home() {
         }
       })
       .catch((error: any) => {
-        console.error;
+        console.error(error);
         if (!fakePipeline) {
           setConfig({ processError: true });
         }
