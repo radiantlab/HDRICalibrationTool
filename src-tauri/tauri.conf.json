@@ -87,7 +87,6 @@
     },
     "windows": [
       {
-        "url": "tauri://localhost/home-page.html",
         "fullscreen": false,
         "height": 800,
         "resizable": true,
