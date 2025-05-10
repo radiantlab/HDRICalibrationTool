@@ -87,13 +87,14 @@
     },
     "windows": [
       {
+        "url": "tauri://localhost/home-page.html",
         "fullscreen": false,
-        "height": 800,
+        "height": 720,
         "resizable": true,
         "title": "HDRI Calibration Interface",
-        "width": 1024,
-        "minWidth": 1024,
-        "minHeight": 800
+        "width": 1280,
+        "minWidth": 1280,
+        "minHeight": 720
       }
     ]
   }
