@@ -105,16 +105,16 @@ export default function DeriveViewSettings({
 
                 // Scale image down to fit window if necessary
                 w = img.width, h = img.height;
-                while (w > 900) {
-                    w *= 0.75;
-                    h *= 0.75;
+                while (w > 800) {
+                    w *= 0.8;
+                    h *= 0.8;
                 }
                 setScaledSize([w, h]);
                 if (canv.current) {
                     canv.current.width = w;
                     canv.current.height = h;
                 }
-                const curLens = new Lens(55, 55, 50);
+                const curLens = new Lens(w/2, h/2, 50);
                 curLens.draw();
                 setLens(curLens);
             });
