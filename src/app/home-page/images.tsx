@@ -4,7 +4,6 @@ import { Paths } from "./string_functions";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
 import { Extensions } from "./string_functions";
 import { useConfigStore } from "../stores/config-store";
-import { readDir } from '@tauri-apps/api/fs';
 
 export default function Images() {
   const { devicePaths, setConfig } = useConfigStore();
@@ -63,6 +62,8 @@ export default function Images() {
     "x3f",
   ];
 
+  // Represents the value of the checkbox for whether user wants to select directories instead of images
+  const [directorySelected, setDirectorySelected] = useState<boolean>(false);
   // Holds the file paths for the frontend
   const [assetPaths, setAssetPaths] = useState<any[]>([]);
   const [images, setImages] = useState<File[]>([]);
@@ -72,90 +73,52 @@ export default function Images() {
   let assets: any[] = [];
   // Error checking display
   const [image_error, set_image_error] = useState<boolean>(false);
-  const [dirError, setDirError] = useState<boolean>(false);
 
   const [rawImagesSelected, setRawImagesSelected] = useState<boolean>(false);
 
   // Open a file dialog window using the tauri api and update the images array with the results
-  async function file_dialog() {
-    // 'multiple' property does not function as implied when set to true; update if/when changed
-    selected = await open({
-      multiple: false,
-      filters: [{
-        name: 'Image',
-        extensions: valid_extensions
-      }]
-    });
-    if (selected !== null) {
-      set_image_error(false);
-      setDirError(false);
-      if (valid_extensions.includes(Extensions(selected).toLowerCase())) {
-        assets = [convertFileSrc(selected)];
-        setImages(images.concat(assets));
-        setDevicePaths(devicePaths.concat([selected]));
-        setAssetPaths(assetPaths.concat(assets));
-      } else {
-        set_image_error(true);
-      }
+  async function dialog() {
+    if (directorySelected == true) {
+      selected = await open({
+        multiple: true,
+        directory: true,
+      });
+    } else {
+      selected = await open({
+        multiple: true,
+      });
     }
-    if (DEBUG) {
-      console.log("File dialog function called.");
-      console.log("selected: ", selected);
-      console.log("assets: ", assets);
-    }
-  }
-
-  // Open file dialog window for directory selection
-  async function directory_dialog() {
-    selected = await open({
-      directory: true,
-      multiple: false
-    });
-    if (selected !== null) {
+    if (Array.isArray(selected)) {
       set_image_error(false);
-      setDirError(false);
-      let check = false;
-      let contents = await readDir(selected);
-      for (let i = 0; i < contents.length; i++) {
-        if (valid_extensions.includes(Extensions(contents[i].path).toLowerCase())) {
-          check = true;
-          break;
-        }
-        // See if input directory contains more LDR directories
-        else  if (isDir(contents[i].path)) {
-          let subContents = await readDir(contents[i].path);
-          for (let j = 0; j < subContents.length; j++) {
-            if (valid_extensions.includes(Extensions(subContents[j].path).toLowerCase())) {
-              check = true;
-              break;
-            }
+      let valid = false;
+      for (let i = 0; i < selected.length; i++) {
+        for (let j = 0; j < valid_extensions.length; j++) {
+          if (Extensions(selected[i]).toLowerCase() == valid_extensions[j]) {
+            valid = true;
           }
-          if (check) break;
+        }
+        if (valid) {
+          assets = assets.concat(convertFileSrc(selected[i]));
+        } else {
+          set_image_error(true);
         }
       }
-      if (check) {
-        assets = [convertFileSrc(selected)];
-        setDevicePaths(devicePaths.concat([selected]));
-        setAssetPaths(assetPaths.concat(assets));
-      } else {
-        setDirError(true);
-      }
+      setImages(images.concat(assets));
+      setDevicePaths(devicePaths.concat(selected));
+      setAssetPaths(assetPaths.concat(assets));
+    } else if (selected === null) {
+      // user cancelled the selection
+    } else {
+      // user selected a single file
+      assets = [convertFileSrc(selected)];
+      setImages(images.concat(assets));
+      setDevicePaths(devicePaths.concat([selected]));
+      setAssetPaths(assetPaths.concat(assets));
     }
     if (DEBUG) {
-      console.log("Directory dialog function called.");
+      console.log("Dialog function called.");
       console.log("selected: ", selected);
       console.log("assets: ", assets);
-    }
-  }
-
-  function isDir(path: string) {
-    for (let i = path.length - 1; i >= 0; i--) {
-      if (path[i] == ".") {
-        return false;
-      }
-      else if (path[i] == "/" || path[i] == "\\") {
-        return true;
-      }
     }
   }
 
@@ -186,7 +149,11 @@ export default function Images() {
     setDevicePaths([]);
     setAssetPaths([]);
     set_image_error(false);
-    setDirError(false);
+  }
+
+  function directory_checked() {
+    setDirectorySelected((prev: any) => !prev);
+    reset();
   }
 
   // Update flag for whether raw images are selected (to determine whether to show image previews)
@@ -201,42 +168,44 @@ export default function Images() {
   }, [images]);
 
   return (
-    <div className="space-y-2">
+    <div>
+      <button
+        onClick={reset}
+        className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
+      >
+        Delete Images/Directories
+      </button>
       <h2 className="font-bold pt-5" id="image_selection">
         Image Selection
       </h2>
-      <div className="flex flex-row gap-4">
-        <button
-          onClick={file_dialog}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
-        >
-          Select Files
-        </button>
-        <button
-          onClick={directory_dialog}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
-        >
-          Select Directory
-        </button>
-      </div>
-      {image_error && (
+      {image_error && !directorySelected && (
         <div>
           Please only enter valid image types: jpg, jpeg, tif, tiff, or raw
           image formats
         </div>
       )}
-      {dirError && (
-        <div>
-          Could not find valid image types (jpg, jpeg, tif, tiff, or raw
-          image formats) in any of the entered directories. 
+      <div className="flex flex-row">
+        <button
+          onClick={dialog}
+          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
+        >
+          Select Files
+        </button>
+        <div className="flex flex-row items-center space-x-4 pl-20">
+          <input
+            type="checkbox"
+            checked={directorySelected}
+            onChange={directory_checked}
+          />
+          <label>Select directories</label>
         </div>
-      )}
-      {devicePaths.length - images.length > 0 || rawImagesSelected ? (
-        <div className="space-y-1">
-          {devicePaths.length - images.length > 0 && (
-            <div>Directory count: {devicePaths.length - images.length}</div>
+      </div>
+      {directorySelected || rawImagesSelected ? (
+        <div>
+          {directorySelected && (
+            <div>Directory count: {devicePaths.length}</div>
           )}
-          {rawImagesSelected && <div>Image count: {images.length}</div>}
+          {rawImagesSelected && <div>Image count: {devicePaths.length}</div>}
           <div className="directory-preview flex flex-wrap flex-col">
             {devicePaths.map((path: any, index: any) => (
               <div
@@ -250,9 +219,9 @@ export default function Images() {
           </div>
         </div>
       ) : (
-        <div className="space-y-1">
+        <div>
           <div>Image count: {images.length}</div>
-          <div className="image-preview flex flex-wrap gap-2">
+          <div className="image-preview flex flex-wrap">
             {images.map((image: any, index: any) => (
               <div key={index} className="image-item">
                 <div>
@@ -270,16 +239,6 @@ export default function Images() {
               </div>
             ))}
           </div>
-        </div>
-      )}
-      {devicePaths.length > 0 && (
-        <div>
-          <button
-            onClick={reset}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
-          >
-            Delete All
-          </button>
         </div>
       )}
     </div>
