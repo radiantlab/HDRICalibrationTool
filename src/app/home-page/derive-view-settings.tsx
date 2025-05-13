@@ -15,19 +15,14 @@ export default function DeriveViewSettings({
     const canv = useRef<HTMLCanvasElement | null>(null);
     const ctx = useRef<CanvasRenderingContext2D | null>(null);
     const renderer = useRef<THREE.WebGLRenderer>();
-    const mousePos = useRef({
-        posX: 0,
-        posY: 0,
-    });
+    const mousePos = useRef({posX: 0, posY: 0});
     const texture = useRef<THREE.CanvasTexture>();
 
     const [scene, setScene] = useState<THREE.Scene>();
     const [cam, setCam] = useState<THREE.OrthographicCamera>();
     
     const loader = new THREE.TextureLoader();
-    const [ogim, setOgim] = useState<any>(); // ogImg
-
-    let w: number, h: number;
+    const [ogIm, setOgIm] = useState<any>(); 
 
     /**
      * Class for interactive circle to fit around fisheye lens of selected image. 
@@ -49,9 +44,9 @@ export default function DeriveViewSettings({
 
         draw() {
             
-            if (ctx.current && ogim) {
+            if (ctx.current && ogIm) {
                 // Main circle
-                ctx.current.drawImage(ogim, 0, 0, scaledSize[0], scaledSize[1]);
+                ctx.current.drawImage(ogIm, 0, 0, scaledSize[0], scaledSize[1]);
                 ctx.current.beginPath();
                 ctx.current.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
                 ctx.current.strokeStyle = 'red';
@@ -70,7 +65,7 @@ export default function DeriveViewSettings({
                 ctx.current.stroke();
                 // Resize handel
                 ctx.current.beginPath();
-                ctx.current.arc(this.x + this.radius, this.y, 6, 0, 2 * Math.PI);
+                ctx.current.arc(this.x + this.radius, this.y, 8, 0, 2 * Math.PI);
                 ctx.current.strokeStyle = 'dark blue'
                 ctx.current.fillStyle = 'blue';
                 ctx.current.fill();
@@ -87,7 +82,7 @@ export default function DeriveViewSettings({
             const handleX = this.x + this.radius;
             const dx = px - handleX;
             const dy = py - this.y;
-            return Math.sqrt(dx ** 2 + dy ** 2) <= 6;
+            return Math.sqrt(dx ** 2 + dy ** 2) <= 8;
         }
     };
 
@@ -99,8 +94,9 @@ export default function DeriveViewSettings({
             const cont = canv.current.getContext('2d');
             if (cont) ctx.current = cont;
             loader.load(asset, (imgTexture) => {
+                let w: number, h: number;
                 const img = imgTexture.image;
-                setOgim(img);
+                setOgIm(img);
                 setOgSize([img.width, img.height]);
 
                 // Scale image down to fit window if necessary
@@ -127,7 +123,7 @@ export default function DeriveViewSettings({
     useEffect(() => {
         if (canv.current && renderer.current) {
             texture.current = new THREE.CanvasTexture(canv.current);
-            const geo = new THREE.PlaneGeometry(w, h);
+            const geo = new THREE.PlaneGeometry(canv.current.width, canv.current.height);
             const mat = new THREE.MeshBasicMaterial({map: texture.current, transparent: true});
             const plane = new THREE.Mesh(geo, mat);
 
@@ -259,6 +255,10 @@ export default function DeriveViewSettings({
                 xOffset = Math.floor(ogSize[0] * xOffset / canv.current.width);
                 yOffset = Math.floor(ogSize[1] * yOffset / canv.current.height);
             }
+
+            // Lens extends off page
+            if (yOffset < 0) yOffset = 0;
+            if (xOffset < 0) yOffset = 0;
 
             setConfig({
                 viewSettings: {
