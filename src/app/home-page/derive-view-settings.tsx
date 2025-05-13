@@ -258,7 +258,7 @@ export default function DeriveViewSettings({
 
             // Lens extends off page
             if (yOffset < 0) yOffset = 0;
-            if (xOffset < 0) yOffset = 0;
+            if (xOffset < 0) xOffset = 0;
 
             setConfig({
                 viewSettings: {

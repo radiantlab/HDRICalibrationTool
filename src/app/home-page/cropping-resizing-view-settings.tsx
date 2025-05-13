@@ -77,7 +77,7 @@ export default function CroppingResizingViewSettings() {
               match = true;
               break;
             }
-            // Handle batch processing
+            // Handle batch processing (contains subdirectories)
             else if (contents[j].path == Extensions(contents[j].path)) {
               let subContents = await readDir(contents[j].path);
               for (let k = 0; k < subContents.length; k++) {
@@ -103,7 +103,11 @@ export default function CroppingResizingViewSettings() {
       let ext = Extensions(selected).toLowerCase();
       let tst: any[] = [selected];
       if (ext !== "jpeg" && ext !== "jpg" && ext !== "tif" && ext !== "tiff") {
-        const tiff: any = await invoke<string>("convert_raw_img", {dcraw: settings.dcrawEmuPath, pths: tst,});
+        const tiff: any = await invoke<string>("convert_raw_img", {dcraw: settings.dcrawEmuPath, pths: tst,}).catch((err) => {
+          alert(`${err}`);
+          return;
+        });
+        if (!tiff) return;
         setAsset(convertFileSrc(tiff[0]));
       } else setAsset(convertFileSrc(selected));
 
