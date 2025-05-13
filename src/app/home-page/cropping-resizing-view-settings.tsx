@@ -77,6 +77,16 @@ export default function CroppingResizingViewSettings() {
               match = true;
               break;
             }
+            // Handle batch processing
+            else if (contents[j].path == Extensions(contents[j].path)) {
+              let subContents = await readDir(contents[j].path);
+              for (let k = 0; k < subContents.length; k++) {
+                if (subContents[k].path == selected) {
+                  match = true;
+                  break;
+                }
+              }
+            }
           }
         } else {
           if (devicePaths[i] == selected) match = true;
@@ -89,7 +99,7 @@ export default function CroppingResizingViewSettings() {
         return;
       }
 
-      // Check if raw image is selected 
+      // Check if raw image is selected
       let ext = Extensions(selected).toLowerCase();
       let tst: any[] = [selected];
       if (ext !== "jpeg" && ext !== "jpg" && ext !== "tif" && ext !== "tiff") {

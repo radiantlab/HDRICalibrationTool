@@ -20,7 +20,8 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
         None => return Err("Unable to get dir".to_string()),
     }; 
 
-    let _tst = fs::remove_dir_all(Path::new(data_dir).join("converted_raws"));
+    // If already exists, new converted raw will not replace old one. Clear to prevent from happening
+    let _clear = fs::remove_dir_all(Path::new(data_dir).join("converted_raws"));
 
     let dir = Path::new(data_dir).join("converted_raws");
     if fs::create_dir_all(&dir).is_err() {
