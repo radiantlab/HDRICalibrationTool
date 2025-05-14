@@ -30,11 +30,7 @@
       },
       "dialog": {
         "all": true,
-        "ask": true,
-        "confirm": true,
-        "message": true,
-        "open": true,
-        "save": true
+        "open": true
       },
       "protocol": {
         "all": true,
@@ -44,16 +40,28 @@
       "app": {
         "show": true,
         "hide": true
+      },
+      "shell": {
+        "all": false,
+        "execute": true, 
+        "open": false,     
+        "sidecar": false,  
+
+        "scope": [
+          {
+            "name": "ximage",                           
+            "cmd": "/usr/local/radiance/bin/ximage",          
+            "sidecar": false,
+            "args": true                                     
+          }
+        ]
       }
     },
+
     "bundle": {
       "active": true,
       "category": "DeveloperTool",
-      "copyright": "",
-      "deb": {
-        "depends": []
-      },
-      "externalBin": [],
+      "identifier": "hdricalibrationinterface",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
@@ -61,24 +69,10 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "hdricalibrationinterface",
-      "longDescription": "",
-      "macOS": {
-        "entitlements": null,
-        "exceptionDomain": "",
-        "frameworks": [],
-        "providerShortName": null,
-        "signingIdentity": null
-      },
-      "resources": [],
-      "shortDescription": "",
-      "targets": "all",
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": ""
-      }
+      "targets": "all"
+
     },
+
     "security": {
       "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost"
     },
