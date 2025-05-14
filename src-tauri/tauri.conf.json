@@ -11,7 +11,7 @@
   "app": {
     "windows": [
       {
-        "url": "tauri://localhost/home-page.html",
+        "url": "home-page",
         "fullscreen": false,
         "height": 720,
         "resizable": true,
@@ -20,7 +20,14 @@
         "minWidth": 1280,
         "minHeight": 720
       }
-    ]
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      } 
+    }
   },
   "bundle": {
     "active": true,
