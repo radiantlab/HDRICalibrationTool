@@ -8,6 +8,8 @@ mod projection_adjustment;
 mod resize;
 mod vignetting_effect_correction;
 
+use tauri::Manager;
+
 use std::{
     fs::{self, copy, create_dir_all},
     io,
@@ -35,6 +37,13 @@ pub struct ConfigSettings {
     dcraw_emu_path: PathBuf,
     output_path: PathBuf,
     temp_path: PathBuf, // used to store temp path in output dir, i.e. "output_path/tmp/"
+}
+
+// Helper functon to emit progress events
+fn emit_progress(app: &tauri::AppHandle, current_step: usize, total_steps: usize) -> Result<(), String> {
+    let progress = ((current_step as f64 / total_steps as f64) * 100.0) as i32;
+    app.emit_all("pipeline-progress", progress)
+        .map_err(|e| format!("Failed to emit progress event: {}", e))
 }
 
 // Runs the radiance and hdrgen pipeline.
@@ -73,6 +82,7 @@ pub struct ConfigSettings {
 //      The y-dimensional resolution to resize the HDR image to (in pixels)
 #[tauri::command]
 pub async fn pipeline(
+    app: tauri::AppHandle,
     radiance_path: String,
     hdrgen_path: String,
     dcraw_emu_path: String,
@@ -144,6 +154,12 @@ pub async fn pipeline(
         return Result::Err(("Error creating tmp and output directories.").to_string());
     }
 
+    //Define total steps for progress bar (adjust this count as needed)
+    let total_steps: usize = if is_directory { 5 } else { 5 };
+
+    let mut current_step: usize = 0;
+    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)    
+
     if is_directory {
         // Directories were selected (batch processing)
 
@@ -173,6 +189,7 @@ pub async fn pipeline(
 
             // Run the HDRGen and Radiance pipeline on the input images
             let result = process_image_set(
+                &app,
                 &config_settings,
                 input_images_from_dir,
                 response_function.clone(),
@@ -187,6 +204,8 @@ pub async fn pipeline(
                 ydim.clone(),
                 vertical_angle.clone(),
                 horizontal_angle.clone(),
+                current_step,
+                total_steps
             );
             if result.is_err() {
                 return result;
@@ -209,6 +228,7 @@ pub async fn pipeline(
                 );
             }
         }
+        
     } else {
         // Individual images were selected (single scene)
 
@@ -221,6 +241,7 @@ pub async fn pipeline(
 
         // Run the HDRGen and Radiance pipeline on the images
         let result = process_image_set(
+            &app,
             &config_settings,
             input_images,
             response_function.clone(),
@@ -235,6 +256,8 @@ pub async fn pipeline(
             ydim.clone(),
             vertical_angle.clone(),
             horizontal_angle.clone(),
+            current_step,
+            total_steps,
         );
         if result.is_err() {
             return result;
@@ -255,6 +278,8 @@ pub async fn pipeline(
     // If no errors, return Ok
     return Result::Ok(("Completed image generation.").to_string());
 }
+
+
 
 /*
  * Retrieves all JPG and CR2 images from a directory, ignoring other files or directories.
@@ -300,6 +325,7 @@ pub fn get_images_from_dir(input_dir: &String) -> Result<Vec<String>, String> {
  * or representing an error, which is passed to the frontend in the pipeline function.
  */
 pub fn process_image_set(
+    app: &tauri::AppHandle,
     config_settings: &ConfigSettings,
     input_images: Vec<String>,
     response_function: String,
@@ -314,6 +340,8 @@ pub fn process_image_set(
     ydim: String,
     vertical_angle: String,
     horizontal_angle: String,
+    mut current_step: usize,
+    total_steps: usize,
 ) -> Result<String, String> {
     // Merge exposures
     // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
@@ -332,6 +360,9 @@ pub fn process_image_set(
     if merge_exposures_result.is_err() {
         return merge_exposures_result;
     };
+
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
 
     // Nullify the exposure value
     let nullify_exposure_result = nullify_exposure_value(
@@ -353,6 +384,9 @@ pub fn process_image_set(
         return nullify_exposure_result;
     }
 
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
+    
     // Crop the HDR image to a square fitting the fisheye view
     let crop_result = crop(
         &config_settings,
@@ -376,6 +410,9 @@ pub fn process_image_set(
         return crop_result;
     }
 
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
+    
     // Resize the HDR image
     let resize_result = resize(
         &config_settings,
@@ -398,6 +435,9 @@ pub fn process_image_set(
         return resize_result;
     }
 
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
+    
     /* Start Calibration Files - able to be skipped in some instances */
 
     let mut next_path = "resize.hdr";
@@ -526,6 +566,9 @@ pub fn process_image_set(
         return header_editing_result;
     }
 
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
+    
     // Pipeline has completed successfully. Return Ok
     return Result::Ok(("Image set processed.").to_string());
 }
