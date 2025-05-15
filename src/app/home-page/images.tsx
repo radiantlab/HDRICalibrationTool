@@ -246,12 +246,10 @@ export default function Images() {
           image formats) in any of the entered directories. 
         </div>
       )}
+      {images.length > 0 && <div>Image count: {images.length}</div>}
+      {devicePaths.length - images.length > 0 && <div>Directory count: {devicePaths.length - images.length}</div>}
       {devicePaths.length - images.length > 0 || rawImagesSelected ? (
         <div className="space-y-1">
-          {devicePaths.length - images.length > 0 && (
-            <div>Directory count: {devicePaths.length - images.length}</div>
-          )}
-          {rawImagesSelected && <div>Image count: {images.length}</div>}
           <div className="directory-preview flex flex-wrap flex-col">
             {devicePaths.map((path: any, index: any) => (
               <div
@@ -266,7 +264,6 @@ export default function Images() {
         </div>
       ) : (
         <div className="space-y-1">
-          <div>Image count: {images.length}</div>
           <div className="image-preview flex flex-wrap gap-2">
             {images.map((image: any, index: any) => (
               <div key={index} className="image-item">
