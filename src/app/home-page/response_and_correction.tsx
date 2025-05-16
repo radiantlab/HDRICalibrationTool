@@ -43,6 +43,7 @@ export default function Response_and_correction() {
   const [cf_error, set_cf_error] = useState<boolean>(false);
   async function dialogResponse() {
     response = await open({
+      title: "Select Response File",
       multiple: true,
     });
     if (response === null) {
@@ -63,6 +64,7 @@ export default function Response_and_correction() {
 
   async function dialogFE() {
     fe_correction = await open({
+      title: "Select Fish Eye Correction File",
       multiple: true,
     });
     if (fe_correction === null) {
@@ -83,6 +85,7 @@ export default function Response_and_correction() {
 
   async function dialogV() {
     v_correction = await open({
+      title: "Select Vignetting Correction File",
       multiple: true,
     });
     if (v_correction === null) {
@@ -102,6 +105,7 @@ export default function Response_and_correction() {
 
   async function dialogND() {
     nd_correction = await open({
+      title: "Select Neutral Density Correction File",
       multiple: true,
     });
     if (nd_correction === null) {
@@ -121,6 +125,7 @@ export default function Response_and_correction() {
 
   async function dialogCF() {
     cf_correction = await open({
+      title: "Select Calibration Factor Correction File",
       multiple: true,
     });
     if (cf_correction === null) {
