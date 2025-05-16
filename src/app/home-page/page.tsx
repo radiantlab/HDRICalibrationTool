@@ -106,12 +106,18 @@ export default function Home() {
       verticalAngle: viewSettings.vv,
       horizontalAngle: viewSettings.vh,
     })
-      .then((result: any) => console.log("Process finished. Result: ", result))
-      .then(() => {
+      .then((result: any) => {
+        console.log("Process finished. Result: ", result);
         if (!fakePipeline) {
-          setConfig({ progressButton: true });
+          setConfig({ progressButton: true, outputPath: result });
         }
       })
+      // .then((result: any) => console.log("Process finished. Result: ", result))
+      // .then(() => {
+      //   if (!fakePipeline) {
+      //     setConfig({ progressButton: true });
+      //   }
+      // })
       .catch((error: any) => {
         console.error;
         if (!fakePipeline) {
