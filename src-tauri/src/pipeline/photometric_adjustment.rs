@@ -39,7 +39,9 @@ pub fn photometric_adjustment(
     // Set up piping of output to file
     let file_result = File::create(&output_file);
     if file_result.is_err() {
-        return Err("Error, creating output file for photometric adjustment command failed.".into());
+        return Err(
+            "Error, creating output file for photometric adjustment command failed.".into(),
+        );
     }
 
     let file = file_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err

@@ -47,9 +47,13 @@ Once settings are entered, you can close the settings and click the Generate HDR
 
 For further guidance about creating and calibrating HDR images, please consult [Tutorial: Luminance Maps for Daylighting Studies from High Dynamic Range Photography](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319) by Clotilde Pierson, Coralie Cauwerts, Magali Bodart, and Jan Wienold.
 
-## Acknowledgements
+## Acknowledgements & Licensing
 
 This app builds upon the scene processing and simulation strengths of existing programs such as Radiance, `hdrgen`, and LibRaw.
+
+This application includes the 'dcraw_emu' binary from LibRaw, a library licensed under the GNU Lesser General Public License v2.1 (LGPL-2.1).
+See `licenses/LGPL-2.1.txt` for details.
+The source code for LibRAW can be obtained from https://www.libraw.org/.
 
 ### Authors
 

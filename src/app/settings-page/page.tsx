@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useSettingsStore } from "../stores/settings-store";
-import { open } from "@tauri-apps/api/dialog";
-import { invoke } from "@tauri-apps/api/tauri";
+import { open } from "@tauri-apps/plugin-dialog";
+import { invoke } from "@tauri-apps/api/core";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import SettingsButtonBar from "./settings-button-bar";
 
@@ -111,10 +111,10 @@ export default function SettingsPage() {
           </div>
           <div className="flex flex-row items-center justify-between">
             <label
-              htmlFor="dcrawEmuPath"
+              htmlFor="raw2hdrPath"
               className="font-bold block h-full mr-5"
             >
-              dcraw_emu path
+              dcraw_emu path*
             </label>
             <input
               id="dcrawEmuPath"
@@ -125,6 +125,7 @@ export default function SettingsPage() {
               className="flex-grow placeholder:text-right w-max shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
             ></input>
           </div>
+          <div className="block h-full mr-5">*licensed under LGPL-2.1 - source code can be obtained from https://www.libraw.org/</div>
         </div>
         <h2 id="output_directory" className="mt-6 mb-2 text-2xl">
           Output Directory

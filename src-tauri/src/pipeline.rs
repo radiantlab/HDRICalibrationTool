@@ -73,6 +73,7 @@ pub struct ConfigSettings {
 //      The y-dimensional resolution to resize the HDR image to (in pixels)
 #[tauri::command]
 pub async fn pipeline(
+    app: tauri::AppHandle,
     radiance_path: String,
     hdrgen_path: String,
     dcraw_emu_path: String,
@@ -173,6 +174,7 @@ pub async fn pipeline(
 
             // Run the HDRGen and Radiance pipeline on the input images
             let result = process_image_set(
+                &app,
                 &config_settings,
                 input_images_from_dir,
                 response_function.clone(),
@@ -221,6 +223,7 @@ pub async fn pipeline(
 
         // Run the HDRGen and Radiance pipeline on the images
         let result = process_image_set(
+            &app,
             &config_settings,
             input_images,
             response_function.clone(),
@@ -300,6 +303,7 @@ pub fn get_images_from_dir(input_dir: &String) -> Result<Vec<String>, String> {
  * or representing an error, which is passed to the frontend in the pipeline function.
  */
 pub fn process_image_set(
+    app: &tauri::AppHandle,
     config_settings: &ConfigSettings,
     input_images: Vec<String>,
     response_function: String,
@@ -318,6 +322,7 @@ pub fn process_image_set(
     // Merge exposures
     // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
     let merge_exposures_result = merge_exposures(
+        app,
         &config_settings,
         input_images,
         response_function,
