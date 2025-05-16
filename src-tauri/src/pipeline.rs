@@ -220,10 +220,6 @@ pub async fn pipeline(
                 .output_path
                 .join(Path::new(input_dir).file_name().unwrap_or_default());
             output_file_name.set_extension("hdr");
-            let luminance_file_name = config_settings
-                .output_path
-                .join(Path::new(input_dir).file_name().unwrap_or_default())
-                .join("_fc.hdr");
 
             // Copy the final output hdr image to output directory
             let mut copy_result = copy(
@@ -233,12 +229,18 @@ pub async fn pipeline(
             if copy_result.is_err() {
                 return Result::Err(("Error copying final hdr image to output directory.").to_string());
             }
-            copy_result = copy(
-                &config_settings.temp_path.join("falsecolor_output.hdr"),
-                luminance_file_name,
-            );
-            if copy_result.is_err() {
-                return Result::Err(("Error copying final luminance map hdr image to output directory.").to_string());
+            if luminance_args.scale_limit != "" {
+                let luminance_file_name = config_settings
+                    .output_path
+                    .join(Path::new(input_dir).file_name().unwrap_or_default())
+                    .join("_fc.hdr");
+                copy_result = copy(
+                    &config_settings.temp_path.join("falsecolor_output.hdr"),
+                    luminance_file_name,
+                );
+                if copy_result.is_err() {
+                    return Result::Err(("Error copying final luminance map hdr image to output directory.").to_string());
+                }
             }
         }
     } else {
@@ -274,7 +276,6 @@ pub async fn pipeline(
         }
 
         let output_file_name = config_settings.output_path.join("output.hdr");
-        let luminance_file_name = config_settings.output_path.join("output_fc.hdr");
 
         // Copy the final output hdr image to output directory
         let mut copy_result = copy(
@@ -284,12 +285,16 @@ pub async fn pipeline(
         if copy_result.is_err() {
             return Result::Err(("Error copying final hdr image to output directory.").to_string());
         }
-        copy_result = copy(
-            &config_settings.temp_path.join("falsecolor_output.hdr"),
-            luminance_file_name,
-        );
-        if copy_result.is_err() {
-            return Result::Err(("Error copying final hdr luminance image to output directory.").to_string());
+
+        if luminance_args.scale_limit != "" {
+            let luminance_file_name = config_settings.output_path.join("output_fc.hdr");
+            copy_result = copy(
+                &config_settings.temp_path.join("falsecolor_output.hdr"),
+                luminance_file_name,
+            );
+            if copy_result.is_err() {
+                return Result::Err(("Error copying final hdr luminance image to output directory.").to_string());
+            }
         }
     }
 
