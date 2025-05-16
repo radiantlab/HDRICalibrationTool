@@ -144,6 +144,7 @@ pub async fn pipeline(
         return Result::Err(("Error creating tmp and output directories.").to_string());
     }
 
+    let mut return_path: PathBuf = PathBuf::new();
     if is_directory {
         // Directories were selected (batch processing)
 
@@ -193,6 +194,9 @@ pub async fn pipeline(
             }
 
             // Set output file name to be the same as the input directory name (i.e. <dir_name>.hdr)
+            return_path = config_settings
+                .output_path
+                .join(Path::new(input_dir));
             let mut output_file_name = config_settings
                 .output_path
                 .join(Path::new(input_dir).file_name().unwrap_or_default());
@@ -241,6 +245,7 @@ pub async fn pipeline(
         }
 
         let output_file_name = config_settings.output_path.join("output.hdr");
+        return_path = config_settings.output_path;
 
         // Copy the final output hdr image to output directory
         let copy_result = copy(
@@ -253,7 +258,7 @@ pub async fn pipeline(
     }
 
     // If no errors, return Ok
-    return Result::Ok(("Completed image generation.").to_string());
+    return Result::Ok(return_path.to_string_lossy().to_string());
 }
 
 /*
