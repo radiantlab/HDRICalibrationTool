@@ -9,6 +9,7 @@ export default function ButtonBar({ handleGenerateHDRImage }: any) {
     useState<boolean>(false);
   const [showLoadConfigDialog, setShowLoadConfigDialog] =
     useState<boolean>(false);
+  const [loaded, setLoaded] = useState<string>(""); // indicates the currently loaded config (used to differentiate save vs edit)
 
   return (
     <div  className="fixed bottom-0 left-0 w-full bg-gray-300 border-gray-400">
@@ -30,12 +31,16 @@ export default function ButtonBar({ handleGenerateHDRImage }: any) {
         {showSaveConfigDialog && (
           <SaveConfigDialog
             toggleDialog={() => setShowSaveConfigDialog(!showSaveConfigDialog)}
+            loaded={loaded}
+            setLoaded={(name: string) => setLoaded(name)}
           />
         )}
   
         {showLoadConfigDialog && (
           <LoadConfigDialog
             toggleDialog={() => setShowLoadConfigDialog(!showLoadConfigDialog)}
+            loaded={loaded}
+            setLoaded={(name: string) => setLoaded(name)}
           />
         )}
         <button
