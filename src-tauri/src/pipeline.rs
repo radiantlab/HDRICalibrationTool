@@ -230,10 +230,13 @@ pub async fn pipeline(
                 return Result::Err(("Error copying final hdr image to output directory.").to_string());
             }
             if luminance_args.scale_limit != "" {
+                let base_name = Path::new(input_dir)
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy();
                 let luminance_file_name = config_settings
                     .output_path
-                    .join(Path::new(input_dir).file_name().unwrap_or_default())
-                    .join("_fc.hdr");
+                    .join(format!("{base_name}_fc.hdr"));
                 copy_result = copy(
                     &config_settings.temp_path.join("falsecolor_output.hdr"),
                     luminance_file_name,
