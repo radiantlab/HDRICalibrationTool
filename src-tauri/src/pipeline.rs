@@ -199,10 +199,13 @@ pub async fn pipeline(
                 .output_path
                 .join(Path::new(input_dir).file_name().unwrap_or_default());
             output_file_name.set_extension("hdr");
-            let mut evalglare_file_name = config_settings
+            let base_name = Path::new(input_dir)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy();
+            let evalglare_file_name = config_settings
                 .output_path
-                .join(Path::new(input_dir).file_name().unwrap_or_default())
-                .join("_evalglare.txt");
+                .join(format!("{base_name}_evalglare.txt"));
 
             // Copy the final output hdr image to output directory
             let mut copy_result = copy(
