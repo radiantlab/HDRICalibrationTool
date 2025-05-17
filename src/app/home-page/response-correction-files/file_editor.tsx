@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { invoke } from "@tauri-apps/api/tauri";
+import { save } from '@tauri-apps/api/dialog';
 import { Paths } from "../string_functions";
 
 // Converted to a component that can be imported
@@ -52,13 +53,26 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, onClose }) 
     setLineCount(lines);
   };
 
-  function saveChanges() {
-    invoke("write_host_file", { filePath, text })
-      .then(() => {
+  // Add a new function for "Save As"
+  async function saveChangesAs() {
+    try {
+      // Open save dialog and get the selected path
+      const savePath = await save({
+        defaultPath: filePath,
+        filters: [{
+          name: 'Text',
+          extensions: ['txt', 'conf', 'ini', 'json', '*']
+        }]
+      });
+      
+      if (savePath) {
+        await invoke("write_host_file", { filePath: savePath, text });
         setIsSaved(true);
         setTimeout(() => setIsSaved(false), 2000);
-      })
-      .catch((error) => console.log("Error writing file contents: ", error));
+      }
+    } catch (error) {
+      console.log("Error saving file: ", error);
+    }
   }
 
   // Generate line numbers
@@ -102,14 +116,15 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, onClose }) 
           ></textarea>
         </div>
         
+        {/* Update the UI buttons section */}
         <div className="flex justify-between items-center mt-4">
           {isSaved && <span className="text-green-500">Changes saved successfully!</span>}
-          <div className="ml-auto">
+          <div className="ml-auto flex gap-2">
             <button
-              onClick={saveChanges}
+              onClick={saveChangesAs}
               className="w-max bg-osu-beaver-orange hover:bg-osu-luminance text-white font-semibold py-1 px-2 border-gray-400 rounded"
             >
-              Save Changes
+              Save file as...
             </button>
           </div>
         </div>
