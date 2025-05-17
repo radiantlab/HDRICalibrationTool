@@ -5,6 +5,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { basename } from "@tauri-apps/api/path";
 import { open } from "@tauri-apps/api/dialog";
 import { Command } from "@tauri-apps/api/shell";
+import { os } from "@tauri-apps/api";
 import { useSettingsStore } from "../stores/settings-store";
 
 export default function ImageViewer() {
@@ -13,15 +14,18 @@ export default function ImageViewer() {
   const outputPath = settings.outputPath;
 
   const [error, setError] = useState<string | null>(null);
+  const [isWindows, setIsWindows] = useState<boolean>(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [imageFullPaths, setImageFullPaths] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadFiles() {
+      const platform: string = await os.platform();
       const files = await populateGrid(outputPath);
       const relative_files = await Promise.all(files.map(file => basename(file)));
       setSelectedImages(relative_files);
       setImageFullPaths(files);
+      if (platform === "win32") setIsWindows(true);
     }
     loadFiles();
   }, [outputPath]);
@@ -50,6 +54,7 @@ export default function ImageViewer() {
   }
 
   async function launchXimage(imagePath: string) {
+    if (isWindows) return; // silently return if on windows to avoid error
     try {
       const cmd = new Command("ximage", [
         "-g",
@@ -85,6 +90,7 @@ export default function ImageViewer() {
   return (
     <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
       <main className="bg-white col-span-4 m-8 mt-0 p-5 border-l border-r border-gray-400">
+        {isWindows && <label className="text-red-500">This feature is currently not supported on Windows</label>}
         <h2 className="text-2xl font-bold mb-6">Open HDR Image</h2>
         {error && <div className="text-red-500 mb-4">{error}</div>}
         <button
