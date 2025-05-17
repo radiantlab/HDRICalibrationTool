@@ -3,6 +3,9 @@ import { open } from "@tauri-apps/api/dialog";
 import { Paths, Extensions } from "../string_functions";
 import { useConfigStore } from "../../stores/config-store";
 import { FileEditor } from "./file_editor"; 
+import { EditingFileType } from "@/app/global-types";
+
+
 
 export default function Response_and_correction() {
   const {
@@ -14,16 +17,18 @@ export default function Response_and_correction() {
     setConfig,
   } = useConfigStore();
 
-  type PathSetterFunc = (path: string) => void;
+
 
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [currentEditingFile, setCurrentEditingFile] = useState<string>("");
-  const [pathFunction, setPathFunction] = useState<PathSetterFunc>(() => {});
+  //const [pathFunction, setPathFunction] = useState<PathSetterFunc>(() => {});
+  const [editingFileType, setEditingFileType] = useState<EditingFileType>(EditingFileType.NONE);
 
-  const openEditor = (filePath: string, editFunction: PathSetterFunc) => {
+  const openEditor = (filePath: string, /*editFunction: PathSetterFunc*/ fileType: EditingFileType) => {
     setCurrentEditingFile(filePath);
     setIsEditorOpen(true);
-    setPathFunction(() => editFunction);
+    //setPathFunction(() => editFunction);
+    setEditingFileType(fileType);
   };
 
   const closeEditor = () => {
@@ -192,7 +197,7 @@ export default function Response_and_correction() {
       </button>
       { responsePaths && 
         <button
-          onClick={() => openEditor(responsePaths, setResponsePaths)}
+          onClick={() => openEditor(responsePaths, EditingFileType.RESPONSE)}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
         >
           Edit File
@@ -227,7 +232,7 @@ export default function Response_and_correction() {
       </button>
       { fe_correctionPaths && 
         <button
-          onClick={() => openEditor(fe_correctionPaths, set_fe_correctionPaths)}
+          onClick={() => openEditor(fe_correctionPaths, EditingFileType.FISH_EYE)}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
         >
           Edit File
@@ -262,7 +267,7 @@ export default function Response_and_correction() {
       </button>
       { v_correctionPaths && 
         <button
-          onClick={() => openEditor(v_correctionPaths, set_v_correctionPaths)}
+          onClick={() => openEditor(v_correctionPaths, EditingFileType.VIGNETTING)}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
         >
           Edit File
@@ -297,7 +302,7 @@ export default function Response_and_correction() {
       </button>
       { nd_correctionPaths && 
         <button
-          onClick={() => openEditor(nd_correctionPaths, set_nd_correctionPaths)}
+          onClick={() => openEditor(nd_correctionPaths, EditingFileType.NEUTRAL_DENSITY)}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
         >
           Edit File
@@ -332,7 +337,7 @@ export default function Response_and_correction() {
       </button>
       { cf_correctionPaths && 
         <button
-          onClick={() => openEditor(cf_correctionPaths, set_cf_correctionPaths)}
+          onClick={() => openEditor(cf_correctionPaths, EditingFileType.CALIBRATION_FACTOR)}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
         >
           Edit File
@@ -362,7 +367,7 @@ export default function Response_and_correction() {
         filePath={currentEditingFile} 
         isOpen={isEditorOpen} 
         closeEditor={closeEditor}
-        setPath={pathFunction}
+        editingFileType={editingFileType}
       />
     </div>
   );
