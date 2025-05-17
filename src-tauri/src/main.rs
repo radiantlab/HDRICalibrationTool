@@ -24,6 +24,9 @@ use write_binary_paths::write_binary_paths;
 // Command to write to a file given its contents from frontend
 mod write_host_file;
 use write_host_file::write_host_file;
+// Command to delete a saved config
+mod delete_config;
+use delete_config::delete_config;
 
 // Command to get app's data directory
 mod get_default_output_path;
@@ -48,6 +51,7 @@ fn main() {
             read_host_file,
             write_binary_paths,
             write_host_file,
+            delete_config,
             get_default_output_path, 
             save_config,
             get_saved_configs

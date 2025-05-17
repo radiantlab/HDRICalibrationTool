@@ -4,8 +4,7 @@ import { Paths, Extensions } from "../string_functions";
 import { useConfigStore } from "../../stores/config-store";
 import { FileEditor } from "./file_editor"; 
 import { EditingFileType } from "@/app/global-types";
-
-
+import FileFieldRow from "../file-field-row";
 
 export default function Response_and_correction() {
   const {
@@ -32,37 +31,15 @@ export default function Response_and_correction() {
   };
 
   const DEBUG = true;
-  let response: any = "";
   let fe_correction: any = "";
   let v_correction: any = "";
   let nd_correction: any = "";
   let cf_correction: any = "";
   // Error checking display
-  const [response_error, set_response_error] = useState<boolean>(false);
   const [fe_error, set_fe_error] = useState<boolean>(false);
   const [v_error, set_v_error] = useState<boolean>(false);
   const [nd_error, set_nd_error] = useState<boolean>(false);
   const [cf_error, set_cf_error] = useState<boolean>(false);
-
-  async function dialogResponse() {
-    response = await open({
-      multiple: true,
-    });
-    if (response === null) {
-      // user cancelled the selection
-    } else {
-      console.log("Extension " + Extensions(response[0]));
-      set_response_error(false);
-      if (Extensions(response[0]) !== "rsp") {
-        set_response_error(true);
-      } else {
-        setConfig({ responsePaths: response[0] });
-      }
-    }
-    if (DEBUG) {
-      console.log("response: ", response);
-    }
-  }
 
   async function dialogFE() {
     fe_correction = await open({
@@ -162,182 +139,54 @@ export default function Response_and_correction() {
   };
   return (
     <div>
-      <h2 className="font-bold pt-5" id="response">
-        Response File
-      </h2>
-      <button
-        onClick={dialogResponse}
-        className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-      >
-        Select File
-      </button>
-      { responsePaths && 
-        <button
-          onClick={() => openEditor(responsePaths, EditingFileType.RESPONSE)}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
-        >
-          Edit File
-        </button>
-      }
-      <div>
-        {response_error && (
-          <div>
-            <p>Please only enter files ending in rsp</p>
-          </div>
-        )}
-        {responsePaths && (
-          <div>
-            {Paths(responsePaths)}{" "}
-            <button 
-              onClick={() => handleResponseDelete()} 
-              className="bg-gray-300 hover:bg-red-300 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-            >
-              Delete
-            </button>
-          </div>
-        )}
-      </div>
       <h2 className="font-bold pt-5" id="fe">
         Fish Eye Correction
       </h2>
-      <button
-        onClick={dialogFE}
-        className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-      >
-        Select File
-      </button>
-      { fe_correctionPaths && 
-        <button
-          onClick={() => openEditor(fe_correctionPaths, EditingFileType.FISH_EYE)}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
-        >
-          Edit File
-        </button>
-      }
-      <div>
-        {fe_error && (
-          <div>
-            <p>Please only enter files ending in cal</p>
-          </div>
-        )}
-        {fe_correctionPaths && (
-          <div>
-            {Paths(fe_correctionPaths)}{" "}
-            <button 
-              onClick={() => handle_fe_delete()}
-              className="bg-gray-300 hover:bg-red-300 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-            >
-              Delete
-            </button>
-          </div>
-        )}
-      </div>
+      <FileFieldRow
+        label="Fish Eye Correction"
+        value={fe_correctionPaths}
+        onBrowse={dialogFE}
+        onClear={handle_fe_delete}
+        onEdit={() => openEditor(fe_correctionPaths, EditingFileType.FISH_EYE)}
+        errorMessage={fe_error ? "Please only enter files ending in cal" : ""}
+      />
+
       <h2 className="font-bold pt-5" id="v">
         Vignetting Correction
       </h2>
-      <button
-        onClick={dialogV}
-        className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-      >
-        Select File
-      </button>
-      { v_correctionPaths && 
-        <button
-          onClick={() => openEditor(v_correctionPaths, EditingFileType.VIGNETTING)}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
-        >
-          Edit File
-        </button>
-      }
-      <div>
-        {v_error && (
-          <div>
-            <p>Please only enter files ending in cal</p>
-          </div>
-        )}
-        {v_correctionPaths && (
-          <div>
-            {Paths(v_correctionPaths)}{" "}
-            <button 
-              onClick={() => handle_v_delete()}
-              className="bg-gray-300 hover:bg-red-300 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-            >
-              Delete
-            </button>
-          </div>
-        )}
-      </div>
+      <FileFieldRow
+        label="Vignetting Correction"
+        value={v_correctionPaths}
+        onBrowse={dialogV}
+        onClear={handle_v_delete}
+        onEdit={() => openEditor(v_correctionPaths, EditingFileType.VIGNETTING)}
+        errorMessage={v_error ? "Please only enter files ending in cal" : ""}
+      />
+
       <h2 className="font-bold pt-5" id="nd">
         Neutral Density Correction
       </h2>
-      <button
-        onClick={dialogND}
-        className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-      >
-        Select File
-      </button>
-      { nd_correctionPaths && 
-        <button
-          onClick={() => openEditor(nd_correctionPaths, EditingFileType.NEUTRAL_DENSITY)}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
-        >
-          Edit File
-        </button>
-      }
-      <div>
-        {nd_error && (
-          <div>
-            <p>Please only enter files ending in cal</p>
-          </div>
-        )}
-        {nd_correctionPaths && (
-          <div>
-            {Paths(nd_correctionPaths)}{" "}
-            <button 
-              onClick={() => handle_nd_delete()}
-              className="bg-gray-300 hover:bg-red-300 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-            >
-              Delete
-            </button>
-          </div>
-        )}
-      </div>
+      <FileFieldRow
+        label="Neutral Density Correction"
+        value={nd_correctionPaths}
+        onBrowse={dialogND}
+        onClear={handle_nd_delete}
+        onEdit={() => openEditor(nd_correctionPaths, EditingFileType.NEUTRAL_DENSITY)}
+        errorMessage={nd_error ? "Please only enter files ending in cal" : ""}
+      />
+
       <h2 className="font-bold pt-5" id="cf">
         Calibration Factor Correction
       </h2>
-      <button
-        onClick={dialogCF}
-        className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-      >
-        Select File
-      </button>
-      { cf_correctionPaths && 
-        <button
-          onClick={() => openEditor(cf_correctionPaths, EditingFileType.CALIBRATION_FACTOR)}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
-        >
-          Edit File
-        </button>
-      }
-      <div>
-        {cf_error && (
-          <div>
-            <p>Please only enter files ending in cal</p>
-          </div>
-        )}
-        {cf_correctionPaths && (
-          <div>
-            {Paths(cf_correctionPaths)}{" "}
-            <button 
-              onClick={() => handle_cf_delete()}
-              className="bg-gray-300 hover:bg-red-300 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded"
-            >
-              Delete
-            </button>
-          </div>
-        )}
-        <div className="pt-5"></div>
-      </div>
+      <FileFieldRow
+        label="Calibration Factor Correction"
+        value={cf_correctionPaths}
+        onBrowse={dialogCF}
+        onClear={handle_cf_delete}
+        onEdit={() => openEditor(cf_correctionPaths, EditingFileType.CALIBRATION_FACTOR)}
+        errorMessage={cf_error ? "Please only enter files ending in cal" : ""}
+      />
+      <div className="pt-5"></div>
 
       <FileEditor 
         filePath={currentEditingFile} 
