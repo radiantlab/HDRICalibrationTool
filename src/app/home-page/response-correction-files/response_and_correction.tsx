@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { open } from "@tauri-apps/api/dialog";
 import { Paths, Extensions } from "../string_functions";
 import { useConfigStore } from "../../stores/config-store";
@@ -17,43 +17,19 @@ export default function Response_and_correction() {
     setConfig,
   } = useConfigStore();
 
-
-
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [currentEditingFile, setCurrentEditingFile] = useState<string>("");
-  //const [pathFunction, setPathFunction] = useState<PathSetterFunc>(() => {});
   const [editingFileType, setEditingFileType] = useState<EditingFileType>(EditingFileType.NONE);
 
-  const openEditor = (filePath: string, /*editFunction: PathSetterFunc*/ fileType: EditingFileType) => {
+  const openEditor = (filePath: string, fileType: EditingFileType) => {
     setCurrentEditingFile(filePath);
     setIsEditorOpen(true);
-    //setPathFunction(() => editFunction);
     setEditingFileType(fileType);
   };
 
   const closeEditor = () => {
     setIsEditorOpen(false);
   };
-
-  const setResponsePaths = useCallback((response: string) => {
-    setConfig({ responsePaths: response });
-  }, [setConfig]);
-
-  const set_fe_correctionPaths = useCallback((fe_correction: string) => {
-    setConfig({ fe_correctionPaths: fe_correction });
-  }, [setConfig]);
-
-  const set_v_correctionPaths = useCallback((v_correction: string) => {
-    setConfig({ v_correctionPaths: v_correction });
-  }, [setConfig]);
-
-  const set_nd_correctionPaths = useCallback((nd_correction: string) => {
-    setConfig({ nd_correctionPaths: nd_correction });
-  }, [setConfig]);
-
-  const set_cf_correctionPaths = useCallback((cf_correction: string) => {
-    setConfig({ cf_correctionPaths: cf_correction });
-  }, [setConfig]);
 
   const DEBUG = true;
   let response: any = "";
@@ -80,7 +56,7 @@ export default function Response_and_correction() {
       if (Extensions(response[0]) !== "rsp") {
         set_response_error(true);
       } else {
-        setResponsePaths(response[0]);
+        setConfig({ responsePaths: response[0] });
       }
     }
     if (DEBUG) {
@@ -100,7 +76,7 @@ export default function Response_and_correction() {
       if (Extensions(fe_correction[0]) !== "cal") {
         set_fe_error(true);
       } else {
-        set_fe_correctionPaths(fe_correction[0]);
+        setConfig({ fe_correctionPaths: fe_correction[0] });
       }
     }
     if (DEBUG) {
@@ -119,7 +95,7 @@ export default function Response_and_correction() {
       if (Extensions(v_correction[0]) !== "cal") {
         set_v_error(true);
       } else {
-        set_v_correctionPaths(v_correction[0]);
+        setConfig({ v_correctionPaths: v_correction[0] });
       }
     }
     if (DEBUG) {
@@ -138,7 +114,7 @@ export default function Response_and_correction() {
       if (Extensions(nd_correction[0]) !== "cal") {
         set_nd_error(true);
       } else {
-        set_nd_correctionPaths(nd_correction[0]);
+        setConfig({ nd_correctionPaths: nd_correction[0] });
       }
     }
     if (DEBUG) {
@@ -157,7 +133,7 @@ export default function Response_and_correction() {
       if (Extensions(cf_correction[0]) !== "cal") {
         set_cf_error(true);
       } else {
-        set_cf_correctionPaths(cf_correction[0]);
+        setConfig({ cf_correctionPaths: cf_correction[0] });
       }
     }
     if (DEBUG) {
@@ -166,23 +142,23 @@ export default function Response_and_correction() {
   }
 
   const handleResponseDelete = () => {
-    setResponsePaths("");
+    setConfig({ responsePaths: "" });
   };
 
   const handle_fe_delete = () => {
-    set_fe_correctionPaths("");
+    setConfig({ fe_correctionPaths: "" });
   };
 
   const handle_v_delete = () => {
-    set_v_correctionPaths("");
+    setConfig({ v_correctionPaths: "" });
   };
 
   const handle_nd_delete = () => {
-    set_nd_correctionPaths("");
+    setConfig({ nd_correctionPaths: "" });
   };
 
   const handle_cf_delete = () => {
-    set_cf_correctionPaths("");
+    setConfig({ cf_correctionPaths: "" });
   };
   return (
     <div>
