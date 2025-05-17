@@ -4,10 +4,13 @@ import { Paths } from "./string_functions";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
 import { Extensions } from "./string_functions";
 import { useConfigStore } from "../stores/config-store";
+import { FileEditor } from "./response-correction-files/file_editor"; 
+import { EditingFileType } from "@/app/global-types";
 import FileFieldRow from "./file-field-row";
 
 export default function Images() {
   const { devicePaths, responsePaths, setConfig } = useConfigStore();
+  const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
 
   const setDevicePaths = (device: any) => {
     setConfig({ devicePaths: device });
@@ -16,6 +19,7 @@ export default function Images() {
   const setResponsePaths = (response: string) => {
     setConfig({ responsePaths: response });
   };
+
 
   const DEBUG = true;
   const valid_extensions = [
@@ -97,7 +101,7 @@ export default function Images() {
       if (Extensions(response[0]) !== "rsp") {
         set_response_error(true);
       } else {
-        setResponsePaths(response[0]);
+        setConfig({ responsePaths: response[0] });
       }
     }
     if (DEBUG) {
@@ -276,17 +280,24 @@ export default function Images() {
         </div>
       )}
       {/* Response File Field */}
-      <div className="mb-5 mt-4">
-        <h3 className="font-semibold mb-2">Response File</h3>
-        <FileFieldRow
-          label="Response File"
-          value={responsePaths}
-          onBrowse={dialogResponse}
-          onClear={handleResponseDelete}
-          onEdit={() => console.log("Edit response")}
-          errorMessage={response_error ? "Please only enter files ending in .rsp" : ""}
-        />
-      </div>
+      <h2 className="font-bold pt-5" id="fe">
+        Response File
+      </h2>
+      <FileFieldRow
+        label="Response File"
+        value={responsePaths}
+        onBrowse={dialogResponse}
+        onClear={handleResponseDelete}
+        onEdit={() => setIsEditorOpen(true)}
+        errorMessage={response_error ? "Please only enter files ending in .rsp" : ""}
+      />
+      
+      <FileEditor 
+        filePath={responsePaths} 
+        isOpen={isEditorOpen} 
+        closeEditor={() => setIsEditorOpen(false)}
+        editingFileType={EditingFileType.RESPONSE}
+      />
     </div>
   );
 }
