@@ -50,7 +50,6 @@ export default function ImageViewer() {
   }
 
   async function launchXimage(imagePath: string) {
-    console.log(imagePath);
     try {
       const cmd = new Command("ximage", [
         "-g",
@@ -69,7 +68,6 @@ export default function ImageViewer() {
 
   async function populateGrid(dir: string): Promise<string[]> {
     const entries = await invoke("read_dynamic_dir", { path: dir });
-    console.log(entries);
     const hdrPaths: string[] = [];
 
     async function collectFiles(entries: any[]) {
