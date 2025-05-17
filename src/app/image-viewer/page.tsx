@@ -39,8 +39,6 @@ export default function ImageViewer() {
   async function launchXimage(imagePath: string) {
     try {
       const cmd = new Command("ximage", [
-        "-g",
-        "2.2",
         "-e",
         "auto",
         imagePath,
