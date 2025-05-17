@@ -14,11 +14,14 @@ export default function ImageViewer() {
 
   const [error, setError] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [imageFullPaths, setImageFullPaths] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadFiles() {
       const files = await populateGrid(outputPath);
-      setSelectedImages(files);
+      const relative_files = await Promise.all(files.map(file => basename(file)));
+      setSelectedImages(relative_files);
+      setImageFullPaths(files);
     }
     loadFiles();
   }, [outputPath]);
@@ -47,6 +50,7 @@ export default function ImageViewer() {
   }
 
   async function launchXimage(imagePath: string) {
+    console.log(imagePath);
     try {
       const cmd = new Command("ximage", [
         "-g",
@@ -71,8 +75,7 @@ export default function ImageViewer() {
     async function collectFiles(entries: any[]) {
       for (const entry of entries) {
         if (entry.toLowerCase().endsWith(".hdr")) {
-          const fileName = await basename(entry);
-          hdrPaths.push(fileName);
+          hdrPaths.push(entry);
         }
       }
     }
@@ -101,7 +104,7 @@ export default function ImageViewer() {
                 <div
                   key={index}
                   className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 p-2 rounded"
-                  onClick={() => launchXimage(image)}
+                  onClick={() => launchXimage(imageFullPaths[index])}
                 >
                   {/* Icon placeholder */}
                   <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded">
