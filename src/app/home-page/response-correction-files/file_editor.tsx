@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { invoke } from "@tauri-apps/api/tauri";
 import { save } from '@tauri-apps/api/dialog';
@@ -22,11 +22,21 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor
   const [fileContents, setFileContents] = useState<string>("");
   const [text, setText] = useState<string>("");
   const [lineCount, setLineCount] = useState<number>(1);
+  const lineNumbersRef = useRef<HTMLDivElement>(null);
+  const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
   const { setConfig } = useConfigStore();
 
   useEffect(() => {
-    if (isOpen && filePath) {
+    if (isOpen) {
+      // Clear the editor when path is empty or filetype is NONE
+      if (!filePath || editingFileType === EditingFileType.NONE) {
+        setFileContents("");
+        setText("");
+        setLineCount(1);
+        return;
+      }
+      
       // Retrieves the contents of the file when the modal is opened
       const fetchFileContents = async () => {
         try {
@@ -40,7 +50,7 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor
       
       fetchFileContents();
     }
-  }, [isOpen, filePath]);
+  }, [isOpen, filePath, editingFileType]);
 
   // Calculate line numbers whenever text changes
   useEffect(() => {
@@ -56,6 +66,13 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor
     setText(newText);
     const lines = newText.split('\n').length;
     setLineCount(lines);
+  };
+
+  // Synchronize scrolling between textarea and line numbers
+  const handleScroll = () => {
+    if (textAreaRef.current && lineNumbersRef.current) {
+      lineNumbersRef.current.scrollTop = textAreaRef.current.scrollTop;
+    }
   };
 
   const handleSetPath = (newPath: string) => {
@@ -82,13 +99,28 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor
 
   async function saveChangesAs() {
     try {
+      // Determine the file filters based on the editing file type
+      const fileFilters = editingFileType === EditingFileType.RESPONSE
+        ? [{ name: 'Response Files', extensions: ['rsp'] }]
+        : [{ name: 'Calibration Files', extensions: ['cal'] }];
+      
+      // Extract the file base name without extension
+      let defaultPath = filePath;
+      if (defaultPath) {
+        // Remove existing extension if present
+        const lastDotIndex = defaultPath.lastIndexOf('.');
+        if (lastDotIndex !== -1) {
+          defaultPath = defaultPath.substring(0, lastDotIndex);
+        }
+        
+        // Add the appropriate extension
+        defaultPath += editingFileType === EditingFileType.RESPONSE ? '.rsp' : '.cal';
+      }
+      
       // Open save dialog and get the selected path
       const savePath = await save({
-        defaultPath: filePath,
-        filters: [{
-          name: 'Text',
-          extensions: ['txt', 'conf', 'ini', 'json', '*']
-        }]
+        defaultPath,
+        filters: fileFilters
       });
       
       if (savePath) {
@@ -119,9 +151,11 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div className="bg-white p-6 w-4/5 max-h-5/6 flex flex-col border border-black shadow-2xl">
+      <div className="bg-white p-6 w-4/5 max-h-[80vh] flex flex-col border border-black shadow-2xl">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Edit File: {Paths(filePath)}</h2>
+          <h2 className="text-xl font-bold">
+            {filePath ? `Edit File: ${Paths(filePath)}` : 'New File'}
+          </h2>
           <button
             onClick={closeEditor}
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 rounded"
@@ -130,20 +164,29 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor
           </button>
         </div>
         
-        <div className="flex border border-gray-300 rounded flex-grow overflow-hidden">
-          <div className="bg-gray-100 py-1 px-2 overflow-y-auto">
+        <div className="flex border border-gray-300 rounded flex-grow overflow-hidden h-[50vh]">
+          <div 
+            ref={lineNumbersRef}
+            className="bg-gray-100 py-1 px-2 overflow-y-hidden"
+            style={{ overflowY: 'hidden' }}
+          >
             {renderLineNumbers()}
           </div>
           <textarea 
+            ref={textAreaRef}
             className="w-full outline-none py-1 px-2 resize-none font-mono overflow-y-auto"
             value={text}
             onChange={handleTextChange}
-            style={{ minHeight: '50vh', lineHeight: '1.5' }}
+            onScroll={handleScroll}
+            style={{ 
+              height: '100%',
+              lineHeight: '1.5',
+              overflowY: 'auto'
+            }}
             wrap="off"
           ></textarea>
         </div>
         
-        {/* Update the UI buttons section */}
         <div className="flex justify-between items-center mt-4">
           <div className="ml-auto flex gap-2">
             <button
