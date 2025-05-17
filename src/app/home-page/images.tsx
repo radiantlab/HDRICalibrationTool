@@ -4,13 +4,22 @@ import { Paths } from "./string_functions";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
 import { Extensions } from "./string_functions";
 import { useConfigStore } from "../stores/config-store";
+import { FileEditor } from "./response-correction-files/file_editor"; 
+import { EditingFileType } from "@/app/global-types";
+import FileFieldRow from "./file-field-row";
 
 export default function Images() {
-  const { devicePaths, setConfig } = useConfigStore();
+  const { devicePaths, responsePaths, setConfig } = useConfigStore();
+  const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
 
   const setDevicePaths = (device: any) => {
     setConfig({ devicePaths: device });
   };
+  
+  const setResponsePaths = (response: string) => {
+    setConfig({ responsePaths: response });
+  };
+
 
   const DEBUG = true;
   const valid_extensions = [
@@ -75,6 +84,34 @@ export default function Images() {
   const [image_error, set_image_error] = useState<boolean>(false);
 
   const [rawImagesSelected, setRawImagesSelected] = useState<boolean>(false);
+
+  // Response file related state and functions
+  const [response_error, set_response_error] = useState<boolean>(false);
+  let response: any = "";
+  
+  async function dialogResponse() {
+    response = await open({
+      multiple: true,
+    });
+    if (response === null) {
+      // user cancelled the selection
+    } else {
+      console.log("Extension " + Extensions(response[0]));
+      set_response_error(false);
+      if (Extensions(response[0]) !== "rsp") {
+        set_response_error(true);
+      } else {
+        setConfig({ responsePaths: response[0] });
+      }
+    }
+    if (DEBUG) {
+      console.log("response: ", response);
+    }
+  }
+
+  const handleResponseDelete = () => {
+    setResponsePaths("");
+  };
 
   // Open a file dialog window using the tauri api and update the images array with the results
   async function dialog() {
@@ -178,6 +215,7 @@ export default function Images() {
       <h2 className="font-bold pt-5" id="image_selection">
         Image Selection
       </h2>
+      
       {image_error && !directorySelected && (
         <div>
           Please only enter valid image types: jpg, jpeg, tif, tiff, or raw
@@ -241,6 +279,25 @@ export default function Images() {
           </div>
         </div>
       )}
+      {/* Response File Field */}
+      <h2 className="font-bold pt-5" id="fe">
+        Response File
+      </h2>
+      <FileFieldRow
+        label="Response File"
+        value={responsePaths}
+        onBrowse={dialogResponse}
+        onClear={handleResponseDelete}
+        onEdit={() => setIsEditorOpen(true)}
+        errorMessage={response_error ? "Please only enter files ending in .rsp" : ""}
+      />
+      
+      <FileEditor 
+        filePath={responsePaths} 
+        isOpen={isEditorOpen} 
+        closeEditor={() => setIsEditorOpen(false)}
+        editingFileType={EditingFileType.RESPONSE}
+      />
     </div>
   );
 }
