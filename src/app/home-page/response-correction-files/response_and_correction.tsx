@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { open } from "@tauri-apps/api/dialog";
 import { Paths, Extensions } from "../string_functions";
 import { useConfigStore } from "../../stores/config-store";
@@ -14,34 +14,41 @@ export default function Response_and_correction() {
     setConfig,
   } = useConfigStore();
 
+  type PathSetterFunc = (path: string) => void;
 
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   const [currentEditingFile, setCurrentEditingFile] = useState<string>("");
+  const [pathFunction, setPathFunction] = useState<PathSetterFunc>(() => {});
 
-  const openEditor = (filePath: string) => {
+  const openEditor = (filePath: string, editFunction: PathSetterFunc) => {
     setCurrentEditingFile(filePath);
     setIsEditorOpen(true);
+    setPathFunction(() => editFunction);
   };
 
   const closeEditor = () => {
     setIsEditorOpen(false);
   };
 
-  const setResponsePaths = (response: string) => {
+  const setResponsePaths = useCallback((response: string) => {
     setConfig({ responsePaths: response });
-  };
-  const set_fe_correctionPaths = (fe_correction: string) => {
+  }, [setConfig]);
+
+  const set_fe_correctionPaths = useCallback((fe_correction: string) => {
     setConfig({ fe_correctionPaths: fe_correction });
-  };
-  const set_v_correctionPaths = (v_correction: string) => {
+  }, [setConfig]);
+
+  const set_v_correctionPaths = useCallback((v_correction: string) => {
     setConfig({ v_correctionPaths: v_correction });
-  };
-  const set_nd_correctionPaths = (nd_correction: string) => {
+  }, [setConfig]);
+
+  const set_nd_correctionPaths = useCallback((nd_correction: string) => {
     setConfig({ nd_correctionPaths: nd_correction });
-  };
-  const set_cf_correctionPaths = (cf_correction: string) => {
+  }, [setConfig]);
+
+  const set_cf_correctionPaths = useCallback((cf_correction: string) => {
     setConfig({ cf_correctionPaths: cf_correction });
-  };
+  }, [setConfig]);
 
   const DEBUG = true;
   let response: any = "";
@@ -55,6 +62,7 @@ export default function Response_and_correction() {
   const [v_error, set_v_error] = useState<boolean>(false);
   const [nd_error, set_nd_error] = useState<boolean>(false);
   const [cf_error, set_cf_error] = useState<boolean>(false);
+
   async function dialogResponse() {
     response = await open({
       multiple: true,
@@ -184,7 +192,7 @@ export default function Response_and_correction() {
       </button>
       { responsePaths && 
         <button
-          onClick={() => openEditor(responsePaths)}
+          onClick={() => openEditor(responsePaths, setResponsePaths)}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
         >
           Edit File
@@ -219,7 +227,7 @@ export default function Response_and_correction() {
       </button>
       { fe_correctionPaths && 
         <button
-          onClick={() => openEditor(fe_correctionPaths)}
+          onClick={() => openEditor(fe_correctionPaths, set_fe_correctionPaths)}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
         >
           Edit File
@@ -254,7 +262,7 @@ export default function Response_and_correction() {
       </button>
       { v_correctionPaths && 
         <button
-          onClick={() => openEditor(v_correctionPaths)}
+          onClick={() => openEditor(v_correctionPaths, set_v_correctionPaths)}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
         >
           Edit File
@@ -289,7 +297,7 @@ export default function Response_and_correction() {
       </button>
       { nd_correctionPaths && 
         <button
-          onClick={() => openEditor(nd_correctionPaths)}
+          onClick={() => openEditor(nd_correctionPaths, set_nd_correctionPaths)}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
         >
           Edit File
@@ -324,7 +332,7 @@ export default function Response_and_correction() {
       </button>
       { cf_correctionPaths && 
         <button
-          onClick={() => openEditor(cf_correctionPaths)}
+          onClick={() => openEditor(cf_correctionPaths, set_cf_correctionPaths)}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded ml-2"
         >
           Edit File
@@ -353,7 +361,8 @@ export default function Response_and_correction() {
       <FileEditor 
         filePath={currentEditingFile} 
         isOpen={isEditorOpen} 
-        onClose={closeEditor} 
+        closeEditor={closeEditor}
+        setPath={pathFunction}
       />
     </div>
   );
