@@ -5,19 +5,25 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { invoke } from "@tauri-apps/api/tauri";
 import { save } from '@tauri-apps/api/dialog';
 import { Paths } from "../string_functions";
+import { useConfigStore } from "../../stores/config-store";
+import { on } from "events";
 
 // Converted to a component that can be imported
+
+type PathSetterFunc = (path: string) => void;
+
 interface ConfigEditorProps {
   filePath: string;
   isOpen: boolean;
-  onClose: () => void;
+  closeEditor: () => void;
+  setPath: PathSetterFunc;
 }
 
-const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, onClose }) => {
+const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor, setPath }) => {
+
   const [fileContents, setFileContents] = useState<string>("");
   const [text, setText] = useState<string>("");
   const [lineCount, setLineCount] = useState<number>(1);
-  const [isSaved, setIsSaved] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen && filePath) {
@@ -27,7 +33,6 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, onClose }) 
           const contents = await invoke("read_host_file", { filePath }) as string;
           setFileContents(contents);
           setText(contents);
-          setIsSaved(false);
         } catch (error) {
           console.log("Error fetching file contents: ", error);
         }
@@ -53,7 +58,6 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, onClose }) 
     setLineCount(lines);
   };
 
-  // Add a new function for "Save As"
   async function saveChangesAs() {
     try {
       // Open save dialog and get the selected path
@@ -67,9 +71,10 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, onClose }) 
       
       if (savePath) {
         await invoke("write_host_file", { filePath: savePath, text });
-        setIsSaved(true);
-        setTimeout(() => setIsSaved(false), 2000);
+        setPath(savePath as string);
+        closeEditor();
       }
+
     } catch (error) {
       console.log("Error saving file: ", error);
     }
@@ -96,7 +101,7 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, onClose }) 
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold">Edit File: {Paths(filePath)}</h2>
           <button
-            onClick={onClose}
+            onClick={closeEditor}
             className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 rounded"
           >
             Close
@@ -118,7 +123,6 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, onClose }) 
         
         {/* Update the UI buttons section */}
         <div className="flex justify-between items-center mt-4">
-          {isSaved && <span className="text-green-500">Changes saved successfully!</span>}
           <div className="ml-auto flex gap-2">
             <button
               onClick={saveChangesAs}
