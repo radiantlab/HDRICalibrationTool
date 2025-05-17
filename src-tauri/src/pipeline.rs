@@ -1,4 +1,5 @@
 mod crop;
+mod evalglare;
 mod header_editing;
 mod merge_exposures;
 mod neutral_density;
@@ -15,6 +16,7 @@ use std::{
 };
 
 use crop::crop;
+use evalglare::evalglare;
 use header_editing::header_editing;
 use merge_exposures::merge_exposures;
 use neutral_density::neutral_density;
@@ -201,16 +203,28 @@ pub async fn pipeline(
                 .output_path
                 .join(Path::new(input_dir).file_name().unwrap_or_default());
             output_file_name.set_extension("hdr");
+            let base_name = Path::new(input_dir)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy();
+            let evalglare_file_name = config_settings
+                .output_path
+                .join(format!("{base_name}_evalglare.txt"));
 
             // Copy the final output hdr image to output directory
-            let copy_result = copy(
+            let mut copy_result = copy(
                 &config_settings.temp_path.join("header_editing.hdr"),
                 output_file_name,
             );
             if copy_result.is_err() {
-                return Result::Err(
-                    ("Error copying final hdr image to output directory.").to_string(),
-                );
+                return Result::Err(("Error copying final hdr image to output directory.").to_string());
+            }
+            copy_result = copy(
+                &config_settings.temp_path.join("evalglare_output.txt"),
+                evalglare_file_name,
+            );
+            if copy_result.is_err() {
+                return Result::Err(("Error copying evalglare value to output directory.").to_string());
             }
         }
     } else {
@@ -245,15 +259,23 @@ pub async fn pipeline(
         }
 
         let output_file_name = config_settings.output_path.join("output.hdr");
+        let evalglare_file_name = config_settings.output_path.join("output_evalglare.txt");
         return_path = config_settings.output_path;
 
         // Copy the final output hdr image to output directory
-        let copy_result = copy(
+        let mut copy_result = copy(
             &config_settings.temp_path.join("header_editing.hdr"),
             output_file_name,
         );
         if copy_result.is_err() {
             return Result::Err(("Error copying final hdr image to output directory.").to_string());
+        }
+        copy_result = copy(
+            &config_settings.temp_path.join("evalglare_output.txt"),
+            evalglare_file_name,
+        );
+        if copy_result.is_err() {
+            return Result::Err(("Error copying final hdr evalglare output image to output directory.").to_string());
         }
     }
 
@@ -529,6 +551,28 @@ pub fn process_image_set(
     // If the command encountered an error, abort pipeline
     if header_editing_result.is_err() {
         return header_editing_result;
+    }
+
+    next_path = "header_editing.hdr";
+
+    // Evalglare
+    let evalglare_result = evalglare(
+        &config_settings,
+        config_settings
+            .temp_path
+            .join(next_path)
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("evalglare_output.txt")
+            .display()
+            .to_string(),
+    );
+    
+    // If the command encountered an error, abort the pipeline
+    if evalglare_result.is_err() {
+        return evalglare_result;
     }
 
     // Pipeline has completed successfully. Return Ok
