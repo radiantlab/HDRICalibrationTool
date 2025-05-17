@@ -1,11 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { open } from "@tauri-apps/api/dialog";
-import { Paths, Extensions } from "./string_functions";
-import { useConfigStore } from "../stores/config-store";
-import FileFieldRow from "./file-field-row";
+import { Paths, Extensions } from "../string_functions";
+import { useConfigStore } from "../../stores/config-store";
+import { FileEditor } from "./file_editor"; 
+import { EditingFileType } from "@/app/global-types";
+import FileFieldRow from "../file-field-row";
 
 export default function Response_and_correction() {
   const {
+    responsePaths,
     fe_correctionPaths,
     v_correctionPaths,
     nd_correctionPaths,
@@ -13,17 +16,18 @@ export default function Response_and_correction() {
     setConfig,
   } = useConfigStore();
 
-  const set_fe_correctionPaths = (fe_correction: string) => {
-    setConfig({ fe_correctionPaths: fe_correction });
+  const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
+  const [currentEditingFile, setCurrentEditingFile] = useState<string>("");
+  const [editingFileType, setEditingFileType] = useState<EditingFileType>(EditingFileType.NONE);
+
+  const openEditor = (filePath: string, fileType: EditingFileType) => {
+    setCurrentEditingFile(filePath);
+    setIsEditorOpen(true);
+    setEditingFileType(fileType);
   };
-  const set_v_correctionPaths = (v_correction: string) => {
-    setConfig({ v_correctionPaths: v_correction });
-  };
-  const set_nd_correctionPaths = (nd_correction: string) => {
-    setConfig({ nd_correctionPaths: nd_correction });
-  };
-  const set_cf_correctionPaths = (cf_correction: string) => {
-    setConfig({ cf_correctionPaths: cf_correction });
+
+  const closeEditor = () => {
+    setIsEditorOpen(false);
   };
 
   const DEBUG = true;
@@ -49,7 +53,7 @@ export default function Response_and_correction() {
       if (Extensions(fe_correction[0]) !== "cal") {
         set_fe_error(true);
       } else {
-        set_fe_correctionPaths(fe_correction[0]);
+        setConfig({ fe_correctionPaths: fe_correction[0] });
       }
     }
     if (DEBUG) {
@@ -68,7 +72,7 @@ export default function Response_and_correction() {
       if (Extensions(v_correction[0]) !== "cal") {
         set_v_error(true);
       } else {
-        set_v_correctionPaths(v_correction[0]);
+        setConfig({ v_correctionPaths: v_correction[0] });
       }
     }
     if (DEBUG) {
@@ -87,7 +91,7 @@ export default function Response_and_correction() {
       if (Extensions(nd_correction[0]) !== "cal") {
         set_nd_error(true);
       } else {
-        set_nd_correctionPaths(nd_correction[0]);
+        setConfig({ nd_correctionPaths: nd_correction[0] });
       }
     }
     if (DEBUG) {
@@ -106,7 +110,7 @@ export default function Response_and_correction() {
       if (Extensions(cf_correction[0]) !== "cal") {
         set_cf_error(true);
       } else {
-        set_cf_correctionPaths(cf_correction[0]);
+        setConfig({ cf_correctionPaths: cf_correction[0] });
       }
     }
     if (DEBUG) {
@@ -114,57 +118,81 @@ export default function Response_and_correction() {
     }
   }
 
+  const handleResponseDelete = () => {
+    setConfig({ responsePaths: "" });
+  };
+
   const handle_fe_delete = () => {
-    set_fe_correctionPaths("");
+    setConfig({ fe_correctionPaths: "" });
   };
 
   const handle_v_delete = () => {
-    set_v_correctionPaths("");
+    setConfig({ v_correctionPaths: "" });
   };
 
   const handle_nd_delete = () => {
-    set_nd_correctionPaths("");
+    setConfig({ nd_correctionPaths: "" });
   };
 
   const handle_cf_delete = () => {
-    set_cf_correctionPaths("");
+    setConfig({ cf_correctionPaths: "" });
   };
   return (
-    <div className="space-y-6">
+    <div>
+      <h2 className="font-bold pt-5" id="fe">
+        Fish Eye Correction
+      </h2>
       <FileFieldRow
         label="Fish Eye Correction"
         value={fe_correctionPaths}
         onBrowse={dialogFE}
         onClear={handle_fe_delete}
-        onEdit={() => console.log("Edit fish eye")}
-        errorMessage={fe_error ? "Please only enter files ending in .cal" : ""}
+        onEdit={() => openEditor(fe_correctionPaths, EditingFileType.FISH_EYE)}
+        errorMessage={fe_error ? "Please only enter files ending in cal" : ""}
       />
 
+      <h2 className="font-bold pt-5" id="v">
+        Vignetting Correction
+      </h2>
       <FileFieldRow
         label="Vignetting Correction"
         value={v_correctionPaths}
         onBrowse={dialogV}
         onClear={handle_v_delete}
-        onEdit={() => console.log("Edit vignetting")}
-        errorMessage={v_error ? "Please only enter files ending in .cal" : ""}
+        onEdit={() => openEditor(v_correctionPaths, EditingFileType.VIGNETTING)}
+        errorMessage={v_error ? "Please only enter files ending in cal" : ""}
       />
 
+      <h2 className="font-bold pt-5" id="nd">
+        Neutral Density Correction
+      </h2>
       <FileFieldRow
         label="Neutral Density Correction"
         value={nd_correctionPaths}
         onBrowse={dialogND}
         onClear={handle_nd_delete}
-        onEdit={() => console.log("Edit neutral density")}
-        errorMessage={nd_error ? "Please only enter files ending in .cal" : ""}
+        onEdit={() => openEditor(nd_correctionPaths, EditingFileType.NEUTRAL_DENSITY)}
+        errorMessage={nd_error ? "Please only enter files ending in cal" : ""}
       />
 
+      <h2 className="font-bold pt-5" id="cf">
+        Calibration Factor Correction
+      </h2>
       <FileFieldRow
         label="Calibration Factor Correction"
         value={cf_correctionPaths}
         onBrowse={dialogCF}
         onClear={handle_cf_delete}
-        onEdit={() => console.log("Edit calibration")}
-        errorMessage={cf_error ? "Please only enter files ending in .cal" : ""}
+        onEdit={() => openEditor(cf_correctionPaths, EditingFileType.CALIBRATION_FACTOR)}
+        errorMessage={cf_error ? "Please only enter files ending in cal" : ""}
+      />
+      <div className="pt-5"></div>
+
+      <FileEditor 
+        filePath={currentEditingFile} 
+        isOpen={isEditorOpen} 
+        closeEditor={closeEditor}
+        editingFileType={editingFileType}
       />
     </div>
   );
