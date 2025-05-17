@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { readDir } from "@tauri-apps/api/fs";
+import { basename } from "@tauri-apps/api/path";
 import { open } from "@tauri-apps/api/dialog";
 import { Command } from "@tauri-apps/api/shell";
 import { useSettingsStore } from "../stores/settings-store";
@@ -12,6 +14,14 @@ export default function ImageViewer() {
 
   const [error, setError] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    async function loadFiles() {
+      const files = await populateGrid(outputPath);
+      setSelectedImages(files);
+    }
+    loadFiles();
+  }, [outputPath]);
 
   async function browseAndOpen() {
     setError(null);
@@ -51,6 +61,23 @@ export default function ImageViewer() {
       console.error("Failed to spawn ximage for:", imagePath, spawnError);
       setError("Could not launch ximage.");
     }
+  }
+
+  async function populateGrid(dir: string): Promise<string[]> {
+    const entries = await readDir(dir, { recursive: true });
+    const hdrPaths: string[] = [];
+
+    async function collectFiles(entries: any[]) {
+      for (const entry of entries) {
+        if (entry.path.toLowerCase().endsWith(".hdr")) {
+          const fileName = await basename(entry.path);
+          hdrPaths.push(fileName);
+        }
+      }
+    }
+
+    await collectFiles(entries);
+    return hdrPaths;
   }
 
   return (
