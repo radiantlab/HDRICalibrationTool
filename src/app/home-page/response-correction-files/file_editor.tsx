@@ -7,23 +7,23 @@ import { save } from '@tauri-apps/api/dialog';
 import { Paths } from "../string_functions";
 import { useConfigStore } from "../../stores/config-store";
 import { on } from "events";
-
-// Converted to a component that can be imported
-
-type PathSetterFunc = (path: string) => void;
+import { EditingFileType } from "@/app/global-types";
 
 interface ConfigEditorProps {
   filePath: string;
   isOpen: boolean;
   closeEditor: () => void;
-  setPath: PathSetterFunc;
+  //setPath: PathSetterFunc;
+  editingFileType: EditingFileType;
 }
 
-const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor, setPath }) => {
+const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor, editingFileType }) => {
 
   const [fileContents, setFileContents] = useState<string>("");
   const [text, setText] = useState<string>("");
   const [lineCount, setLineCount] = useState<number>(1);
+
+  const { setConfig } = useConfigStore();
 
   useEffect(() => {
     if (isOpen && filePath) {
@@ -58,6 +58,28 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor
     setLineCount(lines);
   };
 
+  const handleSetPath = (newPath: string) => {
+  switch(editingFileType) {
+    case EditingFileType.RESPONSE:
+      setConfig({ responsePaths: newPath });
+      break;
+    case EditingFileType.FISH_EYE:
+      setConfig({ fe_correctionPaths: newPath });
+      break;
+    case EditingFileType.VIGNETTING:
+      setConfig({ v_correctionPaths: newPath });
+      break;
+    case EditingFileType.NEUTRAL_DENSITY:
+      setConfig({ nd_correctionPaths: newPath });
+      break;
+    case EditingFileType.CALIBRATION_FACTOR:
+      setConfig({ cf_correctionPaths: newPath });
+      break;
+    default:
+      console.warn("Unknown file type being edited");
+  }
+};
+
   async function saveChangesAs() {
     try {
       // Open save dialog and get the selected path
@@ -71,7 +93,7 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor
       
       if (savePath) {
         await invoke("write_host_file", { filePath: savePath, text });
-        setPath(savePath as string);
+        handleSetPath(savePath as string);
         closeEditor();
       }
 
