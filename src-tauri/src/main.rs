@@ -12,6 +12,9 @@ use query_os_platform::query_os_platform;
 mod read_binary_paths;
 use read_binary_paths::read_binary_paths;
 
+mod read_dynamic_dir;
+use read_dynamic_dir::read_dynamic_dir;
+
 mod write_binary_paths;
 use write_binary_paths::write_binary_paths;
 
@@ -39,6 +42,7 @@ fn main() {
             pipeline, 
             query_os_platform, 
             read_binary_paths,
+            read_dynamic_dir,
             write_binary_paths,
             delete_config,
             get_default_output_path, 

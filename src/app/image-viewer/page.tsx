@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { readDir } from "@tauri-apps/api/fs";
+import { invoke } from "@tauri-apps/api/tauri";
 import { basename } from "@tauri-apps/api/path";
 import { open } from "@tauri-apps/api/dialog";
 import { Command } from "@tauri-apps/api/shell";
@@ -64,19 +64,20 @@ export default function ImageViewer() {
   }
 
   async function populateGrid(dir: string): Promise<string[]> {
-    const entries = await readDir(dir, { recursive: true });
+    const entries = await invoke("read_dynamic_dir", { path: dir });
+    console.log(entries);
     const hdrPaths: string[] = [];
 
     async function collectFiles(entries: any[]) {
       for (const entry of entries) {
-        if (entry.path.toLowerCase().endsWith(".hdr")) {
-          const fileName = await basename(entry.path);
+        if (entry.toLowerCase().endsWith(".hdr")) {
+          const fileName = await basename(entry);
           hdrPaths.push(fileName);
         }
       }
     }
 
-    await collectFiles(entries);
+    await collectFiles(entries as any);
     return hdrPaths;
   }
 
