@@ -166,6 +166,7 @@ pub async fn pipeline(
         return Result::Err(("Error creating tmp and output directories.").to_string());
     }
 
+    let mut return_path: PathBuf = PathBuf::new();
     if is_directory {
         // Directories were selected (batch processing)
 
@@ -216,6 +217,9 @@ pub async fn pipeline(
             }
 
             // Set output file name to be the same as the input directory name (i.e. <dir_name>.hdr)
+            return_path = config_settings
+                .output_path
+                .join(Path::new(input_dir));
             let mut output_file_name = config_settings
                 .output_path
                 .join(Path::new(input_dir).file_name().unwrap_or_default());
@@ -237,7 +241,7 @@ pub async fn pipeline(
                 let luminance_file_name = config_settings
                     .output_path
                     .join(format!("{base_name}_fc.hdr"));
-                copy_result = copy(
+                    copy_result = copy(
                     &config_settings.temp_path.join("falsecolor_output.hdr"),
                     luminance_file_name,
                 );
@@ -299,10 +303,11 @@ pub async fn pipeline(
                 return Result::Err(("Error copying final hdr luminance image to output directory.").to_string());
             }
         }
+        return_path = config_settings.output_path;
     }
 
     // If no errors, return Ok
-    return Result::Ok(("Completed image generation.").to_string());
+    return Result::Ok(return_path.to_string_lossy().to_string());
 }
 
 /*
