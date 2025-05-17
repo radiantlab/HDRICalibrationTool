@@ -64,7 +64,8 @@ export default function Home() {
       if (!proceed) {
         return; // Abort if the user chooses not to proceed
       }
-    } else if (!responsePaths) {
+    } 
+    if (!responsePaths) {
       // If the user didn't select a response function,
       // display a warning that the output HDR image might be inaccurate if converting from JPEG
       // and ask for confirmation before proceeding with pipeline call
@@ -74,7 +75,8 @@ export default function Home() {
       if (!proceed) {
         return;
       }
-    } else if (viewSettings.vv !== viewSettings.vh) {
+    }
+    if (viewSettings.vv !== viewSettings.vh) {
       let proceed = await confirm(
         "Warning: vv (Vertical Angle) and vh (Horizontal Angle) values do not match. Continue anyway?"
       );
@@ -152,7 +154,6 @@ export default function Home() {
       };
     }
 
-    if (!responsePaths) missingInputs.push("Response path file");
     if (!fe_correctionPaths) missingInputs.push("Fisheye correction file");
     if (!v_correctionPaths) missingInputs.push("Vignetting correction file");
     if (!cf_correctionPaths) missingInputs.push("Calibration factor file");
