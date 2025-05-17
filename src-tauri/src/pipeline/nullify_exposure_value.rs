@@ -27,7 +27,11 @@ pub fn nullify_exposure_value(
     command.args(["-r", "-o", input_file.as_str(), output_file.as_str()]);
 
     // Run the command
-    let status = command.status();
+    let status_result = command.status();
+    if status_result.is_err() {
+        return Err("pipeline: nullify_exposure: failed to start command.".into());
+    }
+    let status = status_result.unwrap();
 
     if DEBUG {
         println!(
@@ -37,11 +41,11 @@ pub fn nullify_exposure_value(
     }
 
     // Return a Result object to indicate whether ra_xyze command was successful
-    if status.is_ok() {
+    if status.success() {
         // On success, return output path of HDR image
         Ok(output_file.into())
     } else {
         // On error, return an error message
-        Err("Error, non-zero exit status. ra_xyze command failed.".into())
+        Err("PIPELINE ERROR: command 'ra_xyze' (nullify exposure value) failed.".into())
     }
 }

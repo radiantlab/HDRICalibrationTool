@@ -9,9 +9,16 @@ interface ConfigState {
     vh: string;
     targetRes: string;
   };
+  luminanceSettings: {
+    scale_limit: string;
+    scale_label: string;
+    scale_levels: string;
+    legend_dimensions: string;
+  };
   progressButton: boolean;
   processError: boolean;
   showProgress: boolean;
+  outputPath: string;
   devicePaths: any[];
   responsePaths: string;
   fe_correctionPaths: string;
@@ -30,9 +37,16 @@ export const useConfigStore = create<ConfigState>((set) => ({
     vh: '',
     targetRes: '1000',
   },
+  luminanceSettings: {
+    scale_limit: '',
+    scale_label: '',
+    scale_levels: '',
+    legend_dimensions: '',
+  },
   progressButton: false,
   processError: false,
   showProgress: false,
+  outputPath: '',
   devicePaths: [],
   responsePaths: '',
   fe_correctionPaths: '',
