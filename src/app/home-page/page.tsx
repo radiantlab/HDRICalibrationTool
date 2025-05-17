@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import Images from "./images";
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import ButtonBar from "./button-bar/button-bar";
 import Response_and_correction from "./response_and_correction";
 import Progress from "./progress";
-import { exists } from "@tauri-apps/api/fs";
+import { exists } from "@tauri-apps/plugin-fs";
 import { useSettingsStore } from "../stores/settings-store";
 import { useConfigStore } from "../stores/config-store";
 
@@ -114,6 +114,7 @@ export default function Home() {
       })
       .catch((error: any) => {
         console.error;
+        alert(`${error}`);
         if (!fakePipeline) {
           setConfig({ processError: true });
         }

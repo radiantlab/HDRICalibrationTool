@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useSettingsStore } from "../stores/settings-store";
-import { open } from "@tauri-apps/api/dialog";
-import { invoke } from "@tauri-apps/api/tauri";
+import { open } from "@tauri-apps/plugin-dialog";
+import { invoke } from "@tauri-apps/api/core";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import SettingsButtonBar from "./settings-button-bar";
 

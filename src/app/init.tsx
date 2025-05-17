@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import { useSettingsStore } from "./stores/settings-store";
 
 const DEBUG = true;
