@@ -66,7 +66,8 @@ export default function Home() {
       if (!proceed) {
         return; // Abort if the user chooses not to proceed
       }
-    } else if (!responsePaths) {
+    } 
+    if (!responsePaths) {
       // If the user didn't select a response function,
       // display a warning that the output HDR image might be inaccurate if converting from JPEG
       // and ask for confirmation before proceeding with pipeline call
@@ -76,7 +77,8 @@ export default function Home() {
       if (!proceed) {
         return;
       }
-    } else if (viewSettings.vv !== viewSettings.vh) {
+    }
+    if (viewSettings.vv !== viewSettings.vh) {
       let proceed = await confirm(
         "Warning: vv (Vertical Angle) and vh (Horizontal Angle) values do not match. Continue anyway?"
       );
@@ -112,12 +114,18 @@ export default function Home() {
       scaleLevels: luminanceSettings.scale_levels,
       legendDimensions: luminanceSettings.legend_dimensions,
     })
-      .then((result: any) => console.log("Process finished. Result: ", result))
-      .then(() => {
+      .then((result: any) => {
+        console.log("Process finished. Result: ", result);
         if (!fakePipeline) {
-          setConfig({ progressButton: true });
+          setConfig({ progressButton: true, outputPath: result });
         }
       })
+      // .then((result: any) => console.log("Process finished. Result: ", result))
+      // .then(() => {
+      //   if (!fakePipeline) {
+      //     setConfig({ progressButton: true });
+      //   }
+      // })
       .catch((error: any) => {
         console.error(error);
         if (!fakePipeline) {
@@ -136,7 +144,7 @@ export default function Home() {
       const isValid = await exists(path);
       if (!isValid) {
         console.error("File not found");
-        return false;
+        return false; 
       }
     }
     return true;
@@ -152,7 +160,6 @@ export default function Home() {
       };
     }
 
-    if (!responsePaths) missingInputs.push("Response path file");
     if (!fe_correctionPaths) missingInputs.push("Fisheye correction file");
     if (!v_correctionPaths) missingInputs.push("Vignetting correction file");
     if (!cf_correctionPaths) missingInputs.push("Calibration factor file");
@@ -206,17 +213,58 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
-      <main className="bg-white col-span-4 m-8 mt-0 p-5 mb-10 border-l border-r border-gray-400">
-        {/* <h1 className="text-2xl font-bold mb-5">Image Configuration</h1> */}
+    <div className="min-h-screen bg-gray-300 text-black pb-16 px-8 overflow-auto border-l border-r border-gray-400">
+      <main className="bg-white w-full+1 max-w-none p-6 border-l border-r border-gray-400 rounded-none shadow-none" style={{ marginLeft: "-1px", marginRight: "-1px" }}>
+        {/* Progress Bar */}
         <Progress fakePipeline={fakePipeline} />
-        <Images />
-        <div id="c_r_v">
-          <CroppingResizingViewSettings />
-          <LuminanceConfiguration />
+        {/* Section 1 and 2 side-by-side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Section 1 */}
+          <div className="border border-gray-300 rounded-lg p-4 px-6">
+            <h2 className="flex items-center font-semibold mb-4 text-lg">
+              <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
+                1
+              </span>
+              Image Selection & Preview
+            </h2>
+            <Images />
+          </div>
+
+          {/* Section 2 */}
+          <div className="border border-gray-300 rounded-lg p-4">
+            <h2 className="flex items-center font-semibold mb-4 text-lg">
+              <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
+                2
+              </span>
+              Geometry of Fisheye View
+            </h2>
+            <CroppingResizingViewSettings />
+          </div>
+        </div>
+
+        {/* Section 3 below */}
+       <div className="border border-gray-300 rounded-lg p-4 px-6 mt-5">
+          <h2 className="flex items-center font-semibold mb-4 text-lg">
+            <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
+              3
+            </span>
+            Correction Files
+          </h2>
           <Response_and_correction />
         </div>
+
+        {/* Section 4 */}
+        <div className="border border-gray-300 rounded-lg p-4 px-6 mt-5">
+          <h2 className="flex items-center font-semibold mb-4 text-lg">
+            <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
+              4
+            </span>
+            Other
+          </h2>
+          <LuminanceConfiguration />
+        </div>
       </main>
+
       <ButtonBar handleGenerateHDRImage={handleGenerateHDRImage} />
     </div>
   );
