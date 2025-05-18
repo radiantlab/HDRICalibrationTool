@@ -18,7 +18,8 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
   const [scene, setScene] = useState<THREE.Scene>();
   const [cam, setCam] = useState<THREE.OrthographicCamera>();
 
-  const loader = new THREE.TextureLoader();
+  // const loader = new THREE.TextureLoader();
+  // loader.setCrossOrigin('anonymous');
   const [ogIm, setOgIm] = useState<any>();
 
   /**
@@ -43,6 +44,7 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
       if (ctx.current && ogIm) {
         // Main circle
         ctx.current.drawImage(ogIm, 0, 0, scaledSize[0], scaledSize[1]);
+        // ctx.current.drawImage(ogIm, 0, 0, scaledSize[0], scaledSize[1]);
         ctx.current.beginPath();
         ctx.current.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
         ctx.current.strokeStyle = "red";
@@ -84,67 +86,68 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
 
   const [lens, setLens] = useState<Lens>();
 
-  // Canvas setup
+  // Initial set up
   useEffect(() => {
     if (canv.current) {
       const cont = canv.current.getContext("2d");
+      const loader = new THREE.TextureLoader();
       if (cont) ctx.current = cont;
       loader.load(asset, (imgTexture) => {
-        let w: number, h: number;
-        const img = imgTexture.image;
-        setOgIm(img);
-        setOgSize([img.width, img.height]);
-
-        // Scale image down to fit window if necessary
-        (w = img.width), (h = img.height);
-        while (w > 800) {
-          w *= 0.8;
-          h *= 0.8;
-        }
-        setScaledSize([w, h]);
         if (canv.current) {
+          // Set up canvas and lens measuring tool
+          const img = imgTexture.image;
+
+          setOgIm(img);
+          setOgSize([img.width, img.height]);
+
+          // Scale image down to fit window if necessary
+          let w = img.width;
+          let h = img.height;
+          while (w > 800) {
+            w *= 0.8;
+            h *= 0.8;
+          }
+          setScaledSize([w, h]);
           canv.current.width = w;
           canv.current.height = h;
+          const curLens = new Lens(w / 2, h / 2, 50);
+          curLens.draw();
+          setLens(curLens);
+
+          // Set up scene and camera
+          texture.current = new THREE.CanvasTexture(canv.current);
+          texture.current.needsUpdate = true;
+          const geo = new THREE.PlaneGeometry(
+            canv.current.width,
+            canv.current.height
+          );
+          const mat = new THREE.MeshBasicMaterial({
+            map: texture.current,
+            transparent: true,
+          });
+          const plane = new THREE.Mesh(geo, mat);
+
+          const scn = new THREE.Scene();
+          scn.add(plane);
+          setScene(scn);
+
+          const camr = new THREE.OrthographicCamera(
+            window.innerWidth / -2,
+            window.innerWidth / 2,
+            window.innerHeight / 2,
+            window.innerHeight / -2,
+            1,
+            1000
+          );
+          camr.position.z = 5;
+          setCam(camr);
         }
-        const curLens = new Lens(w / 2, h / 2, 50);
-        curLens.draw();
-        setLens(curLens);
       });
+      
       renderer.current = new THREE.WebGLRenderer();
       renderer.current.setSize(window.innerWidth, window.innerHeight);
     }
-  }, [canv.current]);
-
-  // Setup scene and camera
-  useEffect(() => {
-    if (canv.current && renderer.current) {
-      texture.current = new THREE.CanvasTexture(canv.current);
-      const geo = new THREE.PlaneGeometry(
-        canv.current.width,
-        canv.current.height
-      );
-      const mat = new THREE.MeshBasicMaterial({
-        map: texture.current,
-        transparent: true,
-      });
-      const plane = new THREE.Mesh(geo, mat);
-
-      const scn = new THREE.Scene();
-      scn.add(plane);
-      setScene(scn);
-
-      const camr = new THREE.OrthographicCamera(
-        window.innerWidth / -2,
-        window.innerWidth / 2,
-        window.innerHeight / 2,
-        window.innerHeight / -2,
-        1,
-        1000
-      );
-      camr.position.z = 5;
-      setCam(camr);
-    }
-  }, [canv.current]);
+  }, [asset, canv.current]);
 
   //Interactive event handlers
   useEffect(() => {
@@ -201,7 +204,7 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
       canv.current.onmousemove = mouseMove;
       canv.current.onmouseup = mouseUp;
     }
-  }, [canv.current, lens, texture.current]);
+  }, [canv.current, lens]);
 
   // Handle window resize event
   useEffect(() => {
@@ -227,6 +230,9 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
     if (renderer.current && scene && cam) {
       const animate = () => {
         if (scene && cam) {
+          if (texture.current) {
+            texture.current.needsUpdate = true; 
+          }
           renderer.current?.render(scene, cam);
           window.requestAnimationFrame(animate);
         }
@@ -286,10 +292,10 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
             Select Fisheye Boundary
           </h3>
           <canvas ref={canv}></canvas>
-          <div className="flex flex-row space-x-5 pt-5">
+          <div className="flex flex-row space-x-20 pt-5 justify-center content-center">
             <button
               onClick={handleOnDone}
-              className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 rounded h-fit"
+              className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-4 rounded h-fit"
             >
               Done
             </button>
