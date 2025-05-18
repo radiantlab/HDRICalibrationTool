@@ -1,7 +1,5 @@
 use std::{
-    path::Path, 
-    process::{Command, ExitStatus},
-    fs,
+    fs, path::Path, process::{Command, ExitStatus}, str::Chars
 }; 
 
 /// Converts raw image into .tiff image for front end use.
@@ -20,7 +18,7 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
         None => return Err("Unable to get dir".to_string()),
     }; 
 
-    // If already exists, new converted raw will not replace old one. Clear to prevent from happening
+    // Prevent buildup of unneeded images
     let _clear = fs::remove_dir_all(Path::new(data_dir).join("converted_raws"));
 
     let dir = Path::new(data_dir).join("converted_raws");
@@ -30,7 +28,10 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
 
     let mut cmd: Command;
     let mut tiffs: Vec<String> = Vec::new();
+    let mut tst2;
     for i in 0..pths.len() {
+        let tst = pths[i].chars();
+        tst2 = get_file_name(tst);
         cmd = Command::new(Path::new(&dcraw).join("dcraw_emu"));
         cmd.args([
             "-T",
@@ -48,7 +49,7 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
             "-b",
             "1.1",
             "-Z",
-            dir.join(format!("raw_to_tiff.tiff")).display().to_string().as_str(),
+            dir.join(format!("{}.tiff", tst2)).display().to_string().as_str(),
             format!("{}", pths[i]).as_str(),
         ]);
         
@@ -57,8 +58,25 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
             return Err("Error, non-zero exit status. dcraw_emu command (converting to tiff images) failed.".to_string());
         }
 
-        tiffs.push(dir.join(format!("raw_to_tiff.tiff")).display().to_string());
+        tiffs.push(dir.join(format!("{}.tiff", tst2)).display().to_string());
     }
 
     return Ok(tiffs); 
+}
+
+fn get_file_name(img: Chars<'_>) -> String {
+    let mut check = false;
+    let mut name: String = "".to_string();
+    for c in img.rev() {
+        if c == '/' || c == '\\' {
+            break;
+        }
+        else if check == true {
+            name.insert(0, c);
+        }
+        else if c == '.' {
+            check = true;
+        }
+    }
+    return name;
 }
