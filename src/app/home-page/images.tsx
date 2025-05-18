@@ -308,8 +308,8 @@ export default function Images() {
                   <img
                     src={String(image)}
                     alt={`Image ${index}`}
-                    width={200}
-                    height={200}
+                    width={150}
+                    height={150}
                   />
                   <button onClick={() => handleImageDelete(index)}>
                     Delete
