@@ -326,6 +326,11 @@ pub fn process_image_set(
             .join("merge_exposures.hdr")
             .display()
             .to_string(),
+        diameter.clone(),
+        xleft.clone(),
+        ydown.clone(),
+        xdim.clone(),
+        ydim.clone(),
     );
 
     // If the command to merge exposures encountered an error, abort pipeline
