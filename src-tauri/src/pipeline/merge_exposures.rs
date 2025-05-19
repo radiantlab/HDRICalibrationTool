@@ -3,6 +3,7 @@ use std::{
     path::Path,
     process::{Command, ExitStatus},
 };
+use image::{GenericImageView, Pixel};
 
 use super::ConfigSettings;
 
@@ -22,6 +23,11 @@ pub fn merge_exposures(
     mut input_images: Vec<String>,
     response_function: String,
     output_path: String,
+    diameter: String,
+    xleft: String,
+    ydown: String,
+    xdim: String,
+    ydim: String,
 ) -> Result<String, String> {
     if DEBUG {
         println!("merge_exposures Tauri command was called!");
@@ -99,6 +105,25 @@ pub fn merge_exposures(
         }
 
         input_images = new_inputs;
+    } else { // images might include jpeg, so try to filter them
+        // convert float strings to f32
+        let diameter_f32 = diameter.parse::<f32>()
+            .map_err(|error| format!("pipeline: merge_exposures: failed to parse diameter as float - {}", error))?;
+        let xleft_f32 = xleft.parse::<f32>()
+            .map_err(|error| format!("pipeline: merge_exposures: failed to parse xleft as float - {}", error))?;
+        let ydown_f32 = ydown.parse::<f32>()
+            .map_err(|error| format!("pipeline: merge_exposures: failed to parse ydown as float - {}", error))?;
+        let xdim_f32 = xdim.parse::<f32>()
+            .map_err(|error| format!("pipeline: merge_exposures: failed to parse xdim as float - {}", error))?;
+        let ydim_f32 = ydim.parse::<f32>()
+            .map_err(|error| format!("pipeline: merge_exposures: failed to parse ydim as float - {}", error))?;
+        
+        // try and filter images, updating input images if successful
+        let filtered_images = match filter_images(input_images, diameter_f32, xleft_f32, ydown_f32, xdim_f32, ydim_f32) {
+            Ok(image_vec) => image_vec,
+            Err(error) => return Err(format!("pipeline: merge_exposures: failed to filter images - {}", error)),
+        };
+        input_images = filtered_images;
     }
 
     // Create a new command for hdrgen
@@ -136,6 +161,102 @@ pub fn merge_exposures(
     } else {
         // On success, return output path of HDR image
         Ok(output_path.into())
+    }
+}
+
+fn filter_images(input_images: Vec<String>, diameter: f32, xleft: f32, ydown: f32, xdim: f32, ydim: f32) -> Result<Vec<String>, String> {
+    let radius = diameter / 2.0;
+    let xcenter = xleft + radius;
+    let ycenter = ydown + radius;
+    let mut filtered_images = Vec::new();
+    let mut pixel_counts = Vec::new();
+    let mut pixels_below = 0;
+    let mut pixels_above = 0;
+    let mut skip_image = false;
+    // println!("Diameter: {}", diameter);
+    // println!("Radius: {}", radius);
+    // println!("xleft: {}", xleft);
+    // println!("ydown: {}", ydown);
+    // println!("xdim: {}", xdim);
+    // println!("ydim: {}", ydim);
+    // println!("xcenter: {}", xcenter);
+    // println!("ycenter: {}", ycenter);
+
+    // iterate through every image and count how many pixels of each is either below 27 or above 228 luminance 
+    for input_image in &input_images {
+        println!("Processing image: {}", input_image);
+        if !is_jpeg(&input_image) { // skip trying to filter non-jpeg images
+            continue;
+        }
+        let image = image::open(input_image)
+            .map_err(|error| format!("pipeline: merge_exposures: filter_images: failed to open image - {}\n", error))?;
+        let (width, height) = image.dimensions();
+        for y in 0..height {
+            for x in 0..width {
+                let dx = x as f32 - xcenter; // figure out where pixel sits relative to center of fisheye view
+                let dy = y as f32 - ycenter;
+                if (dx * dx + dy * dy).sqrt() <= radius { // if it's in the fisheye view
+                    let pixel = image.get_pixel(x, y).to_rgb();
+                    let [r, g, b] = pixel.0;
+                    if r < 27 && g < 27 && b < 27 { // all values below allowed threshold
+                        // println!("Viewing pixel ({},{}): ", x, y);
+                        // println!("RGB: {:?}", pixel.0);
+                        pixels_below += 1;
+                    } else if r > 228 && g > 228 && b > 228 { // all values above allowed threshold
+                        // println!("Viewing pixel ({},{}): ", x, y);
+                        // println!("RGB: {:?}", pixel.0);
+                        pixels_above += 1;
+                    }
+                }
+            }
+        }
+        pixel_counts.push((pixels_below, pixels_above));
+        pixels_below = 0;
+        pixels_above = 0;
+        // if !skip_image {
+        //     println!("Pushing image to filtered_images: {}", input_image);
+        //     filtered_images.push(input_image.clone());
+        // }
+        // skip_image = false;
+    }
+    let mut start_index: i32 = -1;
+    let mut end_index: i32 = -1;
+    for (i, (pixels_below, pixels_above)) in pixel_counts.iter().enumerate() {
+        if *pixels_below == 0 {
+            println!("Start_Index: {}", i);
+            start_index = i as i32;
+        }
+    }
+    if start_index == -1 {
+        start_index = 0;
+    }
+    for (i, (pixels_below, pixels_above)) in pixel_counts.iter().enumerate() {
+        if i > start_index as usize && *pixels_above == 0 {
+            println!("End_Index: {}", i);
+            end_index = i as i32;
+        }
+    }
+    if end_index == -1 {
+        end_index = pixel_counts.len() as i32;
+    }
+    for i in start_index..end_index {
+        filtered_images.push(input_images[i as usize].clone());
+    }
+    println!("{:?}", filtered_images);
+    Ok(filtered_images)
+}
+
+// Returns a boolean representing whether the image file is in jpeg format.
+fn is_jpeg(file_name: &String) -> bool {
+    let image_ext = Path::new(file_name)
+        .extension()
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+
+    if image_ext == "jpg" || image_ext == "jpeg" {
+        true
+    } else {
+        false
     }
 }
 
