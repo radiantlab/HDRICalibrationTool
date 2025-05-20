@@ -1,16 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
-import { basename } from "@tauri-apps/api/path";
-import { open } from "@tauri-apps/api/dialog";
-import { Command } from "@tauri-apps/api/shell";
-import { os } from "@tauri-apps/api";
 import { useSettingsStore } from "../stores/settings-store";
+export const dynamic = "force-dynamic";
 
 export default function ImageViewer() {
   const { settings } = useSettingsStore();
-  // Dynamically read the output path from settings.
   const outputPath = settings.outputPath;
 
   const [error, setError] = useState<string | null>(null);
@@ -20,8 +15,11 @@ export default function ImageViewer() {
 
   useEffect(() => {
     async function loadFiles() {
+      // Dynamically import os and basename from Tauri.
+      const os = await import("@tauri-apps/api/os");
       const platform: string = await os.platform();
       const files = await populateGrid(outputPath);
+      const { basename } = await import("@tauri-apps/api/path");
       const relative_files = await Promise.all(files.map(file => basename(file)));
       setSelectedImages(relative_files);
       setImageFullPaths(files);
@@ -33,13 +31,13 @@ export default function ImageViewer() {
   async function browseAndOpen() {
     setError(null);
     try {
+      // Dynamically import open from Tauri.
+      const { open } = await import("@tauri-apps/api/dialog");
       const files = await open({
-        multiple: true, // allow selecting multiple files
+        multiple: true,
         defaultPath: outputPath,
         filters: [{ name: "HDR Images", extensions: ["hdr"] }],
       });
-
-      // files can be a string, an array of strings, or null.
       if (files) {
         const images = Array.isArray(files) ? files : [files];
         console.log("Selected HDR images:", images);
@@ -54,8 +52,10 @@ export default function ImageViewer() {
   }
 
   async function launchXimage(imagePath: string) {
-    if (isWindows) return; // silently return if on windows to avoid error
+    if (isWindows) return; // silently return on Windows
     try {
+      // Dynamically import Command from Tauri.
+      const { Command } = await import("@tauri-apps/api/shell");
       const cmd = new Command("ximage", [
         "-g",
         "2.2",
@@ -72,25 +72,33 @@ export default function ImageViewer() {
   }
 
   async function populateGrid(dir: string): Promise<string[]> {
-    const entries = await invoke("read_dynamic_dir", { path: dir });
-    const hdrPaths: string[] = [];
-
-    async function collectFiles(entries: any[]) {
-      for (const entry of entries) {
-        if (entry.toLowerCase().endsWith(".hdr")) {
-          hdrPaths.push(entry);
+    try {
+      // Dynamically import invoke from Tauri.
+      const { invoke } = await import("@tauri-apps/api/tauri");
+      const entries = await invoke("read_dynamic_dir", { path: dir });
+      const hdrPaths: string[] = [];
+      if (Array.isArray(entries)) {
+        for (const entry of entries) {
+          if (typeof entry === "string" && entry.toLowerCase().endsWith(".hdr")) {
+            hdrPaths.push(entry);
+          }
         }
       }
+      return hdrPaths;
+    } catch (err) {
+      console.error("Error reading directory:", err);
+      return [];
     }
-
-    await collectFiles(entries as any);
-    return hdrPaths;
   }
 
   return (
     <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
       <main className="bg-white col-span-4 m-8 mt-0 p-5 border-l border-r border-gray-400">
-        {isWindows && <label className="text-red-500">This feature is currently not supported on Windows</label>}
+        {isWindows && (
+          <label className="text-red-500">
+            This feature is currently not supported on Windows
+          </label>
+        )}
         <h2 className="text-2xl font-bold mb-6">Open HDR Image</h2>
         {error && <div className="text-red-500 mb-4">{error}</div>}
         <button
@@ -99,7 +107,6 @@ export default function ImageViewer() {
         >
           Browse HDR Image
         </button>
-        {/* Render a grid of icons for each selected image */}
         {selectedImages.length > 0 && (
           <div className="mt-6 grid grid-cols-2 gap-4">
             {selectedImages.map((image, index) => {
@@ -110,11 +117,9 @@ export default function ImageViewer() {
                   className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 p-2 rounded"
                   onClick={() => launchXimage(imageFullPaths[index])}
                 >
-                  {/* Icon placeholder */}
                   <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded">
                     <span className="text-lg font-bold">HDR</span>
                   </div>
-                  {/* Display the filename */}
                   <div>
                     <p className="text-sm font-medium">{imageName}</p>
                   </div>
