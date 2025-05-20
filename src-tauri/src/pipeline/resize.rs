@@ -45,7 +45,7 @@ pub fn resize(
     // Direct command's output to specifed output file
     let file_result = File::create(&output_file);
     if file_result.is_err() {
-        return Err("Error, creating output file for resizing command failed.".into());
+        return Err("pipeline: resize: failed to create output file for 'pfilt' (resizing) command.".into());
     }
 
     let file = file_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
@@ -54,18 +54,22 @@ pub fn resize(
     command.stdout(stdio);
 
     // Run the command
-    let status = command.status();
+    let status_result = command.status();
+    if status_result.is_err() {
+        return Err("pipeline: resize: failed to start command.".into());
+    }
+    let status = status_result.unwrap();
 
     if DEBUG {
         println!("\nResize command exit status: {:?}\n", status);
     }
 
     // Return a Result object to indicate whether command was successful
-    if status.is_ok() {
+    if status.success() {
         // On success, return output path of HDR image
         Ok(output_file.into())
     } else {
         // On error, return an error message
-        Err("Error, non-zero exit status. Resize command (pfilt) failed.".into())
+        Err("PIPELINE ERROR: command 'pfilt' (resizing) failed.".into())
     }
 }
