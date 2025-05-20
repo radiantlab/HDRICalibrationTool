@@ -9,6 +9,7 @@ mod resize;
 mod vignetting_effect_correction;
 
 use tauri::Manager;
+mod falsecolor;
 
 use std::{
     fs::{self, copy, create_dir_all},
@@ -25,6 +26,7 @@ use photometric_adjustment::photometric_adjustment;
 use projection_adjustment::projection_adjustment;
 use resize::resize;
 use vignetting_effect_correction::vignetting_effect_correction;
+use falsecolor::falsecolor;
 
 // Used to print out debug information
 pub const DEBUG: bool = true;
@@ -44,6 +46,14 @@ fn emit_progress(app: &tauri::AppHandle, current_step: usize, total_steps: usize
     let progress = ((current_step as f64 / total_steps as f64) * 100.0) as i32;
     app.emit_all("pipeline-progress", progress)
         .map_err(|e| format!("Failed to emit progress event: {}", e))
+}
+
+// Struct to hold argument values for falsecolor2/luminance mapping
+pub struct LuminanceArgs {
+    scale_limit: String,
+    scale_label: String,
+    scale_levels: String,
+    legend_dimensions: String,
 }
 
 // Runs the radiance and hdrgen pipeline.
@@ -100,6 +110,10 @@ pub async fn pipeline(
     ydim: String,
     vertical_angle: String,
     horizontal_angle: String,
+    scale_limit: String,
+    scale_label: String,
+    scale_levels: String,
+    legend_dimensions: String,
 ) -> Result<String, String> {
     // Return error if pipeline was called with no input images
     if input_images.len() == 0 {
@@ -147,6 +161,14 @@ pub async fn pipeline(
         temp_path: Path::new(&output_path).join("tmp").to_owned(), // Temp directory is located in output directory
     };
 
+    // Add arguments for falsecolor2 to luminance arguments struct
+    let luminance_args = LuminanceArgs {
+        scale_limit: scale_limit,
+        scale_label: scale_label,
+        scale_levels: scale_levels,
+        legend_dimensions: legend_dimensions,
+    };
+
     // Creates output directory with /tmp subdirectory
     let create_dirs_result = create_dir_all(&config_settings.temp_path);
 
@@ -160,6 +182,13 @@ pub async fn pipeline(
     let mut current_step: usize = 0;
     emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)    
 
+    //Define total steps for progress bar (adjust this count as needed)
+    let total_steps: usize = if is_directory { 5 } else { 5 };
+
+    let mut current_step: usize = 0;
+    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)    
+
+    let mut return_path: PathBuf = PathBuf::new();
     if is_directory {
         // Directories were selected (batch processing)
 
@@ -191,6 +220,7 @@ pub async fn pipeline(
             let result = process_image_set(
                 &app,
                 &config_settings,
+                &luminance_args,
                 input_images_from_dir,
                 response_function.clone(),
                 fisheye_correction_cal.clone(),
@@ -212,20 +242,37 @@ pub async fn pipeline(
             }
 
             // Set output file name to be the same as the input directory name (i.e. <dir_name>.hdr)
+            return_path = config_settings
+                .output_path
+                .join(Path::new(input_dir));
             let mut output_file_name = config_settings
                 .output_path
                 .join(Path::new(input_dir).file_name().unwrap_or_default());
             output_file_name.set_extension("hdr");
 
             // Copy the final output hdr image to output directory
-            let copy_result = copy(
+            let mut copy_result = copy(
                 &config_settings.temp_path.join("header_editing.hdr"),
                 output_file_name,
             );
             if copy_result.is_err() {
-                return Result::Err(
-                    ("Error copying final hdr image to output directory.").to_string(),
+                return Result::Err(("Error copying final hdr image to output directory.").to_string());
+            }
+            if luminance_args.scale_limit != "" {
+                let base_name = Path::new(input_dir)
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy();
+                let luminance_file_name = config_settings
+                    .output_path
+                    .join(format!("{base_name}_fc.hdr"));
+                    copy_result = copy(
+                    &config_settings.temp_path.join("falsecolor_output.hdr"),
+                    luminance_file_name,
                 );
+                if copy_result.is_err() {
+                    return Result::Err(("Error copying final luminance map hdr image to output directory.").to_string());
+                }
             }
         }
         
@@ -243,6 +290,7 @@ pub async fn pipeline(
         let result = process_image_set(
             &app,
             &config_settings,
+            &luminance_args,
             input_images,
             response_function.clone(),
             fisheye_correction_cal.clone(),
@@ -266,17 +314,29 @@ pub async fn pipeline(
         let output_file_name = config_settings.output_path.join("output.hdr");
 
         // Copy the final output hdr image to output directory
-        let copy_result = copy(
+        let mut copy_result = copy(
             &config_settings.temp_path.join("header_editing.hdr"),
             output_file_name,
         );
         if copy_result.is_err() {
             return Result::Err(("Error copying final hdr image to output directory.").to_string());
         }
+
+        if luminance_args.scale_limit != "" {
+            let luminance_file_name = config_settings.output_path.join("output_fc.hdr");
+            copy_result = copy(
+                &config_settings.temp_path.join("falsecolor_output.hdr"),
+                luminance_file_name,
+            );
+            if copy_result.is_err() {
+                return Result::Err(("Error copying final hdr luminance image to output directory.").to_string());
+            }
+        }
+        return_path = config_settings.output_path;
     }
 
     // If no errors, return Ok
-    return Result::Ok(("Completed image generation.").to_string());
+    return Result::Ok(return_path.to_string_lossy().to_string());
 }
 
 
@@ -327,6 +387,7 @@ pub fn get_images_from_dir(input_dir: &String) -> Result<Vec<String>, String> {
 pub fn process_image_set(
     app: &tauri::AppHandle,
     config_settings: &ConfigSettings,
+    luminance_args: &LuminanceArgs,
     input_images: Vec<String>,
     response_function: String,
     fisheye_correction_cal: String,
@@ -569,6 +630,31 @@ pub fn process_image_set(
     current_step+= 1;
     emit_progress(app, current_step, total_steps)?;
     
+    next_path = "header_editing.hdr";
+
+    // Create luminance map if values were given by user
+    if luminance_args.scale_limit != "" {
+        let falsecolor_result = falsecolor(
+            &config_settings,
+            config_settings
+                .temp_path
+                .join(next_path)
+                .display()
+                .to_string(),
+            config_settings
+                .temp_path
+                .join("falsecolor_output.hdr")
+                .display()
+                .to_string(),
+            luminance_args,
+        );
+
+        // If the command encountered an error, abort pipeline
+        if falsecolor_result.is_err() {
+            return falsecolor_result;
+        }
+    }
+
     // Pipeline has completed successfully. Return Ok
     return Result::Ok(("Image set processed.").to_string());
 }

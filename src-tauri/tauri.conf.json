@@ -55,6 +55,9 @@
             "args": true                                     
           }
         ]
+      },
+      "window": {
+        "create": true
       }
     },
 
