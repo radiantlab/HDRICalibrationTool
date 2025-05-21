@@ -44,24 +44,28 @@ pub fn merge_exposures(
         );
     }
 
-    // One command uses Tauri/Rusts built in Command type, the other uses Tauri's sidecar API -> eventually both should use sidecar
     let mut command: Command;
-    // let mut sidecar_command: Command;
-    let dcraw_emu_build_working_directory = env::current_exe().unwrap().parent().unwrap().join("binaries");
 
     // If raw image format other than TIFF, need to first convert them to TIFF to be used by hdrgen
     if convert_to_tiff {
+        let cur_exe = env::current_exe().unwrap().parent().unwrap().to_path_buf();
+        // Get working directory of libraw.dll
+
+        let dcraw_emu_build_working_directory = if cfg!(target_os = "macos") {
+            if cfg!(debug_assertions) {
+                // macOS dev mode
+                cur_exe.join("binaries")
+            } else {
+                // macOS release mode (inside .app bundle)
+                cur_exe.join("../Resources/binaries")
+            }
+        } else {
+            // Linux and Windows
+            cur_exe.join("binaries")
+        };
+
         let mut index = 1;
         for input_image in &input_images {
-            /* Create a new command for dcraw_emu
-             * Command is created as sidecar which returns type 'tauri_plugin_shell::process::Command'
-             * 'Into::into()' converts this into type 'std::process::Command'
-             */
-            // let sidecar_path = sidecar_command.get_program();
-            // println!("Sidecar Path: {:?}", sidecar_path);
-            // println!("Absolute Exe. Path: {:?}", env::current_exe().unwrap().parent().unwrap().join("binaries"));
-            // println!("Absolute Exe. Path: {:?}", dcraw_emu_build_working_directory);
-            // command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
 
             // Add command arguments
             let output_arg = 
@@ -91,33 +95,6 @@ pub fn merge_exposures(
                 &input_arg
             ];
 
-            // sidecar_command.args([
-            //     "-T",
-            //     "-o",
-            //     "1",
-            //     "-W",
-            //     "-j",
-            //     "-q",
-            //     "3",
-            //     "-g",
-            //     "2",
-            //     "0",
-            //     "-t",
-            //     "0",
-            //     "-b",
-            //     "1.1",
-            //     "-Z",
-            //     config_settings
-            //         .temp_path
-            //         .join(format!("input{}.tiff", index))
-            //         .display()
-            //         .to_string()
-            //         .as_str(),
-            //     format!("{}", input_image).as_str(),
-            // ]);
-
-            // println!("Executing sidecar with args: {:?} {:?}", sidecar_command.get_program(), args);
-            // sidecar_command.args(args).spawn().expect("Failed to spawn sidecar process");
             if config_settings.dcraw_emu_path.as_os_str().is_empty() {
                 command = app.shell().sidecar("dcraw_emu").unwrap().into();
                 command.current_dir(&dcraw_emu_build_working_directory); // Set the working directory to find libraw.dll
@@ -131,16 +108,11 @@ pub fn merge_exposures(
                 }
                 command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
             }
+
             command.args(args);
             let status: Result<ExitStatus, std::io::Error> = command.status();
-            // let child = sidecar_command.spawn().unwrap();
-            // match status {
-            //     Ok(status) => println!("Worked: {:?}", status),
-            //     Err(ref e) => println!("Error: {}", e),
-            // }
 
             if !status.is_ok() || !status.unwrap_or(ExitStatus::default()).success() {
-                // On error, return an error message
                 return Err("Error, non-zero exit status. dcraw_emu command (converting to tiff images) failed.".into());
             }
 
