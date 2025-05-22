@@ -10,6 +10,7 @@ import Progress from "./progress";
 import { exists } from "@tauri-apps/api/fs";
 import { useSettingsStore } from "../stores/settings-store";
 import { useConfigStore } from "../stores/config-store";
+import { useCommandsStore, UserCommands } from "../stores/command-store";
 
 const DEBUG = true;
 
@@ -28,6 +29,8 @@ export default function Home() {
     cf_correctionPaths,
     setConfig,
   } = useConfigStore();
+
+  const { commands } = useCommandsStore();
 
   // HARD CODED PATHS FOR TESTING
 
@@ -105,6 +108,7 @@ export default function Home() {
       ydim: viewSettings.targetRes,
       verticalAngle: viewSettings.vv,
       horizontalAngle: viewSettings.vh,
+      commands: commands,
     })
       .then((result: any) => console.log("Process finished. Result: ", result))
       .then(() => {

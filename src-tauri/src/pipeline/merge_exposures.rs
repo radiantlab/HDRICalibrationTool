@@ -5,6 +5,7 @@ use std::{
 };
 
 use super::ConfigSettings;
+use super::UserCommands;
 
 // Merges multiple LDR images into an HDR image using hdrgen. If images are in JPG or TIFF format,
 // runs hdrgen command regularly. If images are not in JPG or TIFF format, converts the inputs
@@ -22,6 +23,7 @@ pub fn merge_exposures(
     mut input_images: Vec<String>,
     response_function: String,
     output_path: String,
+    commands: &UserCommands,
 ) -> Result<String, String> {
     if DEBUG {
         println!("merge_exposures Tauri command was called!");
@@ -46,12 +48,7 @@ pub fn merge_exposures(
     // If raw image format other than TIFF, need to first convert them to TIFF to be used by hdrgen
     if convert_to_tiff {
         let mut index = 1;
-        for input_image in &input_images {
-            // Create a new command for dcraw_emu
-            command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
-
-            // Add command arguments
-            command.args([
+        let mut dcraw_arguments: Vec<&str> = vec![
                 "-T",
                 "-o",
                 "1",
@@ -67,14 +64,31 @@ pub fn merge_exposures(
                 "-b",
                 "1.1",
                 "-Z",
-                config_settings
-                    .temp_path
-                    .join(format!("input{}.tiff", index))
-                    .display()
-                    .to_string()
-                    .as_str(),
-                format!("{}", input_image).as_str(),
-            ]);
+        ];
+
+        // Use custom command options if given
+        if commands.dcraw != "" {
+            dcraw_arguments = commands.dcraw.split_whitespace().collect();
+            if DEBUG {
+                println!("Given 'dcraw_emu' command options: {}", commands.dcraw);
+                println!("Command options as array: {:?}", dcraw_arguments);
+            }
+        }
+
+        for input_image in &input_images {
+            // Create a new command for dcraw_emu
+            command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
+
+            // Add command arguments
+            let temp_output_path = config_settings
+                .temp_path
+                .join(format!("input{}.tiff", index))
+                .display()
+                .to_string();
+            let input_image_path = format!("{}", input_image);
+            command.args(&dcraw_arguments);
+            command.arg(&temp_output_path);
+            command.arg(&input_image_path);
 
             let status: Result<ExitStatus, std::io::Error> = command.status();
 
@@ -120,7 +134,16 @@ pub fn merge_exposures(
     }
 
     // Add remaining flags for hdrgen step
-    command.args(["-a", "-e", "-f", "-g", "-F"]);
+    // Use custom command options if given
+    let mut hdrgen_arguments: Vec<&str> = vec!["-a", "-e", "-f", "-g", "-F"];
+    if commands.hdrgen != "" {
+        hdrgen_arguments = commands.dcraw.split_whitespace().collect();
+        if DEBUG {
+            println!("Given 'hdrgen' command options: {}", commands.hdrgen);
+            println!("Command options as array: {:?}", hdrgen_arguments);
+        }
+    }
+    command.args(&hdrgen_arguments);
 
     // Run the command
     let status: Result<ExitStatus, std::io::Error> = command.status();

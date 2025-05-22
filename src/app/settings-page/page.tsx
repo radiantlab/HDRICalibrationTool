@@ -6,6 +6,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { invoke } from "@tauri-apps/api/tauri";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import SettingsButtonBar from "./settings-button-bar";
+import CommandInput from "./custom-command";
 
 export default function SettingsPage() {
   const { settings, setSettings } = useSettingsStore();
@@ -155,6 +156,7 @@ export default function SettingsPage() {
         <h2 id="usability" className="my-6 text-2xl">
           Usability Settings
         </h2>
+
         {/* Experience Level Section */}
         <div className="mb-5">
           <h2 className="text-xl font-semibold mb-2">Experience Level</h2>
@@ -183,6 +185,23 @@ export default function SettingsPage() {
             </label>
           </div>
         </div>
+
+        {/* Custom Commands */}
+        {experienceLevel === "advanced" && 
+          <div className="mb-5">
+            <h2 className="text-xl font-semibold mb-2">Customize Commands</h2>
+            <CommandInput name="dcraw" label="'dcraw_emu' - RAW image conversion"/>
+            <CommandInput name="hdrgen" label="'hdrgen' - merging exposures"/>
+            <CommandInput name="raxyze" label="'ra_xyze' - nullify exposure values"/>
+            <CommandInput name="pcompos" label="'pcompos' - cropping"/>
+            <CommandInput name="pfilt" label="'pfilt' - resizing"/>
+            <CommandInput name="pcomb_projection_adj" label="'pcomb' - projection adjustment"/>
+            <CommandInput name="pcomb_vignetting_corr" label="'pcomb' - vignetting correction"/>
+            <CommandInput name="pcomb_neutral_dens" label="'pcomb' - neutral density filtering"/>
+            <CommandInput name="pcomb_photometric_adj" label="'pcomb' - photometric adjustment"/>
+            <CommandInput name="getinfo" label="'getinfo' - header editing"/>
+          </div>
+        }
 
         {/* Console Debug Section */}
         <div className="mb-5">

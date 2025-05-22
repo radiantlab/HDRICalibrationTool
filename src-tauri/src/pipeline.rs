@@ -13,6 +13,7 @@ use std::{
     io,
     path::{Path, PathBuf},
 };
+use serde::Deserialize;
 
 use crop::crop;
 use header_editing::header_editing;
@@ -35,6 +36,20 @@ pub struct ConfigSettings {
     dcraw_emu_path: PathBuf,
     output_path: PathBuf,
     temp_path: PathBuf, // used to store temp path in output dir, i.e. "output_path/tmp/"
+}
+
+#[derive(Deserialize)]
+pub struct UserCommands {
+    pub dcraw: String,
+    pub hdrgen: String,
+    pub raxyze: String,
+    pub pcompos: String,
+    pub pfilt: String,
+    pub pcomb_projection_adj: String,
+    pub pcomb_vignetting_corr: String,
+    pub pcomb_neutral_dens: String,
+    pub pcomb_photometric_adj: String,
+    pub getinfo: String,
 }
 
 // Runs the radiance and hdrgen pipeline.
@@ -90,6 +105,7 @@ pub async fn pipeline(
     ydim: String,
     vertical_angle: String,
     horizontal_angle: String,
+    commands: UserCommands,
 ) -> Result<String, String> {
     // Return error if pipeline was called with no input images
     if input_images.len() == 0 {
@@ -187,6 +203,7 @@ pub async fn pipeline(
                 ydim.clone(),
                 vertical_angle.clone(),
                 horizontal_angle.clone(),
+                &commands,
             );
             if result.is_err() {
                 return result;
@@ -235,6 +252,7 @@ pub async fn pipeline(
             ydim.clone(),
             vertical_angle.clone(),
             horizontal_angle.clone(),
+            &commands,
         );
         if result.is_err() {
             return result;
@@ -314,6 +332,7 @@ pub fn process_image_set(
     ydim: String,
     vertical_angle: String,
     horizontal_angle: String,
+    commands: &UserCommands,
 ) -> Result<String, String> {
     // Merge exposures
     // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
@@ -326,6 +345,7 @@ pub fn process_image_set(
             .join("merge_exposures.hdr")
             .display()
             .to_string(),
+        &commands
     );
 
     // If the command to merge exposures encountered an error, abort pipeline
