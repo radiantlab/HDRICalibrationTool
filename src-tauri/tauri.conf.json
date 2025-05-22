@@ -30,7 +30,11 @@
       },
       "dialog": {
         "all": true,
-        "open": true
+        "ask": true,
+        "confirm": true,
+        "message": true,
+        "open": true,
+        "save": true
       },
       "protocol": {
         "all": true,
@@ -64,16 +68,35 @@
     "bundle": {
       "active": true,
       "category": "DeveloperTool",
+      "copyright": "",
+      "deb": {
+        "depends": []
+      },
+      "externalBin": [],
       "identifier": "hdricalibrationinterface",
+            "longDescription": "",
+      "macOS": {
+        "entitlements": null,
+        "exceptionDomain": "",
+        "frameworks": [],
+        "providerShortName": null,
+        "signingIdentity": null
+      },
+      "resources": [],
+      "shortDescription": "",
+      "targets": "all",
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
+      },
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
-      ],
-      "targets": "all"
-
+      ]
     },
 
     "security": {
