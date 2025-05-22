@@ -13,12 +13,12 @@
       {
         "url": "home-page",
         "fullscreen": false,
-        "height": 720,
+        "height": 800,
         "resizable": true,
         "title": "HDRI Calibration Interface",
         "width": 1280,
         "minWidth": 1280,
-        "minHeight": 720
+        "minHeight": 800
       }
     ],
     "security": {

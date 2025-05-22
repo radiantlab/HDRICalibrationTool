@@ -36,7 +36,7 @@ pub fn neutral_density(
     // Set up piping of output to file
     let file_result = File::create(&output_file);
     if file_result.is_err() {
-        return Err("Error, creating output file for neutral density command failed.".into());
+        return Err("pipeline: neutral_density: creating output file for 'pcomb' (neutral density filter) command failed.".into());
     }
 
     let file = file_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
@@ -45,7 +45,11 @@ pub fn neutral_density(
     command.stdout(stdio);
 
     // Run the command
-    let status = command.status();
+    let status_result = command.status();
+    if status_result.is_err() {
+        return Err("pipeline: neutral_density: failed to start command.".into());
+    }
+    let status = status_result.unwrap();
 
     if DEBUG {
         println!(
@@ -55,11 +59,11 @@ pub fn neutral_density(
     }
 
     // Return a Result object to indicate whether command was successful
-    if status.is_ok() {
+    if status.success() {
         // On success, return output path of HDR image
         Ok(output_file.into())
     } else {
         // On error, return an error message
-        Err("Error, non-zero exit status. Neutral density filter command (pcomb) failed.".into())
+        Err("PIPELINE ERROR: command 'pcomb' (neutral density filter) failed.".into())
     }
 }

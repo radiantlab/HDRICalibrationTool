@@ -37,6 +37,7 @@ const Initialization: React.FC = () => {
           hdrgenPath: contentsObject.hdrgenpath,
           dcrawEmuPath: contentsObject.dcrawemupath,
           outputPath: await invoke("get_default_output_path"), // queries backend for suggested place to store files
+          osPlatform: osPlatform
         });
         if (!contentsObject.hdrgenpath) {
           alert(

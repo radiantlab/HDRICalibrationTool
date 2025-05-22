@@ -156,16 +156,20 @@ pub fn merge_exposures(
     command.args(["-a", "-e", "-f", "-g", "-F"]);
 
     // Run the command
-    let status: Result<ExitStatus, std::io::Error> = command.status();
+    let status_result = command.status();
+    if status_result.is_err() {
+        return Err("pipeline: merge_exposures: failed to start command.".into());
+    }
+    let status = status_result.unwrap();
 
     if DEBUG {
         println!("\nCommand exit status: {:?}\n", status);
     }
 
     // Return a Result object to indicate whether hdrgen command was successful
-    if !status.is_ok() || !status.unwrap_or(ExitStatus::default()).success() {
+    if !status.success() {
         // On error, return an error message
-        Err("Error, non-zero exit status. hdrgen command failed.".into())
+        Err("PIPELINE ERROR: command 'hdrgen' failed.".into())
     } else {
         // On success, return output path of HDR image
         Ok(output_path.into())

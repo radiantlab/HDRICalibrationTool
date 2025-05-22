@@ -5,6 +5,7 @@ interface Settings {
   hdrgenPath: string;
   dcrawEmuPath: string;
   outputPath: string;
+  osPlatform: string;
 }
 
 interface SettingsStore {
@@ -18,6 +19,7 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
     hdrgenPath: '',
     dcrawEmuPath: '',
     outputPath: '',
+    osPlatform: ''
   },
   setSettings: (settings) => set({ settings }),
 }));
