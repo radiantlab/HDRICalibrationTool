@@ -1,4 +1,5 @@
 mod crop;
+mod evalglare;
 mod header_editing;
 mod merge_exposures;
 mod neutral_density;
@@ -18,6 +19,7 @@ use std::{
 };
 
 use crop::crop;
+use evalglare::evalglare;
 use header_editing::header_editing;
 use merge_exposures::merge_exposures;
 use neutral_density::neutral_density;
@@ -249,6 +251,13 @@ pub async fn pipeline(
                 .output_path
                 .join(Path::new(input_dir).file_name().unwrap_or_default());
             output_file_name.set_extension("hdr");
+            let base_name = Path::new(input_dir)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy();
+            let evalglare_file_name = config_settings
+                .output_path
+                .join(format!("{base_name}_evalglare.txt"));
 
             // Copy the final output hdr image to output directory
             let mut copy_result = copy(
@@ -257,6 +266,13 @@ pub async fn pipeline(
             );
             if copy_result.is_err() {
                 return Result::Err(("Error copying final hdr image to output directory.").to_string());
+            }
+            copy_result = copy(
+                &config_settings.temp_path.join("evalglare_output.txt"),
+                evalglare_file_name,
+            );
+            if copy_result.is_err() {
+                return Result::Err(("Error copying evalglare value to output directory.").to_string());
             }
             if luminance_args.scale_limit != "" {
                 let base_name = Path::new(input_dir)
@@ -312,6 +328,7 @@ pub async fn pipeline(
         }
 
         let output_file_name = config_settings.output_path.join("output.hdr");
+        let evalglare_file_name = config_settings.output_path.join("output_evalglare.txt");
 
         // Copy the final output hdr image to output directory
         let mut copy_result = copy(
@@ -320,6 +337,13 @@ pub async fn pipeline(
         );
         if copy_result.is_err() {
             return Result::Err(("Error copying final hdr image to output directory.").to_string());
+        }
+        copy_result = copy(
+            &config_settings.temp_path.join("evalglare_output.txt"),
+            evalglare_file_name,
+        );
+        if copy_result.is_err() {
+            return Result::Err(("Error copying final hdr evalglare output image to output directory.").to_string());
         }
 
         if luminance_args.scale_limit != "" {
@@ -632,6 +656,25 @@ pub fn process_image_set(
     
     next_path = "header_editing.hdr";
 
+    // Evalglare
+    let evalglare_result = evalglare(
+        &config_settings,
+        config_settings
+            .temp_path
+            .join(next_path)
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("evalglare_output.txt")
+            .display()
+            .to_string(),
+    );
+    
+    // If the command encountered an error, abort the pipeline
+    if evalglare_result.is_err() {
+        return evalglare_result;
+    }
     // Create luminance map if values were given by user
     if luminance_args.scale_limit != "" {
         let falsecolor_result = falsecolor(

@@ -53,16 +53,16 @@ export default function Progress({ fakePipeline }: any) {
             <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
               <div className="bg-white border-2 border-black fixed w-6/12 max-h-[90vh] top-56 text-center text-xl p-10 overflow-auto">
                 {/* <-----  */}
-                <div className="mb-4">
+                {/* <div className="mb-4">
                   <div className="text-lg font-semibold">Pipeline Progress</div>
-                  <div className="mt-2 w-full bg-gray-200 rounded-full h-4 border-gray-400">
+                  <div className="mt-2 w-full mb-4 bg-gray-200 rounded-full h-4 border-gray-400">
                     <div
                       className="bg-osu-beaver-orange h-4 rounded-full"
                       style={{ width: `${progress}%`, transition: "width 0.5" }}
                       
                     ></div>
                   </div>
-                </div>
+                </div> */}
                 {fakePipeline && (
                   <div>
                     <button
@@ -83,17 +83,24 @@ export default function Progress({ fakePipeline }: any) {
                   <div>
                     <h2>Your Images Are Being Generated</h2>
                     <div>Please Wait For Process to Finish</div>
+                    <div className="w-full m-4 bg-gray-200 rounded-full h-4 border-gray-400">
+                      <div
+                        className="bg-osu-beaver-orange h-4 rounded-full"
+                        style={{ width: `${progress}%`, transition: "width 0.5" }}
+                      
+                      ></div>
+                    </div>
                   </div>
                 )}
                 {progressButton && !processError && (
                   <div>
                     <h2>Process Finished</h2>
                     <div>The final hdr image has been saved to:</div>
-                    <p className="text-xs mt-5">{settings.outputPath}</p>
+                    <p className="text-xs mt-3">{settings.outputPath}</p>
                     {/* <div>Please Check The Output Directory</div> */}
                     <button
                       onClick={() => ResetProgress()}
-                      className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 mt-2 border-gray-400 rounded h-fit"
+                      className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 mt-4 border-gray-400 rounded h-fit"
                     >
                       Okay
                     </button>
@@ -110,7 +117,7 @@ export default function Progress({ fakePipeline }: any) {
                     </p>
                     <button
                       onClick={() => ResetProgress()}
-                      className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 m-10 border-gray-400 rounded h-fit"
+                      className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 m-5 border-gray-400 rounded h-fit"
                     >
                       Okay
                     </button>
