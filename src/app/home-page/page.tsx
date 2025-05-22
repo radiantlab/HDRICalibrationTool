@@ -213,8 +213,8 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-300 text-black pb-16 px-8 overflow-auto border-l border-r border-gray-400">
-      <main className="bg-white w-full+1 max-w-none p-6 border-l border-r border-gray-400 rounded-none shadow-none">
+    <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
+      <main className="bg-white col-span-4 m-8 mt-0 p-5 border-l border-r border-gray-400">
         {/* Progress Bar */}
         <Progress fakePipeline={fakePipeline} />
         {/* Section 1 and 2 side-by-side */}
@@ -254,7 +254,7 @@ export default function Home() {
         </div>
 
         {/* Section 4 */}
-        <div className="border border-gray-300 rounded-lg p-4 px-6 mt-5">
+        <div className="border border-gray-300 rounded-lg p-4 px-6 mt-5 mb-10">
           <h2 className="flex items-center font-semibold mb-4 text-lg">
             <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
               4
