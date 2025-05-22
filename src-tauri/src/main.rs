@@ -43,6 +43,9 @@ use save_config::save_config;
 mod get_saved_configs;
 use get_saved_configs::get_saved_configs;
 
+mod raw_image_help;
+use raw_image_help::convert_raw_img;
+
 use std::env;
 
 fn main() {
@@ -58,7 +61,8 @@ fn main() {
             delete_config,
             get_default_output_path, 
             save_config,
-            get_saved_configs
+            get_saved_configs,
+            convert_raw_img,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
