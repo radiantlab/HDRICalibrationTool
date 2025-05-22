@@ -4,8 +4,9 @@ import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import Images from "./images";
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
+import LuminanceConfiguration from "./luminance-configuration";
 import ButtonBar from "./button-bar/button-bar";
-import Response_and_correction from "./response_and_correction";
+import Response_and_correction from "./response-correction-files/response_and_correction";
 import Progress from "./progress";
 import { exists } from "@tauri-apps/api/fs";
 import { useSettingsStore } from "../stores/settings-store";
@@ -20,6 +21,7 @@ export default function Home() {
 
   const {
     viewSettings,
+    luminanceSettings,
     devicePaths,
     responsePaths,
     fe_correctionPaths,
@@ -64,7 +66,8 @@ export default function Home() {
       if (!proceed) {
         return; // Abort if the user chooses not to proceed
       }
-    } else if (!responsePaths) {
+    } 
+    if (!responsePaths) {
       // If the user didn't select a response function,
       // display a warning that the output HDR image might be inaccurate if converting from JPEG
       // and ask for confirmation before proceeding with pipeline call
@@ -74,7 +77,8 @@ export default function Home() {
       if (!proceed) {
         return;
       }
-    } else if (viewSettings.vv !== viewSettings.vh) {
+    }
+    if (viewSettings.vv !== viewSettings.vh) {
       let proceed = await confirm(
         "Warning: vv (Vertical Angle) and vh (Horizontal Angle) values do not match. Continue anyway?"
       );
@@ -105,6 +109,10 @@ export default function Home() {
       ydim: viewSettings.targetRes,
       verticalAngle: viewSettings.vv,
       horizontalAngle: viewSettings.vh,
+      scaleLimit: luminanceSettings.scale_limit,
+      scaleLabel: luminanceSettings.scale_label,
+      scaleLevels: luminanceSettings.scale_levels,
+      legendDimensions: luminanceSettings.legend_dimensions,
     })
       .then((result: any) => {
         console.log("Process finished. Result: ", result);
@@ -119,7 +127,7 @@ export default function Home() {
       //   }
       // })
       .catch((error: any) => {
-        console.error;
+        console.error(error);
         if (!fakePipeline) {
           setConfig({ processError: true });
         }
@@ -152,7 +160,6 @@ export default function Home() {
       };
     }
 
-    if (!responsePaths) missingInputs.push("Response path file");
     if (!fe_correctionPaths) missingInputs.push("Fisheye correction file");
     if (!v_correctionPaths) missingInputs.push("Vignetting correction file");
     if (!cf_correctionPaths) missingInputs.push("Calibration factor file");
@@ -180,6 +187,24 @@ export default function Home() {
       missingInputs.push(
         "Vertical angle in Cropping, Resizing, and View Settings"
       );
+    // This loop isn't the prettiest, but because the luminance map is optional, we have to check that they input at least one value but
+    // didn't input the others; no inputs is fine.
+    let enteredSetting = false;
+    let name = "";
+    Object.entries(luminanceSettings).forEach(([key, value]) => {
+      if (value)
+        enteredSetting = true;
+      if (!value && enteredSetting) {
+        // Just formatting the message to not use the snake case key name
+        name = key
+          .split('_')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        missingInputs.push(
+          `${name} in Settings for Falsecolor Luminance Map`
+        );
+      }
+    });
 
     return {
       isValid: true,
@@ -189,10 +214,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-300 text-black pb-16 px-8 overflow-auto border-l border-r border-gray-400">
-      <main className="bg-white w-full+1 max-w-none p-6 border-l border-r border-gray-400 rounded-none shadow-none" style={{ marginLeft: "-1px", marginRight: "-1px" }}>
+      <main className="bg-white w-full+1 max-w-none p-6 border-l border-r border-gray-400 rounded-none shadow-none">
         {/* Progress Bar */}
         <Progress fakePipeline={fakePipeline} />
-
         {/* Section 1 and 2 side-by-side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Section 1 */}
@@ -227,6 +251,17 @@ export default function Home() {
             Correction Files
           </h2>
           <Response_and_correction />
+        </div>
+
+        {/* Section 4 */}
+        <div className="border border-gray-300 rounded-lg p-4 px-6 mt-5">
+          <h2 className="flex items-center font-semibold mb-4 text-lg">
+            <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
+              4
+            </span>
+            Other
+          </h2>
+          <LuminanceConfiguration />
         </div>
       </main>
 

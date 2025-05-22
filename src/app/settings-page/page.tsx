@@ -46,18 +46,18 @@ export default function SettingsPage() {
     setSaveDisabled(false);
   };
 
-  const handleUpdateOutputPath = (directory: string) => {
-    const updatedSettings = { ...localSettings, outputPath: directory };
-    setLocalSettings(updatedSettings);
+  const handleUpdatePath = (id: string, path: string) => {
+    setLocalSettings({ ...localSettings, [id]: path });
+    setSaveDisabled(false);
   };
 
-  const dialog = async () => {
-    let directory = await open({
+  const dialog = async (id: string, isDirectory: boolean = false) => {
+    let selectedPath = await open({
       multiple: false,
-      directory: true,
+      directory: isDirectory,
     });
-    if (directory !== null) {
-      handleUpdateOutputPath(directory as string);
+    if (selectedPath !== null) {
+      handleUpdatePath(id, selectedPath as string);
     }
   };
 
@@ -82,10 +82,14 @@ export default function SettingsPage() {
               <span className="ml-2 text-gray-500 text-sm">ⓘ</span>
             </h2>
 
+            {/*
+              Mapping through the settings fields to create input sections for each
+            */}
             {[
               { id: "radiancePath", label: "Radiance Path", value: localSettings.radiancePath },
               { id: "hdrgenPath", label: "hdrgen Path", value: localSettings.hdrgenPath },
               { id: "dcrawEmuPath", label: "dcraw_emu Path", value: localSettings.dcrawEmuPath },
+              { id: "outputPath", label: "HDRI Output", value: localSettings.outputPath },
             ].map(({ id, label, value }) => (
               <div key={id} className="mb-4">
                 <label htmlFor={id} className="font-semibold block mb-1">{label}</label>
@@ -105,7 +109,7 @@ export default function SettingsPage() {
                     Clear
                   </button>
                   <button
-                    onClick={() => console.log(`Select for ${id}`)}
+                    onClick={() => dialog(id, id === "outputPath")}
                     className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 rounded"
                   >
                     Select
@@ -113,35 +117,6 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
-
-            {/* Output path */}
-            <div className="mb-4">
-              <label htmlFor="outputPath" className="font-semibold block mb-1">
-                HDRI Output
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  id="outputPath"
-                  name="outputPath"
-                  type="text"
-                  value={localSettings.outputPath}
-                  onChange={(e) => handleUpdateOutputPath(e.target.value)}
-                  className="flex-grow border border-gray-400 rounded px-2 py-1"
-                />
-                <button
-                  onClick={() => handleUpdateOutputPath("")}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 rounded"
-                >
-                  Clear
-                </button>
-                <button
-                  onClick={dialog}
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 rounded"
-                >
-                  Select
-                </button>
-              </div>
-            </div>
           </div>
 
           {/* Right: Usability Preferences */}
