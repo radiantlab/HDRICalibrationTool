@@ -8,6 +8,7 @@ mod photometric_adjustment;
 mod projection_adjustment;
 mod resize;
 mod vignetting_effect_correction;
+mod falsecolor;
 
 use std::{
     fs::{self, copy, create_dir_all},
@@ -25,6 +26,7 @@ use photometric_adjustment::photometric_adjustment;
 use projection_adjustment::projection_adjustment;
 use resize::resize;
 use vignetting_effect_correction::vignetting_effect_correction;
+use falsecolor::falsecolor;
 
 // Used to print out debug information
 pub const DEBUG: bool = true;
@@ -37,6 +39,14 @@ pub struct ConfigSettings {
     dcraw_emu_path: PathBuf,
     output_path: PathBuf,
     temp_path: PathBuf, // used to store temp path in output dir, i.e. "output_path/tmp/"
+}
+
+// Struct to hold argument values for falsecolor2/luminance mapping
+pub struct LuminanceArgs {
+    scale_limit: String,
+    scale_label: String,
+    scale_levels: String,
+    legend_dimensions: String,
 }
 
 // Runs the radiance and hdrgen pipeline.
@@ -92,6 +102,10 @@ pub async fn pipeline(
     ydim: String,
     vertical_angle: String,
     horizontal_angle: String,
+    scale_limit: String,
+    scale_label: String,
+    scale_levels: String,
+    legend_dimensions: String,
 ) -> Result<String, String> {
     // Return error if pipeline was called with no input images
     if input_images.len() == 0 {
@@ -139,6 +153,14 @@ pub async fn pipeline(
         temp_path: Path::new(&output_path).join("tmp").to_owned(), // Temp directory is located in output directory
     };
 
+    // Add arguments for falsecolor2 to luminance arguments struct
+    let luminance_args = LuminanceArgs {
+        scale_limit: scale_limit,
+        scale_label: scale_label,
+        scale_levels: scale_levels,
+        legend_dimensions: legend_dimensions,
+    };
+
     // Creates output directory with /tmp subdirectory
     let create_dirs_result = create_dir_all(&config_settings.temp_path);
 
@@ -177,6 +199,7 @@ pub async fn pipeline(
             // Run the HDRGen and Radiance pipeline on the input images
             let result = process_image_set(
                 &config_settings,
+                &luminance_args,
                 input_images_from_dir,
                 response_function.clone(),
                 fisheye_correction_cal.clone(),
@@ -226,6 +249,22 @@ pub async fn pipeline(
             if copy_result.is_err() {
                 return Result::Err(("Error copying evalglare value to output directory.").to_string());
             }
+            if luminance_args.scale_limit != "" {
+                let base_name = Path::new(input_dir)
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy();
+                let luminance_file_name = config_settings
+                    .output_path
+                    .join(format!("{base_name}_fc.hdr"));
+                    copy_result = copy(
+                    &config_settings.temp_path.join("falsecolor_output.hdr"),
+                    luminance_file_name,
+                );
+                if copy_result.is_err() {
+                    return Result::Err(("Error copying final luminance map hdr image to output directory.").to_string());
+                }
+            }
         }
     } else {
         // Individual images were selected (single scene)
@@ -240,6 +279,7 @@ pub async fn pipeline(
         // Run the HDRGen and Radiance pipeline on the images
         let result = process_image_set(
             &config_settings,
+            &luminance_args,
             input_images,
             response_function.clone(),
             fisheye_correction_cal.clone(),
@@ -260,7 +300,6 @@ pub async fn pipeline(
 
         let output_file_name = config_settings.output_path.join("output.hdr");
         let evalglare_file_name = config_settings.output_path.join("output_evalglare.txt");
-        return_path = config_settings.output_path;
 
         // Copy the final output hdr image to output directory
         let mut copy_result = copy(
@@ -277,6 +316,18 @@ pub async fn pipeline(
         if copy_result.is_err() {
             return Result::Err(("Error copying final hdr evalglare output image to output directory.").to_string());
         }
+
+        if luminance_args.scale_limit != "" {
+            let luminance_file_name = config_settings.output_path.join("output_fc.hdr");
+            copy_result = copy(
+                &config_settings.temp_path.join("falsecolor_output.hdr"),
+                luminance_file_name,
+            );
+            if copy_result.is_err() {
+                return Result::Err(("Error copying final hdr luminance image to output directory.").to_string());
+            }
+        }
+        return_path = config_settings.output_path;
     }
 
     // If no errors, return Ok
@@ -328,6 +379,7 @@ pub fn get_images_from_dir(input_dir: &String) -> Result<Vec<String>, String> {
  */
 pub fn process_image_set(
     config_settings: &ConfigSettings,
+    luminance_args: &LuminanceArgs,
     input_images: Vec<String>,
     response_function: String,
     fisheye_correction_cal: String,
@@ -573,6 +625,28 @@ pub fn process_image_set(
     // If the command encountered an error, abort the pipeline
     if evalglare_result.is_err() {
         return evalglare_result;
+    }
+    // Create luminance map if values were given by user
+    if luminance_args.scale_limit != "" {
+        let falsecolor_result = falsecolor(
+            &config_settings,
+            config_settings
+                .temp_path
+                .join(next_path)
+                .display()
+                .to_string(),
+            config_settings
+                .temp_path
+                .join("falsecolor_output.hdr")
+                .display()
+                .to_string(),
+            luminance_args,
+        );
+
+        // If the command encountered an error, abort pipeline
+        if falsecolor_result.is_err() {
+            return falsecolor_result;
+        }
     }
 
     // Pipeline has completed successfully. Return Ok

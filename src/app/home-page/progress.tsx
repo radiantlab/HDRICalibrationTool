@@ -2,10 +2,11 @@ import React from "react";
 import { useConfigStore } from "../stores/config-store";
 import { open } from "@tauri-apps/api/shell";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
+import { useSettingsStore } from "../stores/settings-store";
 
 export default function Progress({ fakePipeline }: any) {
-  const { progressButton, processError, showProgress, outputPath, setConfig } =
-    useConfigStore();
+  const { progressButton, processError, showProgress, setConfig } = useConfigStore();
+  const {settings} = useSettingsStore();
 
   function ResetProgress() {
     setConfig({
@@ -58,7 +59,7 @@ export default function Progress({ fakePipeline }: any) {
                   <div>
                     <h2>Process Finished</h2>
                     <div>The final hdr image has been saved to:</div>
-                    <p className="text-xs mt-5">{outputPath}</p>
+                    <p className="text-xs mt-5">{settings.outputPath}</p>
                     {/* <div>Please Check The Output Directory</div> */}
                     <button
                       onClick={() => ResetProgress()}
