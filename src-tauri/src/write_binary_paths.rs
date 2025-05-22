@@ -12,12 +12,12 @@ struct Paths {
 #[tauri::command]
 pub fn write_binary_paths(
     app_handle: tauri::AppHandle,
-    hdrgenPath: String,
-    dcrawEmuPath: String,
+    hdrgen_path: String,
+    dcraw_emu_path: String,
 ) -> Result<(), String> {
     let new_paths = Paths {
-        hdrgenpath: hdrgenPath,
-        dcrawemupath: dcrawEmuPath,
+        hdrgenpath: hdrgen_path,
+        dcrawemupath: dcraw_emu_path,
     };
     let paths_string = match serde_json::to_string(&new_paths) {
         Ok(v) => v,
