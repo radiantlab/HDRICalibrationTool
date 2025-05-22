@@ -128,6 +128,7 @@ export default function Home() {
       // })
       .catch((error: any) => {
         console.error(error);
+        alert(error);   // not all returned errors are related to the dcraw_emu or hdrgen paths
         if (!fakePipeline) {
           setConfig({ processError: true });
         }
