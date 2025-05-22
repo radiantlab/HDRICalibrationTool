@@ -214,7 +214,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-300 text-black pb-16 px-8 overflow-auto border-l border-r border-gray-400">
-      <main className="bg-white w-full+1 max-w-none p-6 border-l border-r border-gray-400 rounded-none shadow-none" style={{ marginLeft: "-1px", marginRight: "-1px" }}>
+      <main className="bg-white w-full+1 max-w-none p-6 border-l border-r border-gray-400 rounded-none shadow-none">
         {/* Progress Bar */}
         <Progress fakePipeline={fakePipeline} />
         {/* Section 1 and 2 side-by-side */}
