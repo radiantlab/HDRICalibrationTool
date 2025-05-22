@@ -57,8 +57,6 @@ export default function ImageViewer() {
       // Dynamically import Command from Tauri.
       const { Command } = await import("@tauri-apps/api/shell");
       const cmd = new Command("ximage", [
-        "-g",
-        "2.2",
         "-e",
         "auto",
         imagePath,
