@@ -93,7 +93,7 @@ export default function ImageViewer() {
 
   return (
     <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
-      <main className="bg-white col-span-4 m-8 mt-0 p-5 border-l border-r border-gray-400">
+      <main className="bg-white col-span-4 m-8 mt-0 p-5 border-l border-r border-b border-gray-400">
         {isWindows && (
           <label className="text-red-500">
             This feature is currently not supported on Windows
@@ -105,7 +105,7 @@ export default function ImageViewer() {
           className="w-max bg-osu-beaver-orange hover:bg-osu-luminance text-white font-semibold py-1 px-2 border-gray-400 rounded"
           onClick={browseAndOpen}
         >
-          Browse HDR Image
+          Browse HDR Images
         </button>
         {selectedImages.length > 0 && (
           <div className="mt-6 grid grid-cols-2 gap-4">
