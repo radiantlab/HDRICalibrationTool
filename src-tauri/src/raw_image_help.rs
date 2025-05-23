@@ -30,9 +30,21 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
         return Err("Couldn't create new directory".to_string());
     }
 
-    // Get working directory of libraw.dll (only needed for windows)
     let cur_exe = env::current_exe().unwrap().parent().unwrap().to_path_buf();
-    let dcraw_emu_build_working_directory = cur_exe.join("binaries");
+
+    // Get working directory of libraw.dll (only really needed for windows)
+    let dcraw_emu_build_working_directory = if cfg!(target_os = "macos") {
+        if cfg!(debug_assertions) {
+            // macOS dev mode
+            cur_exe.join("binaries")
+        } else {
+            // macOS release mode (inside .app bundle)
+            cur_exe.join("../Resources/binaries")
+        }
+    } else {
+        // Linux and Windows
+        cur_exe.join("binaries")
+    };
 
     let mut cmd: Command;
     let mut tiffs: Vec<String> = Vec::new();
@@ -42,10 +54,7 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
         tst2 = get_file_name(tst);
         if dcraw.len() < 1 {
             cmd = app_handle.shell().sidecar("dcraw_emu").unwrap().into();
-
-            // If windows, set the working directory to find libraw.dll
-            #[cfg(target_os = "windows")]
-            command.current_dir(&dcraw_emu_build_working_directory);
+            cmd.current_dir(&dcraw_emu_build_working_directory); // Set the working directory to find libraw.dll
         } else {
             cmd = Command::new(Path::new(&dcraw).join("dcraw_emu"));
         }
