@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useSettingsStore } from "./stores/settings-store";
+import { useSettingsStore } from "./stores/settings-store"; 
 
 const DEBUG = true;
 

@@ -48,21 +48,9 @@ pub fn merge_exposures(
 
     // If raw image format other than TIFF, need to first convert them to TIFF to be used by hdrgen
     if convert_to_tiff {
+        // Get working directory of libraw.dll (only needed for windows)
         let cur_exe = env::current_exe().unwrap().parent().unwrap().to_path_buf();
-        // Get working directory of libraw.dll
-
-        let dcraw_emu_build_working_directory = if cfg!(target_os = "macos") {
-            if cfg!(debug_assertions) {
-                // macOS dev mode
-                cur_exe.join("binaries")
-            } else {
-                // macOS release mode (inside .app bundle)
-                cur_exe.join("../Resources/binaries")
-            }
-        } else {
-            // Linux and Windows
-            cur_exe.join("binaries")
-        };
+        let dcraw_emu_build_working_directory = cur_exe.join("binaries");
 
         let mut index = 1;
         for input_image in &input_images {
@@ -97,7 +85,11 @@ pub fn merge_exposures(
 
             if config_settings.dcraw_emu_path.as_os_str().is_empty() {
                 command = app.shell().sidecar("dcraw_emu").unwrap().into();
-                command.current_dir(&dcraw_emu_build_working_directory); // Set the working directory to find libraw.dll
+
+                // If windows, set the working directory to find libraw.dll
+                #[cfg(target_os = "windows")]
+                command.current_dir(&dcraw_emu_build_working_directory);
+
                 if DEBUG {
                     let sidecar_path = command.get_program();
                     println!("Executing bundled sidecar at: {:?}\n", sidecar_path);

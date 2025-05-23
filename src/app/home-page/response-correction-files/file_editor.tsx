@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { invoke } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import { Paths } from "../string_functions";
 import { useConfigStore } from "../../stores/config-store";
-import { on } from "events";
 import { EditingFileType } from "@/app/global-types";
 
 interface ConfigEditorProps {
