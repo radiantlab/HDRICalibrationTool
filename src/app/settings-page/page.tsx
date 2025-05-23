@@ -51,8 +51,9 @@ export default function SettingsPage() {
     setSaveDisabled(false);
   };
 
-  const dialog = async (id: string, isDirectory: boolean = false) => {
+  const dialog = async (id: string, label: string, isDirectory: boolean = false) => {
     let selectedPath = await open({
+      title: "Select" + label + "Path",
       multiple: false,
       directory: isDirectory,
     });
@@ -88,7 +89,7 @@ export default function SettingsPage() {
             {[
               { id: "radiancePath", label: "Radiance", value: localSettings.radiancePath },
               { id: "hdrgenPath", label: "hdrgen", value: localSettings.hdrgenPath },
-              { id: "dcrawEmuPath", label: "dcraw_emu - Included", value: localSettings.dcrawEmuPath },
+              { id: "dcrawEmuPath", label: "dcraw_emu (Included)", value: localSettings.dcrawEmuPath },
               { id: "outputPath", label: "HDRI Output", value: localSettings.outputPath },
             ].map(({ id, label, value }) => (
               <div key={id} className="mb-4">
@@ -109,7 +110,7 @@ export default function SettingsPage() {
                     Clear
                   </button>
                   <button
-                    onClick={() => dialog(id, id === "outputPath")}
+                    onClick={() => dialog(id, label, id === "outputPath")}
                     className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 rounded"
                   >
                     Select
