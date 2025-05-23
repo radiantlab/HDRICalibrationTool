@@ -11,16 +11,15 @@ export default function ImageViewer() {
   const outputPath = settings.outputPath;
 
   const [error, setError] = useState<string | null>(null);
-  const [isWindows, setIsWindows] = useState<boolean>(false);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [imageFullPaths, setImageFullPaths] = useState<string[]>([]);
+  const isWindows = settings.osPlatform === "windows";
 
   useEffect(() => {
     async function loadFiles() {
       // Dynamically import os and basename from Tauri.=
       const files = await populateGrid(outputPath);
       const relative_files = await Promise.all(files.map(file => basename(file)));
-      if (settings.osPlatform === "windows") setIsWindows(true);
       setSelectedImages(relative_files);
       setImageFullPaths(files);
     }

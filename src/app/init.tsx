@@ -14,6 +14,7 @@ const Initialization: React.FC = () => {
     // Make a call to the backend to get OS platform and set Radiance path
     invoke<string>("query_os_platform", {})
       .then(async (platform: any) => {
+        osPlatform = platform;
         if (DEBUG) {
           console.log("OS platform successfully queried:", platform);
         }
