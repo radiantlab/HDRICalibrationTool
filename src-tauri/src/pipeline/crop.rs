@@ -54,7 +54,7 @@ pub fn crop(
 
     // If error creating output file abort pipeline
     if file_result.is_err() {
-        return Err("Error, creating output file for crop command failed.".into());
+        return Err("pipeline: crop: failed to create output file for 'pcompos' command.".into());
     }
 
     let file = file_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
@@ -62,18 +62,22 @@ pub fn crop(
     command.stdout(stdio);
 
     // Run the command
-    let status = command.status();
+    let status_result = command.status();
+    if status_result.is_err() {
+        return Err("pipeline: crop: failed to start command.".into());
+    }
+    let status = status_result.unwrap();
 
     if DEBUG {
-        println!("\nCrop command exit status: {:?}\n", status);
+        println!("\n'pcompos' command exit status: {:?}\n", status);
     }
 
     // Return a Result object to indicate whether command was successful
-    if status.is_ok() {
+    if status.success() {
         // On success, return output path of HDR image
         Ok(output_file.into())
     } else {
         // On error, return an error message
-        Err("Error, non-zero exit status. Crop command (pcompos) failed.".into())
+        Err("PIPELINE ERROR: command 'pcompos' failed.".into())
     }
 }

@@ -14,7 +14,7 @@ export default function NumberInput({
         value={value}
         type="number"
         placeholder={placeholder}
-        className="placeholder:text-right no-spinner w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+        className="placeholder:text-right no-spinner w-full md:w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
       ></input>
     </div>
   );
