@@ -1,4 +1,5 @@
 mod crop;
+mod evalglare;
 mod header_editing;
 mod merge_exposures;
 mod neutral_density;
@@ -7,6 +8,9 @@ mod photometric_adjustment;
 mod projection_adjustment;
 mod resize;
 mod vignetting_effect_correction;
+
+use tauri::Manager;
+use tauri::Emitter;
 mod falsecolor;
 
 use std::{
@@ -16,6 +20,7 @@ use std::{
 };
 
 use crop::crop;
+use evalglare::evalglare;
 use header_editing::header_editing;
 use merge_exposures::merge_exposures;
 use neutral_density::neutral_density;
@@ -37,6 +42,13 @@ pub struct ConfigSettings {
     dcraw_emu_path: PathBuf,
     output_path: PathBuf,
     temp_path: PathBuf, // used to store temp path in output dir, i.e. "output_path/tmp/"
+}
+
+// Helper functon to emit progress events
+fn emit_progress(app: &tauri::AppHandle, current_step: usize, total_steps: usize) -> Result<(), String> {
+    let progress = ((current_step as f64 / total_steps as f64) * 100.0) as i32;
+    app.emit("pipeline-progress", progress)
+        .map_err(|e| format!("Failed to emit progress event: {}", e))
 }
 
 // Struct to hold argument values for falsecolor2/luminance mapping
@@ -167,6 +179,18 @@ pub async fn pipeline(
         return Result::Err(("Error creating tmp and output directories.").to_string());
     }
 
+    //Define total steps for progress bar (adjust this count as needed)
+    let total_steps: usize = if is_directory { 5 } else { 5 };
+
+    let mut current_step: usize = 0;
+    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)    
+
+    //Define total steps for progress bar (adjust this count as needed)
+    let total_steps: usize = if is_directory { 5 } else { 5 };
+
+    let mut current_step: usize = 0;
+    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)    
+
     let mut return_path: PathBuf = PathBuf::new();
     if is_directory {
         // Directories were selected (batch processing)
@@ -213,6 +237,8 @@ pub async fn pipeline(
                 ydim.clone(),
                 vertical_angle.clone(),
                 horizontal_angle.clone(),
+                current_step,
+                total_steps
             );
             if result.is_err() {
                 return result;
@@ -226,6 +252,13 @@ pub async fn pipeline(
                 .output_path
                 .join(Path::new(input_dir).file_name().unwrap_or_default());
             output_file_name.set_extension("hdr");
+            let base_name = Path::new(input_dir)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy();
+            let evalglare_file_name = config_settings
+                .output_path
+                .join(format!("{base_name}_evalglare.txt"));
 
             // Copy the final output hdr image to output directory
             let mut copy_result = copy(
@@ -234,6 +267,13 @@ pub async fn pipeline(
             );
             if copy_result.is_err() {
                 return Result::Err(("Error copying final hdr image to output directory.").to_string());
+            }
+            copy_result = copy(
+                &config_settings.temp_path.join("evalglare_output.txt"),
+                evalglare_file_name,
+            );
+            if copy_result.is_err() {
+                return Result::Err(("Error copying evalglare value to output directory.").to_string());
             }
             if luminance_args.scale_limit != "" {
                 let base_name = Path::new(input_dir)
@@ -252,6 +292,7 @@ pub async fn pipeline(
                 }
             }
         }
+        
     } else {
         // Individual images were selected (single scene)
 
@@ -280,12 +321,15 @@ pub async fn pipeline(
             ydim.clone(),
             vertical_angle.clone(),
             horizontal_angle.clone(),
+            current_step,
+            total_steps,
         );
         if result.is_err() {
             return result;
         }
 
         let output_file_name = config_settings.output_path.join("output.hdr");
+        let evalglare_file_name = config_settings.output_path.join("output_evalglare.txt");
 
         // Copy the final output hdr image to output directory
         let mut copy_result = copy(
@@ -294,6 +338,13 @@ pub async fn pipeline(
         );
         if copy_result.is_err() {
             return Result::Err(("Error copying final hdr image to output directory.").to_string());
+        }
+        copy_result = copy(
+            &config_settings.temp_path.join("evalglare_output.txt"),
+            evalglare_file_name,
+        );
+        if copy_result.is_err() {
+            return Result::Err(("Error copying final hdr evalglare output image to output directory.").to_string());
         }
 
         if luminance_args.scale_limit != "" {
@@ -312,6 +363,8 @@ pub async fn pipeline(
     // If no errors, return Ok
     return Result::Ok(return_path.to_string_lossy().to_string());
 }
+
+
 
 /*
  * Retrieves all JPG and CR2 images from a directory, ignoring other files or directories.
@@ -373,6 +426,8 @@ pub fn process_image_set(
     ydim: String,
     vertical_angle: String,
     horizontal_angle: String,
+    mut current_step: usize,
+    total_steps: usize,
 ) -> Result<String, String> {
     // Merge exposures
     // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
@@ -392,6 +447,9 @@ pub fn process_image_set(
     if merge_exposures_result.is_err() {
         return merge_exposures_result;
     };
+
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
 
     // Nullify the exposure value
     let nullify_exposure_result = nullify_exposure_value(
@@ -413,6 +471,9 @@ pub fn process_image_set(
         return nullify_exposure_result;
     }
 
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
+    
     // Crop the HDR image to a square fitting the fisheye view
     let crop_result = crop(
         &config_settings,
@@ -436,6 +497,9 @@ pub fn process_image_set(
         return crop_result;
     }
 
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
+    
     // Resize the HDR image
     let resize_result = resize(
         &config_settings,
@@ -458,6 +522,9 @@ pub fn process_image_set(
         return resize_result;
     }
 
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
+    
     /* Start Calibration Files - able to be skipped in some instances */
 
     let mut next_path = "resize.hdr";
@@ -586,8 +653,30 @@ pub fn process_image_set(
         return header_editing_result;
     }
 
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
+    
     next_path = "header_editing.hdr";
 
+    // Evalglare
+    let evalglare_result = evalglare(
+        &config_settings,
+        config_settings
+            .temp_path
+            .join(next_path)
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("evalglare_output.txt")
+            .display()
+            .to_string(),
+    );
+    
+    // If the command encountered an error, abort the pipeline
+    if evalglare_result.is_err() {
+        return evalglare_result;
+    }
     // Create luminance map if values were given by user
     if luminance_args.scale_limit != "" {
         let falsecolor_result = falsecolor(

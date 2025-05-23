@@ -17,3 +17,13 @@ export function Extensions(ext: string) {
     }
     return ext;
 }
+
+export function Directories(path: string) {
+    for (let i = path.length - 1; i >= 0; i--) {
+        if (path[i] == "/" || path[i] == "\\") {
+            path = path.slice(0, i + 1);
+            break;
+        }
+    }
+    return path;
+}

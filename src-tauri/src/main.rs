@@ -13,6 +13,9 @@ use query_os_platform::query_os_platform;
 mod read_binary_paths;
 use read_binary_paths::read_binary_paths;
 
+mod read_dynamic_dir;
+use read_dynamic_dir::read_dynamic_dir;
+
 // Command used to read from a file and return its contents to frontend
 mod read_host_file;
 use read_host_file::read_host_file;
@@ -40,6 +43,12 @@ use save_config::save_config;
 mod get_saved_configs;
 use get_saved_configs::get_saved_configs;
 
+mod raw_image_help;
+use raw_image_help::convert_raw_img;
+
+mod display_hdr_img;
+use display_hdr_img::display_hdr_img;
+
 use std::env;
 use tauri::Manager;
 
@@ -53,13 +62,16 @@ fn main() {
             pipeline,
             query_os_platform,
             read_binary_paths,
+            read_dynamic_dir,
             read_host_file,
             write_binary_paths,
             write_host_file,
             delete_config,
             get_default_output_path, 
             save_config,
-            get_saved_configs
+            get_saved_configs,
+            convert_raw_img,
+            display_hdr_img,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
