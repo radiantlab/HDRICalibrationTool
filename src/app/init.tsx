@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
-import { useSettingsStore } from "./stores/settings-store";
+import { invoke } from "@tauri-apps/api/core";
+import { useSettingsStore } from "./stores/settings-store"; 
 
 const DEBUG = true;
 
@@ -37,15 +37,16 @@ const Initialization: React.FC = () => {
           hdrgenPath: contentsObject.hdrgenpath,
           dcrawEmuPath: contentsObject.dcrawemupath,
           outputPath: await invoke("get_default_output_path"), // queries backend for suggested place to store files
+          osPlatform: osPlatform
         });
-        if (!contentsObject.hdrgenpath || !contentsObject.dcrawemupath) {
+        if (!contentsObject.hdrgenpath) {
           alert(
-            "Please enter the paths to the HDRGen and dcraw_emu binaries in the settings before generating HDR images."
+            "Please enter the path to the HDRGen binary in the settings before generating HDR images."
           );
         }
       })
-      .catch(() => {
-        console.error;
+      .catch((error) => {
+        console.error(error);
       });
   }, [setSettings]);
 

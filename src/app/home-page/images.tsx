@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { open } from "@tauri-apps/api/dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import { Paths } from "./string_functions";
-import { convertFileSrc } from "@tauri-apps/api/tauri";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { Extensions } from "./string_functions";
 import { useConfigStore } from "../stores/config-store";
-import { readDir } from '@tauri-apps/api/fs';
+import { readDir } from '@tauri-apps/plugin-fs';
 import { FileEditor } from "./response-correction-files/file_editor"; 
 import { EditingFileType } from "@/app/global-types";
 import FileFieldRow from "./file-field-row";
+import { useSettingsStore } from "../stores/settings-store";
 
 export default function Images() {
   const { devicePaths, responsePaths, setConfig } = useConfigStore();
+  const { settings } = useSettingsStore();
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
 
   const setDevicePaths = (device: any) => {
@@ -139,17 +141,21 @@ export default function Images() {
       set_image_error(false);
       setDirError(false);
       let check = false;
+      console.log(selected);
       let contents = await readDir(selected);
       for (let i = 0; i < contents.length; i++) {
-        if (valid_extensions.includes(Extensions(contents[i].path).toLowerCase())) {
+        if (valid_extensions.includes(Extensions(contents[i].name).toLowerCase())) {
           check = true;
           break;
         }
         // See if input directory contains more LDR directories
-        else  if (isDir(contents[i].path)) {
-          let subContents = await readDir(contents[i].path);
+        else  if (contents[i].isDirectory) {
+          let tst = "";
+          if (settings.osPlatform === "windows") tst = selected + "\\" + contents[i].name;
+          else tst = selected + "/" + contents[i].name;
+          let subContents = await readDir(tst);
           for (let j = 0; j < subContents.length; j++) {
-            if (valid_extensions.includes(Extensions(subContents[j].path).toLowerCase())) {
+            if (valid_extensions.includes(Extensions(subContents[j].name).toLowerCase())) {
               check = true;
               break;
             }

@@ -3,8 +3,10 @@ use std::{
     path::Path,
     process::{Command, ExitStatus},
 };
+use std::env;
 
 use super::ConfigSettings;
+use tauri_plugin_shell::ShellExt;
 
 // Merges multiple LDR images into an HDR image using hdrgen. If images are in JPG or TIFF format,
 // runs hdrgen command regularly. If images are not in JPG or TIFF format, converts the inputs
@@ -18,6 +20,7 @@ use super::ConfigSettings;
 //    a string for the path and filename where the resulting HDR image will be saved.
 #[tauri::command]
 pub fn merge_exposures(
+    app: &tauri::AppHandle,
     config_settings: &ConfigSettings,
     mut input_images: Vec<String>,
     response_function: String,
@@ -45,13 +48,22 @@ pub fn merge_exposures(
 
     // If raw image format other than TIFF, need to first convert them to TIFF to be used by hdrgen
     if convert_to_tiff {
+        // Get working directory of libraw.dll (only needed for windows)
+        let cur_exe = env::current_exe().unwrap().parent().unwrap().to_path_buf();
+        let dcraw_emu_build_working_directory = cur_exe.join("binaries");
+
         let mut index = 1;
         for input_image in &input_images {
-            // Create a new command for dcraw_emu
-            command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
 
             // Add command arguments
-            command.args([
+            let output_arg = 
+                config_settings
+                    .temp_path
+                    .join(format!("input{}.tiff", index))
+                    .display()
+                    .to_string();
+            let input_arg = format!("{}", input_image);
+            let args = [
                 "-T",
                 "-o",
                 "1",
@@ -67,24 +79,33 @@ pub fn merge_exposures(
                 "-b",
                 "1.1",
                 "-Z",
-                config_settings
-                    .temp_path
-                    .join(format!("input{}.tiff", index))
-                    .display()
-                    .to_string()
-                    .as_str(),
-                format!("{}", input_image).as_str(),
-            ]);
+                &output_arg,
+                &input_arg
+            ];
 
-            let status_result = command.status();
-            if status_result.is_err() {
-                return Err("pipeline: merge_exposures: failed to start command.".into());
+            if config_settings.dcraw_emu_path.as_os_str().is_empty() {
+                command = app.shell().sidecar("dcraw_emu").unwrap().into();
+
+                // If windows, set the working directory to find libraw.dll
+                #[cfg(target_os = "windows")]
+                command.current_dir(&dcraw_emu_build_working_directory);
+
+                if DEBUG {
+                    let sidecar_path = command.get_program();
+                    println!("Executing bundled sidecar at: {:?}\n", sidecar_path);
+                }
+            } else {
+                if DEBUG {
+                    println!("Overwriting bundled sidecar, running command at: {:?}\n", config_settings.dcraw_emu_path.join("dcraw_emu"));
+                }
+                command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
             }
-            let status = status_result.unwrap();
 
-            if !status.success() {
-                // On error, return an error message
-                return Err("PIPELINE ERROR: command 'dcraw_emu' (converting images to TIFF) failed.".into());
+            command.args(args);
+            let status: Result<ExitStatus, std::io::Error> = command.status();
+
+            if !status.is_ok() || !status.unwrap_or(ExitStatus::default()).success() {
+                return Err("Error, non-zero exit status. dcraw_emu command (converting to tiff images) failed.".into());
             }
 
             index += 1;

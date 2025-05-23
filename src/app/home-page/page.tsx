@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 import Images from "./images";
 import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
 import LuminanceConfiguration from "./luminance-configuration";
 import ButtonBar from "./button-bar/button-bar";
 import Response_and_correction from "./response-correction-files/response_and_correction";
 import Progress from "./progress";
-import { exists } from "@tauri-apps/api/fs";
+import { exists } from "@tauri-apps/plugin-fs";
 import { useSettingsStore } from "../stores/settings-store";
 import { useConfigStore } from "../stores/config-store";
 
@@ -161,6 +161,8 @@ export default function Home() {
       };
     }
 
+    if (!viewSettings.vh) missingInputs.push("Horizontal view angle");
+    if (!viewSettings.vv) missingInputs.push("Vertical view angle");
     if (!fe_correctionPaths) missingInputs.push("Fisheye correction file");
     if (!v_correctionPaths) missingInputs.push("Vignetting correction file");
     if (!cf_correctionPaths) missingInputs.push("Calibration factor file");

@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useConfigStore } from "../stores/config-store";
-import { open } from "@tauri-apps/api/shell";
-import { convertFileSrc } from "@tauri-apps/api/tauri";
 import { useSettingsStore } from "../stores/settings-store";
 
 export default function Progress({ fakePipeline }: any) {
@@ -53,16 +51,6 @@ export default function Progress({ fakePipeline }: any) {
             <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
               <div className="bg-white border-2 border-black fixed w-6/12 max-h-[90vh] top-56 text-center text-xl p-10 overflow-auto">
                 {/* <-----  */}
-                {/* <div className="mb-4">
-                  <div className="text-lg font-semibold">Pipeline Progress</div>
-                  <div className="mt-2 w-full mb-4 bg-gray-200 rounded-full h-4 border-gray-400">
-                    <div
-                      className="bg-osu-beaver-orange h-4 rounded-full"
-                      style={{ width: `${progress}%`, transition: "width 0.5" }}
-                      
-                    ></div>
-                  </div>
-                </div> */}
                 {fakePipeline && (
                   <div>
                     <button

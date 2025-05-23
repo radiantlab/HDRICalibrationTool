@@ -10,6 +10,7 @@ mod resize;
 mod vignetting_effect_correction;
 
 use tauri::Manager;
+use tauri::Emitter;
 mod falsecolor;
 
 use std::{
@@ -46,7 +47,7 @@ pub struct ConfigSettings {
 // Helper functon to emit progress events
 fn emit_progress(app: &tauri::AppHandle, current_step: usize, total_steps: usize) -> Result<(), String> {
     let progress = ((current_step as f64 / total_steps as f64) * 100.0) as i32;
-    app.emit_all("pipeline-progress", progress)
+    app.emit("pipeline-progress", progress)
         .map_err(|e| format!("Failed to emit progress event: {}", e))
 }
 
@@ -431,6 +432,7 @@ pub fn process_image_set(
     // Merge exposures
     // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
     let merge_exposures_result = merge_exposures(
+        app,
         &config_settings,
         input_images,
         response_function,

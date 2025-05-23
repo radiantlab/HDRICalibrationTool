@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useConfigStore } from "../../stores/config-store";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 
 // Modal used for loading a saved configuration
 export default function LoadConfigDialog({

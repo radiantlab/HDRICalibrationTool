@@ -1,15 +1,19 @@
 use std::{
-    fs, path::Path, process::{Command, ExitStatus}, str::Chars
+    fs, path::Path, process::{Command, ExitStatus}, str::Chars, env
 }; 
+
+use tauri_plugin_shell::ShellExt;
+
+use tauri::Manager;
 
 /// Converts raw image into .tiff image for front end use.
 #[tauri::command]
 pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: Vec<String>) -> Result<Vec<String>, String> {
     // Get app directory
-    let b_res = app_handle.path_resolver().app_config_dir();
+    let b_res = app_handle.path().app_config_dir();
     let b = match b_res {
-        Some(r) => r,
-        None => return Err("Unable to get app directory (binding)".to_string()),
+        Ok(v) => v,
+        Err(_) => return Err("Unable to get app directory (binding)".to_string()),
     };
 
     let data_dir_res = b.to_str();
@@ -26,13 +30,25 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
         return Err("Couldn't create new directory".to_string());
     }
 
+    // Get working directory of libraw.dll (only needed for windows)
+    let cur_exe = env::current_exe().unwrap().parent().unwrap().to_path_buf();
+    let dcraw_emu_build_working_directory = cur_exe.join("binaries");
+
     let mut cmd: Command;
     let mut tiffs: Vec<String> = Vec::new();
     let mut tst2;
     for i in 0..pths.len() {
         let tst = pths[i].chars();
         tst2 = get_file_name(tst);
-        cmd = Command::new(Path::new(&dcraw).join("dcraw_emu"));
+        if dcraw.len() < 1 {
+            cmd = app_handle.shell().sidecar("dcraw_emu").unwrap().into();
+
+            // If windows, set the working directory to find libraw.dll
+            #[cfg(target_os = "windows")]
+            command.current_dir(&dcraw_emu_build_working_directory);
+        } else {
+            cmd = Command::new(Path::new(&dcraw).join("dcraw_emu"));
+        }
         cmd.args([
             "-T",
             "-o",

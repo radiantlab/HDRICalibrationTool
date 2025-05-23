@@ -1,11 +1,13 @@
 use std::{
-    fs::{self, read_to_string, remove_file},
+    fs::{self, read_to_string},
     io,
     path::{Path, PathBuf},
 };
 
 use serde::{Deserialize, Serialize};
-use serde_json::{from_str, to_string};
+use serde_json::{from_str};
+
+use tauri::Manager;
 
 #[derive(Serialize, Deserialize)]
 struct Config {
@@ -25,12 +27,12 @@ struct Config {
 
 // Retrieves saved configurations by looking for directories in "{app_config_dir}/configurations/".
 #[tauri::command]
-pub async fn delete_config(app_handle: tauri::AppHandle, configName: String) -> Result<(), String> {
+pub async fn delete_config(app_handle: tauri::AppHandle, config_name: String) -> Result<(), String> {
     // Retrieved part of this code from https://github.com/tauri-apps/tauri/discussions/5557
-    let binding_result = app_handle.path_resolver().app_config_dir();
+    let binding_result = app_handle.path().app_config_dir();
     let binding = match binding_result {
-        Some(v) => v,
-        None => return Err("Error deleting saved config".to_string()),
+        Ok(v) => v,
+        Err(_) => return Err("Error getting saved configs".to_string()),
     };
 
     // Get suggested config directory for the app from Tauri
@@ -62,7 +64,7 @@ pub async fn delete_config(app_handle: tauri::AppHandle, configName: String) -> 
     // Look through all subdirectories in {app_config_dir}/configurations/ and delete config which matches given name
     for entry in dir_contents {
         let config_path = entry.join("configuration.json");
-        if check_configuration(entry, &configName) {
+        if check_configuration(entry, &config_name) {
             fs::remove_file(config_path)
                 .map_err(|error| format!("Error removing file {:?}", error))?;
         }

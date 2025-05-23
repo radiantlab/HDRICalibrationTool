@@ -2,7 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import { useSettingsStore } from "../stores/settings-store";
-export const dynamic = "force-dynamic";
+import { invoke } from "@tauri-apps/api/core";
+import { basename } from "@tauri-apps/api/path";
+import { open } from "@tauri-apps/plugin-dialog";
 
 export default function ImageViewer() {
   const { settings } = useSettingsStore();
@@ -15,15 +17,12 @@ export default function ImageViewer() {
 
   useEffect(() => {
     async function loadFiles() {
-      // Dynamically import os and basename from Tauri.
-      const os = await import("@tauri-apps/api/os");
-      const platform: string = await os.platform();
+      // Dynamically import os and basename from Tauri.=
       const files = await populateGrid(outputPath);
-      const { basename } = await import("@tauri-apps/api/path");
       const relative_files = await Promise.all(files.map(file => basename(file)));
+      if (settings.osPlatform === "windows") setIsWindows(true);
       setSelectedImages(relative_files);
       setImageFullPaths(files);
-      if (platform === "win32") setIsWindows(true);
     }
     loadFiles();
   }, [outputPath]);
@@ -31,8 +30,6 @@ export default function ImageViewer() {
   async function browseAndOpen() {
     setError(null);
     try {
-      // Dynamically import open from Tauri.
-      const { open } = await import("@tauri-apps/api/dialog");
       const files = await open({
         multiple: true,
         defaultPath: outputPath,
@@ -53,26 +50,15 @@ export default function ImageViewer() {
 
   async function launchXimage(imagePath: string) {
     if (isWindows) return; // silently return on Windows
-    try {
-      // Dynamically import Command from Tauri.
-      const { Command } = await import("@tauri-apps/api/shell");
-      const cmd = new Command("ximage", [
-        "-e",
-        "auto",
-        imagePath,
-      ]);
-      await cmd.spawn();
-      console.log("ximage launched for:", imagePath);
-    } catch (spawnError) {
-      console.error("Failed to spawn ximage for:", imagePath, spawnError);
-      setError("Could not launch ximage.");
-    }
+    await invoke("display_hdr_img", {radiancePath: settings.radiancePath, imagePath: imagePath})
+      .catch( (error) => {
+        console.log(error);
+        setError("Failed to open ximage");
+      });
   }
 
   async function populateGrid(dir: string): Promise<string[]> {
     try {
-      // Dynamically import invoke from Tauri.
-      const { invoke } = await import("@tauri-apps/api/tauri");
       const entries = await invoke("read_dynamic_dir", { path: dir });
       const hdrPaths: string[] = [];
       if (Array.isArray(entries)) {

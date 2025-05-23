@@ -5,6 +5,7 @@ use std::{
 
 use serde::Serialize;
 use serde_json::to_string;
+use tauri::Manager;
 
 #[derive(Serialize)]
 struct Config {
@@ -57,10 +58,10 @@ pub async fn save_config(
     };
 
     // Retrieved part of this code from https://github.com/tauri-apps/tauri/discussions/5557
-    let binding_result = app_handle.path_resolver().app_config_dir();
+    let binding_result = app_handle.path().app_config_dir();
     let binding = match binding_result {
-        Some(v) => v,
-        None => return Err("Error saving config".to_string()),
+        Ok(v) => v,
+        Err(_) => return Err("Error saving config".to_string()),
     };
 
     // Get suggested config directory for the app from Tauri
