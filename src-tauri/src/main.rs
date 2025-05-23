@@ -46,13 +46,21 @@ use get_saved_configs::get_saved_configs;
 mod raw_image_help;
 use raw_image_help::convert_raw_img;
 
+mod display_hdr_img;
+use display_hdr_img::display_hdr_img;
+
 use std::env;
+use tauri::Manager;
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
-            pipeline, 
-            query_os_platform, 
+            pipeline,
+            query_os_platform,
             read_binary_paths,
             read_dynamic_dir,
             read_host_file,
@@ -63,7 +71,13 @@ fn main() {
             save_config,
             get_saved_configs,
             convert_raw_img,
+            display_hdr_img,
         ])
+        .setup(|app| {
+            let window = app.get_webview_window("main").unwrap();
+            window.show().unwrap();
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -1,11 +1,11 @@
 import NumberInput from "./number-input";
 import DeriveViewSettings from "./derive-view-settings";
 import React, { useState } from "react";
-import { convertFileSrc } from "@tauri-apps/api/tauri";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import { Extensions, Directories } from "./string_functions";
-import { readDir } from '@tauri-apps/api/fs';
-import { invoke } from "@tauri-apps/api/tauri";
-import { open } from "@tauri-apps/api/dialog";
+import { readDir } from '@tauri-apps/plugin-fs';
+import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 import { useConfigStore } from "../stores/config-store";
 import { useSettingsStore } from "../stores/settings-store";
 
@@ -72,16 +72,22 @@ export default function CroppingResizingViewSettings() {
         let ext = Extensions(devicePaths[i]).toLowerCase();
         if (!valid_extensions.includes(ext)) {
           let contents = await readDir(devicePaths[i]);
+          let pth = "";
+          if (settings.osPlatform === "windows") pth = devicePaths[i] + "\\";
+          else pth = devicePaths[i] + "/";
           for (let j = 0; j < contents.length; j++) {
-            if (contents[j].path == selected) {
+            if (pth + contents[j].name == selected) {
               match = true;
               break;
             }
             // Handle batch processing (contains subdirectories)
-            else if (contents[j].path == Extensions(contents[j].path)) {
-              let subContents = await readDir(contents[j].path);
+            else if (contents[j].isDirectory) {
+              let subContents = await readDir(pth + contents[j].name);
+              let subPth = "";
+              if (settings.osPlatform === "windows") subPth = pth + contents[j].name + "\\";
+              else subPth = pth + contents[j].name + "/";
               for (let k = 0; k < subContents.length; k++) {
-                if (subContents[k].path == selected) {
+                if (subPth + subContents[k].name == selected) {
                   match = true;
                   break;
                 }

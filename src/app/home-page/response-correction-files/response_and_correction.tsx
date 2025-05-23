@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { open } from "@tauri-apps/api/dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import { Paths, Extensions } from "../string_functions";
 import { useConfigStore } from "../../stores/config-store";
 import { FileEditor } from "./file_editor"; 

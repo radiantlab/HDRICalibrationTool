@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import { useSettingsStore } from "../stores/settings-store";
-import { open } from "@tauri-apps/api/dialog";
-import { invoke } from "@tauri-apps/api/tauri";
+import { open } from "@tauri-apps/plugin-dialog";
+import { invoke } from "@tauri-apps/api/core";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import SettingsButtonBar from "./settings-button-bar";
 
@@ -86,9 +86,9 @@ export default function SettingsPage() {
               Mapping through the settings fields to create input sections for each
             */}
             {[
-              { id: "radiancePath", label: "Radiance Path", value: localSettings.radiancePath },
-              { id: "hdrgenPath", label: "hdrgen Path", value: localSettings.hdrgenPath },
-              { id: "dcrawEmuPath", label: "dcraw_emu Path", value: localSettings.dcrawEmuPath },
+              { id: "radiancePath", label: "Radiance", value: localSettings.radiancePath },
+              { id: "hdrgenPath", label: "hdrgen", value: localSettings.hdrgenPath },
+              { id: "dcrawEmuPath", label: "dcraw_emu - Included", value: localSettings.dcrawEmuPath },
               { id: "outputPath", label: "HDRI Output", value: localSettings.outputPath },
             ].map(({ id, label, value }) => (
               <div key={id} className="mb-4">
@@ -115,6 +115,10 @@ export default function SettingsPage() {
                     Select
                   </button>
                 </div>
+                {id == "dcrawEmuPath" && <div className="block h-full mr-5 text-sm">
+                    *licensed under LGPL-2.1 - source code can be obtained from https://www.libraw.org/
+                  </div>
+                }
               </div>
             ))}
           </div>
