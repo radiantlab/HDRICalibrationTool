@@ -1,3 +1,13 @@
+
+/**
+ * @module resize
+ * @description This module provides functionality for resizing HDR images to specific dimensions.
+ * It utilizes Radiance's 'pfilt' tool to perform high-quality resampling of HDR images while
+ * preserving their photometric properties. Resizing is an important step in the HDRI calibration
+ * pipeline to ensure consistent image dimensions for analysis and comparison, or to reduce
+ * computational demands for subsequent processing steps.
+ */
+
 use crate::pipeline::DEBUG;
 use std::fs::File;
 use std::process::Command;
@@ -5,17 +15,20 @@ use std::process::Stdio;
 
 use super::ConfigSettings;
 
-// Resizes an HDR image to the target x and y resolution.
-// config_settings:
-//      contains config settings - used for path to radiance and temp directory
-// input_file:
-//      the path to the input HDR image. Input image must be in .hdr format.
-// output_file:
-//      a string for the path and filename where the cropped HDR image will be saved.
-// xdim:
-//      The x-dimensional resolution to resize the HDR image to (in pixels)
-// ydim:
-//      The y-dimensional resolution to resize the HDR image to (in pixels)
+/**
+ * Resizes an HDR image to the target x and y resolution using Radiance's pfilt utility.
+ * The function maintains the image's photometric properties while changing its dimensions.
+ * The -1 flag is used to keep the original exposure settings during the resize operation.
+ * 
+ * @param config_settings - Contains configuration settings including paths to Radiance tools and temp directory
+ * @param input_file - The path to the input HDR image (must be in .hdr format)
+ * @param output_file - The path and filename where the resized HDR image will be saved
+ * @param xdim - The target x-dimensional resolution in pixels
+ * @param ydim - The target y-dimensional resolution in pixels
+ * 
+ * @returns Result<String, String> - On success, returns the path to the output file.
+ *                                  On failure, returns an error message.
+ */
 pub fn resize(
     config_settings: &ConfigSettings,
     input_file: String,
