@@ -1,3 +1,13 @@
+/**
+ * Cropping, Resizing and View Settings Component for the HDRI Calibration Tool.
+ * 
+ * This component allows users to configure view settings for HDR image processing including:
+ * - Fisheye cropping settings (diameter, position)
+ * - View angle settings (horizontal and vertical)
+ * - Target resolution
+ * 
+ * It also provides functionality to derive these settings from sample images.
+ */
 import NumberInput from "./number-input";
 import DeriveViewSettings from "./derive-view-settings";
 import React, { useState } from "react";
@@ -9,10 +19,22 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useConfigStore } from "../stores/config-store";
 import { useSettingsStore } from "../stores/settings-store";
 
+/**
+ * Component for configuring image cropping, resizing and view settings
+ * 
+ * @returns React component with view settings configuration interface
+ */
 export default function CroppingResizingViewSettings() {
+  // Access global configuration
   const { viewSettings, devicePaths, setConfig } = useConfigStore();
   const { settings } = useSettingsStore();
 
+  /**
+   * Handles changes to view settings input fields
+   * Updates the global configuration store with new values
+   * 
+   * @param event - Input change event from form fields
+   */
   const handleViewSettingsChange = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {

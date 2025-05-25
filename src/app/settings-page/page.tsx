@@ -1,3 +1,14 @@
+/**
+ * Settings Page Component for the HDRI Calibration Tool.
+ * 
+ * This component allows users to configure application settings including:
+ * - External utility paths (Radiance, hdrgen, dcraw_emu)
+ * - Output file location
+ * - User experience level
+ * - Debug console access
+ * 
+ * Settings are saved to persistent storage via Tauri API calls.
+ */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -7,6 +18,11 @@ import { invoke } from "@tauri-apps/api/core";
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import SettingsButtonBar from "./settings-button-bar";
 
+/**
+ * Main Settings Page component
+ * 
+ * @returns React component with settings interface
+ */
 export default function SettingsPage() {
   const { settings, setSettings } = useSettingsStore();
   const [localSettings, setLocalSettings] = useState(settings);
@@ -17,9 +33,11 @@ export default function SettingsPage() {
   const [appVersion, setAppVersion] = useState<string>("");
   const [appName, setAppName] = useState<string>("");
   const [tauriVersion, setTauriVersion] = useState<string>("");
-
   useEffect(() => {
-    // Retrieves app name, app version, and tauri version from Tauri API
+    /**
+     * Retrieves app name, app version, and tauri version from Tauri API
+     * and updates the component state
+     */
     async function fetchAppInfo() {
       setAppVersion(await getVersion());
       setAppName(await getName());
@@ -29,28 +47,49 @@ export default function SettingsPage() {
     fetchAppInfo();
   }, []);
 
+  // Update local settings when global settings change
   useEffect(() => {
     setLocalSettings(settings);
   }, [settings]);
-
+  /**
+   * Handles execution of console debug commands
+   */
   const handleRunCommand = () => {
     console.log("Command:", consoleInput);
   };
 
+  /**
+   * Handles changes to input fields in the settings form
+   * 
+   * @param event - Input change event
+   */
   const handleSettingsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const updatedSettings = {
       ...localSettings,
       [event.currentTarget.name]: event.currentTarget.value,
     };
     setLocalSettings(updatedSettings);
-    setSaveDisabled(false);
+    setSaveDisabled(false);  // Enable the save button since changes were made
   };
 
+  /**
+   * Updates a specific path setting
+   * 
+   * @param id - ID of the setting to update
+   * @param path - New path value
+   */
   const handleUpdatePath = (id: string, path: string) => {
     setLocalSettings({ ...localSettings, [id]: path });
-    setSaveDisabled(false);
+    setSaveDisabled(false);  // Enable the save button since changes were made
   };
 
+  /**
+   * Opens a file/directory selection dialog
+   * 
+   * @param id - ID of the setting to update
+   * @param label - Label for the dialog title
+   * @param isDirectory - Whether to select a directory (true) or a file (false)
+   */
   const dialog = async (id: string, label: string, isDirectory: boolean = false) => {
     let selectedPath = await open({
       title: "Select" + label + "Path",
@@ -61,9 +100,17 @@ export default function SettingsPage() {
       handleUpdatePath(id, selectedPath as string);
     }
   };
-
+  /**
+   * Saves the current settings to global store and persistent storage
+   * 
+   * Updates the global settings store with the local settings
+   * Writes binary paths to persistent storage via Tauri API
+   * Disables the save button and displays a confirmation message
+   */
   const savePaths = () => {
     setSettings(localSettings);
+    
+    // Save binary paths to persistent storage via Tauri backend
     invoke("write_binary_paths", {
       hdrgenPath: localSettings.hdrgenPath,
       dcrawEmuPath: localSettings.dcrawEmuPath,

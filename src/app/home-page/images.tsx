@@ -1,3 +1,15 @@
+/**
+ * Images Component for the HDRI Calibration Tool.
+ * 
+ * This component handles the selection and management of input images for HDR processing.
+ * It provides UI for:
+ * - Selecting image files and directories
+ * - Displaying selected images
+ * - Managing response function files
+ * - Validating file types and displaying errors
+ * 
+ * It integrates with the global configuration store to maintain state across the application.
+ */
 import React, { useState, useEffect } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { Paths } from "./string_functions";
@@ -10,85 +22,101 @@ import { EditingFileType } from "@/app/global-types";
 import FileFieldRow from "./file-field-row";
 import { useSettingsStore } from "../stores/settings-store";
 
+/**
+ * Component for managing image selection and related files
+ * 
+ * @returns React component with image selection interface
+ */
 export default function Images() {
+  // Access global configuration
   const { devicePaths, responsePaths, setConfig } = useConfigStore();
   const { settings } = useSettingsStore();
+  
+  // State for file editor visibility
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
 
+  /**
+   * Updates the device paths in global configuration
+   * 
+   * @param device - Array of image file paths
+   */
   const setDevicePaths = (device: any) => {
     setConfig({ devicePaths: device });
   };
   
+  /**
+   * Updates the response function path in global configuration
+   * 
+   * @param response - Path to response function file
+   */
   const setResponsePaths = (response: string) => {
     setConfig({ responsePaths: response });
   };
 
-
+  /** Enable debug logging */
   const DEBUG = true;
+  
+  /**
+   * List of valid image file extensions that the application can process
+   * Includes JPEG/JPG and various RAW format extensions from different camera manufacturers
+   */
   const valid_extensions = [
-    "jpg",
-    "jpeg",
-    "3fr",
-    "ari",
-    "arw",
-    "bay",
-    "braw",
-    "crw",
-    "cr2",
-    "cr3",
-    "cap",
-    "data",
-    "dcs",
-    "dcr",
-    "dng",
-    "drf",
-    "eip",
-    "erf",
-    "fff",
-    "gpr",
-    "iiq",
-    "k25",
-    "kdc",
-    "mdc",
-    "mef",
-    "mos",
-    "mrw",
-    "nef",
-    "nrw",
-    "obm",
-    "orf",
-    "pef",
-    "ptx",
-    "pxn",
-    "r3d",
+    // Common formats
+    "jpg", "jpeg", "tif", "tiff",
+    
+    // RAW formats by manufacturer
+    // Canon
+    "crw", "cr2", "cr3",
+    // Nikon 
+    "nef", "nrw",
+    // Sony
+    "arw", "sr2", "srf",
+    // Fujifilm
     "raf",
-    "raw",
-    "rwl",
-    "rw2",
-    "rwz",
-    "sr2",
-    "srf",
+    // Olympus
+    "orf", 
+    // Pentax
+    "pef", "ptx",
+    // Panasonic/Leica
+    "raw", "rw2", "rwl",
+    // Samsung
     "srw",
-    "tif",
-    "tiff",
+    // Sigma
     "x3f",
+    // Other camera manufacturers
+    "3fr", "ari", "bay", "braw", "cap", "data", "dcs", "dcr", 
+    "dng", "drf", "eip", "erf", "fff", "gpr", "iiq", "k25", 
+    "kdc", "mdc", "mef", "mos", "mrw", "obm", "pxn", "r3d",
+    "rwz"
   ];
-
-  // Holds the file paths for the frontend
+  // State for managing file paths and UI state
+  /** Paths to preview images */
   const [assetPaths, setAssetPaths] = useState<any[]>([]);
+  /** Selected image files */
   const [images, setImages] = useState<File[]>([]);
-  // Holds the temporary device file paths selected by the user during the dialog function
+  
+  // Temporary variables used during file selection
+  /** Temporary storage for selected device paths during file dialog */
   let selected: any | any[] = [];
-  // Holds the temporary asset paths selected by the user during the dialog function
+  /** Temporary storage for selected asset paths during file dialog */
   let assets: any[] = [];
-  // Error checking display
+  
+  // Error states
+  /** Flag for image file errors */
   const [image_error, set_image_error] = useState<boolean>(false);
+  /** Flag for directory errors */
   const [dirError, setDirError] = useState<boolean>(false);
-
+  
+  /** Flag indicating if RAW images are selected (affects UI behavior) */
   const [rawImagesSelected, setRawImagesSelected] = useState<boolean>(false);
-
-  // Open a file dialog window using the tauri api and update the images array with the results 
+  /**
+   * Opens a file dialog to select image files
+   * 
+   * Uses the Tauri dialog API to open a file selection dialog filtered for supported image types.
+   * Updates the component state with selected images and clears any previous errors.
+   */
   async function file_dialog() {
+    // Open file selection dialog with filter for supported image formats
     selected = await open({
       multiple: true,
       filters: [{
@@ -96,7 +124,10 @@ export default function Images() {
         extensions: valid_extensions
       }]
     });
+    
+    // Process selected files
     if (Array.isArray(selected)) {
+      // Clear any previous errors
       set_image_error(false);
       setDirError(false);
       let valid = false;
