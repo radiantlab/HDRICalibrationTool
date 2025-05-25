@@ -1,3 +1,12 @@
+
+/**
+ * @module crop
+ * @description This module provides functionality for cropping fisheye view HDR images.
+ * It uses Radiance's 'pcompos' tool to crop a fisheye image into a square that circumscribes
+ * the circular fisheye view. This is a critical step in the HDRI calibration pipeline as it
+ * ensures the fisheye image is properly positioned and sized for subsequent processing.
+ */
+
 use crate::pipeline::DEBUG;
 use std::fs::File;
 use std::process::Command;
@@ -5,21 +14,21 @@ use std::process::Stdio;
 
 use super::ConfigSettings;
 
-// Crops a fisheye view HDR image to a square which circumscribes the circular fisheye view.
-// config_settings:
-//      contains config settings - used for path to radiance and temp directory
-// input_file:
-//      the path to the input HDR image. Input image must be in .hdr format.
-// output_file:
-//      a string for the path and filename where the cropped HDR image will be saved.
-// diameter:
-//      the fisheye view diameter in pixels
-// xleft:
-//      The x-coordinate of the bottom left corner of the circumscribed square
-//      of the fisheye view (in pixels)
-// ydown:
-//      The y-coordinate of the bottom left corner of the circumscribed square
-//      of the fisheye view (in pixels)
+/**
+ * Crops a fisheye view HDR image to a square which circumscribes the circular fisheye view.
+ * Uses Radiance's 'pcompos' tool to extract a specific portion of the image based on
+ * given dimensions and coordinates.
+ * 
+ * @param config_settings - Contains configuration settings including paths to Radiance tools and temp directory
+ * @param input_file - The path to the input HDR image (must be in .hdr format)
+ * @param output_file - The path and filename where the cropped HDR image will be saved
+ * @param diameter - The fisheye view diameter in pixels (defines the size of the output square)
+ * @param xleft - The x-coordinate of the bottom left corner of the circumscribed square (in pixels)
+ * @param ydown - The y-coordinate of the bottom left corner of the circumscribed square (in pixels)
+ * 
+ * @returns Result<String, String> - On success, returns the path to the output file.
+ *                                  On failure, returns an error message.
+ */
 pub fn crop(
     config_settings: &ConfigSettings,
     input_file: String,

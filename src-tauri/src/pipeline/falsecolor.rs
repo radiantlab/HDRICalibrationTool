@@ -1,3 +1,11 @@
+/**
+ * Module for generating falsecolor luminance maps from HDR images.
+ * 
+ * This module provides functionality to create color-coded luminance maps from HDR images
+ * using Radiance's falsecolor tool. These maps represent luminance values with different
+ * colors, making it easier to visualize brightness levels in the image. This is particularly
+ * useful for luminance analysis in architectural and lighting design.
+ */
 use crate::pipeline::DEBUG;
 use std::fs::File;
 use std::process::Command;
@@ -7,22 +15,25 @@ use std::env;
 use super::ConfigSettings;
 use super::LuminanceArgs;
 
-// Falsecolor Luminance Map Creation
-// config_settings:
-//      contains config settings - used for path to radiance and temp directory
-// input_file:
-//      the path to the input HDR image. Input image must be in .hdr format
-// output_file:
-//      a string for the path and filename where the luminance map HDR image will be saved
-// luminance_args:
-//      contains the arguments for the 'falsecolor' command
-
+/**
+ * Generates a falsecolor luminance map from an HDR image
+ * 
+ * This function executes Radiance's falsecolor tool to create a color-coded visualization
+ * of luminance values in an HDR image. The resulting image uses colors to represent
+ * different luminance levels, making it easier to analyze brightness distribution.
+ * 
+ * @param config_settings - Configuration settings including path to Radiance binaries
+ * @param input_file - Path to the input HDR image (must be in .hdr format)
+ * @param output_file - Path where the falsecolor luminance map will be saved
+ * @param luminance_args - Parameters controlling the falsecolor visualization (scale limits, legend, etc.)
+ * @returns Result containing the output file path on success or an error message on failure
+ */
 pub fn falsecolor(
     config_settings: &ConfigSettings,
     input_file: String,
     output_file: String,
     luminance_args: &LuminanceArgs,
-) -> Result<String, String> {
+) -> Result<String, String> {    // Print debug information about the function call parameters
     if DEBUG {
         println!(
             "falsecolor() was called with parameters:\n\t {},\n\t {},\n\t {},\n\t {}\n",
@@ -33,15 +44,18 @@ pub fn falsecolor(
         );
     }
 
-    // Command to run
+    // Create command to run falsecolor from the Radiance path
     let mut command = Command::new(config_settings.radiance_path.join("falsecolor"));
     
     // Provide path to radiance binaries by modifying system path (PATH env variable) for child process
-    // 'falsecolor' uses 'pcomb', so it needs to know where to find it
+    // The falsecolor tool relies on other Radiance utilities like pcomb, so we need to make sure
+    // the child process knows where to find them
     let env_var = env::var("PATH");
     if env_var.is_err() {
         return Err("pipeline: falsecolor: could not find PATH environment variable.".into());
     }
+    
+    // Set the PATH environment variable for the child process
     // Windows separates directory entries in system path with ';', Linux and MacOS use ':'
     command.env("PATH", 
         format!("{}{}{}", 
