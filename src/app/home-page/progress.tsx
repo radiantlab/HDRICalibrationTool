@@ -1,13 +1,43 @@
+/**
+ * Progress Component for the HDRI Calibration Tool.
+ * 
+ * This component displays a progress modal during HDR image processing.
+ * It listens for progress events from the backend pipeline and updates
+ * the UI accordingly. It also handles error states and provides options
+ * to dismiss or retry the process.
+ */
 import React, { useEffect, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { useConfigStore } from "../stores/config-store";
 import { useSettingsStore } from "../stores/settings-store";
 
-export default function Progress({ fakePipeline }: any) {
-  const { progressButton, processError, showProgress, setConfig } = useConfigStore();
-  const [progress, setProgress] = useState(0);
-  const {settings} = useSettingsStore();
+/**
+ * Props for the Progress component
+ * 
+ * @property fakePipeline - Flag indicating if using a fake pipeline for testing
+ */
+interface ProgressProps {
+  fakePipeline: boolean;
+}
 
+/**
+ * Progress modal component shown during image processing
+ * 
+ * @param props - Component props
+ * @returns Modal component showing processing progress
+ */
+export default function Progress({ fakePipeline }: ProgressProps) {
+  // Access global configuration
+  const { progressButton, processError, showProgress, setConfig } = useConfigStore();
+  const { settings } = useSettingsStore();
+  
+  // Local state for current progress percentage
+  const [progress, setProgress] = useState(0);
+  /**
+   * Resets all progress-related state
+   * 
+   * Clears progress indicators and hides the progress modal
+   */
   function ResetProgress() {
     setConfig({
       progressButton: false,
@@ -17,24 +47,44 @@ export default function Progress({ fakePipeline }: any) {
     setProgress(0);
   }
 
+  /**
+   * Updates the progress button state
+   * 
+   * @param progress - New state for the progress button
+   */
   const setProgressButton = (progress: boolean) => {
     setConfig({ progressButton: progress });
   };
 
+  /**
+   * Updates the process error state
+   * 
+   * @param error - Whether an error has occurred
+   */
   const setProcessError = (error: boolean) => {
     setConfig({ processError: error });
   };
-
+  /**
+   * Set up event listener for progress updates from the backend
+   * 
+   * Subscribes to 'pipeline-progress' events from the Tauri backend
+   * and updates the local progress state with the received values
+   */
   useEffect(() => {
     let unlisten: () => void;
+    
     async function subscribe() {
-      unlisten = await listen("pipeline-progress", (event: any) => {
+      // Listen for progress events from backend
+      unlisten = await listen("pipeline-progress", (event: { payload: unknown }) => {
         if (event.payload !== undefined) {
           setProgress(event.payload as number);
         }
       });
     }
+    
     subscribe();
+    
+    // Clean up event listener on component unmount
     return () => {
       if (unlisten) {
         unlisten();

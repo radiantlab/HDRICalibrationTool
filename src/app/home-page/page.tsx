@@ -1,3 +1,16 @@
+/**
+ * Home Page Component for the HDRI Calibration Tool.
+ * 
+ * This component serves as the main page for configuring and generating HDR images.
+ * It integrates various subcomponents for:
+ * - Image selection
+ * - View and cropping settings
+ * - Response and correction files
+ * - Luminance configuration
+ * - Process control and execution
+ * 
+ * The component manages the main workflow for generating HDR images using the Tauri backend.
+ */
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -12,41 +25,58 @@ import { exists } from "@tauri-apps/plugin-fs";
 import { useSettingsStore } from "../stores/settings-store";
 import { useConfigStore } from "../stores/config-store";
 
+/** Enable debug logging */
 const DEBUG = true;
 
+/** Flag to use fake pipeline for testing */
 const fakePipeline = false;
 
+/**
+ * Main Home page component for image configuration and processing
+ * 
+ * @returns React component with the main application interface
+ */
 export default function Home() {
+  // Access application settings from global store
   const { settings } = useSettingsStore();
 
+  // Access configuration state from global store
   const {
-    viewSettings,
-    luminanceSettings,
-    devicePaths,
-    responsePaths,
-    fe_correctionPaths,
-    v_correctionPaths,
-    nd_correctionPaths,
-    cf_correctionPaths,
-    setConfig,
+    viewSettings,         // Settings for cropping and view angle
+    luminanceSettings,    // Settings for luminance visualization
+    devicePaths,          // Paths to input image files
+    responsePaths,        // Path to response function file
+    fe_correctionPaths,   // Path to fisheye correction file
+    v_correctionPaths,    // Path to vignetting correction file
+    nd_correctionPaths,   // Path to neutral density correction file
+    cf_correctionPaths,   // Path to calibration factor file
+    setConfig,           // Function to update configuration
   } = useConfigStore();
+  // HARD CODED PATHS FOR TESTING (used when fakePipeline is true)
+  // These paths are only used for development and testing purposes
 
-  // HARD CODED PATHS FOR TESTING
-
-  // Hardcoded radiance and hdrgen paths
+  /** Hardcoded path to Radiance binaries for testing */
   const fakeRadiancePath = "/usr/local/radiance/bin/";
+  /** Hardcoded path to HDRGen binary for testing */
   const fakeHdrgenPath = "/usr/local/bin/";
-  // Hardcoded output path
+  /** Hardcoded output path for testing */
   const fakeOutputPath = "../output/";
 
-  // Calls the BE pipeline function with the input images the user
-  // selected, and hardcoded data for the rest of the inputs
+  /**
+   * Handles the generation of HDR images
+   * 
+   * This function:
+   * 1. Validates input files and settings
+   * 2. Displays confirmation prompts for missing or problematic inputs
+   * 3. Shows progress indicators
+   * 4. Invokes the backend pipeline to process images
+   */
   const handleGenerateHDRImage = async () => {
+    // Check if image files exist
     if (!(await missingImage())) {
       alert("Image files are not found");
       return;
-    }
-
+    }    // Check if all required inputs are provided
     const { isValid, missingInputs } = allInputsEntered();
 
     // Abort if no input images or directories are provided
@@ -57,6 +87,7 @@ export default function Home() {
       return;
     }
 
+    // If some optional inputs are missing, ask user for confirmation before proceeding
     if (missingInputs.length > 0) {
       const proceed = await confirm(
         `The following inputs are missing:\n\n- ${missingInputs.join(
@@ -67,6 +98,8 @@ export default function Home() {
         return; // Abort if the user chooses not to proceed
       }
     } 
+    
+    // Warn about missing response function for JPEG images
     if (!responsePaths) {
       // If the user didn't select a response function,
       // display a warning that the output HDR image might be inaccurate if converting from JPEG
@@ -78,6 +111,8 @@ export default function Home() {
         return;
       }
     }
+    
+    // Warn if vertical and horizontal view angles don't match
     if (viewSettings.vv !== viewSettings.vh) {
       let proceed = await confirm(
         "Warning: vv (Vertical Angle) and vh (Horizontal Angle) values do not match. Continue anyway?"
@@ -85,17 +120,18 @@ export default function Home() {
       if (!proceed) {
         return;
       }
-    }
-
-    // Progress
+    }    // Show progress indicator
     setConfig({ showProgress: true });
 
-    // Call pipeline
+    // Call backend pipeline function with all parameters
     invoke<string>("pipeline", {
+      // Paths to external tools
       radiancePath: settings.radiancePath,
       hdrgenPath: settings.hdrgenPath,
       dcrawEmuPath: settings.dcrawEmuPath,
       outputPath: settings.outputPath,
+      
+      // Input images and correction files
       inputImages: devicePaths,
       responseFunction: responsePaths,
       fisheyeCorrectionCal: fe_correctionPaths,
