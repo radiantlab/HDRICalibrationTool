@@ -68,7 +68,7 @@ export default function Navigation() {
         {/* Image Configuration page link */}
         <Link
           href="/home-page"
-          className={`flex items-center justify-center w-full h-full p-2 font-bold ${
+          className={`flex items-center justify-center w-full h-full p-2 font-bold border-r border-gray-400 ${
             pathname === "/home-page"
               ? "bg-white cursor-default"  // Active page styling
               : "hover:bg-gray-200 cursor-pointer"  // Inactive page styling
@@ -80,7 +80,7 @@ export default function Navigation() {
         {/* Settings page link */}
         <Link
           href="/settings-page"
-          className={`flex items-center justify-center w-full h-full p-2 font-bold ${
+          className={`flex items-center justify-center w-full h-full p-2 font-bold border-r border-gray-400 ${
             pathname === "/settings-page"
               ? "bg-white cursor-default"
               : "hover:bg-gray-200 cursor-pointer"
