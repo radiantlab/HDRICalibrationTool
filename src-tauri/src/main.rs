@@ -13,6 +13,7 @@ use query_os_platform::query_os_platform;
 mod read_binary_paths;
 use read_binary_paths::read_binary_paths;
 
+// Command to read the contents of a directory
 mod read_dynamic_dir;
 use read_dynamic_dir::read_dynamic_dir;
 
@@ -27,6 +28,7 @@ use write_binary_paths::write_binary_paths;
 // Command to write to a file given its contents from frontend
 mod write_host_file;
 use write_host_file::write_host_file;
+
 // Command to delete a saved config
 mod delete_config;
 use delete_config::delete_config;
@@ -43,9 +45,11 @@ use save_config::save_config;
 mod get_saved_configs;
 use get_saved_configs::get_saved_configs;
 
+// Command to convert raw image into tiff image
 mod raw_image_help;
 use raw_image_help::convert_raw_img;
 
+// Command to display HDR image using ximage utility
 mod display_hdr_img;
 use display_hdr_img::display_hdr_img;
 
