@@ -122,12 +122,12 @@ export default function SettingsPage() {
   return (
    <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
       <main className="bg-white col-span-4 m-8 mt-0 p-5 mb-10 border-l border-r border-gray-400">
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* Left: External Utilities */}
           <div className="border border-gray-300 rounded-lg p-5">
             <h2 className="text-xl font-bold mb-4 flex items-center">
               External Utilities
-              <span className="ml-2 text-gray-500 text-sm">ⓘ</span>
+              {/* <span className="ml-2 text-gray-500 text-sm">ⓘ</span> */}
             </h2>
 
             {/*
@@ -172,13 +172,11 @@ export default function SettingsPage() {
           </div>
 
           {/* Right: Usability Preferences */}
-          <div className="border border-gray-300 rounded-lg p-5">
+          {/* <div className="border border-gray-300 rounded-lg p-5">
             <h2 className="text-xl font-bold mb-4 flex items-center">
               Usability Preferences
-              <span className="ml-2 text-gray-500 text-sm">ⓘ</span>
             </h2>
 
-            {/* Experience Level */}
             <div className="mb-6">
               <label className="font-semibold block mb-2">Experience Level</label>
               <div className="flex gap-4">
@@ -207,7 +205,6 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* Console Input */}
             <div className="mb-6">
               <label className="font-semibold block mb-2">Console Debug</label>
               <textarea
@@ -224,7 +221,6 @@ export default function SettingsPage() {
               </button>
             </div>
 
-            {/* About */}
             <div className="mt-6">
               <h2 className="font-semibold mb-2">About</h2>
               <div className="space-y-1 text-sm">
@@ -233,7 +229,7 @@ export default function SettingsPage() {
                 <div><strong>Tauri Version:</strong> {tauriVersion}</div>
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </main>
 
