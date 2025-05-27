@@ -5,6 +5,7 @@ use std::{
 };
 
 use super::ConfigSettings;
+use super::UserCommands;
 
 // Corrects for the vignetting effect of an HDR image using pcomb.
 // config_settings:
@@ -21,6 +22,7 @@ pub fn vignetting_effect_correction(
     input_file: String,
     output_file: String,
     vignetting_correction_cal: String,
+    commands: &UserCommands,
 ) -> Result<String, String> {
     if DEBUG {
         println!("vignetting_effect_correction() was called with parameters:");
@@ -31,11 +33,18 @@ pub fn vignetting_effect_correction(
     let mut command = Command::new(config_settings.radiance_path.join("pcomb"));
 
     // Add arguments to pcomb command
-    command.args([
+    let mut pcomb_arguments: Vec<&str> = vec![
         "-f",
         vignetting_correction_cal.as_str(),
-        input_file.as_str(),
-    ]);
+    ];
+    command.args(&pcomb_arguments);
+
+    // Use custom command options if given
+    if commands.pcomb_vignetting_corr != "" {
+        pcomb_arguments = commands.pcomb_vignetting_corr.split_whitespace().collect();
+        command.args(&pcomb_arguments);
+    }
+    command.arg(input_file.as_str());
 
     // Direct command's output to specifed output file
     let file_result = File::create(&output_file);

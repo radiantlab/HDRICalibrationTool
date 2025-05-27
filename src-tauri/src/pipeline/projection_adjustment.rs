@@ -5,6 +5,7 @@ use std::{
 };
 
 use super::ConfigSettings;
+use super::UserCommands;
 
 // Applies projection adjustment for the fisheye lens to an HDR image using pcomb.
 // config_settings:
@@ -21,6 +22,7 @@ pub fn projection_adjustment(
     input_file: String,
     output_file: String,
     fisheye_correction_cal: String,
+    commands: &UserCommands,
 ) -> Result<String, String> {
     if DEBUG {
         println!("projection_adjustment() was called with parameters:");
@@ -31,7 +33,19 @@ pub fn projection_adjustment(
     let mut command = Command::new(config_settings.radiance_path.join("pcomb"));
 
     // Add arguments to pcomb command
-    command.args(["-f", fisheye_correction_cal.as_str(), input_file.as_str()]);
+    let mut pcomb_arguments: Vec<&str> = vec![
+        "-f",
+        fisheye_correction_cal.as_str(),
+    ];
+    command.args(&pcomb_arguments);
+
+    // Use custom command options if given
+    if commands.pcomb_projection_adj != "" {
+        pcomb_arguments = commands.pcomb_projection_adj.split_whitespace().collect();
+        command.args(&pcomb_arguments);
+    }
+    command.arg(input_file.as_str());
+    // command.args(["-f", fisheye_correction_cal.as_str(), input_file.as_str()]);
 
     // Direct command's output to specifed output file
     let file_result = File::create(&output_file);

@@ -4,6 +4,7 @@ use std::process::Command;
 use std::process::Stdio;
 
 use super::ConfigSettings;
+use super::UserCommands;
 
 // Crops a fisheye view HDR image to a square which circumscribes the circular fisheye view.
 // config_settings:
@@ -27,6 +28,7 @@ pub fn crop(
     diameter: String,
     xleft: String,
     ydown: String,
+    commands: &UserCommands,
 ) -> Result<String, String> {
     if DEBUG {
         println!("crop() was called with parameters:");
@@ -39,15 +41,25 @@ pub fn crop(
     let mut command = Command::new(config_settings.radiance_path.join("pcompos"));
 
     // Add arguments to pcompos command
-    command.args([
+    let xleft_string = format!("-{xleft}"); // need to assign ownership to allow for '.as_str()' when arguments vector is created
+    let ydown_string = format!("-{ydown}");
+    let mut pcompos_arguments: Vec<&str> = vec![
         "-x",
         diameter.as_str(),
         "-y",
         diameter.as_str(),
         input_file.as_str(),
-        format!("-{xleft}").as_str(),
-        format!("-{ydown}").as_str(),
-    ]);
+        xleft_string.as_str(),
+        ydown_string.as_str(),
+    ];
+    command.args(&pcompos_arguments);
+
+    /* **IMPORTANT** -> WITH THE WAY COMMANDS ARE IMPLEMENTED, THE USER IS VERY LIMITED IN WHAT THEY CAN CHANGE */
+    // Use custom command options if given
+    if commands.pcompos != "" {
+        pcompos_arguments = commands.pcompos.split_whitespace().collect();
+        command.args(&pcompos_arguments);
+    }
 
     // Direct command's output to specifed output file
     let file_result = File::create(&output_file);

@@ -366,6 +366,7 @@ pub fn process_image_set(
             .join("nullify_exposure_value.hdr")
             .display()
             .to_string(),
+        &commands,
     );
 
     // If the command to nullify the exposure value encountered an error, abort pipeline
@@ -389,6 +390,7 @@ pub fn process_image_set(
         diameter,
         xleft,
         ydown,
+        &commands,
     );
 
     // If the cropping command encountered an error, abort pipeline
@@ -411,6 +413,7 @@ pub fn process_image_set(
             .to_string(),
         xdim,
         ydim,
+        &commands,
     );
 
     // If the resizing command encountered an error, abort pipeline
@@ -437,6 +440,7 @@ pub fn process_image_set(
                 .display()
                 .to_string(),
             fisheye_correction_cal,
+            &commands,
         );
 
         // If the command to apply projection adjustment encountered an error, abort pipeline
@@ -462,6 +466,7 @@ pub fn process_image_set(
                 .display()
                 .to_string(),
             vignetting_correction_cal,
+            &commands,
         );
 
         // If the command encountered an error, abort pipeline
@@ -487,6 +492,7 @@ pub fn process_image_set(
                 .display()
                 .to_string(),
             neutral_density_cal,
+            &commands,
         );
 
         // If the command encountered an error, abort pipeline
@@ -512,6 +518,7 @@ pub fn process_image_set(
                 .display()
                 .to_string(),
             photometric_adjustment_cal,
+            &commands,
         );
 
         // If the command encountered an error, abort pipeline
@@ -539,6 +546,7 @@ pub fn process_image_set(
             .to_string(),
         vertical_angle,
         horizontal_angle,
+        &commands,
     );
 
     // If the command encountered an error, abort pipeline

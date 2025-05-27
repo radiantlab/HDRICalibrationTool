@@ -4,6 +4,7 @@ use std::process::Command;
 use std::process::Stdio;
 
 use super::ConfigSettings;
+use super::UserCommands;
 
 // Photometric Adjustments
 // config_settings:
@@ -20,6 +21,7 @@ pub fn photometric_adjustment(
     input_file: String,
     output_file: String,
     photometric_adjustment: String,
+    commands: &UserCommands,
 ) -> Result<String, String> {
     if DEBUG {
         println!("photometric_adjustment() was called with parameters:\n\t photometric_adjustment: {photometric_adjustment}");
@@ -29,12 +31,25 @@ pub fn photometric_adjustment(
     let mut command = Command::new(config_settings.radiance_path.join("pcomb"));
 
     // Add arguments
-    command.args([
+    let mut pcomb_arguments: Vec<&str> = vec![
         "-h",
         "-f",
         photometric_adjustment.as_str(),
-        input_file.as_str(),
-    ]);
+    ];
+    command.args(&pcomb_arguments);
+
+    // Use custom command options if given
+    if commands.pcomb_photometric_adj != "" {
+        pcomb_arguments = commands.pcomb_photometric_adj.split_whitespace().collect();
+        command.args(&pcomb_arguments);
+    }
+    command.arg(input_file.as_str());
+    // command.args([
+    //     "-h",
+    //     "-f",
+    //     photometric_adjustment.as_str(),
+    //     input_file.as_str(),
+    // ]);
 
     // Set up piping of output to file
     let file_result = File::create(&output_file);

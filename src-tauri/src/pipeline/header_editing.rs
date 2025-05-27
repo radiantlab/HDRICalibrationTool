@@ -5,6 +5,7 @@ use std::process::Stdio;
 // use regex::Regex;
 
 use super::ConfigSettings;
+use super::UserCommands;
 
 // Header Editing
 // config_settings:
@@ -24,6 +25,7 @@ pub fn header_editing(
     output_file: String,
     vertical_angle: String,
     horizontal_angle: String,
+    commands: &UserCommands,
 ) -> Result<String, String> {
     if DEBUG {
         println!("header_editing() was called with parameters:\n\tvertical_angle: {vertical_angle}\n\thorizontal_angle: {horizontal_angle}");
@@ -33,10 +35,23 @@ pub fn header_editing(
     let mut command = Command::new(config_settings.radiance_path.join("getinfo"));
 
     // Add arguments
-    command.args([
+    // need to assign ownership to allow for '.as_str()' when arguments vector is created
+    let argument_string = format!("VIEW= -vta -vv {} -vh {}", vertical_angle, horizontal_angle);
+    let mut getinfo_arguments: Vec<&str> = vec![
         "-a",
-        format!("VIEW= -vta -vv {} -vh {}", vertical_angle, horizontal_angle).as_str(),
-    ]);
+        argument_string.as_str(),
+    ];
+    command.args(&getinfo_arguments);
+
+    // Use custom command options if given
+    if commands.getinfo != "" {
+        getinfo_arguments = commands.getinfo.split_whitespace().collect();
+        command.args(&getinfo_arguments);
+    }
+    // command.args([
+    //     "-a",
+    //     format!("VIEW= -vta -vv {} -vh {}", vertical_angle, horizontal_angle).as_str(),
+    // ]);
 
     // Set up piping of the input and output file
     let file_output_result = File::create(&output_file);

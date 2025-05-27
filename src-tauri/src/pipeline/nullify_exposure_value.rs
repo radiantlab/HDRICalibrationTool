@@ -2,6 +2,7 @@ use crate::pipeline::DEBUG;
 use std::process::Command;
 
 use super::ConfigSettings;
+use super::UserCommands;
 
 // Nullifies the exposure value of an HDR image using ra_xyze.
 // config_settings:
@@ -15,6 +16,7 @@ pub fn nullify_exposure_value(
     config_settings: &ConfigSettings,
     input_file: String,
     output_file: String,
+    commands: &UserCommands
 ) -> Result<String, String> {
     if DEBUG {
         println!("nullify_exposure_value was called!");
@@ -23,8 +25,17 @@ pub fn nullify_exposure_value(
     // Create a new command for ra_xyze
     let mut command = Command::new(config_settings.radiance_path.join("ra_xyze"));
 
+    // Use custom command options if given
+    let mut raxyze_arguments: Vec<&str> = vec!["-r",];
+    if commands.raxyze != "" {
+        raxyze_arguments = commands.raxyze.split_whitespace().collect();
+    }
+
+    /* **IMPORTANT** -> IMPLEMENTATION LIMITS HOW THE COMMAND CAN BE CHANGED (ONLY OPTIONS BEFORE '-o') */
     // Add arguments to ra_xyze command
-    command.args(["-r", "-o", input_file.as_str(), output_file.as_str()]);
+    command.args(&raxyze_arguments);
+    command.args(["-o", input_file.as_str(), output_file.as_str()]);
+    // command.args(["-r", "-o", input_file.as_str(), output_file.as_str()]);
 
     // Run the command
     let status = command.status();

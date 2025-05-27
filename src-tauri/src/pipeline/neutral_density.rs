@@ -4,6 +4,7 @@ use std::process::Command;
 use std::process::Stdio;
 
 use super::ConfigSettings;
+use super::UserCommands;
 
 // Neutral Density Filter
 // config_settings:
@@ -20,6 +21,7 @@ pub fn neutral_density(
     input_file: String,
     output_file: String,
     neutral_density: String,
+    commands: &UserCommands,
 ) -> Result<String, String> {
     if DEBUG {
         println!(
@@ -31,7 +33,19 @@ pub fn neutral_density(
     let mut command = Command::new(config_settings.radiance_path.join("pcomb"));
 
     // Add arguments
-    command.args(["-f", neutral_density.as_str(), input_file.as_str()]);
+    let mut pcomb_arguments: Vec<&str> = vec![
+        "-f",
+        neutral_density.as_str(),
+    ];
+    command.args(&pcomb_arguments);
+
+    // Use custom command options if given
+    if commands.pcomb_neutral_dens != "" {
+        pcomb_arguments = commands.pcomb_neutral_dens.split_whitespace().collect();
+        command.args(&pcomb_arguments);
+    }
+    command.arg(input_file.as_str());
+    // command.args(["-f", neutral_density.as_str(), input_file.as_str()]);
 
     // Set up piping of output to file
     let file_result = File::create(&output_file);

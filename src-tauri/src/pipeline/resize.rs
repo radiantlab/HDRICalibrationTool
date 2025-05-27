@@ -4,6 +4,7 @@ use std::process::Command;
 use std::process::Stdio;
 
 use super::ConfigSettings;
+use super::UserCommands;
 
 // Resizes an HDR image to the target x and y resolution.
 // config_settings:
@@ -22,6 +23,7 @@ pub fn resize(
     output_file: String,
     xdim: String,
     ydim: String,
+    commands: &UserCommands,
 ) -> Result<String, String> {
     if DEBUG {
         println!("resize() was called with parameters:");
@@ -33,14 +35,21 @@ pub fn resize(
     let mut command = Command::new(config_settings.radiance_path.join("pfilt"));
 
     // Add arguments to pfilt command
-    command.args([
+    let mut pfilt_arguments: Vec<&str> = vec![
         "-1",
         "-x",
         xdim.as_str(),
         "-y",
         ydim.as_str(),
-        input_file.as_str(),
-    ]);
+    ];
+    command.args(&pfilt_arguments);
+
+    // Use custom command options if given
+    if commands.pfilt != "" {
+        pfilt_arguments = commands.pfilt.split_whitespace().collect();
+        command.args(&pfilt_arguments);
+    }
+    command.arg(input_file.as_str());
 
     // Direct command's output to specifed output file
     let file_result = File::create(&output_file);
