@@ -180,19 +180,20 @@ export default function Images() {
           break;
         }
         // See if input directory contains more LDR directories
-        else  if (contents[i].isDirectory) {
-          let tst = "";
-          if (settings.osPlatform === "windows") tst = selected + "\\" + contents[i].name;
-          else tst = selected + "/" + contents[i].name;
-          let subContents = await readDir(tst);
-          for (let j = 0; j < subContents.length; j++) {
-            if (valid_extensions.includes(Extensions(subContents[j].name).toLowerCase())) {
-              check = true;
-              break;
-            }
-          }
-          if (check) break;
-        }
+        // TODO: Fix pipeline to allow for such functionalities (misread batch processing)
+        // else  if (contents[i].isDirectory) {
+        //   let tst = "";
+        //   if (settings.osPlatform === "windows") tst = selected + "\\" + contents[i].name;
+        //   else tst = selected + "/" + contents[i].name;
+        //   let subContents = await readDir(tst);
+        //   for (let j = 0; j < subContents.length; j++) {
+        //     if (valid_extensions.includes(Extensions(subContents[j].name).toLowerCase())) {
+        //       check = true;
+        //       break;
+        //     }
+        //   }
+        //   if (check) break;
+        // }
       }
       if (check) {
         assets = [convertFileSrc(selected)];
@@ -206,17 +207,6 @@ export default function Images() {
       console.log("Directory dialog function called.");
       console.log("selected: ", selected);
       console.log("assets: ", assets);
-    }
-  }
-
-  function isDir(path: string) {
-    for (let i = path.length - 1; i >= 0; i--) {
-      if (path[i] == ".") {
-        return false;
-      }
-      else if (path[i] == "/" || path[i] == "\\") {
-        return true;
-      }
     }
   }
 

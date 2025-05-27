@@ -146,8 +146,8 @@ export default function CroppingResizingViewSettings() {
   return (
     <div className="">
       <h2 className="font-bold pt-5">Cropping, Resizing, and View Settings</h2>
-      <div className="flex flex-row space-x-5 pt-5">
-        <div>Derive From Image (Optional)</div>
+      <div className="flex flex-row space-x-5 pt-5 content-center">
+        <div className="content-center">Derive From Image (Optional)</div>
         <button
           onClick={dialog}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 rounded h-fit"
