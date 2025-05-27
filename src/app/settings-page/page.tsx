@@ -122,7 +122,7 @@ export default function SettingsPage() {
   return (
    <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
       <main className="bg-white col-span-4 m-8 mt-0 p-5 mb-10 border-l border-r border-gray-400">
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6">
           {/* Left: External Utilities */}
           <div className="border border-gray-300 rounded-lg p-5">
             <h2 className="text-xl font-bold mb-4 flex items-center">
