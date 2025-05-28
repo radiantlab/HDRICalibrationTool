@@ -167,33 +167,37 @@ export default function Images() {
   async function dir_dialog() {
     selected = await open({
       directory: true,
+      multiple: true
     });
-    if (selected != null) {
+    if (Array.isArray(selected)) {
       set_image_error(false);
       setDirError(false);
       let check = false;
-      console.log(selected);
+      for (let k = 0; k < selected.length; k++) {
+        let contents = await readDir(selected[k]);
+        for (let i = 0; i < contents.length; i++) {
+          if (valid_extensions.includes(Extensions(contents[i].name).toLowerCase())) {
+            check = true;
+            break;
+          }
+        }
+        if (check) {
+          setDevicePaths(devicePaths.concat([selected[k]]));
+        } else {
+          setDirError(true);
+        }
+      }
+    }
+    else if (selected != null) {
+      set_image_error(false);
+      setDirError(false);
+      let check = false;
       let contents = await readDir(selected);
       for (let i = 0; i < contents.length; i++) {
         if (valid_extensions.includes(Extensions(contents[i].name).toLowerCase())) {
           check = true;
           break;
         }
-        // See if input directory contains more LDR directories
-        // TODO: Fix pipeline to allow for such functionalities (misread batch processing)
-        // else  if (contents[i].isDirectory) {
-        //   let tst = "";
-        //   if (settings.osPlatform === "windows") tst = selected + "\\" + contents[i].name;
-        //   else tst = selected + "/" + contents[i].name;
-        //   let subContents = await readDir(tst);
-        //   for (let j = 0; j < subContents.length; j++) {
-        //     if (valid_extensions.includes(Extensions(subContents[j].name).toLowerCase())) {
-        //       check = true;
-        //       break;
-        //     }
-        //   }
-        //   if (check) break;
-        // }
       }
       if (check) {
         assets = [convertFileSrc(selected)];
@@ -295,7 +299,7 @@ export default function Images() {
           onClick={dir_dialog}
           className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
         >
-          Select Directory
+          Select Directories
         </button>
       </div>
       {image_error && (
@@ -306,8 +310,8 @@ export default function Images() {
       )}
       {dirError && (
         <div>
-          Could not find valid image types (jpg, jpeg, tif, tiff, or raw
-          image formats) in any of the entered directories. 
+          All entered directories must contain at least 1 valid image type: jpg, jpeg, tif, tiff, or raw
+          image formats  
         </div>
       )}
       {images.length > 0 && <div>Image count: {images.length}</div>}
