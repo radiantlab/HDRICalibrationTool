@@ -301,6 +301,16 @@ export default function Images() {
         >
           Select Directories
         </button>
+        {devicePaths.length > 0 && (
+        <div>
+          <button
+            onClick={reset}
+            className="bg-red-600 hover:bg-red-800 text-white font-semibold py-1 px-2 border-gray-400 rounded h-fit"
+          >
+            Delete All
+          </button>
+        </div>
+      )}
       </div>
       {image_error && (
         <div>
@@ -350,16 +360,6 @@ export default function Images() {
               </div>
             ))}
           </div>
-        </div>
-      )}
-      {devicePaths.length > 0 && (
-        <div>
-          <button
-            onClick={reset}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
-          >
-            Delete All
-          </button>
         </div>
       )}
       {/* Response File Field */}
