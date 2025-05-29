@@ -18,8 +18,10 @@ use tauri::Manager;
  */
 #[derive(Serialize, Deserialize)]
 struct Paths {
+    radiancepath: String,
     hdrgenpath: String,
     dcrawemupath: String,
+    outputpath: String,
 }
 
 /**
@@ -37,13 +39,17 @@ struct Paths {
 #[tauri::command]
 pub fn write_binary_paths(
     app_handle: tauri::AppHandle,
+    radiance_path: String,
     hdrgen_path: String,
     dcraw_emu_path: String,
+    output_path: String,
 ) -> Result<(), String> {
     // Create a new Paths struct with the provided binary paths
     let new_paths = Paths {
+        radiancepath: radiance_path,
         hdrgenpath: hdrgen_path,
         dcrawemupath: dcraw_emu_path,
+        outputpath: output_path,
     };
     
     // Serialize the paths to JSON
@@ -71,7 +77,9 @@ pub fn write_binary_paths(
     let file_path = match paths_file.to_str() {
         Some(v) => v,
         None => return Err(format!("Invalid UTF-8 in binary file path {:?}", paths_file)),
-    };    // Write binary paths to file
+    };
+ 
+    // Write binary paths to file
     match fs::write(file_path, paths_string) {
         Ok(()) => Ok(()), // Return success
         Err(error) => Err(format!("Error writing to file: {:?}", error)), // Return error message
