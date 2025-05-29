@@ -4,6 +4,8 @@ use std::{
     process::{Command, ExitStatus},
 };
 use image::{GenericImageView, Pixel};
+use rayon::prelude::*;
+use anyhow::{Result, Context};
 
 use super::ConfigSettings;
 
@@ -171,79 +173,140 @@ pub fn merge_exposures(
 // Pixels with luminance values either below 27 or above 228 are counted respectively
 // Once all images have had their pixel counts resolved, the input array is filtered by starting at the first brighter image that doesn't have \
 // any pixel below 27; and ending at the first darker image that doesn't have any pixel above 228
-fn filter_images(input_images: Vec<String>, diameter: f32, xleft: f32, ydown: f32, xdim: f32, ydim: f32) -> Result<Vec<String>, String> {
+fn filter_images(input_images: Vec<String>, diameter: f32, xleft: f32, ydown: f32, xdim: f32, ydim: f32) -> Result<Vec<String>> {
     let radius = diameter / 2.0;
     let xcenter = xleft + radius;
     let ycenter = ydown + radius;
     let mut filtered_images = Vec::new();
-    let mut pixel_counts = Vec::new();
-    let mut pixels_below = 0;
-    let mut pixels_above = 0;
-    let mut mask: Vec<bool>;
 
     // Compute mask using first image
-    let mut image = image::open(&input_images[0])
-        .map_err(|error| format!("pipeline: merge_exposures: filter_images: failed to open image - {}\n", error))?;
-    let (mut width, mut height) = image.dimensions();
-    mask = compute_circle_mask(height as usize, width as usize, xcenter, ycenter, radius);
+    let image = image::open(&input_images[0])
+        .with_context(|| format!("pipeline: merge_exposures: filter_images: failed to open image: {}", input_images[0]))?;
+    let (width, height) = image.dimensions();
+    let mask = compute_circle_mask(height as usize, width as usize, xcenter, ycenter, radius);
 
-    // Iterate through every image and count how many pixels of each is either below 27 or above 228 luminance 
-    for input_image in &input_images {
-        if DEBUG {
-            println!("Processing image: {}", input_image);
-        }
-        if !is_jpeg(&input_image) { // skip trying to filter images that aren't jpeg
-            continue;
-        }
-        image = image::open(input_image)
-            .map_err(|error| format!("pipeline: merge_exposures: filter_images: failed to open image - {}\n", error))?;
-        (width, height) = image.dimensions();
-        for y in 0..height {
-            for x in 0..width {
-                let mask_index = y * width + x;
-                if mask[mask_index as usize] { // if it's in the fisheye view
-                    let pixel = image.get_pixel(x, y).to_rgb();
-                    let [r, g, b] = pixel.0;
-                    if r < 27 && g < 27 && b < 27 { // all values below allowed threshold
-                        pixels_below += 1;
-                    } else if r > 228 && g > 228 && b > 228 { // all values above allowed threshold
-                        pixels_above += 1;
+    // Iterate through every image in parallel and count how many pixels of each is either below 27 or above 228 luminance
+    let pixel_counts: Result<Vec<(u32, u32)>, anyhow::Error> = input_images
+        .par_iter() // create parallel iterator
+        .map(|input_image| { // allow for skipping images
+            if DEBUG {
+                println!("Processing image: {}", input_image);
+            }
+
+            if !is_jpeg(input_image) {
+                return Err(anyhow::anyhow!("pipeline: merge_exposures: filter_images: image is not a JPEG: {}", input_image));
+            }
+
+            let image = image::open(input_image)
+                .with_context(|| format!("pipeline: merge_exposures: filter_images: failed to open image: {}", input_image))?;
+
+            // Start processing the image
+            let mut pixels_below = 0;
+            let mut pixels_above = 0;
+            let (width, height) = image.dimensions();
+
+            for y in 0..height {
+                for x in 0..width {
+                    let mask_index = (y * width + x) as usize;
+                    if mask[mask_index] { // if it's in the fisheye view
+                        let pixel = image.get_pixel(x, y).to_rgb();
+                        let [r, g, b] = pixel.0;
+                        if r < 27 && g < 27 && b < 27 { // all values below allowed threshold
+                            pixels_below += 1;
+                        } else if r > 228 && g > 228 && b > 228 { // all values above allowed threshold
+                            pixels_above += 1;
+                        }
                     }
                 }
             }
+            Ok((pixels_below, pixels_above)) // return the tuple of pixel values
+        })
+        .collect(); // collect everything into the vector
+
+        let array = pixel_counts?;
+        println!("Pixel Counts: {:?}", array);
+        let mut start_index: i32 = -1;
+        let mut end_index: i32 = -1;
+        for (i, (pixels_below, pixels_above)) in array.iter().enumerate() {
+            if *pixels_below == 0 {
+                start_index = i as i32;
+            }
         }
-        pixel_counts.push((pixels_below, pixels_above));
-        pixels_below = 0;
-        pixels_above = 0;
-    }
+        if start_index == -1 {
+            start_index = 0;
+        }
+        for (i, (pixels_below, pixels_above)) in array.iter().enumerate() {
+            if i > start_index as usize && *pixels_above == 0 {
+                end_index = i as i32;
+            }
+        }
+        if end_index == -1 {
+            end_index = array.len() as i32;
+        }
+        if DEBUG {
+            println!("Selecting images: {}:{}", start_index, end_index);
+        }
+        for i in start_index..end_index {
+            filtered_images.push(input_images[i as usize].clone());
+        }
+
+    // Iterate through every image and count how many pixels of each is either below 27 or above 228 luminance 
+    // for input_image in &input_images {
+    //     if DEBUG {
+    //         println!("Processing image: {}", input_image);
+    //     }
+    //     if !is_jpeg(&input_image) { // skip trying to filter images that aren't jpeg
+    //         continue;
+    //     }
+    //     image = image::open(input_image)
+    //         .map_err(|error| format!("pipeline: merge_exposures: filter_images: failed to open image - {}\n", error))?;
+    //     (width, height) = image.dimensions();
+    //     for y in 0..height {
+    //         for x in 0..width {
+    //             let mask_index = y * width + x;
+    //             if mask[mask_index as usize] { // if it's in the fisheye view
+    //                 let pixel = image.get_pixel(x, y).to_rgb();
+    //                 let [r, g, b] = pixel.0;
+    //                 if r < 27 && g < 27 && b < 27 { // all values below allowed threshold
+    //                     pixels_below += 1;
+    //                 } else if r > 228 && g > 228 && b > 228 { // all values above allowed threshold
+    //                     pixels_above += 1;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     pixel_counts.push((pixels_below, pixels_above));
+    //     pixels_below = 0;
+    //     pixels_above = 0;
+    // }
 
     // Only take those brighter images that don't have any pixel below 27 and those darker images that don't have any pixel above 228
     // Start at beginning of image array to filter brighter images
     // Start at end of image array to filter darker images
-    let mut start_index: i32 = -1;
-    let mut end_index: i32 = -1;
-    for (i, (pixels_below, pixels_above)) in pixel_counts.iter().enumerate() {
-        if *pixels_below == 0 {
-            start_index = i as i32;
-        }
-    }
-    if start_index == -1 {
-        start_index = 0;
-    }
-    for (i, (pixels_below, pixels_above)) in pixel_counts.iter().enumerate() {
-        if i > start_index as usize && *pixels_above == 0 {
-            end_index = i as i32;
-        }
-    }
-    if end_index == -1 {
-        end_index = pixel_counts.len() as i32;
-    }
-    if DEBUG {
-        println!("Selecting images: {}:{}", start_index, end_index);
-    }
-    for i in start_index..end_index {
-        filtered_images.push(input_images[i as usize].clone());
-    }
+    // let mut start_index: i32 = -1;
+    // let mut end_index: i32 = -1;
+    // for (i, (pixels_below, pixels_above)) in pixel_counts.iter().enumerate() {
+    //     if *pixels_below == 0 {
+    //         start_index = i as i32;
+    //     }
+    // }
+    // if start_index == -1 {
+    //     start_index = 0;
+    // }
+    // for (i, (pixels_below, pixels_above)) in pixel_counts.iter().enumerate() {
+    //     if i > start_index as usize && *pixels_above == 0 {
+    //         end_index = i as i32;
+    //     }
+    // }
+    // if end_index == -1 {
+    //     end_index = pixel_counts.len() as i32;
+    // }
+    // if DEBUG {
+    //     println!("Selecting images: {}:{}", start_index, end_index);
+    // }
+    // for i in start_index..end_index {
+    //     filtered_images.push(input_images[i as usize].clone());
+    // }
     Ok(filtered_images)
 }
 
