@@ -18,8 +18,10 @@ use tauri::Manager;
  */
 #[derive(Serialize, Deserialize)]
 struct Paths {
+    radiancepath: String,
     hdrgenpath: String,
     dcrawemupath: String,
+    outputpath: String,
 }
 
 /**
