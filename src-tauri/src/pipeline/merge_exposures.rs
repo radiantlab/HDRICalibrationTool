@@ -223,21 +223,27 @@ fn filter_images(input_images: Vec<String>, diameter: f32, xleft: f32, ydown: f3
         })
         .collect(); // collect everything into the vector
 
+        // The below is not the cleanest and could be written in a more idiomatic Rust way/a fancier way
+        // However, it is very understandable as written
         let array = pixel_counts?;
         println!("Pixel Counts: {:?}", array);
         let mut start_index: i32 = -1;
         let mut end_index: i32 = -1;
+        
+        // Go from the start and find the FIRST pixel of the brighter images that has no pixel below 27
         for (i, (pixels_below, pixels_above)) in array.iter().enumerate() {
             if *pixels_below == 0 {
                 start_index = i as i32;
+                break;
             }
         }
         if start_index == -1 {
             start_index = 0;
         }
+        // Go from the start and find the FIRST pixel of the darker images that has no pixel above 228
         for (i, (pixels_below, pixels_above)) in array.iter().enumerate() {
             if i > start_index as usize && *pixels_above == 0 {
-                end_index = i as i32;
+                end_index = i as i32; // don't break, cause the loop starts from the first array element
             }
         }
         if end_index == -1 {
@@ -246,6 +252,7 @@ fn filter_images(input_images: Vec<String>, diameter: f32, xleft: f32, ydown: f3
         if DEBUG {
             println!("Selecting images: {}:{}", start_index, end_index);
         }
+        // Push and return all the images
         for i in start_index..end_index {
             filtered_images.push(input_images[i as usize].clone());
         }
