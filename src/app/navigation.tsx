@@ -39,9 +39,9 @@ export default function Navigation() {
     fetchAppInfo();
   }, []);
   return (
-    <nav className="bg-gray-300 text-black w-full z-10">
+    <nav className="bg-gray-300 text-black w-full z-10 fixed top-0 left-0">
       {/* Top header with app logo and version information */}
-      <div className="fixed h-20 top-0 left-0 w-full bg-gray-300">
+      <div className="h-20 w-full bg-gray-300">
         <div className="h-full mr-8 ml-8 flex items-center justify-between border-b border-gray-400">
           {/* Logo and app name */}
           <div id="logo" className="flex items-center">
@@ -63,7 +63,7 @@ export default function Navigation() {
       {/* Navigation links */}
       <div
         id="link-container"
-        className="flex items-center justify-around h-12 ml-8 mr-8 mt-20 border-l border-r border-gray-400"
+        className="flex items-center justify-around h-12 ml-8 mr-8 border-l border-r border-b border-gray-400"
       >
         {/* Image Configuration page link */}
         <Link

@@ -39,7 +39,7 @@ export default function RootLayout({
         {/* Render the navigation bar */}
         <Navigation />
         {/* Render the current page content */}
-        <div>{children}</div>
+        <div className="pt-32">{children}</div>
       </body>
     </html>
   )
