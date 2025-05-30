@@ -30,6 +30,7 @@ use projection_adjustment::projection_adjustment;
 use resize::resize;
 use vignetting_effect_correction::vignetting_effect_correction;
 use falsecolor::falsecolor;
+use chrono::prelude::*;
 
 // Used to print out debug information
 pub const DEBUG: bool = true;
@@ -245,20 +246,21 @@ pub async fn pipeline(
             }
 
             // Set output file name to be the same as the input directory name (i.e. <dir_name>.hdr)
+            // Get current local date and time and format output name with it
+            let datetime = format!("{}", Local::now().format("%m-%d-%Y-%I-%M"));
             return_path = config_settings
                 .output_path
                 .join(Path::new(input_dir));
-            let mut output_file_name = config_settings
-                .output_path
-                .join(Path::new(input_dir).file_name().unwrap_or_default());
-            output_file_name.set_extension("hdr");
             let base_name = Path::new(input_dir)
                 .file_name()
                 .unwrap_or_default()
                 .to_string_lossy();
+            let mut output_file_name = config_settings
+                .output_path
+                .join(format!("{}-{}.hdr", base_name, datetime));
             let evalglare_file_name = config_settings
                 .output_path
-                .join(format!("{base_name}_evalglare.txt"));
+                .join(format!("{}-{}_eg.txt", base_name, datetime));
 
             // Copy the final output hdr image to output directory
             let mut copy_result = copy(
@@ -282,7 +284,7 @@ pub async fn pipeline(
                     .to_string_lossy();
                 let luminance_file_name = config_settings
                     .output_path
-                    .join(format!("{base_name}_fc.hdr"));
+                    .join(format!("{}-{}_fc.hdr", base_name, datetime));
                     copy_result = copy(
                     &config_settings.temp_path.join("falsecolor_output.hdr"),
                     luminance_file_name,
@@ -328,8 +330,10 @@ pub async fn pipeline(
             return result;
         }
 
-        let output_file_name = config_settings.output_path.join("output.hdr");
-        let evalglare_file_name = config_settings.output_path.join("output_evalglare.txt");
+        // Get current local date and time and format output name with it
+        let datetime = format!("{}", Local::now().format("%m-%d-%Y-%I-%M"));
+        let output_file_name = config_settings.output_path.join(format!("{}.hdr", datetime));
+        let evalglare_file_name = config_settings.output_path.join(format!("{}_eg.txt", datetime));
 
         // Copy the final output hdr image to output directory
         let mut copy_result = copy(
@@ -348,7 +352,7 @@ pub async fn pipeline(
         }
 
         if luminance_args.scale_limit != "" {
-            let luminance_file_name = config_settings.output_path.join("output_fc.hdr");
+            let luminance_file_name = config_settings.output_path.join(format!("{}_fc.hdr", datetime));
             copy_result = copy(
                 &config_settings.temp_path.join("falsecolor_output.hdr"),
                 luminance_file_name,
