@@ -24,12 +24,16 @@ use super::ConfigSettings;
  * @param config_settings - Contains configuration settings including path to Radiance and temp directory
  * @param input_file - Path to the input HDR image (must be in .hdr format)
  * @param output_file - Path where the glare analysis results will be saved
- * @returns Result containing the output file path on success or an error message on failure
+ * @param vertical_angle - The fov, in degrees, of the image vertically. Found within the camera settings
+ * @param horizontal_angle - The fov, in degrees, of the image horizontally. Found within the camera settings
+ * @returns Result containing the output value on success or an error message on failure
  */
 pub fn evalglare(
     config_settings: &ConfigSettings,
     input_file: String,
     output_file: String,
+    vertical_angle: String,
+    horizontal_angle: String,
 ) -> Result<String, String> {    // Print debug message if in debug mode
     if DEBUG {
         println!("evalglare() was called.");
@@ -40,7 +44,17 @@ pub fn evalglare(
 
     // Add arguments:
     // -V: Verbose output with detailed information about glare sources
-    command.args(["-V", input_file.as_str()]);    // Execute command and capture output
+    // -vta: View type
+    // -vv/vh: Vertical and horizontal view angles
+    command.args([
+        "-vta",
+        "-vv",
+        vertical_angle.as_str(),
+        "-vh",
+        horizontal_angle.as_str(),
+        "-V",
+        input_file.as_str(),
+    ]); // Execute command and capture output
     let output_result = command.output();
     if output_result.is_err() {
         return Err("pipeline: evalglare: failed to start command.".into());
@@ -49,29 +63,23 @@ pub fn evalglare(
 
     // Print debug info about command execution status
     if DEBUG {
+        let stderr = String::from_utf8_lossy(&output.stderr);
         println!(
             "\n'evalglare' command exit status: {:?}\n",
             output.status
         );
-    }    // Create output file to save the evalglare results
-    let file_result = File::create(&output_file);
-    if file_result.is_err() {
-        return Err("pipeline: evalglare: failed to create output file for 'evalglare' command.".into());
-    }
-
-    let mut file = file_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
+        println!(
+            "'evalglare' command stderr:\n {}",
+            stderr
+        );
+    }    
     
     // Convert command output from bytes to string
     let stdout = String::from_utf8_lossy(&output.stdout);
 
-    // Return a Result object to indicate whether command was successful
+    // Return a Result object with the command output
     if output.status.success() || !stdout.is_empty() {
-        // On success, write the stdout content to the output file
-        file.write(stdout.as_bytes())
-            .expect("pipeline: evalglare: failed to write output to file.");
-        
-        // Return the output file path
-        Ok(output_file.into())
+        Ok(stdout.to_string())
     } else {
         // On error, return an error message
         Err("PIPELINE ERROR: command 'evalglare' failed.".into())

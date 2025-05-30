@@ -28,6 +28,7 @@ export default function ImageViewer() {
   // Local state management
   const [error, setError] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [evalglares, setEvalglares] = useState<(string | null)[]>([]);
   const [imageFullPaths, setImageFullPaths] = useState<string[]>([]);
   
   // Check if running on Windows (features limited on Windows)
@@ -42,10 +43,26 @@ export default function ImageViewer() {
     async function loadFiles() {
       // Get the full paths of HDR files in the output directory
       const files = await populateGrid(outputPath);
+      // Get all the associated evalglare values
+      const evalglareValues: (string | null)[] = await Promise.all(files.map(
+        async (file) => {
+          try {
+            return await invoke("read_header_value", {
+              filePath: file,
+              radiancePathString: settings.radiancePath,
+              key: "EVALGLARE=",
+            })
+          } catch(error) {
+            console.error(`ImageViewer: loadFiles: error getting evalglare value for file ${file}`);
+            return null;
+          }
+        })
+      );
       // Extract just the base filenames for display
       const relative_files = await Promise.all(files.map(file => basename(file)));
       // Update state with the file information
       setSelectedImages(relative_files);
+      setEvalglares(evalglareValues);
       setImageFullPaths(files);
     }
     loadFiles();
@@ -94,7 +111,7 @@ export default function ImageViewer() {
     // Call the Tauri command to display the image using ximage
     await invoke("display_hdr_img", {
       radiancePath: settings.radiancePath, 
-      imagePath: imagePath
+      imagePath: imagePath,
     })
       .catch((error: unknown) => {
         console.log(error);
@@ -110,8 +127,8 @@ export default function ImageViewer() {
    * @returns Promise resolving to an array of HDR file paths
    */
   async function populateGrid(dir: string): Promise<string[]> {
+    // Call Tauri backend to read directory contents
     try {
-      // Call Tauri backend to read directory contents
       const entries = await invoke<string[]>("read_dynamic_dir", { path: dir });
       const hdrPaths: string[] = [];
       
@@ -124,8 +141,8 @@ export default function ImageViewer() {
         }
       }
       return hdrPaths;
-    } catch (err: unknown) {
-      console.error("Error reading directory:", err);
+    } catch (error) {
+      console.error(`ImageViewer: populateGrid: error getting hdr files: ${error}`);
       return [];
     }
   }
@@ -155,8 +172,9 @@ export default function ImageViewer() {
           <div className="mt-6 grid grid-cols-2 gap-4">
             {/* Map through images to create clickable image items */}
             {selectedImages.map((image, index) => {
-              // Extract just the filename from the path
+              // Extract just the filename from the path and the associated evalglare value
               const imageName = image.split("/").pop();
+              const evalGlare = evalglares[index];
               return (
                 <div
                   key={index}
@@ -169,7 +187,8 @@ export default function ImageViewer() {
                   </div>
                   {/* Image name display */}
                   <div>
-                    <p className="text-sm font-medium">{imageName}</p>
+                    <p className="text-m font-medium">File: {imageName}</p>
+                    <p className="text-m font-medium">Evalglare: {evalGlare} lx</p>
                   </div>
                 </div>
               );

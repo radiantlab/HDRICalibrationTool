@@ -631,6 +631,29 @@ pub fn process_image_set(
 
     /* End Calibration Files */
 
+    // Evalglare
+    let evalglare_result = evalglare(
+        &config_settings,
+        config_settings
+            .temp_path
+            .join(next_path)
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("evalglare_output.txt")
+            .display()
+            .to_string(),
+        vertical_angle.clone(),
+        horizontal_angle.clone(),
+    );
+    
+    // If the command encountered an error, abort the pipeline
+    if evalglare_result.is_err() {
+        return evalglare_result;
+    }
+    let evalglare_value = evalglare_result.unwrap();
+
     // Edit the header
     let header_editing_result = header_editing(
         &config_settings,
@@ -646,6 +669,7 @@ pub fn process_image_set(
             .to_string(),
         vertical_angle,
         horizontal_angle,
+        evalglare_value,
     );
 
     // If the command encountered an error, abort pipeline
@@ -658,25 +682,6 @@ pub fn process_image_set(
     
     next_path = "header_editing.hdr";
 
-    // Evalglare
-    let evalglare_result = evalglare(
-        &config_settings,
-        config_settings
-            .temp_path
-            .join(next_path)
-            .display()
-            .to_string(),
-        config_settings
-            .temp_path
-            .join("evalglare_output.txt")
-            .display()
-            .to_string(),
-    );
-    
-    // If the command encountered an error, abort the pipeline
-    if evalglare_result.is_err() {
-        return evalglare_result;
-    }
     // Create luminance map if values were given by user
     if luminance_args.scale_limit != "" {
         let falsecolor_result = falsecolor(
