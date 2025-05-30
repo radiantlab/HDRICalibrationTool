@@ -256,9 +256,6 @@ pub async fn pipeline(
                 .file_name()
                 .unwrap_or_default()
                 .to_string_lossy();
-            let evalglare_file_name = config_settings
-                .output_path
-                .join(format!("{base_name}_evalglare.txt"));
 
             // Copy the final output hdr image to output directory
             let mut copy_result = copy(
@@ -268,10 +265,6 @@ pub async fn pipeline(
             if copy_result.is_err() {
                 return Result::Err(("Error copying final hdr image to output directory.").to_string());
             }
-            copy_result = copy(
-                &config_settings.temp_path.join("evalglare_output.txt"),
-                evalglare_file_name,
-            );
             if copy_result.is_err() {
                 return Result::Err(("Error copying evalglare value to output directory.").to_string());
             }
@@ -329,7 +322,6 @@ pub async fn pipeline(
         }
 
         let output_file_name = config_settings.output_path.join("output.hdr");
-        let evalglare_file_name = config_settings.output_path.join("output_evalglare.txt");
 
         // Copy the final output hdr image to output directory
         let mut copy_result = copy(
@@ -338,13 +330,6 @@ pub async fn pipeline(
         );
         if copy_result.is_err() {
             return Result::Err(("Error copying final hdr image to output directory.").to_string());
-        }
-        copy_result = copy(
-            &config_settings.temp_path.join("evalglare_output.txt"),
-            evalglare_file_name,
-        );
-        if copy_result.is_err() {
-            return Result::Err(("Error copying final hdr evalglare output image to output directory.").to_string());
         }
 
         if luminance_args.scale_limit != "" {
@@ -637,11 +622,6 @@ pub fn process_image_set(
         config_settings
             .temp_path
             .join(next_path)
-            .display()
-            .to_string(),
-        config_settings
-            .temp_path
-            .join("evalglare_output.txt")
             .display()
             .to_string(),
         vertical_angle.clone(),
