@@ -21,6 +21,7 @@ export default function SaveConfigDialog({
     v_correctionPaths,
     nd_correctionPaths,
     cf_correctionPaths,
+    luminanceSettings,
   } = useConfigStore();
 
   async function getSavedConfigs(): Promise<any> {
@@ -43,6 +44,10 @@ export default function SaveConfigDialog({
       target_res: viewSettings.targetRes,
       vh: viewSettings.vh,
       vv: viewSettings.vv,
+      scale_limit: luminanceSettings.scale_limit,
+      scale_label: luminanceSettings.scale_label,
+      scale_levels: luminanceSettings.scale_levels,
+      legend_dimensions: luminanceSettings.legend_dimensions,
     };
 
     const savedConfigs = await getSavedConfigs();
