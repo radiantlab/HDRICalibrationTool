@@ -24,6 +24,7 @@ pub fn header_editing(
     output_file: String,
     vertical_angle: String,
     horizontal_angle: String,
+    evalglare_value: String,
 ) -> Result<String, String> {
     if DEBUG {
         println!("header_editing() was called with parameters:\n\tvertical_angle: {vertical_angle}\n\thorizontal_angle: {horizontal_angle}");
@@ -36,6 +37,8 @@ pub fn header_editing(
     command.args([
         "-a",
         format!("VIEW= -vta -vv {} -vh {}", vertical_angle, horizontal_angle).as_str(),
+        "-c",
+        format!("EVALGLARE={}", evalglare_value).as_str(),
     ]);
 
     // Set up piping of the input and output file
