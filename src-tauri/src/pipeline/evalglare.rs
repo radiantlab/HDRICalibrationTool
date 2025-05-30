@@ -23,7 +23,6 @@ use super::ConfigSettings;
  * 
  * @param config_settings - Contains configuration settings including path to Radiance and temp directory
  * @param input_file - Path to the input HDR image (must be in .hdr format)
- * @param output_file - Path where the glare analysis results will be saved
  * @param vertical_angle - The fov, in degrees, of the image vertically. Found within the camera settings
  * @param horizontal_angle - The fov, in degrees, of the image horizontally. Found within the camera settings
  * @returns Result containing the output value on success or an error message on failure
@@ -31,7 +30,6 @@ use super::ConfigSettings;
 pub fn evalglare(
     config_settings: &ConfigSettings,
     input_file: String,
-    output_file: String,
     vertical_angle: String,
     horizontal_angle: String,
 ) -> Result<String, String> {    // Print debug message if in debug mode
@@ -54,7 +52,9 @@ pub fn evalglare(
         horizontal_angle.as_str(),
         "-V",
         input_file.as_str(),
-    ]); // Execute command and capture output
+    ]); 
+    
+    // Execute command and capture output
     let output_result = command.output();
     if output_result.is_err() {
         return Err("pipeline: evalglare: failed to start command.".into());
