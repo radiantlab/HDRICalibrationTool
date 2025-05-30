@@ -29,33 +29,25 @@ import { useSettingsStore } from "../stores/settings-store";
  */
 export default function Images() {
   // Access global configuration
-  const { devicePaths, responsePaths, setConfig } = useConfigStore();
+  const { 
+    devicePaths, 
+    responsePaths, 
+    assetPaths,
+    rawImagesSelected,
+    setConfig 
+  } = useConfigStore();
   const { settings } = useSettingsStore();
   
   // State for file editor visibility
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
-
-  /**
-   * Updates the device paths in global configuration
-   * 
-   * @param device - Array of image file paths
-   */
-  const setDevicePaths = (device: any) => {
-    setConfig({ devicePaths: device });
-  };
   
-  /**
-   * Updates the response function path in global configuration
-   * 
-   * @param response - Path to response function file
-   */
-  const setResponsePaths = (response: string) => {
-    setConfig({ responsePaths: response });
-  };
-
+  // Error states
+  const [image_error, set_image_error] = useState<boolean>(false);
+  const [dirError, setDirError] = useState<boolean>(false);
+  
   /** Enable debug logging */
   const DEBUG = true;
-  
+
   /**
    * List of valid image file extensions that the application can process
    * Includes JPEG/JPG and various RAW format extensions from different camera manufacturers
@@ -89,11 +81,6 @@ export default function Images() {
     "kdc", "mdc", "mef", "mos", "mrw", "obm", "pxn", "r3d",
     "rwz"
   ];
-  // State for managing file paths and UI state
-  /** Paths to preview images */
-  const [assetPaths, setAssetPaths] = useState<any[]>([]);
-  /** Selected image files */
-  const [images, setImages] = useState<File[]>([]);
   
   // Temporary variables used during file selection
   /** Temporary storage for selected device paths during file dialog */
@@ -101,14 +88,6 @@ export default function Images() {
   /** Temporary storage for selected asset paths during file dialog */
   let assets: any[] = [];
   
-  // Error states
-  /** Flag for image file errors */
-  const [image_error, set_image_error] = useState<boolean>(false);
-  /** Flag for directory errors */
-  const [dirError, setDirError] = useState<boolean>(false);
-  
-  /** Flag indicating if RAW images are selected (affects UI behavior) */
-  const [rawImagesSelected, setRawImagesSelected] = useState<boolean>(false);
   /**
    * Opens a file dialog to select image files
    * 
@@ -140,17 +119,24 @@ export default function Images() {
           set_image_error(true);
         }
       }
-      setImages(images.concat(assets));
-      setDevicePaths(devicePaths.concat(selected));
-      setAssetPaths(assetPaths.concat(assets));
+      // Update global store with new images
+      setConfig({
+        devicePaths: devicePaths.concat(selected),
+        assetPaths: assetPaths.concat(assets)
+      });
+      // Check if any of the added images are RAW format
+      checkForRawImages([...devicePaths, ...selected]);
     } else if (selected !== null) {
       set_image_error(false);
       setDirError(false);
       if (valid_extensions.includes(Extensions(selected).toLowerCase())) {
         assets = [convertFileSrc(selected)];
-        setImages(images.concat(assets));
-        setDevicePaths(devicePaths.concat([selected]));
-        setAssetPaths(assetPaths.concat(assets));
+        setConfig({
+          devicePaths: devicePaths.concat([selected]),
+          assetPaths: assetPaths.concat(assets)
+        });
+        // Check if the added image is RAW format
+        checkForRawImages([...devicePaths, selected]);
       } else {
         set_image_error(true);
       }
@@ -197,8 +183,10 @@ export default function Images() {
       }
       if (check) {
         assets = [convertFileSrc(selected)];
-        setDevicePaths(devicePaths.concat([selected]));
-        setAssetPaths(assetPaths.concat(assets));
+        setConfig({
+          devicePaths: devicePaths.concat([selected]),
+          assetPaths: assetPaths.concat(assets)
+        });
       } else {
         setDirError(true);
       }
@@ -235,7 +223,7 @@ export default function Images() {
   }
 
   const handleResponseDelete = () => {
-    setResponsePaths("");
+    setConfig({ responsePaths: "" });
   };
 
   if (DEBUG) {
@@ -249,134 +237,143 @@ export default function Images() {
   }
 
   function handleImageDelete(index: number) {
-    const updatedImages = images.slice();
     const updatedDevicePaths = devicePaths.slice();
     const updatedAssetPaths = assetPaths.slice();
-    updatedImages.splice(index, 1);
     updatedDevicePaths.splice(index, 1);
     updatedAssetPaths.splice(index, 1);
-    setImages(updatedImages);
-    setDevicePaths(updatedDevicePaths);
-    setAssetPaths(updatedAssetPaths);
+    
+    setConfig({ 
+      devicePaths: updatedDevicePaths,
+      assetPaths: updatedAssetPaths
+    });
+    
+    // Check if any remaining images are RAW format
+    checkForRawImages(updatedDevicePaths);
   }
 
   function reset() {
-    setImages([]);
-    setDevicePaths([]);
-    setAssetPaths([]);
+    setConfig({
+      devicePaths: [],
+      assetPaths: [],
+      rawImagesSelected: false
+    });
     set_image_error(false);
     setDirError(false);
   }
 
-  // Update flag for whether raw images are selected (to determine whether to show image previews)
-  useEffect(() => {
-    setRawImagesSelected(false);
-    for (let i = 0; i < images.length; i++) {
-      const ext = Extensions(String(images[i])).toLowerCase();
+  // Check if any images are in RAW format (to determine whether to show image previews)
+  function checkForRawImages(paths: any[]) {
+    let hasRawImages = false;
+    for (let i = 0; i < paths.length; i++) {
+      const ext = Extensions(String(paths[i])).toLowerCase();
       if (ext !== "jpeg" && ext !== "jpg" && ext !== "tif" && ext !== "tiff") {
-        setRawImagesSelected(true);
+        hasRawImages = true;
+        break;
       }
     }
-  }, [images]);
+    setConfig({ rawImagesSelected: hasRawImages });
+  }
 
   return (
-    <div className="space-y-2">
-      <h2 className="font-bold pt-5" id="image_selection">
-        Image Selection
-      </h2>
-      <div className="flex flex-row gap-4">
-        <button
-          onClick={file_dialog}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
-        >
-          Select Files
-        </button>
-        <button
-          onClick={dir_dialog}
-          className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
-        >
-          Select Directory
-        </button>
-      </div>
-      {image_error && (
-        <div>
-          Please only enter valid image types: jpg, jpeg, tif, tiff, or raw
-          image formats
+    <div className="flex flex-col h-full">
+      {/* Top section - Header and controls (25% height) */}
+      <div className="flex-1">
+        <div className="flex justify-between items-center">
+          <h2 className="font-bold pt-5" id="image_selection">
+            Image Selection
+          </h2>
+          {devicePaths.length > 0 && (
+            <button
+              onClick={reset}
+              className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1 px-2 rounded h-fit"
+            >
+              Delete All
+            </button>
+          )}
         </div>
-      )}
-      {dirError && (
-        <div>
-          Could not find valid image types (jpg, jpeg, tif, tiff, or raw
-          image formats) in any of the entered directories. 
+        
+        <div className="flex flex-row gap-4 mt-2">
+          <button
+            onClick={file_dialog}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
+          >
+            Select Files
+          </button>
+          <button
+            onClick={dir_dialog}
+            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
+          >
+            Select Directory
+          </button>
         </div>
-      )}
-      {images.length > 0 && <div>Image count: {images.length}</div>}
-      {devicePaths.length - images.length > 0 && <div>Directory count: {devicePaths.length - images.length}</div>}
-      {devicePaths.length - images.length > 0 || rawImagesSelected ? (
-        <div className="space-y-1">
-          <div className="directory-preview flex flex-wrap flex-col">
-            {devicePaths.map((path: any, index: any) => (
-              <div
-                key={index}
-                className="directory-item flex flex-row space-x-3"
-              >
-                <p>{Paths(path)}</p>
-                <button onClick={() => handleImageDelete(index)}>Delete</button>
-              </div>
-            ))}
+        
+        {image_error && (
+          <div className="text-red-500 mt-2">
+            Please only enter valid image types: jpg, jpeg, tif, tiff, or raw
+            image formats
           </div>
-        </div>
-      ) : (
-        <div className="space-y-1">
-          <div className="image-preview flex flex-wrap gap-2">
-            {images.map((image: any, index: any) => (
-              <div key={index} className="image-item">
-                <div>
-                  <img
-                    src={String(image)}
-                    alt={`Image ${index}`}
-                    width={150}
-                    height={150}
-                  />
-                  <button onClick={() => handleImageDelete(index)}>
-                    Delete
-                  </button>
-                  <div>{image.name}</div>
+        )}
+        {dirError && (
+          <div className="text-red-500 mt-2">
+            Could not find valid image types (jpg, jpeg, tif, tiff, or raw
+            image formats) in any of the entered directories. 
+          </div>
+        )}
+        
+      </div>
+      
+      {/* Middle section - Image preview (50% height) */}
+      <div className="flex-grow border border-gray-300 rounded-lg h-1/2 p-2 overflow-y-auto">
+        {devicePaths.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-400 italic">No images selected.</p>
+          </div>
+        ) : (
+          <div className="image-preview grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {assetPaths.map((image: any, index: any) => (
+              <div key={index} className="relative">
+                <div className="group rounded-lg overflow-hidden border border-gray-300 hover:border-gray-500">
+                  <div className="relative">
+                    <img
+                      src={String(image)}
+                      alt={`Image ${index}`}
+                      className="w-full h-32 object-cover"
+                    />
+                    <button 
+                      onClick={() => handleImageDelete(index)} 
+                      className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center opacity-80 hover:opacity-100"
+                    >
+                      ✕
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
-      {devicePaths.length > 0 && (
-        <div>
-          <button
-            onClick={reset}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 border-gray-400 rounded h-fit"
-          >
-            Delete All
-          </button>
-        </div>
-      )}
-      {/* Response File Field */}
-      <h2 className="font-bold pt-5" id="fe">
-        Response File
-      </h2>
-      <FileFieldRow
-        label="Response File"
-        value={responsePaths}
-        onBrowse={dialogResponse}
-        onClear={handleResponseDelete}
-        onEdit={() => setIsEditorOpen(true)}
-        errorMessage={response_error ? "Please only enter files ending in .rsp" : ""}
-      />
+        )}
+      </div>
       
-      <FileEditor 
-        filePath={responsePaths} 
-        isOpen={isEditorOpen} 
-        closeEditor={() => setIsEditorOpen(false)}
-        editingFileType={EditingFileType.RESPONSE}
-      />
+      {/* Bottom section - Response file field (25% height) */}
+      <div className="flex-1 mt-4">
+        <h2 className="font-bold pt-2" id="fe">
+          Response File
+        </h2>
+        <FileFieldRow
+          label="Response File"
+          value={responsePaths}
+          onBrowse={dialogResponse}
+          onClear={handleResponseDelete}
+          onEdit={() => setIsEditorOpen(true)}
+          errorMessage={response_error ? "Please only enter files ending in .rsp" : ""}
+        />
+        
+        <FileEditor 
+          filePath={responsePaths} 
+          isOpen={isEditorOpen} 
+          closeEditor={() => setIsEditorOpen(false)}
+          editingFileType={EditingFileType.RESPONSE}
+        />
+      </div>
     </div>
   );
 }

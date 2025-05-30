@@ -72,6 +72,16 @@ interface ConfigState {
   devicePaths: any[];
   
   /**
+   * Array of paths to assets (for image preview)
+   */
+  assetPaths: any[];
+  
+  /**
+   * Flag indicating if RAW images are selected (affects UI behavior)
+   */
+  rawImagesSelected: boolean;
+  
+  /**
    * Path to the camera response function file
    */
   responsePaths: string;
@@ -137,6 +147,8 @@ export const useConfigStore = create<ConfigState>((set) => ({
   // Initial empty paths
   outputPath: '',
   devicePaths: [],
+  assetPaths: [],
+  rawImagesSelected: false,
   responsePaths: '',
   fe_correctionPaths: '',
   v_correctionPaths: '',
