@@ -46,12 +46,23 @@ const Initialization: React.FC = () => {
           // Set default empty values if no saved paths are found
           contentsObject = { hdrgenpath: "", dcrawemupath: "", outputpath: "", radiancepath: "", };
         }
+        // Try and get the output path for application, error if something goes wrong because that really shouldn't happen
+        let outputDefaultPath = "";
+        try {
+          outputDefaultPath = await invoke("get_default_output_path"); // queries backend for suggested place to store files
+        } catch(error) {
+          console.error("Initialization: could not get output path:", error);
+          alert(
+            "There was a problem setting up the default output path, please enter a path in the settings before generating HDR images."
+          );
+        }
+
         // Update the global settings store with all paths and platform information
         setSettings({
           radiancePath: contentsObject.radiancepath === "" ? radianceDefaultPath : contentsObject.radiancepath,
           hdrgenPath: contentsObject.hdrgenpath,
           dcrawEmuPath: contentsObject.dcrawemupath,
-          outputPath: contentsObject.outputpath === "" ? await invoke("get_default_output_path") : contentsObject.outputpath, // queries backend for suggested place to store files
+          outputPath: outputDefaultPath,
           osPlatform: osPlatform
         });
         // Show alert if HDRGen path is not set, which is required for operation

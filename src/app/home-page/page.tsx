@@ -123,6 +123,15 @@ export default function Home() {
     }    // Show progress indicator
     setConfig({ showProgress: true });
 
+    // Error if no output path exists
+    if (settings.outputPath === "") {
+      alert(
+        "Error: no output path was given, please enter an output path in the settings"
+      );
+      return;
+    }
+    setConfig({ showProgress: true }); // show progress indicator
+
     // Call backend pipeline function with all parameters
     invoke<string>("pipeline", {
       // Paths to external tools
