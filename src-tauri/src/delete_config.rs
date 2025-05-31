@@ -23,6 +23,10 @@ struct Config {
     target_res: String,
     vh: String,
     vv: String,
+    scale_limit: String,
+    scale_label: String,
+    scale_levels: String,
+    legend_dimensions: String,
 }
 
 // Retrieves saved configurations by looking for directories in "{app_config_dir}/configurations/".
