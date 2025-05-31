@@ -22,6 +22,10 @@ struct Config {
     target_res: String,
     vh: String,
     vv: String,
+    scale_limit: String,
+    scale_label: String,
+    scale_levels: String,
+    legend_dimensions: String,
 }
 
 #[derive(Serialize)]

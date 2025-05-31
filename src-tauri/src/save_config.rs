@@ -21,6 +21,10 @@ struct Config {
     target_res: String,
     vh: String,
     vv: String,
+    scale_limit: String,
+    scale_label: String,
+    scale_levels: String,
+    legend_dimensions: String,
 }
 
 // Saves a configuration, which includes view settings, response function, and calibration files.
@@ -41,6 +45,10 @@ pub async fn save_config(
     target_res: String,
     vh: String,
     vv: String,
+    scale_limit: String,
+    scale_label: String,
+    scale_levels: String,
+    legend_dimensions: String,
 ) -> Result<String, String> {
     let mut config = Config {
         name,
@@ -55,6 +63,10 @@ pub async fn save_config(
         target_res,
         vh,
         vv,
+        scale_limit,
+        scale_label,
+        scale_levels,
+        legend_dimensions,
     };
 
     // Retrieved part of this code from https://github.com/tauri-apps/tauri/discussions/5557
