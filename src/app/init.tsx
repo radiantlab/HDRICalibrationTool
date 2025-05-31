@@ -62,7 +62,7 @@ const Initialization: React.FC = () => {
           radiancePath: contentsObject.radiancepath === "" ? radianceDefaultPath : contentsObject.radiancepath,
           hdrgenPath: contentsObject.hdrgenpath,
           dcrawEmuPath: contentsObject.dcrawemupath,
-          outputPath: outputDefaultPath,
+          outputPath: outputDefaultPath === "" ? await invoke("get_default_output_path") : outputDefaultPath, // queries backend for suggested place to store files
           osPlatform: osPlatform
         });
         // Show alert if HDRGen path is not set, which is required for operation
