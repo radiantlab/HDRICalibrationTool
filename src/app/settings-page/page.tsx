@@ -112,9 +112,11 @@ export default function SettingsPage() {
     
     // Save binary paths to persistent storage via Tauri backend
     invoke("write_binary_paths", {
+      radiancePath: localSettings.radiancePath,
       hdrgenPath: localSettings.hdrgenPath,
       dcrawEmuPath: localSettings.dcrawEmuPath,
-    }).catch(() => console.error);
+      outputPath: localSettings.outputPath,
+    }).catch((error) => console.error(error));
     setSaveDisabled(true);
     alert("Changes saved.");
   };
@@ -134,11 +136,13 @@ export default function SettingsPage() {
               Mapping through the settings fields to create input sections for each
             */}
             {[
-              { id: "radiancePath", label: "Radiance", value: localSettings.radiancePath },
-              { id: "hdrgenPath", label: "hdrgen", value: localSettings.hdrgenPath },
-              { id: "dcrawEmuPath", label: "dcraw_emu (Included)", value: localSettings.dcrawEmuPath },
-              { id: "outputPath", label: "HDRI Output", value: localSettings.outputPath },
-            ].map(({ id, label, value }) => (
+              { id: "radiancePath", label: "Radiance", value: localSettings.radiancePath, placeholder: "This path is required" },
+              { id: "hdrgenPath", label: "hdrgen", value: localSettings.hdrgenPath, placeholder: "This path is required" },
+              { id: "dcrawEmuPath", label: "dcraw_emu (Optional)", value: localSettings.dcrawEmuPath,
+                placeholder: "This path is optional, only enter a new path if you wish to override the included dcraw_emu binary"
+              },
+              { id: "outputPath", label: "HDRI Output", value: localSettings.outputPath, placeholder: "This path is required" },
+            ].map(({ id, label, value, placeholder }) => (
               <div key={id} className="mb-4">
                 <label htmlFor={id} className="font-semibold block mb-1">{label}</label>
                 <div className="flex items-center gap-2">
@@ -147,6 +151,7 @@ export default function SettingsPage() {
                     name={id}
                     type="text"
                     value={value}
+                    placeholder={placeholder}
                     onChange={handleSettingsChange}
                     className="flex-grow border border-gray-400 rounded px-2 py-1"
                   />
