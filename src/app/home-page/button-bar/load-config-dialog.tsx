@@ -56,6 +56,12 @@ export default function LoadConfigDialog({
             vh: selectedConfig.vh,
             vv: selectedConfig.vv,
           },
+          luminanceSettings: {
+            scale_limit: selectedConfig.scale_limit,
+            scale_label: selectedConfig.scale_label,
+            scale_levels: selectedConfig.scale_levels,
+            legend_dimensions: selectedConfig.legend_dimensions,
+          },
         });
         toggleDialog();
       }
