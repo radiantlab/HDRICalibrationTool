@@ -247,7 +247,7 @@ pub async fn pipeline(
 
             // Set output file name to be the same as the input directory name (i.e. <dir_name>.hdr)
             // Get current local date and time and format output name with it
-            let datetime = format!("{}", Local::now().format("%m-%d-%Y-%I-%M"));
+            let datetime = format!("{}", Local::now().format("%m-%d-%Y_%I-%M-%S"));
             return_path = config_settings
                 .output_path
                 .join(Path::new(input_dir));
@@ -257,10 +257,10 @@ pub async fn pipeline(
                 .to_string_lossy();
             let mut output_file_name = config_settings
                 .output_path
-                .join(format!("{}-{}.hdr", base_name, datetime));
+                .join(format!("{}_{}.hdr", base_name, datetime));
             let evalglare_file_name = config_settings
                 .output_path
-                .join(format!("{}-{}_eg.txt", base_name, datetime));
+                .join(format!("{}_{}_eg.txt", base_name, datetime));
 
             // Copy the final output hdr image to output directory
             let mut copy_result = copy(
@@ -331,7 +331,7 @@ pub async fn pipeline(
         }
 
         // Get current local date and time and format output name with it
-        let datetime = format!("{}", Local::now().format("%m-%d-%Y-%I-%M"));
+        let datetime = format!("{}", Local::now().format("%m-%d-%Y_%I-%M-%S"));
         let output_file_name = config_settings.output_path.join(format!("{}.hdr", datetime));
         let evalglare_file_name = config_settings.output_path.join(format!("{}_eg.txt", datetime));
 
