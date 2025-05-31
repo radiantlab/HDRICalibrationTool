@@ -255,6 +255,7 @@ pub async fn pipeline(
                 .file_name()
                 .unwrap_or_default()
                 .to_string_lossy();
+
             let mut output_file_name = config_settings
                 .output_path
                 .join(format!("{}_{}.hdr", base_name, datetime));
@@ -270,10 +271,6 @@ pub async fn pipeline(
             if copy_result.is_err() {
                 return Result::Err(("Error copying final hdr image to output directory.").to_string());
             }
-            copy_result = copy(
-                &config_settings.temp_path.join("evalglare_output.txt"),
-                evalglare_file_name,
-            );
             if copy_result.is_err() {
                 return Result::Err(("Error copying evalglare value to output directory.").to_string());
             }
@@ -342,13 +339,6 @@ pub async fn pipeline(
         );
         if copy_result.is_err() {
             return Result::Err(("Error copying final hdr image to output directory.").to_string());
-        }
-        copy_result = copy(
-            &config_settings.temp_path.join("evalglare_output.txt"),
-            evalglare_file_name,
-        );
-        if copy_result.is_err() {
-            return Result::Err(("Error copying final hdr evalglare output image to output directory.").to_string());
         }
 
         if luminance_args.scale_limit != "" {
@@ -635,6 +625,24 @@ pub fn process_image_set(
 
     /* End Calibration Files */
 
+    // Evalglare
+    let evalglare_result = evalglare(
+        &config_settings,
+        config_settings
+            .temp_path
+            .join(next_path)
+            .display()
+            .to_string(),
+        vertical_angle.clone(),
+        horizontal_angle.clone(),
+    );
+    
+    // If the command encountered an error, abort the pipeline
+    if evalglare_result.is_err() {
+        return evalglare_result;
+    }
+    let evalglare_value = evalglare_result.unwrap();
+
     // Edit the header
     let header_editing_result = header_editing(
         &config_settings,
@@ -650,6 +658,7 @@ pub fn process_image_set(
             .to_string(),
         vertical_angle,
         horizontal_angle,
+        evalglare_value,
     );
 
     // If the command encountered an error, abort pipeline
@@ -662,25 +671,6 @@ pub fn process_image_set(
     
     next_path = "header_editing.hdr";
 
-    // Evalglare
-    let evalglare_result = evalglare(
-        &config_settings,
-        config_settings
-            .temp_path
-            .join(next_path)
-            .display()
-            .to_string(),
-        config_settings
-            .temp_path
-            .join("evalglare_output.txt")
-            .display()
-            .to_string(),
-    );
-    
-    // If the command encountered an error, abort the pipeline
-    if evalglare_result.is_err() {
-        return evalglare_result;
-    }
     // Create luminance map if values were given by user
     if luminance_args.scale_limit != "" {
         let falsecolor_result = falsecolor(
