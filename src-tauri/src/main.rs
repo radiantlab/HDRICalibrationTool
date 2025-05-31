@@ -17,6 +17,11 @@ use read_binary_paths::read_binary_paths;
 mod read_dynamic_dir;
 use read_dynamic_dir::read_dynamic_dir;
 
+// Commands to read the header or a specific header value from an HDR file
+mod read_header;
+use read_header::read_header_value;
+use read_header::read_header;
+
 // Command used to read from a file and return its contents to frontend
 mod read_host_file;
 use read_host_file::read_host_file;
@@ -67,6 +72,8 @@ fn main() {
             query_os_platform,
             read_binary_paths,
             read_dynamic_dir,
+            read_header_value,
+            read_header,
             read_host_file,
             write_binary_paths,
             write_host_file,
