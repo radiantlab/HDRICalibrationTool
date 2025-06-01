@@ -6,6 +6,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 use serde_json::{from_str, to_string};
+use tauri::Manager;
 
 #[derive(Serialize, Deserialize)]
 struct Config {
@@ -21,6 +22,10 @@ struct Config {
     target_res: String,
     vh: String,
     vv: String,
+    scale_limit: String,
+    scale_label: String,
+    scale_levels: String,
+    legend_dimensions: String,
 }
 
 #[derive(Serialize)]
@@ -36,10 +41,10 @@ pub async fn get_saved_configs(app_handle: tauri::AppHandle) -> Result<String, S
     };
 
     // Retrieved part of this code from https://github.com/tauri-apps/tauri/discussions/5557
-    let binding_result = app_handle.path_resolver().app_config_dir();
+    let binding_result = app_handle.path().app_config_dir();
     let binding = match binding_result {
-        Some(v) => v,
-        None => return Err("Error getting saved configs".to_string()),
+        Ok(v) => v,
+        Err(_) => return Err("Error getting saved configs".to_string()),
     };
 
     // Get suggested config directory for the app from Tauri

@@ -24,6 +24,7 @@ pub fn header_editing(
     output_file: String,
     vertical_angle: String,
     horizontal_angle: String,
+    evalglare_value: String,
 ) -> Result<String, String> {
     if DEBUG {
         println!("header_editing() was called with parameters:\n\tvertical_angle: {vertical_angle}\n\thorizontal_angle: {horizontal_angle}");
@@ -36,19 +37,21 @@ pub fn header_editing(
     command.args([
         "-a",
         format!("VIEW= -vta -vv {} -vh {}", vertical_angle, horizontal_angle).as_str(),
+        "-c",
+        format!("EVALGLARE={}", evalglare_value).as_str(),
     ]);
 
     // Set up piping of the input and output file
     let file_output_result = File::create(&output_file);
     if file_output_result.is_err() {
-        return Err("Error, creating output file for header editing command failed.".into());
+        return Err("pipeline: header_editing: failed to create output file for 'getinfo' command.".into());
     }
 
     let file = file_output_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
 
     let file_input_result = File::open(&input_file);
     if file_input_result.is_err() {
-        return Err("Error, creating input file for header editing command failed.".into());
+        return Err("pipeline: header_editing: failed to create input file for 'getinfo' command.".into());
     }
 
     let file_input = file_input_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
@@ -59,18 +62,22 @@ pub fn header_editing(
     command.stdin(stdio_in);
 
     // Run the command
-    let status = command.status();
+    let status_result = command.status();
+    if status_result.is_err() {
+        return Err("pipeline: header_editing: failed to start command.".into());
+    }
+    let status = status_result.unwrap();
 
     if DEBUG {
-        println!("\nHeader editing command exit status: {:?}\n", status);
+        println!("\n'getinfo' command exit status: {:?}\n", status);
     }
 
     // Return a Result object to indicate whether command was successful
-    if status.is_ok() {
+    if status.success() {
         // On success, return output path of HDR image
         Ok(output_file.into())
     } else {
         // On error, return an error message
-        Err("Error, non-zero exit status. Header editing command (getinfo) failed.".into())
+        Err("PIPELINE ERROR: command 'getinfo'".into())
     }
 }
