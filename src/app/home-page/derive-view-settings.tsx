@@ -277,7 +277,7 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
           ydown: yOffset + "",
           vv: viewSettings.vv,
           vh: viewSettings.vh,
-          targetRes: viewSettings.targetRes,
+          targetRes: diam + "",
         },
       });
       setActive(false);
