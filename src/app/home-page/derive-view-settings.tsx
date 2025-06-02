@@ -253,6 +253,14 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
       let xOffset = lens.x - lens.radius;
       let yOffset = canv.current.height - (lens.y + lens.radius);
 
+      // Bound lens calcs (not likely to be an issue for xOffset)
+      if (yOffset < 0) {
+        diam = Math.round(canv.current.height);
+        lens.radius = diam/2
+        yOffset = 0;
+        xOffset = Math.round(canv.current.width/2 - lens.radius)
+      }
+
       // Image was scaled down
       if (canv.current.width != ogSize[0]) {
         // Calculate ratios for scaling
@@ -265,10 +273,6 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
         xOffset = Math.floor((ogSize[0] * xOffset) / canv.current.width);
         yOffset = Math.floor((ogSize[1] * yOffset) / canv.current.height);
       }
-
-      // Lens extends off page
-      if (yOffset < 0) yOffset = 0;
-      if (xOffset < 0) xOffset = 0;
 
       setConfig({
         viewSettings: {
