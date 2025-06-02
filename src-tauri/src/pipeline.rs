@@ -110,10 +110,10 @@ pub async fn pipeline(
     diameter: String,
     xleft: String,
     ydown: String,
-    xdim: String,
-    ydim: String,
-    vertical_angle: String,
-    horizontal_angle: String,
+    mut xdim: String,
+    mut ydim: String,
+    mut vertical_angle: String,
+    mut horizontal_angle: String,
     scale_limit: String,
     scale_label: String,
     scale_levels: String,
@@ -129,6 +129,13 @@ pub async fn pipeline(
     } else {
         false
     };
+
+    if xdim.len() < 1 {
+        xdim = "1000".to_string();
+        ydim = "1000".to_string();
+    }
+    if vertical_angle.len() < 1 {vertical_angle = "180".to_string();}
+    if horizontal_angle.len() < 1 {horizontal_angle = "180".to_string();}
 
     if DEBUG {
         println!("Pipeline module called...");
