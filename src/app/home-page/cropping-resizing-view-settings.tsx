@@ -57,6 +57,17 @@ export default function CroppingResizingViewSettings() {
   const [active, setActive] = useState<boolean>(false);
   // selected image
   const [asset, setAsset] = useState<any>("");
+  // Compare directory selection
+  const [dirComp, setDirComp] = useState<any>({
+    prev: "",
+    cur: ""
+  });
+  // Stored lens infor (derive-view-settings.tsx)
+  const [lensInf, setLensInf] = useState<any>({
+    radius: 0,
+    x: 0,
+    y: 0
+  });
 
   let selected: any | any[] = [];
 
@@ -73,6 +84,11 @@ export default function CroppingResizingViewSettings() {
     if (valid_extensions.includes(Extensions(devicePaths[0]).toLocaleLowerCase())) {
       imgsLoc = Directories(devicePaths[0]);
     } else imgsLoc = devicePaths[0];
+
+    setDirComp({
+      prev: dirComp.cur,
+      cur: imgsLoc,
+    });
 
     selected = await open({
       defaultPath: imgsLoc,
@@ -160,6 +176,9 @@ export default function CroppingResizingViewSettings() {
           <DeriveViewSettings 
             setActive={setActive}
             asset={asset}
+            lensInf={lensInf}
+            setLensInf={setLensInf}
+            dirComp={dirComp}
           />
         </div>
       )}
