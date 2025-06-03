@@ -2,7 +2,13 @@ import React, { useEffect, useRef, useState } from "react";
 import { useConfigStore } from "../stores/config-store";
 import * as THREE from "three";
 
-export default function DeriveViewSettings({ setActive, asset }: any) {
+export default function DeriveViewSettings({ 
+  setActive, 
+  asset,
+  lensInf,
+  setLensInf,
+  dirComp
+}: any) {
   const { viewSettings, setConfig } = useConfigStore();
   // Original image dimensions
   const [ogSize, setOgSize] = useState<any>([0, 0]);
@@ -18,8 +24,6 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
   const [scene, setScene] = useState<THREE.Scene>();
   const [cam, setCam] = useState<THREE.OrthographicCamera>();
 
-  // const loader = new THREE.TextureLoader();
-  // loader.setCrossOrigin('anonymous');
   const [ogIm, setOgIm] = useState<any>();
 
   /**
@@ -110,7 +114,10 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
           setScaledSize([w, h]);
           canv.current.width = w;
           canv.current.height = h;
-          const curLens = new Lens(w / 2, h / 2, 50);
+          let curLens = new Lens(w / 2, h / 2, 50);
+          if (dirComp.prev == dirComp.cur) {
+            curLens = new Lens(lensInf.x, lensInf.y, lensInf.radius);
+          }
           curLens.draw();
           setLens(curLens);
 
@@ -242,6 +249,11 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
   }, [renderer.current, scene, cam]);
 
   function handleOnCancel() {
+    setLensInf({
+        radius: lens?.radius,
+        x: lens?.x,
+        y: lens?.y
+      });
     setActive(false);
   }
 
@@ -252,6 +264,14 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
       let diam = lens.radius * 2;
       let xOffset = lens.x - lens.radius;
       let yOffset = canv.current.height - (lens.y + lens.radius);
+
+      // Bound lens calcs (not likely to be an issue for xOffset)
+      if (yOffset < 0) {
+        diam = Math.round(canv.current.height);
+        lens.radius = diam/2
+        yOffset = 0;
+        xOffset = Math.round(canv.current.width/2 - lens.radius)
+      }
 
       // Image was scaled down
       if (canv.current.width != ogSize[0]) {
@@ -266,10 +286,6 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
         yOffset = Math.floor((ogSize[1] * yOffset) / canv.current.height);
       }
 
-      // Lens extends off page
-      if (yOffset < 0) yOffset = 0;
-      if (xOffset < 0) xOffset = 0;
-
       setConfig({
         viewSettings: {
           diameter: diam + "",
@@ -280,6 +296,13 @@ export default function DeriveViewSettings({ setActive, asset }: any) {
           targetRes: viewSettings.targetRes,
         },
       });
+
+      setLensInf({
+        radius: lens.radius,
+        x: lens.x,
+        y: lens.y
+      });
+
       setActive(false);
     }
   }
