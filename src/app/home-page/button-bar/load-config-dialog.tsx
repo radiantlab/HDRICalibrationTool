@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { useConfigStore } from "../../stores/config-store";
-import { invoke } from "@tauri-apps/api/tauri";
+import { invoke } from "@tauri-apps/api/core";
 
 // Modal used for loading a saved configuration
 export default function LoadConfigDialog({
   // savedConfigs,
   // getSavedConfigs,
   toggleDialog,
+  loaded,
+  setLoaded
 }: any) {
   const { setConfig } = useConfigStore();
 
@@ -33,6 +35,7 @@ export default function LoadConfigDialog({
     }
     // Otherwise look up the selected config
     else {
+      setLoaded(configName);
       let selectedConfig: any = savedConfigs.find(
         (config: any) => config.name === configName
       );
@@ -53,9 +56,30 @@ export default function LoadConfigDialog({
             vh: selectedConfig.vh,
             vv: selectedConfig.vv,
           },
+          luminanceSettings: {
+            scale_limit: selectedConfig.scale_limit,
+            scale_label: selectedConfig.scale_label,
+            scale_levels: selectedConfig.scale_levels,
+            legend_dimensions: selectedConfig.legend_dimensions,
+          },
         });
         toggleDialog();
       }
+    }
+  }
+
+  // Delete config and close dialog
+  function handleDeleteConfig() {
+    // If the user did not make a choice and left default option selected, show error
+    if (configName == defaultSelectMessage) {
+      setShowError(true);
+    }
+    // Otherwise delete the selected config
+    else {
+      if (configName === loaded) { setLoaded("") }
+      invoke("delete_config", { configName: configName })
+        .catch((error) => console.log(error));
+      toggleDialog();
     }
   }
 
@@ -108,7 +132,7 @@ export default function LoadConfigDialog({
                   </select>
                   {showError && (
                     <p className=" text-red-600">
-                      You must select a configuration to load.
+                      You must select a configuration.
                     </p>
                   )}
                 </div>
@@ -127,6 +151,13 @@ export default function LoadConfigDialog({
                   onClick={handleLoadConfig}
                 >
                   Load
+                </button>
+                <button
+                  type="button"
+                  className="bg-red-700 hover:bg-red-900 text-white font-semibold py-1 px-2 border-gray-400 rounded"
+                  onClick={handleDeleteConfig}
+                >
+                  Delete
                 </button>
                 <div className="pt-2"></div>
               </div>

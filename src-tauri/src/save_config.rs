@@ -5,6 +5,7 @@ use std::{
 
 use serde::Serialize;
 use serde_json::to_string;
+use tauri::Manager;
 
 #[derive(Serialize)]
 struct Config {
@@ -20,6 +21,10 @@ struct Config {
     target_res: String,
     vh: String,
     vv: String,
+    scale_limit: String,
+    scale_label: String,
+    scale_levels: String,
+    legend_dimensions: String,
 }
 
 // Saves a configuration, which includes view settings, response function, and calibration files.
@@ -40,6 +45,10 @@ pub async fn save_config(
     target_res: String,
     vh: String,
     vv: String,
+    scale_limit: String,
+    scale_label: String,
+    scale_levels: String,
+    legend_dimensions: String,
 ) -> Result<String, String> {
     let mut config = Config {
         name,
@@ -54,13 +63,17 @@ pub async fn save_config(
         target_res,
         vh,
         vv,
+        scale_limit,
+        scale_label,
+        scale_levels,
+        legend_dimensions,
     };
 
     // Retrieved part of this code from https://github.com/tauri-apps/tauri/discussions/5557
-    let binding_result = app_handle.path_resolver().app_config_dir();
+    let binding_result = app_handle.path().app_config_dir();
     let binding = match binding_result {
-        Some(v) => v,
-        None => return Err("Error saving config".to_string()),
+        Ok(v) => v,
+        Err(_) => return Err("Error saving config".to_string()),
     };
 
     // Get suggested config directory for the app from Tauri
