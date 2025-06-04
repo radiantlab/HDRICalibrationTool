@@ -307,7 +307,7 @@ export default function Home() {
             <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
               4
             </span>
-            Other
+            Luminance Map Configuration
           </h2>
           <LuminanceConfiguration />
         </div>

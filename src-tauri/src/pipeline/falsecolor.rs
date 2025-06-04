@@ -15,6 +15,18 @@ use std::env;
 use super::ConfigSettings;
 use super::LuminanceArgs;
 
+// Allow radiance to access helvet.fnt
+#[cfg(target_os = "windows")]
+fn set_env_vars(path: String) {
+    std::env::set_var("RAYPATH", format!(r"{}\lib", path));
+}
+
+// Allow radiance to access helvet.fnt
+#[cfg(not(target_os = "windows"))]
+fn set_env_vars(path: String) {
+    std::env::set_var("RAYPATH", format!("{}/lib", path));
+}
+
 /**
  * Generates a falsecolor luminance map from an HDR image
  * 
@@ -34,6 +46,8 @@ pub fn falsecolor(
     output_file: String,
     luminance_args: &LuminanceArgs,
 ) -> Result<String, String> {    // Print debug information about the function call parameters
+    set_env_vars(config_settings.radiance_path.parent().unwrap().display().to_string());
+
     if DEBUG {
         println!(
             "falsecolor() was called with parameters:\n\t {},\n\t {},\n\t {},\n\t {}\n",
@@ -64,18 +78,29 @@ pub fn falsecolor(
         env_var.unwrap()));
 
     // Add arguments
-    command.args([
-        "-s", 
-        &luminance_args.scale_limit, 
-        "-l", 
-        &luminance_args.scale_label,
-        "-n",
-        &luminance_args.scale_levels, 
-        "-e -lw/-lh", 
-        &luminance_args.legend_dimensions, 
-        "-i", 
-        input_file.as_str(),
+    if luminance_args.scale_label != "" {
+        command.args([
+            "-s", 
+            &luminance_args.scale_limit, 
+            "-l", 
+            &luminance_args.scale_label,
+            "-n",
+            &luminance_args.scale_levels, 
+            "-e", 
+            "-lw/-lh", 
+            &luminance_args.legend_dimensions, 
+            "-i", 
+            input_file.as_str(),
         ]);
+    } else {
+        // NOTE: Make sure that the RAYPATH enviornment variable is set to find helvet.fnt
+        // ex: export RAYPATH=/usr/local/radiance/lib
+        command.args([
+            "-e", 
+            "-i", 
+            input_file.as_str(),
+        ]);
+    }
 
     // Set up piping of output to file
     let file_result = File::create(&output_file);
