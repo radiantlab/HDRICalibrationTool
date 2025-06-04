@@ -120,8 +120,9 @@ export const useConfigStore = create<ConfigState>((set) => ({
     ydown: '',
     vv: '',
     vh: '',
-    targetRes: '1000',  // Default target resolution
+    targetRes: '',
   },
+  
   // Initial luminance settings
   luminanceSettings: {
     scale_limit: '',
@@ -129,6 +130,7 @@ export const useConfigStore = create<ConfigState>((set) => ({
     scale_levels: '',
     legend_dimensions: '',
   },
+
   // Initial UI state flags
   progressButton: false,  // Progress button disabled by default
   processError: false,    // No process error by default

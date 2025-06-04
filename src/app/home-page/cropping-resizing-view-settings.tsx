@@ -213,14 +213,14 @@ export default function CroppingResizingViewSettings() {
             name="vv"
             value={viewSettings.vv}
             label="View Vertical (vv)"
-            placeholder="degrees"
+            placeholder="180"
             handleChange={handleViewSettingsChange}
           />
           <NumberInput
             name="vh"
             value={viewSettings.vh}
             label="View Horizontal (vh)"
-            placeholder="degrees"
+            placeholder="180"
             handleChange={handleViewSettingsChange}
           />
         </div>
@@ -229,7 +229,7 @@ export default function CroppingResizingViewSettings() {
             name="targetRes"
             value={viewSettings.targetRes}
             label="Target Width/Height (resizing)"
-            placeholder="pixels"
+            placeholder="1000"
             handleChange={handleViewSettingsChange}
           />
         </div>
