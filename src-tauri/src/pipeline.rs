@@ -9,7 +9,6 @@ mod projection_adjustment;
 mod resize;
 mod vignetting_effect_correction;
 
-use tauri::Manager;
 use tauri::Emitter;
 mod falsecolor;
 
@@ -186,12 +185,6 @@ pub async fn pipeline(
     let mut current_step: usize = 0;
     emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)    
 
-    //Define total steps for progress bar (adjust this count as needed)
-    let total_steps: usize = if is_directory { 5 } else { 5 };
-
-    let mut current_step: usize = 0;
-    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)    
-
     let mut return_path: PathBuf = PathBuf::new();
     if is_directory {
         // Directories were selected (batch processing)
@@ -259,9 +252,6 @@ pub async fn pipeline(
             let mut output_file_name = config_settings
                 .output_path
                 .join(format!("{}_{}.hdr", base_name, datetime));
-            let evalglare_file_name = config_settings
-                .output_path
-                .join(format!("{}_{}_eg.txt", base_name, datetime));
 
             // Copy the final output hdr image to output directory
             let mut copy_result = copy(
@@ -274,21 +264,19 @@ pub async fn pipeline(
             if copy_result.is_err() {
                 return Result::Err(("Error copying evalglare value to output directory.").to_string());
             }
-            if luminance_args.scale_limit != "" {
-                let base_name = Path::new(input_dir)
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_string_lossy();
-                let luminance_file_name = config_settings
-                    .output_path
-                    .join(format!("{}-{}_fc.hdr", base_name, datetime));
-                    copy_result = copy(
-                    &config_settings.temp_path.join("falsecolor_output.hdr"),
-                    luminance_file_name,
-                );
-                if copy_result.is_err() {
-                    return Result::Err(("Error copying final luminance map hdr image to output directory.").to_string());
-                }
+            let base_name2 = Path::new(input_dir)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy();
+            let luminance_file_name = config_settings
+                .output_path
+                .join(format!("{}-{}_fc.hdr", base_name2, datetime));
+                copy_result = copy(
+                &config_settings.temp_path.join("falsecolor_output.hdr"),
+                luminance_file_name,
+            );
+            if copy_result.is_err() {
+                return Result::Err(("Error copying final luminance map hdr image to output directory.").to_string());
             }
         }
         
@@ -330,7 +318,6 @@ pub async fn pipeline(
         // Get current local date and time and format output name with it
         let datetime = format!("{}", Local::now().format("%m-%d-%Y_%I-%M-%S"));
         let output_file_name = config_settings.output_path.join(format!("{}.hdr", datetime));
-        let evalglare_file_name = config_settings.output_path.join(format!("{}_eg.txt", datetime));
 
         // Copy the final output hdr image to output directory
         let mut copy_result = copy(
@@ -341,15 +328,13 @@ pub async fn pipeline(
             return Result::Err(("Error copying final hdr image to output directory.").to_string());
         }
 
-        if luminance_args.scale_limit != "" {
-            let luminance_file_name = config_settings.output_path.join(format!("{}_fc.hdr", datetime));
-            copy_result = copy(
-                &config_settings.temp_path.join("falsecolor_output.hdr"),
-                luminance_file_name,
-            );
-            if copy_result.is_err() {
-                return Result::Err(("Error copying final hdr luminance image to output directory.").to_string());
-            }
+        let luminance_file_name = config_settings.output_path.join(format!("{}_fc.hdr", datetime));
+        copy_result = copy(
+            &config_settings.temp_path.join("falsecolor_output.hdr"),
+            luminance_file_name,
+        );
+        if copy_result.is_err() {
+            return Result::Err(("Error copying final hdr luminance image to output directory.").to_string());
         }
         return_path = config_settings.output_path;
     }
@@ -668,30 +653,26 @@ pub fn process_image_set(
 
     current_step+= 1;
     emit_progress(app, current_step, total_steps)?;
-    
-    next_path = "header_editing.hdr";
 
-    // Create luminance map if values were given by user
-    if luminance_args.scale_limit != "" {
-        let falsecolor_result = falsecolor(
-            &config_settings,
-            config_settings
-                .temp_path
-                .join(next_path)
-                .display()
-                .to_string(),
-            config_settings
-                .temp_path
-                .join("falsecolor_output.hdr")
-                .display()
-                .to_string(),
-            luminance_args,
-        );
+    // Create luminance map
+    let falsecolor_result = falsecolor(
+        &config_settings,
+        config_settings
+            .temp_path
+            .join("header_editing.hdr")
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("falsecolor_output.hdr")
+            .display()
+            .to_string(),
+        luminance_args,
+    );
 
-        // If the command encountered an error, abort pipeline
-        if falsecolor_result.is_err() {
-            return falsecolor_result;
-        }
+    // If the command encountered an error, abort pipeline
+    if falsecolor_result.is_err() {
+        return falsecolor_result;
     }
 
     // Pipeline has completed successfully. Return Ok
