@@ -39,7 +39,7 @@ export default function LuminanceConfiguration() {
   return (
     <div>
       {/* Section title */}
-      <h2 className="font-bold pt-5">Settings for Falsecolor Luminance Map (Optional)</h2>
+      <h2 className="font-bold pt-5">Falsecolor Settings</h2>
       <div>
         {/* Scale Limit input - controls the maximum value on the luminance scale */}
         <div className="flex flex-row space-x-5 pt-5">
