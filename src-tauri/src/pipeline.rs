@@ -270,7 +270,7 @@ pub async fn pipeline(
                 .to_string_lossy();
             let luminance_file_name = config_settings
                 .output_path
-                .join(format!("{}-{}_fc.hdr", base_name2, datetime));
+                .join(format!("{}_{}_fc.hdr", base_name2, datetime));
                 copy_result = copy(
                 &config_settings.temp_path.join("falsecolor_output.hdr"),
                 luminance_file_name,
