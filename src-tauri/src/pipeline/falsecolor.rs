@@ -15,6 +15,18 @@ use std::env;
 use super::ConfigSettings;
 use super::LuminanceArgs;
 
+// Allow radiance to access helvet.fnt
+#[cfg(target_os = "windows")]
+fn set_env_vars(path: String) {
+    std::env::set_var("RAYPATH", format!(r"{}\lib", path));
+}
+
+// Allow radiance to access helvet.fnt
+#[cfg(not(target_os = "windows"))]
+fn set_env_vars(path: String) {
+    std::env::set_var("RAYPATH", format!("{}/lib", path));
+}
+
 /**
  * Generates a falsecolor luminance map from an HDR image
  * 
@@ -34,6 +46,8 @@ pub fn falsecolor(
     output_file: String,
     luminance_args: &LuminanceArgs,
 ) -> Result<String, String> {    // Print debug information about the function call parameters
+    set_env_vars(config_settings.radiance_path.parent().unwrap().display().to_string());
+
     if DEBUG {
         println!(
             "falsecolor() was called with parameters:\n\t {},\n\t {},\n\t {},\n\t {}\n",
