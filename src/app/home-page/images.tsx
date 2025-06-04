@@ -22,6 +22,9 @@ import { EditingFileType } from "@/app/global-types";
 import FileFieldRow from "./file-field-row";
 import { useSettingsStore } from "../stores/settings-store";
 
+import InfoIcon from "@/app/tooltips/infoIcon";
+import descriptions from "@/app/tooltips/descriptions";
+
 /**
  * Component for managing image selection and related files
  * 
@@ -364,7 +367,10 @@ export default function Images() {
       )}
       {/* Response File Field */}
       <h2 className="font-bold pt-5" id="fe">
-        Response File
+        <span className="flex items-center">
+          Response File
+          <InfoIcon text={descriptions.response} />
+        </span>  
       </h2>
       <FileFieldRow
         label="Response File"

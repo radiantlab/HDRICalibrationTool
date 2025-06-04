@@ -19,6 +19,8 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useConfigStore } from "../stores/config-store";
 import { useSettingsStore } from "../stores/settings-store";
 
+import descriptions from "../tooltips/descriptions";
+
 /**
  * Component for configuring image cropping, resizing and view settings
  * 
@@ -189,6 +191,7 @@ export default function CroppingResizingViewSettings() {
             value={viewSettings.diameter}
             label="Fisheye View Diameter"
             placeholder="pixels"
+            description={descriptions.fisheyeDiameter}
             handleChange={handleViewSettingsChange}
           />
         </div>
@@ -196,14 +199,16 @@ export default function CroppingResizingViewSettings() {
           <NumberInput
             name="xleft"
             value={viewSettings.xleft}
-            label="X Left Offset (distance between left edge of the image and left edge of fisheye view)"
+            label="X Left Offset"
+            description={descriptions.xLeftOffset}
             placeholder="pixels"
             handleChange={handleViewSettingsChange}
           />
           <NumberInput
             name="ydown"
             value={viewSettings.ydown}
-            label="Y Bottom Offset (distance between bottom edge of the image and bottom edge of fisheye view)"
+            label="Y Bottom Offset"
+            description={descriptions.yBottomOffset}
             placeholder="pixels"
             handleChange={handleViewSettingsChange}
           />
@@ -213,6 +218,7 @@ export default function CroppingResizingViewSettings() {
             name="vv"
             value={viewSettings.vv}
             label="View Vertical (vv)"
+            description={descriptions.vv}
             placeholder="degrees"
             handleChange={handleViewSettingsChange}
           />
@@ -220,6 +226,7 @@ export default function CroppingResizingViewSettings() {
             name="vh"
             value={viewSettings.vh}
             label="View Horizontal (vh)"
+            description={descriptions.vh}
             placeholder="degrees"
             handleChange={handleViewSettingsChange}
           />
@@ -229,6 +236,7 @@ export default function CroppingResizingViewSettings() {
             name="targetRes"
             value={viewSettings.targetRes}
             label="Target Width/Height (resizing)"
+            description={descriptions.targetRes}
             placeholder="pixels"
             handleChange={handleViewSettingsChange}
           />
