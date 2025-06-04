@@ -64,18 +64,29 @@ pub fn falsecolor(
         env_var.unwrap()));
 
     // Add arguments
-    command.args([
-        "-s", 
-        &luminance_args.scale_limit, 
-        "-l", 
-        &luminance_args.scale_label,
-        "-n",
-        &luminance_args.scale_levels, 
-        "-e -lw/-lh", 
-        &luminance_args.legend_dimensions, 
-        "-i", 
-        input_file.as_str(),
+    if luminance_args.scale_label != "" {
+        command.args([
+            "-s", 
+            &luminance_args.scale_limit, 
+            "-l", 
+            &luminance_args.scale_label,
+            "-n",
+            &luminance_args.scale_levels, 
+            "-e", 
+            "-lw/-lh", 
+            &luminance_args.legend_dimensions, 
+            "-i", 
+            input_file.as_str(),
         ]);
+    } else {
+        // NOTE: Make sure that the RAYPATH enviornment variable is set to find helvet.fnt
+        // ex: export RAYPATH=/usr/local/radiance/lib
+        command.args([
+            "-e", 
+            "-i", 
+            input_file.as_str(),
+        ]);
+    }
 
     // Set up piping of output to file
     let file_result = File::create(&output_file);
