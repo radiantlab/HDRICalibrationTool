@@ -1,3 +1,6 @@
+import React from "react";
+import InfoIcon from "../tooltips/infoIcon";
+
 /**
  * Reusable Number Input Component for the HDRI Calibration Tool.
  * 
@@ -13,6 +16,7 @@
  * @property value - Current value of the input
  * @property label - Label text to display above the input
  * @property placeholder - Placeholder text for the input
+ * @property description - Optional description text to display with an info icon
  */
 interface NumberInputProps {
   handleChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -20,6 +24,7 @@ interface NumberInputProps {
   value: string;
   label: string;
   placeholder: string;
+  description?: string;
 }
 
 /**
@@ -34,17 +39,38 @@ export default function NumberInput({
   value,
   label,
   placeholder,
-}: NumberInputProps) {  return (
+  description
+}: NumberInputProps) {    return (
     <div className="mb-4">
-      <label className="block mb-2">{label}</label>
+      {/* Wrap label + InfoIcon in a flex container so the “?” sits on the same line */}
+      <div className="flex items-center mb-1">
+        <label htmlFor={name} className="font-medium text-gray-700">
+          {label}
+        </label>
+        {/* Only render the InfoIcon if a description was passed */}
+        {description && <InfoIcon text={description} />}
+      </div>
+
+      {/* The numeric input field */}
       <input
-        onChange={handleChange}
+        id={name}
         name={name}
-        value={value}
         type="number"
+        value={value}
+        onChange={handleChange}
         placeholder={placeholder}
-        className="placeholder:text-right no-spinner w-full md:w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
-      ></input>
+        className="
+          placeholder:text-right
+          no-spinner
+          w-full md:w-40
+          shadow appearance-none
+          border border-gray-400
+          rounded
+          py-2 px-3
+          leading-tight
+          focus:outline-none focus:shadow-outline
+        "
+      />
     </div>
   );
 }
