@@ -59,10 +59,10 @@ const Initialization: React.FC = () => {
 
         // Update the global settings store with all paths and platform information
         setSettings({
-          radiancePath: contentsObject.radiancepath === "" ? radianceDefaultPath : contentsObject.radiancepath,
+          radiancePath: (contentsObject.radiancepath === "" || !contentsObject.radiancepath) ? radianceDefaultPath : contentsObject.radiancepath,
           hdrgenPath: contentsObject.hdrgenpath,
           dcrawEmuPath: contentsObject.dcrawemupath,
-          outputPath: outputDefaultPath === "" ? await invoke("get_default_output_path") : outputDefaultPath, // queries backend for suggested place to store files
+          outputPath: (contentsObject.outputpath === "" || !contentsObject.outputpath) ? outputDefaultPath : contentsObject.outputpath, // queries backend for suggested place to store files
           osPlatform: osPlatform
         });
         // Show alert if HDRGen path is not set, which is required for operation
