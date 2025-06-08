@@ -12,6 +12,8 @@
 import NumberInput from "./number-input";
 import { useConfigStore } from "../stores/config-store";
 
+import descriptions from "../tooltips/descriptions";
+
 /**
  * Component for configuring luminance visualization settings
  * 
@@ -48,6 +50,7 @@ export default function LuminanceConfiguration() {
             value={luminanceSettings.scale_limit}
             label="Scale Limit"
             placeholder="pixels"
+            description={descriptions.scaleLimit}
             handleChange={handleLuminanceSettingsChange}
           />
         </div>
@@ -59,6 +62,7 @@ export default function LuminanceConfiguration() {
             value={luminanceSettings.scale_label}
             label="Scale Label"
             placeholder="label"
+            description={descriptions.scaleLabel}
             handleChange={handleLuminanceSettingsChange}
           />
           
@@ -68,6 +72,7 @@ export default function LuminanceConfiguration() {
             value={luminanceSettings.scale_levels}
             label="Scale Levels"
             placeholder="levels"
+            description={descriptions.scaleLevels}
             handleChange={handleLuminanceSettingsChange}
           />
         </div>
@@ -79,6 +84,7 @@ export default function LuminanceConfiguration() {
             value={luminanceSettings.legend_dimensions}
             label="Legend Dimensions"
             placeholder="pixels"
+            description={descriptions.legendDimensions}
             handleChange={handleLuminanceSettingsChange}
           />
         </div>

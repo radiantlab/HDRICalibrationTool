@@ -6,6 +6,9 @@ import { FileEditor } from "./file_editor";
 import { EditingFileType } from "@/app/global-types";
 import FileFieldRow from "../file-field-row";
 
+import InfoIcon from "@/app/tooltips/infoIcon";
+import descriptions from "@/app/tooltips/descriptions";
+
 export default function Response_and_correction() {
   const {
     responsePaths,
@@ -140,7 +143,10 @@ export default function Response_and_correction() {
   return (
     <div>
       <h2 className="font-bold pt-5" id="fe">
-        Fish Eye Correction
+        <span className="flex items-center">
+          Fish Eye Correction
+          <InfoIcon text={descriptions.fisheye} />
+        </span>
       </h2>
       <FileFieldRow
         label="Fish Eye Correction"
@@ -152,7 +158,10 @@ export default function Response_and_correction() {
       />
 
       <h2 className="font-bold pt-5" id="v">
-        Vignetting Correction
+        <span className="flex items-center">
+          Vignetting Correction
+          <InfoIcon text={descriptions.vignetting} />
+        </span>  
       </h2>
       <FileFieldRow
         label="Vignetting Correction"
@@ -164,7 +173,10 @@ export default function Response_and_correction() {
       />
 
       <h2 className="font-bold pt-5" id="nd">
-        Neutral Density Correction
+        <span className="flex items-center">
+          Neutral Density Correction
+          <InfoIcon text={descriptions.neutralDensity} />
+        </span>
       </h2>
       <FileFieldRow
         label="Neutral Density Correction"
@@ -176,7 +188,10 @@ export default function Response_and_correction() {
       />
 
       <h2 className="font-bold pt-5" id="cf">
-        Calibration Factor Correction
+        <span className="flex items-center">
+          Calibration Factor Correction
+          <InfoIcon text={descriptions.calibrationFactor} />
+        </span>
       </h2>
       <FileFieldRow
         label="Calibration Factor Correction"
