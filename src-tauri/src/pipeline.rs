@@ -641,6 +641,9 @@ pub fn process_image_set(
     }
     let evalglare_value = evalglare_result.unwrap();
 
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
+
     // Edit the header
     let header_editing_result = header_editing(
         &config_settings,
