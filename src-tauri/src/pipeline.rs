@@ -187,7 +187,7 @@ pub async fn pipeline(
     }
 
     //Define total steps for progress bar (adjust this count as needed)
-    let total_steps: usize = if is_directory { 4 } else { 4 };
+    let total_steps: usize = if is_directory { 5 } else { 5 };
 
     let mut current_step: usize = 0;
     emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)   

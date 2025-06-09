@@ -105,7 +105,6 @@ export default function CroppingResizingViewSettings() {
         alert("Invalid file type. Please only enter valid image types: jpg, jpeg, tif, tiff, or raw image formats.");
         return;
       }
-
       // Check that image is one of selected images
       let match = false;
       for (let i = 0; i < devicePaths.length; i++) {
@@ -119,19 +118,6 @@ export default function CroppingResizingViewSettings() {
             if (pth + contents[j].name == selected) {
               match = true;
               break;
-            }
-            // Handle batch processing (contains subdirectories)
-            else if (contents[j].isDirectory) {
-              let subContents = await readDir(pth + contents[j].name);
-              let subPth = "";
-              if (settings.osPlatform === "windows") subPth = pth + contents[j].name + "\\";
-              else subPth = pth + contents[j].name + "/";
-              for (let k = 0; k < subContents.length; k++) {
-                if (subPth + subContents[k].name == selected) {
-                  match = true;
-                  break;
-                }
-              }
             }
           }
         } else {
