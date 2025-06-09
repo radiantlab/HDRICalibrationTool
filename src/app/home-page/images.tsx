@@ -32,7 +32,7 @@ import descriptions from "@/app/tooltips/descriptions";
  */
 export default function Images() {
   // Access global configuration
-  const { devicePaths, responsePaths, setConfig } = useConfigStore();
+  const { devicePaths, responsePaths, jpeg_present, setConfig } = useConfigStore();
   const { settings } = useSettingsStore();
   
   // State for file editor visibility
@@ -112,6 +112,7 @@ export default function Images() {
   
   /** Flag indicating if RAW images are selected (affects UI behavior) */
   const [rawImagesSelected, setRawImagesSelected] = useState<boolean>(false);
+  
   /**
    * Opens a file dialog to select image files
    * 
@@ -135,21 +136,33 @@ export default function Images() {
       setDirError(false);
       let valid = false;
       for (let i = 0; i < selected.length; i++) {
-        if ((valid_extensions.includes(Extensions(selected[i]).toLowerCase()))) {
+        let ext = Extensions(selected[i]).toLowerCase();
+        if (valid_extensions.includes(ext)) {
+          if (ext === "jpeg" || ext === "jpg" || ext === "tiff" || ext === "tif") {
+            setConfig({jpeg_present: true});
+          }
           valid = true;
           assets = assets.concat(convertFileSrc(selected[i]));
         }
         else {
+          valid = false;
           set_image_error(true);
+          break;
         }
       }
-      setImages(images.concat(assets));
-      setDevicePaths(devicePaths.concat(selected));
-      setAssetPaths(assetPaths.concat(assets));
+      if (valid) {
+        setImages(images.concat(assets));
+        setDevicePaths(devicePaths.concat(selected));
+        setAssetPaths(assetPaths.concat(assets));
+      }
     } else if (selected !== null) {
       set_image_error(false);
       setDirError(false);
-      if (valid_extensions.includes(Extensions(selected).toLowerCase())) {
+      let ext = Extensions(selected).toLowerCase();
+      if (valid_extensions.includes(ext)) {
+        if (ext === "jpeg" || ext === "jpg") {
+          setConfig({jpeg_present: true});
+        }
         assets = [convertFileSrc(selected)];
         setImages(images.concat(assets));
         setDevicePaths(devicePaths.concat([selected]));
@@ -179,7 +192,11 @@ export default function Images() {
       for (let k = 0; k < selected.length; k++) {
         let contents = await readDir(selected[k]);
         for (let i = 0; i < contents.length; i++) {
-          if (valid_extensions.includes(Extensions(contents[i].name).toLowerCase())) {
+          let ext = Extensions(contents[i].name).toLowerCase();
+          if (valid_extensions.includes(ext)) {
+            if (ext === "jpeg" || ext === "jpg" || ext === "tiff" || ext === "tif") {
+              setConfig({jpeg_present: true});
+            }
             check = true;
             break;
           }
@@ -197,7 +214,11 @@ export default function Images() {
       let check = false;
       let contents = await readDir(selected);
       for (let i = 0; i < contents.length; i++) {
-        if (valid_extensions.includes(Extensions(contents[i].name).toLowerCase())) {
+        let ext = Extensions(contents[i].name).toLowerCase();
+        if (valid_extensions.includes(ext)) {
+          if (ext === "jpeg" || ext === "jpg" || ext === "tiff" || ext === "tif") {
+            setConfig({jpeg_present: true});
+          }
           check = true;
           break;
         }
@@ -255,13 +276,49 @@ export default function Images() {
     }, [assetPaths]);
   }
 
-  function handleImageDelete(index: number) {
+  async function handleImageDelete(index: number) {
     const updatedImages = images.slice();
     const updatedDevicePaths = devicePaths.slice();
     const updatedAssetPaths = assetPaths.slice();
     updatedImages.splice(index, 1);
     updatedDevicePaths.splice(index, 1);
     updatedAssetPaths.splice(index, 1);
+
+    // Ensure jpeg_present is updated properly
+    if (updatedDevicePaths.length < 1) {
+      setConfig({jpeg_present: false});
+    } else {
+      let break_check = false;
+      for (let i = 0; i < updatedDevicePaths.length; i++) {
+        let ext = Extensions(updatedDevicePaths[i]).toLowerCase();
+        if (!valid_extensions.includes(ext)) {
+          let contents = await readDir(updatedDevicePaths[i]);
+          for (let j = 0; j < contents.length; j++) {
+            let sub_ext = Extensions(contents[j].name).toLowerCase();
+            if (valid_extensions.includes(sub_ext)) {
+              if (sub_ext === "jpeg" || sub_ext === "jpg") {
+                setConfig({jpeg_present: true});
+                break_check = true;
+                break;
+              }
+            }
+          }
+        } else {
+          if (ext === "jpeg" || ext === "jpg") {
+            setConfig({jpeg_present: true});
+            break_check = true;
+            break;
+          }
+        }
+        if (break_check) {
+          break;
+        }
+      }
+      if (!break_check) {
+        setConfig({jpeg_present: false});
+      }
+    }
+
     setImages(updatedImages);
     setDevicePaths(updatedDevicePaths);
     setAssetPaths(updatedAssetPaths);
@@ -273,6 +330,7 @@ export default function Images() {
     setAssetPaths([]);
     set_image_error(false);
     setDirError(false);
+    setConfig({jpeg_present: false});
   }
 
   // Update flag for whether raw images are selected (to determine whether to show image previews)
@@ -373,7 +431,7 @@ export default function Images() {
         </span>  
       </h2>
       <FileFieldRow
-        label=""
+        label="*Recommended for JPEG image formats"
         value={responsePaths}
         onBrowse={dialogResponse}
         onClear={handleResponseDelete}
