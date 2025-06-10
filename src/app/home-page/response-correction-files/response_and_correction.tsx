@@ -149,7 +149,7 @@ export default function Response_and_correction() {
         </span>
       </h2>
       <FileFieldRow
-        label="Fish Eye Correction"
+        label=""
         value={fe_correctionPaths}
         onBrowse={dialogFE}
         onClear={handle_fe_delete}
@@ -164,7 +164,7 @@ export default function Response_and_correction() {
         </span>  
       </h2>
       <FileFieldRow
-        label="Vignetting Correction"
+        label=""
         value={v_correctionPaths}
         onBrowse={dialogV}
         onClear={handle_v_delete}
@@ -179,7 +179,7 @@ export default function Response_and_correction() {
         </span>
       </h2>
       <FileFieldRow
-        label="Neutral Density Correction"
+        label=""
         value={nd_correctionPaths}
         onBrowse={dialogND}
         onClear={handle_nd_delete}
@@ -194,7 +194,7 @@ export default function Response_and_correction() {
         </span>
       </h2>
       <FileFieldRow
-        label="Calibration Factor Correction"
+        label=""
         value={cf_correctionPaths}
         onBrowse={dialogCF}
         onClear={handle_cf_delete}
