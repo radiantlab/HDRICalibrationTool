@@ -29,7 +29,6 @@ pub async fn get_default_output_path() -> Result<String, String> {
                 if let Err(error) = fs::create_dir_all(&target_dir) {
                     return Err(format!("get_default_output_path: create_dir_all: {}", error));
                 }
-                fs::create_dir_all(&target_dir);
             }
             return Ok(target_dir.to_string_lossy().to_string()); // return the path as a string
         }
