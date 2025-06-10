@@ -33,6 +33,7 @@ pub fn merge_exposures(
     ydown: String,
     xdim: String,
     ydim: String,
+    filter_images_flag: bool,
 ) -> Result<String, String> {
     if DEBUG {
         println!("merge_exposures Tauri command was called!");
@@ -142,7 +143,7 @@ pub fn merge_exposures(
         }
 
         input_images = new_inputs;
-    } else { // images might include jpeg, so try to filter them
+    } else if filter_images_flag { // images might include jpeg, so try to filter them if allowed
         // convert float strings to f32
         let diameter_f32 = diameter.parse::<f32>()
             .map_err(|error| format!("pipeline: merge_exposures: failed to parse diameter as float - {}", error))?;
