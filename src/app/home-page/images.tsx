@@ -373,7 +373,7 @@ export default function Images() {
         </span>  
       </h2>
       <FileFieldRow
-        label="Response File"
+        label=""
         value={responsePaths}
         onBrowse={dialogResponse}
         onClear={handleResponseDelete}

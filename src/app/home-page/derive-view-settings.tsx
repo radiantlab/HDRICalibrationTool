@@ -286,14 +286,14 @@ export default function DeriveViewSettings({
         yOffset = Math.floor((ogSize[1] * yOffset) / canv.current.height);
       }
 
-      setConfig({
+      setConfig({ 
         viewSettings: {
           diameter: diam + "",
           xleft: xOffset + "",
           ydown: yOffset + "",
           vv: viewSettings.vv,
           vh: viewSettings.vh,
-          targetRes: viewSettings.targetRes,
+          targetRes: (diam < 1000) ? diam + "" : viewSettings.targetRes,  // no need to resize if image is already less than 1000
         },
       });
 
