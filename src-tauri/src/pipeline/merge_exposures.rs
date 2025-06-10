@@ -3,6 +3,9 @@ use std::{
     path::Path,
     process::{Command, ExitStatus},
 };
+use image::{GenericImageView, Pixel};
+use rayon::prelude::*;
+use anyhow::{Result, Context};
 use std::env;
 
 use super::ConfigSettings;
@@ -25,6 +28,11 @@ pub fn merge_exposures(
     mut input_images: Vec<String>,
     response_function: String,
     output_path: String,
+    diameter: String,
+    xleft: String,
+    ydown: String,
+    xdim: String,
+    ydim: String,
 ) -> Result<String, String> {
     if DEBUG {
         println!("merge_exposures Tauri command was called!");
@@ -134,6 +142,27 @@ pub fn merge_exposures(
         }
 
         input_images = new_inputs;
+    } else { // images might include jpeg, so try to filter them
+        // convert float strings to f32
+        let diameter_f32 = diameter.parse::<f32>()
+            .map_err(|error| format!("pipeline: merge_exposures: failed to parse diameter as float - {}", error))?;
+        let xleft_f32 = xleft.parse::<f32>()
+            .map_err(|error| format!("pipeline: merge_exposures: failed to parse xleft as float - {}", error))?;
+        let ydown_f32 = ydown.parse::<f32>()
+            .map_err(|error| format!("pipeline: merge_exposures: failed to parse ydown as float - {}", error))?;
+        let xdim_f32 = xdim.parse::<f32>()
+            .map_err(|error| format!("pipeline: merge_exposures: failed to parse xdim as float - {}", error))?;
+        let ydim_f32 = ydim.parse::<f32>()
+            .map_err(|error| format!("pipeline: merge_exposures: failed to parse ydim as float - {}", error))?;
+        
+        // try and filter images, updating input images if successful
+        if is_jpeg(&input_images[0]) {
+            let filtered_images = match filter_images(input_images, diameter_f32, xleft_f32, ydown_f32, xdim_f32, ydim_f32) {
+                Ok(image_vec) => image_vec,
+                Err(error) => return Err(format!("pipeline: merge_exposures: failed to filter images - {}", error)),
+            };
+            input_images = filtered_images;
+        }
     }
 
     // Create a new command for hdrgen
@@ -175,6 +204,186 @@ pub fn merge_exposures(
     } else {
         // On success, return output path of HDR image
         Ok(output_path.into())
+    }
+}
+
+// Filters images that bring no value to the HDR generation process; returns a Result containing the array of images that were not discarded
+// Images are filtered by checking the luminance values of pixels inside the fisheye view
+// Pixels with luminance values either below 27 or above 228 are counted respectively
+// Once all images have had their pixel counts resolved, the input array is filtered by starting at the first brighter image that doesn't have \
+// any pixel below 27; and ending at the first darker image that doesn't have any pixel above 228
+fn filter_images(input_images: Vec<String>, diameter: f32, xleft: f32, ydown: f32, xdim: f32, ydim: f32) -> Result<Vec<String>> {
+    let radius = diameter / 2.0;
+    let xcenter = xleft + radius;
+    let ycenter = ydown + radius;
+    let mut filtered_images = Vec::new();
+
+    // Compute mask using first image
+    let image = image::open(&input_images[0])
+        .with_context(|| format!("pipeline: merge_exposures: filter_images: failed to open image: {}", input_images[0]))?;
+    let (width, height) = image.dimensions();
+    let mask = compute_circle_mask(height as usize, width as usize, xcenter, ycenter, radius);
+
+    // Iterate through every image in parallel and count how many pixels of each is either below 27 or above 228 luminance
+    let pixel_counts: Result<Vec<(u32, u32)>, anyhow::Error> = input_images
+        .par_iter() // create parallel iterator
+        .map(|input_image| { // allow for skipping images
+            if DEBUG {
+                println!("Processing image: {}", input_image);
+            }
+
+            if !is_jpeg(input_image) {
+                return Err(anyhow::anyhow!("pipeline: merge_exposures: filter_images: image is not a JPEG: {}", input_image));
+            }
+
+            let image = image::open(input_image)
+                .with_context(|| format!("pipeline: merge_exposures: filter_images: failed to open image: {}", input_image))?;
+
+            // Start processing the image
+            let mut pixels_below = 0;
+            let mut pixels_above = 0;
+            let (width, height) = image.dimensions();
+
+            for y in 0..height {
+                for x in 0..width {
+                    let mask_index = (y * width + x) as usize;
+                    if mask[mask_index] { // if it's in the fisheye view
+                        let pixel = image.get_pixel(x, y).to_rgb();
+                        let [r, g, b] = pixel.0;
+                        if r < 27 && g < 27 && b < 27 { // all values below allowed threshold
+                            pixels_below += 1;
+                        } else if r > 228 && g > 228 && b > 228 { // all values above allowed threshold
+                            pixels_above += 1;
+                        }
+                    }
+                }
+            }
+            Ok((pixels_below, pixels_above)) // return the tuple of pixel values
+        })
+        .collect(); // collect everything into the vector
+
+        // The below is not the cleanest and could be written in a more idiomatic Rust way/a fancier way
+        // However, it is very understandable as written
+        let array = pixel_counts?;
+        println!("Pixel Counts: {:?}", array);
+        let mut start_index: i32 = -1;
+        let mut end_index: i32 = -1;
+        
+        // Go from the start and find the FIRST pixel of the brighter images that has no pixel below 27
+        for (i, (pixels_below, pixels_above)) in array.iter().enumerate() {
+            if *pixels_below == 0 {
+                start_index = i as i32;
+                break;
+            }
+        }
+        if start_index == -1 {
+            start_index = 0;
+        }
+        // Go from the start and find the FIRST pixel of the darker images that has no pixel above 228
+        for (i, (pixels_below, pixels_above)) in array.iter().enumerate() {
+            if i > start_index as usize && *pixels_above == 0 {
+                end_index = i as i32; // don't break, cause the loop starts from the first array element
+            }
+        }
+        if end_index == -1 {
+            end_index = array.len() as i32;
+        }
+        if DEBUG {
+            println!("Selecting images: {}:{}", start_index, end_index);
+        }
+        // Push and return all the images
+        for i in start_index..end_index {
+            filtered_images.push(input_images[i as usize].clone());
+        }
+
+    // Iterate through every image and count how many pixels of each is either below 27 or above 228 luminance 
+    // for input_image in &input_images {
+    //     if DEBUG {
+    //         println!("Processing image: {}", input_image);
+    //     }
+    //     if !is_jpeg(&input_image) { // skip trying to filter images that aren't jpeg
+    //         continue;
+    //     }
+    //     image = image::open(input_image)
+    //         .map_err(|error| format!("pipeline: merge_exposures: filter_images: failed to open image - {}\n", error))?;
+    //     (width, height) = image.dimensions();
+    //     for y in 0..height {
+    //         for x in 0..width {
+    //             let mask_index = y * width + x;
+    //             if mask[mask_index as usize] { // if it's in the fisheye view
+    //                 let pixel = image.get_pixel(x, y).to_rgb();
+    //                 let [r, g, b] = pixel.0;
+    //                 if r < 27 && g < 27 && b < 27 { // all values below allowed threshold
+    //                     pixels_below += 1;
+    //                 } else if r > 228 && g > 228 && b > 228 { // all values above allowed threshold
+    //                     pixels_above += 1;
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     pixel_counts.push((pixels_below, pixels_above));
+    //     pixels_below = 0;
+    //     pixels_above = 0;
+    // }
+
+    // Only take those brighter images that don't have any pixel below 27 and those darker images that don't have any pixel above 228
+    // Start at beginning of image array to filter brighter images
+    // Start at end of image array to filter darker images
+    // let mut start_index: i32 = -1;
+    // let mut end_index: i32 = -1;
+    // for (i, (pixels_below, pixels_above)) in pixel_counts.iter().enumerate() {
+    //     if *pixels_below == 0 {
+    //         start_index = i as i32;
+    //     }
+    // }
+    // if start_index == -1 {
+    //     start_index = 0;
+    // }
+    // for (i, (pixels_below, pixels_above)) in pixel_counts.iter().enumerate() {
+    //     if i > start_index as usize && *pixels_above == 0 {
+    //         end_index = i as i32;
+    //     }
+    // }
+    // if end_index == -1 {
+    //     end_index = pixel_counts.len() as i32;
+    // }
+    // if DEBUG {
+    //     println!("Selecting images: {}:{}", start_index, end_index);
+    // }
+    // for i in start_index..end_index {
+    //     filtered_images.push(input_images[i as usize].clone());
+    // }
+    Ok(filtered_images)
+}
+
+// Returns an index mask for the pixels that fall inside the fisheye view
+fn compute_circle_mask(height: usize, width: usize, xcenter: f32, ycenter: f32, radius: f32) -> Vec<bool> {
+    let mut mask = vec![false; width * height];
+    let rsquare = radius * radius;
+
+    for y in 0..height {
+        for x in 0..width {
+            let dx = x as f32 - xcenter;
+            let dy = y as f32 - ycenter;
+            if dx * dx + dy * dy <= rsquare {
+                mask[y * width + x] = true;
+            }
+        }
+    }
+    mask
+}
+
+// Returns a boolean representing whether the image file is in jpeg format.
+fn is_jpeg(file_name: &String) -> bool {
+    let image_ext = Path::new(file_name)
+        .extension()
+        .unwrap_or_default()
+        .to_ascii_lowercase();
+
+    if image_ext == "jpg" || image_ext == "jpeg" {
+        true
+    } else {
+        false
     }
 }
 
