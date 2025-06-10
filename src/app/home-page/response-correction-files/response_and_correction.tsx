@@ -6,6 +6,9 @@ import { FileEditor } from "./file_editor";
 import { EditingFileType } from "@/app/global-types";
 import FileFieldRow from "../file-field-row";
 
+import InfoIcon from "@/app/tooltips/infoIcon";
+import descriptions from "@/app/tooltips/descriptions";
+
 export default function Response_and_correction() {
   const {
     responsePaths,
@@ -140,10 +143,13 @@ export default function Response_and_correction() {
   return (
     <div>
       <h2 className="font-bold pt-5" id="fe">
-        Fish Eye Correction
+        <span className="flex items-center">
+          Fish Eye Correction
+          <InfoIcon text={descriptions.fisheye} />
+        </span>
       </h2>
       <FileFieldRow
-        label="Fish Eye Correction"
+        label=""
         value={fe_correctionPaths}
         onBrowse={dialogFE}
         onClear={handle_fe_delete}
@@ -152,10 +158,13 @@ export default function Response_and_correction() {
       />
 
       <h2 className="font-bold pt-5" id="v">
-        Vignetting Correction
+        <span className="flex items-center">
+          Vignetting Correction
+          <InfoIcon text={descriptions.vignetting} />
+        </span>  
       </h2>
       <FileFieldRow
-        label="Vignetting Correction"
+        label=""
         value={v_correctionPaths}
         onBrowse={dialogV}
         onClear={handle_v_delete}
@@ -164,10 +173,13 @@ export default function Response_and_correction() {
       />
 
       <h2 className="font-bold pt-5" id="nd">
-        Neutral Density Correction
+        <span className="flex items-center">
+          Neutral Density Correction
+          <InfoIcon text={descriptions.neutralDensity} />
+        </span>
       </h2>
       <FileFieldRow
-        label="Neutral Density Correction"
+        label=""
         value={nd_correctionPaths}
         onBrowse={dialogND}
         onClear={handle_nd_delete}
@@ -176,10 +188,13 @@ export default function Response_and_correction() {
       />
 
       <h2 className="font-bold pt-5" id="cf">
-        Calibration Factor Correction
+        <span className="flex items-center">
+          Calibration Factor Correction
+          <InfoIcon text={descriptions.calibrationFactor} />
+        </span>
       </h2>
       <FileFieldRow
-        label="Calibration Factor Correction"
+        label=""
         value={cf_correctionPaths}
         onBrowse={dialogCF}
         onClear={handle_cf_delete}
