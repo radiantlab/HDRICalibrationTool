@@ -109,10 +109,10 @@ pub async fn pipeline(
     diameter: String,
     xleft: String,
     ydown: String,
-    xdim: String,
-    ydim: String,
-    vertical_angle: String,
-    horizontal_angle: String,
+    mut xdim: String,
+    mut ydim: String,
+    mut vertical_angle: String,
+    mut horizontal_angle: String,
     scale_limit: String,
     scale_label: String,
     scale_levels: String,
@@ -128,6 +128,13 @@ pub async fn pipeline(
     } else {
         false
     };
+
+    if xdim.len() < 1 {
+        xdim = "1000".to_string();
+        ydim = "1000".to_string();
+    }
+    if vertical_angle.len() < 1 {vertical_angle = "180".to_string();}
+    if horizontal_angle.len() < 1 {horizontal_angle = "180".to_string();}
 
     if DEBUG {
         println!("Pipeline module called...");
@@ -145,7 +152,7 @@ pub async fn pipeline(
         println!("\txleft: {xleft}");
         println!("\tydown: {ydown}");
         println!("\txdim: {xdim}");
-        println!("\tydim: {ydim}");
+        println!("\tydim: {ydim}"); 
 
         println!("\n\nPROCESSING MODE");
         if is_directory {
@@ -466,7 +473,7 @@ pub fn process_image_set(
             .join("crop.hdr")
             .display()
             .to_string(),
-        diameter,
+        diameter.clone(),
         xleft,
         ydown,
     );
@@ -476,37 +483,39 @@ pub fn process_image_set(
         return crop_result;
     }
 
+    let mut next_path = "crop.hdr";
+
     current_step+= 1;
     emit_progress(app, current_step, total_steps)?;
-    
-    // Resize the HDR image
-    let resize_result = resize(
-        &config_settings,
-        config_settings
-            .temp_path
-            .join("crop.hdr")
-            .display()
-            .to_string(),
-        config_settings
-            .temp_path
-            .join("resize.hdr")
-            .display()
-            .to_string(),
-        xdim,
-        ydim,
-    );
 
-    // If the resizing command encountered an error, abort pipeline
-    if resize_result.is_err() {
-        return resize_result;
+    // Check diameter instead of ydim or xdim in case user wanted image smaller than 1000
+    if diameter.parse::<u32>().unwrap() > 1000 {
+        // Resize the HDR image
+        let resize_result = resize(
+            &config_settings,
+            config_settings
+                .temp_path
+                .join("crop.hdr")
+                .display()
+                .to_string(),
+            config_settings
+                .temp_path
+                .join("resize.hdr")
+                .display()
+                .to_string(),
+            xdim,
+            ydim,
+        );
+
+        // If the resizing command encountered an error, abort pipeline
+        if resize_result.is_err() {
+            return resize_result;
+        }
+
+        next_path = "resize.hdr";
     }
-
-    current_step+= 1;
-    emit_progress(app, current_step, total_steps)?;
     
     /* Start Calibration Files - able to be skipped in some instances */
-
-    let mut next_path = "resize.hdr";
 
     if fisheye_correction_cal.len() > 0 {
         // Apply the projection adjustment to the HDR image
@@ -627,6 +636,9 @@ pub fn process_image_set(
         return evalglare_result;
     }
     let evalglare_value = evalglare_result.unwrap();
+
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
 
     // Edit the header
     let header_editing_result = header_editing(
