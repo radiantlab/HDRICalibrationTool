@@ -117,6 +117,7 @@ pub async fn pipeline(
     scale_label: String,
     scale_levels: String,
     legend_dimensions: String,
+    filter_images: bool,
 ) -> Result<String, String> {
     // Return error if pipeline was called with no input images
     if input_images.len() == 0 {
@@ -187,7 +188,7 @@ pub async fn pipeline(
     }
 
     //Define total steps for progress bar (adjust this count as needed)
-    let total_steps: usize = if is_directory { 4 } else { 4 };
+    let total_steps: usize = if is_directory { 5 } else { 5 };
 
     let mut current_step: usize = 0;
     emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)   
@@ -239,7 +240,8 @@ pub async fn pipeline(
                 vertical_angle.clone(),
                 horizontal_angle.clone(),
                 current_step,
-                total_steps
+                total_steps,
+                filter_images,
             );
             if result.is_err() {
                 return result;
@@ -319,6 +321,7 @@ pub async fn pipeline(
             horizontal_angle.clone(),
             current_step,
             total_steps,
+            filter_images,
         );
         if result.is_err() {
             return result;
@@ -418,6 +421,7 @@ pub fn process_image_set(
     horizontal_angle: String,
     mut current_step: usize,
     total_steps: usize,
+    filter_images: bool,
 ) -> Result<String, String> {
     // Merge exposures
     // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
@@ -431,6 +435,12 @@ pub fn process_image_set(
             .join("merge_exposures.hdr")
             .display()
             .to_string(),
+        diameter.clone(),
+        xleft.clone(),
+        ydown.clone(),
+        xdim.clone(),
+        ydim.clone(),
+        filter_images,
     );
 
     // If the command to merge exposures encountered an error, abort pipeline
