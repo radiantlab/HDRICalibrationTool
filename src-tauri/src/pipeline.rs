@@ -9,7 +9,6 @@ mod projection_adjustment;
 mod resize;
 mod vignetting_effect_correction;
 
-use tauri::Manager;
 use tauri::Emitter;
 mod falsecolor;
 
@@ -110,10 +109,10 @@ pub async fn pipeline(
     diameter: String,
     xleft: String,
     ydown: String,
-    xdim: String,
-    ydim: String,
-    vertical_angle: String,
-    horizontal_angle: String,
+    mut xdim: String,
+    mut ydim: String,
+    mut vertical_angle: String,
+    mut horizontal_angle: String,
     scale_limit: String,
     scale_label: String,
     scale_levels: String,
@@ -131,6 +130,13 @@ pub async fn pipeline(
         false
     };
 
+    if xdim.len() < 1 {
+        xdim = "1000".to_string();
+        ydim = "1000".to_string();
+    }
+    if vertical_angle.len() < 1 {vertical_angle = "180".to_string();}
+    if horizontal_angle.len() < 1 {horizontal_angle = "180".to_string();}
+
     if DEBUG {
         println!("Pipeline module called...");
         println!("\tradiance path: {radiance_path}");
@@ -147,7 +153,7 @@ pub async fn pipeline(
         println!("\txleft: {xleft}");
         println!("\tydown: {ydown}");
         println!("\txdim: {xdim}");
-        println!("\tydim: {ydim}");
+        println!("\tydim: {ydim}"); 
 
         println!("\n\nPROCESSING MODE");
         if is_directory {
@@ -182,16 +188,10 @@ pub async fn pipeline(
     }
 
     //Define total steps for progress bar (adjust this count as needed)
-    let total_steps: usize = if is_directory { 5 } else { 5 };
+    let total_steps: usize = if is_directory { 4 } else { 4 };
 
     let mut current_step: usize = 0;
-    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)    
-
-    //Define total steps for progress bar (adjust this count as needed)
-    let total_steps: usize = if is_directory { 5 } else { 5 };
-
-    let mut current_step: usize = 0;
-    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)    
+    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)   
 
     let mut return_path: PathBuf = PathBuf::new();
     if is_directory {
@@ -261,9 +261,6 @@ pub async fn pipeline(
             let mut output_file_name = config_settings
                 .output_path
                 .join(format!("{}_{}.hdr", base_name, datetime));
-            let evalglare_file_name = config_settings
-                .output_path
-                .join(format!("{}_{}_eg.txt", base_name, datetime));
 
             // Copy the final output hdr image to output directory
             let mut copy_result = copy(
@@ -333,7 +330,6 @@ pub async fn pipeline(
         // Get current local date and time and format output name with it
         let datetime = format!("{}", Local::now().format("%m-%d-%Y_%I-%M-%S"));
         let output_file_name = config_settings.output_path.join(format!("{}.hdr", datetime));
-        let evalglare_file_name = config_settings.output_path.join(format!("{}_eg.txt", datetime));
 
         // Copy the final output hdr image to output directory
         let mut copy_result = copy(
@@ -491,7 +487,7 @@ pub fn process_image_set(
             .join("crop.hdr")
             .display()
             .to_string(),
-        diameter,
+        diameter.clone(),
         xleft,
         ydown,
     );
@@ -501,37 +497,39 @@ pub fn process_image_set(
         return crop_result;
     }
 
+    let mut next_path = "crop.hdr";
+
     current_step+= 1;
     emit_progress(app, current_step, total_steps)?;
-    
-    // Resize the HDR image
-    let resize_result = resize(
-        &config_settings,
-        config_settings
-            .temp_path
-            .join("crop.hdr")
-            .display()
-            .to_string(),
-        config_settings
-            .temp_path
-            .join("resize.hdr")
-            .display()
-            .to_string(),
-        xdim,
-        ydim,
-    );
 
-    // If the resizing command encountered an error, abort pipeline
-    if resize_result.is_err() {
-        return resize_result;
+    // Check diameter instead of ydim or xdim in case user wanted image smaller than 1000
+    if diameter.parse::<u32>().unwrap() > 1000 {
+        // Resize the HDR image
+        let resize_result = resize(
+            &config_settings,
+            config_settings
+                .temp_path
+                .join("crop.hdr")
+                .display()
+                .to_string(),
+            config_settings
+                .temp_path
+                .join("resize.hdr")
+                .display()
+                .to_string(),
+            xdim,
+            ydim,
+        );
+
+        // If the resizing command encountered an error, abort pipeline
+        if resize_result.is_err() {
+            return resize_result;
+        }
+
+        next_path = "resize.hdr";
     }
-
-    current_step+= 1;
-    emit_progress(app, current_step, total_steps)?;
     
     /* Start Calibration Files - able to be skipped in some instances */
-
-    let mut next_path = "resize.hdr";
 
     if fisheye_correction_cal.len() > 0 {
         // Apply the projection adjustment to the HDR image
@@ -652,6 +650,9 @@ pub fn process_image_set(
         return evalglare_result;
     }
     let evalglare_value = evalglare_result.unwrap();
+
+    current_step+= 1;
+    emit_progress(app, current_step, total_steps)?;
 
     // Edit the header
     let header_editing_result = header_editing(
