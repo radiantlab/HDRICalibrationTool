@@ -307,51 +307,32 @@ export default function Images() {
         >
           Select Directories
         </button>
-        <div className="inline-flex items-center space-x-2 text-gray-900 font-medium text-lg">
+        {devicePaths.length > 0 && (
+          <div>
+            <button
+              onClick={reset}
+              className="bg-red-600 hover:bg-red-800 text-white font-semibold py-1 px-2 border-gray-400 rounded h-fit"
+            >
+              Delete All
+            </button>
+          </div>
+        )}
+        <div className="inline-flex items-center space-x-1 text-gray-900">
           <input 
             onClick={() => setConfig({ filterImages: !filterImages })}
-            defaultChecked={filterImages} type="checkbox" className="form-checkbox cursor-pointer font-semibold h-5 w-5 text-gray-700 transition duration-150 ease-in-out rounded focus:ring-2 focus:ring-blue-400" 
+            defaultChecked={filterImages} 
+            name="filter_images"
+            type="checkbox" 
+            className="form-checkbox cursor-pointer font-semibold h-5 w-5 text-gray-700 transition duration-150 ease-in-out rounded focus:ring-2 focus:ring-blue-400" 
           />
-          <div>Filter Images</div>
           {/* Tooltip icon + box */}
-          <div className="relative flex items-center">
-            <button
-              onClick={() => setShowTooltip(true)}
-              className="ml-1 w-6 h-6 rounded-full cursor-pointer bg-orange-500 text-white text-sm font-bold flex items-center justify-center
-                        hover:bg-orange-600 transition-colors duration-200 cursor-default"
-            >
-              ?
-            </button>
-            {showTooltip && (
-              <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-                <div className="bg-white text-gray-800 rounded-xl shadow-xl p-6 w-96 max-w-full relative">
-                  <button
-                    onClick={() => setShowTooltip(false)}
-                    className="absolute top-2 right-2 text-gray-800 hover:text-gray-500"
-                    aria-label="Close tooltip"
-                  >
-                    ✕
-                  </button>
-                  <h2 className="text-lg font-semibold mb-2">What does this do?</h2>
-                  <p className="text-sm">
-                    Some LDR images do not provide value to the HDR image generation process. Checking this box will filter out those images before generating the HDR
-                    image. This increases accuracy but also adds a minor increase in the time it takes to finish the generation process.
-                  </p>
-                </div>
-              </div>
-            )}
+          <div className="flex items-center mb-1 space-x-1">
+            <label htmlFor={"filter_images"}>
+              {"Filter"}
+            </label>
+            <InfoIcon text={descriptions.filterImages} />
           </div>
         </div>
-        {devicePaths.length > 0 && (
-        <div>
-          <button
-            onClick={reset}
-            className="bg-red-600 hover:bg-red-800 text-white font-semibold py-1 px-2 border-gray-400 rounded h-fit"
-          >
-            Delete All
-          </button>
-        </div>
-      )}
       </div>
       {image_error && (
         <div>
