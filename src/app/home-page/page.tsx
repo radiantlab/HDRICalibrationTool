@@ -52,6 +52,8 @@ export default function Home() {
     cf_correctionPaths,   // Path to calibration factor file
     jpeg_present,
     setConfig,           // Function to update configuration
+    filterImages,         // Flag to filter images or not
+    setConfig,            // Function to update configuration
   } = useConfigStore();
   // HARD CODED PATHS FOR TESTING (used when fakePipeline is true)
   // These paths are only used for development and testing purposes
@@ -160,6 +162,7 @@ export default function Home() {
       scaleLabel: luminanceSettings.scale_label,
       scaleLevels: luminanceSettings.scale_levels,
       legendDimensions: luminanceSettings.legend_dimensions,
+      filterImages: filterImages,
     })
       .then((result: any) => {
         console.log("Process finished. Result: ", result);
@@ -296,7 +299,7 @@ export default function Home() {
             <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
               4
             </span>
-            Other
+            Luminance Map Configuration
           </h2>
           <LuminanceConfiguration />
         </div>

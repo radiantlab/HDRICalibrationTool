@@ -117,6 +117,7 @@ pub async fn pipeline(
     scale_label: String,
     scale_levels: String,
     legend_dimensions: String,
+    filter_images: bool,
 ) -> Result<String, String> {
     // Return error if pipeline was called with no input images
     if input_images.len() == 0 {
@@ -190,7 +191,7 @@ pub async fn pipeline(
     let total_steps: usize = if is_directory { 5 } else { 5 };
 
     let mut current_step: usize = 0;
-    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)   
+    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)    
 
     let mut return_path: PathBuf = PathBuf::new();
     if is_directory {
@@ -239,7 +240,8 @@ pub async fn pipeline(
                 vertical_angle.clone(),
                 horizontal_angle.clone(),
                 current_step,
-                total_steps
+                total_steps,
+                filter_images,
             );
             if result.is_err() {
                 return result;
@@ -271,21 +273,19 @@ pub async fn pipeline(
             if copy_result.is_err() {
                 return Result::Err(("Error copying evalglare value to output directory.").to_string());
             }
-            if luminance_args.scale_limit != "" {
-                let base_name = Path::new(input_dir)
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_string_lossy();
-                let luminance_file_name = config_settings
-                    .output_path
-                    .join(format!("{}-{}_fc.hdr", base_name, datetime));
-                    copy_result = copy(
-                    &config_settings.temp_path.join("falsecolor_output.hdr"),
-                    luminance_file_name,
-                );
-                if copy_result.is_err() {
-                    return Result::Err(("Error copying final luminance map hdr image to output directory.").to_string());
-                }
+            let base_name2 = Path::new(input_dir)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy();
+            let luminance_file_name = config_settings
+                .output_path
+                .join(format!("{}_{}_fc.hdr", base_name2, datetime));
+                copy_result = copy(
+                &config_settings.temp_path.join("falsecolor_output.hdr"),
+                luminance_file_name,
+            );
+            if copy_result.is_err() {
+                return Result::Err(("Error copying final luminance map hdr image to output directory.").to_string());
             }
         }
         
@@ -319,6 +319,7 @@ pub async fn pipeline(
             horizontal_angle.clone(),
             current_step,
             total_steps,
+            filter_images,
         );
         if result.is_err() {
             return result;
@@ -337,15 +338,13 @@ pub async fn pipeline(
             return Result::Err(("Error copying final hdr image to output directory.").to_string());
         }
 
-        if luminance_args.scale_limit != "" {
-            let luminance_file_name = config_settings.output_path.join(format!("{}_fc.hdr", datetime));
-            copy_result = copy(
-                &config_settings.temp_path.join("falsecolor_output.hdr"),
-                luminance_file_name,
-            );
-            if copy_result.is_err() {
-                return Result::Err(("Error copying final hdr luminance image to output directory.").to_string());
-            }
+        let luminance_file_name = config_settings.output_path.join(format!("{}_fc.hdr", datetime));
+        copy_result = copy(
+            &config_settings.temp_path.join("falsecolor_output.hdr"),
+            luminance_file_name,
+        );
+        if copy_result.is_err() {
+            return Result::Err(("Error copying final hdr luminance image to output directory.").to_string());
         }
         return_path = config_settings.output_path;
     }
@@ -418,6 +417,7 @@ pub fn process_image_set(
     horizontal_angle: String,
     mut current_step: usize,
     total_steps: usize,
+    filter_images: bool,
 ) -> Result<String, String> {
     // Merge exposures
     // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
@@ -431,6 +431,12 @@ pub fn process_image_set(
             .join("merge_exposures.hdr")
             .display()
             .to_string(),
+        diameter.clone(),
+        xleft.clone(),
+        ydown.clone(),
+        xdim.clone(),
+        ydim.clone(),
+        filter_images,
     );
 
     // If the command to merge exposures encountered an error, abort pipeline
@@ -669,30 +675,26 @@ pub fn process_image_set(
 
     current_step+= 1;
     emit_progress(app, current_step, total_steps)?;
-    
-    next_path = "header_editing.hdr";
 
-    // Create luminance map if values were given by user
-    if luminance_args.scale_limit != "" {
-        let falsecolor_result = falsecolor(
-            &config_settings,
-            config_settings
-                .temp_path
-                .join(next_path)
-                .display()
-                .to_string(),
-            config_settings
-                .temp_path
-                .join("falsecolor_output.hdr")
-                .display()
-                .to_string(),
-            luminance_args,
-        );
+    // Create luminance map
+    let falsecolor_result = falsecolor(
+        &config_settings,
+        config_settings
+            .temp_path
+            .join("header_editing.hdr")
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("falsecolor_output.hdr")
+            .display()
+            .to_string(),
+        luminance_args,
+    );
 
-        // If the command encountered an error, abort pipeline
-        if falsecolor_result.is_err() {
-            return falsecolor_result;
-        }
+    // If the command encountered an error, abort pipeline
+    if falsecolor_result.is_err() {
+        return falsecolor_result;
     }
 
     // Pipeline has completed successfully. Return Ok
