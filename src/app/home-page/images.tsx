@@ -309,7 +309,7 @@ export default function Images() {
             onClick={() => setConfig({ filterImages: !filterImages })}
             defaultChecked={filterImages} type="checkbox" className="form-checkbox cursor-pointer font-semibold h-5 w-5 text-gray-700 transition duration-150 ease-in-out rounded focus:ring-2 focus:ring-blue-400" 
           />
-          <span>Filter Images</span>
+          <span>Filter</span>
           {/* Tooltip icon + box */}
           <div className="relative flex items-center">
             <button
@@ -325,7 +325,6 @@ export default function Images() {
                   <button
                     onClick={() => setShowTooltip(false)}
                     className="absolute top-2 right-2 text-gray-800 hover:text-gray-500"
-                    aria-label="Close tooltip"
                   >
                     ✕
                   </button>
