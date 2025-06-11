@@ -208,8 +208,6 @@ export default function Home() {
       };
     }
 
-    if (!viewSettings.vh) missingInputs.push("Horizontal view angle");
-    if (!viewSettings.vv) missingInputs.push("Vertical view angle");
     if (!fe_correctionPaths) missingInputs.push("Fisheye correction file");
     if (!v_correctionPaths) missingInputs.push("Vignetting correction file");
     if (!cf_correctionPaths) missingInputs.push("Calibration factor file");
@@ -225,18 +223,7 @@ export default function Home() {
       missingInputs.push(
         "y-down coordinate in Cropping, Resizing, and View Settings"
       );
-    if (!viewSettings.targetRes)
-      missingInputs.push(
-        "Target resolution in Cropping, Resizing, and View Settings"
-      );
-    if (!viewSettings.vh)
-      missingInputs.push(
-        "Horizontal angle in Cropping, Resizing, and View Settings"
-      );
-    if (!viewSettings.vv)
-      missingInputs.push(
-        "Vertical angle in Cropping, Resizing, and View Settings"
-      );
+      
     // This loop isn't the prettiest, but because the luminance map is optional, we have to check that they input at least one value but
     // didn't input the others; no inputs is fine.
     let enteredSetting = false;
