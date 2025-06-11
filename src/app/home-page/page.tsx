@@ -50,8 +50,9 @@ export default function Home() {
     v_correctionPaths,    // Path to vignetting correction file
     nd_correctionPaths,   // Path to neutral density correction file
     cf_correctionPaths,   // Path to calibration factor file
-    filterImages,         // Flag to filter images or not
-    setConfig,            // Function to update configuration
+    jpeg_present,
+    setConfig,           // Function to update configuration
+    filterImages,         // Flag to filter images or not        // Function to update configuration
   } = useConfigStore();
   // HARD CODED PATHS FOR TESTING (used when fakePipeline is true)
   // These paths are only used for development and testing purposes
@@ -101,12 +102,13 @@ export default function Home() {
     } 
     
     // Warn about missing response function for JPEG images
-    if (!responsePaths) {
+    if (!responsePaths && jpeg_present) {
       // If the user didn't select a response function,
       // display a warning that the output HDR image might be inaccurate if converting from JPEG
       // and ask for confirmation before proceeding with pipeline call
       let proceed = await confirm(
-        "Warning: No response function selected. If you're converting JPEG images, the automatically generated response function may result in an inaccurate HDR image. Continue anyway?"
+        "Warning: No response function selected. If you're converting JPEG images, the automatically" +
+        "generated response function may result in an inaccurate HDR image. Continue anyway?"
       );
       if (!proceed) {
         return;
@@ -208,20 +210,20 @@ export default function Home() {
       };
     }
 
-    if (!fe_correctionPaths) missingInputs.push("Fisheye correction file");
-    if (!v_correctionPaths) missingInputs.push("Vignetting correction file");
-    if (!cf_correctionPaths) missingInputs.push("Calibration factor file");
+    if (!fe_correctionPaths) missingInputs.push("Fisheye Correction");
+    if (!v_correctionPaths) missingInputs.push("Vignetting Correction");
+    if (!cf_correctionPaths) missingInputs.push("Calibration Factor Correction");
     if (!nd_correctionPaths)
-      missingInputs.push("Neutral density correction file");
+      missingInputs.push("Neutral Density Correction");
     if (!viewSettings.diameter)
-      missingInputs.push("Diameter in Cropping, Resizing, and View Settings");
+      missingInputs.push("Diameter");
     if (!viewSettings.xleft)
       missingInputs.push(
-        "x-left coordinate in Cropping, Resizing, and View Settings"
+        "X Left Offset"
       );
     if (!viewSettings.ydown)
       missingInputs.push(
-        "y-down coordinate in Cropping, Resizing, and View Settings"
+        "Y Bottom Offset"
       );
       
     // This loop isn't the prettiest, but because the luminance map is optional, we have to check that they input at least one value but
@@ -238,7 +240,7 @@ export default function Home() {
           .map(word => word.charAt(0).toUpperCase() + word.slice(1))
           .join(' ');
         missingInputs.push(
-          `${name} in Settings for Falsecolor Luminance Map`
+          `${name} in Falsecolor Settings`
         );
       }
     });
