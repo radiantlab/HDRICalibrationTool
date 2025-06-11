@@ -95,6 +95,11 @@ interface ConfigState {
    * Path to the calibration factor file
    */
   cf_correctionPaths: string;
+
+  /**
+   * Flag to filter images or not
+   */
+  filterImages: boolean;
   
   /**
    * Function to update the configuration state
@@ -142,6 +147,9 @@ export const useConfigStore = create<ConfigState>((set) => ({
   v_correctionPaths: '',
   nd_correctionPaths: '',
   cf_correctionPaths: '',
+
+  // Flag to filter images
+  filterImages: true,
   
   /**
    * Updates the configuration state while preserving existing properties
