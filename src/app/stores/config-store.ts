@@ -46,7 +46,9 @@ interface ConfigState {
     scale_label: string;
     scale_levels: string;
     legend_dimensions: string;
-  };  /**
+  };  
+  
+  /**
    * Flag indicating whether the progress button should be enabled
    */
   progressButton: boolean;
@@ -60,6 +62,11 @@ interface ConfigState {
    * Flag controlling the visibility of the progress indicator
    */
   showProgress: boolean;
+
+  /**
+   * Check if jpeg images are present
+   */
+  jpeg_present: boolean;
   
   /**
    * Path for output files
@@ -140,6 +147,7 @@ export const useConfigStore = create<ConfigState>((set) => ({
   progressButton: false,  // Progress button disabled by default
   processError: false,    // No process error by default
   showProgress: false,    // Don't show progress indicator by default
+  jpeg_present: false,
   
   // Initial empty paths
   outputPath: '',
