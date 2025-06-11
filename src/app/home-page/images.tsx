@@ -32,11 +32,14 @@ import descriptions from "@/app/tooltips/descriptions";
  */
 export default function Images() {
   // Access global configuration
-  const { devicePaths, responsePaths, setConfig } = useConfigStore();
+  const { devicePaths, responsePaths, filterImages, setConfig } = useConfigStore();
   const { settings } = useSettingsStore();
   
   // State for file editor visibility
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
+
+  // State for filter images tooltip visibility
+  const [showTooltip, setShowTooltip] = useState<boolean>(false);
 
   /**
    * Updates the device paths in global configuration
@@ -305,15 +308,31 @@ export default function Images() {
           Select Directories
         </button>
         {devicePaths.length > 0 && (
-        <div>
-          <button
-            onClick={reset}
-            className="bg-red-600 hover:bg-red-800 text-white font-semibold py-1 px-2 border-gray-400 rounded h-fit"
-          >
-            Delete All
-          </button>
+          <div>
+            <button
+              onClick={reset}
+              className="bg-red-600 hover:bg-red-800 text-white font-semibold py-1 px-2 border-gray-400 rounded h-fit"
+            >
+              Delete All
+            </button>
+          </div>
+        )}
+        <div className="inline-flex items-center space-x-1 text-gray-900">
+          <input 
+            onClick={() => setConfig({ filterImages: !filterImages })}
+            defaultChecked={filterImages} 
+            name="filter_images"
+            type="checkbox" 
+            className="form-checkbox cursor-pointer font-semibold h-5 w-5 text-gray-700 transition duration-150 ease-in-out rounded focus:ring-2 focus:ring-blue-400" 
+          />
+          {/* Tooltip icon + box */}
+          <div className="flex items-center mb-1 space-x-1">
+            <label htmlFor={"filter_images"}>
+              {"Filter"}
+            </label>
+            <InfoIcon text={descriptions.filterImages} />
+          </div>
         </div>
-      )}
       </div>
       {image_error && (
         <div>
