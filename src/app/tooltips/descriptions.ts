@@ -50,6 +50,10 @@ const descriptions: Record<string, string> = {
 
   legendDimensions:
     "The width and height (in pixels or units) of the color bar graphic that displays the scale.",
+  
+  filterImages:
+    "Some LDR images do not provide value to the HDR image generation process. Checking this box will filter out those images before generating the HDR"+
+    " image. This increases accuracy but also adds a minor increase in the time it takes to finish the generation process.",
 };
 
 export default descriptions;
