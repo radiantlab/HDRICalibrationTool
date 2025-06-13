@@ -17,9 +17,11 @@ This application runs on macOS (Intel and Apple Silicon), Windows, and Ubuntu.
 
 ## Getting Started
 
-Install [Radiance](https://www.radiance-online.org/), [hdrgen](http://www.anyhere.com/), and the [dcraw_emu](https://www.libraw.org/download) to your local machine and note where these tools are located (the folder path). After these dependencies have been installed, install the [HDRI Calibration Interface](https://github.com/radiantlab/HDRICalibrationTool/releases/latest) for your operating system.
+Install [Radiance](https://www.radiance-online.org/) and [hdrgen](http://www.anyhere.com/) to your local machine and note where these tools are located (the folder path). After these dependencies have been installed, install the [HDRI Calibration Interface](https://github.com/radiantlab/HDRICalibrationTool/releases/latest) for your operating system. The binary for dcraw_emu is already included with the application (see Acknowledgements & Licensing below).     
 
 Note that the binaries are unsigned and might be flagged as untrusted by your operating system. On macOS, you need to right click on the application and select Open to have the option to run it.
+
+In order to use the HDR Image viewer provided by the application, those with macOS 10.8 or later may need to install [XQuartz](https://www.xquartz.org). This feature is not currently supported on Windows.
 
 ## Use
 
@@ -37,7 +39,7 @@ Upload the calibration files for the remaining fields. These should have a `.cal
 
 ### Settings
 
-Click on the settings tab in the left hand navigation sidebar and you should see a settings display appear. For the Radiance path, give the path to the Radiance binaries. This would be something like `/usr/local/radiance/bin/` on macOS/Ubuntu and `C:\Radiance\bin` on Windows. For `hdrgen` and `dcraw_emu`, provide the path to the directory where these binaries are installed. These should be something like `/usr/local/bin` on macOS/Ubuntu. Lastly, the output should point to the folder to which you want the output images to be saved to.
+Click on the settings tab in the left hand navigation sidebar and you should see a settings display appear. For the Radiance path, give the path to the Radiance binaries. This would be something like `/usr/local/radiance/bin/` on macOS/Ubuntu and `C:\Radiance\bin` on Windows. For `hdrgen`, provide the path to the directory where these binaries are installed. This should be something like `/usr/local/bin` on macOS/Ubuntu. Lastly, the output should point to the folder to which you want the output images to be saved to.
 
 ### Generate Images
 
@@ -72,3 +74,12 @@ The source code for LibRAW can be obtained from https://www.libraw.org/.
 
 - Jacob Springer
 - Shanti Morrell
+
+#### 2024 - 2025 Development Team
+
+- Emmitt Carter
+- Samuel Croll
+- Colin Cone
+- Artin Lahni
+- Madison Thompson
+- Lou Pfluke
