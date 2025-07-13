@@ -119,8 +119,8 @@ export default function Progress({ fakePipeline }: ProgressProps) {
                 )}
                 {!progressButton && !processError && (
                   <div>
-                    <h2>Your Images Are Being Generated</h2>
-                    <div>Please Wait For Process to Finish</div>
+                    {/* TODO: make this a nice modal with dark app background */}
+                    <p>The pipeline is running. Please wait.</p>
                     <div className="w-full m-4 bg-gray-200 rounded-full h-4 border-gray-400">
                       <div
                         className="bg-osu-beaver-orange h-4 rounded-full"
@@ -132,15 +132,15 @@ export default function Progress({ fakePipeline }: ProgressProps) {
                 )}
                 {progressButton && !processError && (
                   <div>
-                    <h2>Process Finished</h2>
-                    <div>The final hdr image has been saved to:</div>
+                    <p>The image generation pipeline has finished.</p>
+                    <p>The final .hdr image has been saved to:</p>
                     <p className="text-xs mt-3">{settings.outputPath}</p>
-                    {/* <div>Please Check The Output Directory</div> */}
+                    {/* TODO: fix button style to match rest of app */}
                     <button
                       onClick={() => ResetProgress()}
                       className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 mt-4 border-gray-400 rounded h-fit"
                     >
-                      Okay
+                      Close
                     </button>
                   </div>
                 )}
