@@ -2,7 +2,7 @@
 
 [![License](https://img.shields.io/badge/license-GPLv3-blue)](./LICENSE)
 [![website](https://img.shields.io/badge/website-Radiant%20Lab-green.svg)](https://www.clotildepierson.com/software)
-[![Tauri](https://img.shields.io/badge/https://img.shields.io/badge/Tauri-v2.5.1-%2324C8D8?logo=tauri)](https://tauri.app/)
+[![Tauri](https://img.shields.io/badge/Tauri-v2.5.1-%2324C8D8?logo=tauri)](https://tauri.app/)
 [![Rust](https://img.shields.io/badge/Rust-v1.82.0-%23000000?logo=rust)](https://www.rust-lang.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-v14.2.30-%23000000?logo=nextdotjs)](https://nextjs.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v3.3.0-%2306B6D4?logo=tailwindcss)](https://tailwindcss.com/)
