@@ -2,10 +2,10 @@
 
 [![License](https://img.shields.io/badge/license-GPLv3-blue)](./LICENSE)
 [![website](https://img.shields.io/badge/website-Radiant%20Lab-green.svg)](https://www.clotildepierson.com/software)
-[![Tauri](https://img.shields.io/badge/Tauri-v2.5.1-#24C8D8.svg?logo=tauri)](https://tauri.app/)
-[![Rust](https://img.shields.io/badge/Rust-v1.82.0-#000000?logo=rust)](https://www.rust-lang.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-v14.2.30-#000000?logo=nextdotjs)](https://nextjs.org/)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v3.3.0-#06B6D4logo=tailwindcss)](https://tailwindcss.com/)
+[![Tauri](https://img.shields.io/badge/https://img.shields.io/badge/Tauri-v2.5.1-%2324C8D8?logo=tauri)](https://tauri.app/)
+[![Rust](https://img.shields.io/badge/Rust-v1.82.0-%23000000?logo=rust)](https://www.rust-lang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-v14.2.30-%23000000?logo=nextdotjs)](https://nextjs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v3.3.0-%2306B6D4?logo=tailwindcss)](https://tailwindcss.com/)
 
 This application provides a graphical user interface for the creation and calibration of High Dynamic Range (HDR) images using Radiance, `hdrgen`, and `dcraw_emu` according to the pipeline process published [here](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319). The program works by taking in multiple LDR image files as well as some calibration information related to the camera/lens used, in order to return calibrated HDR images, also called luminance maps. The application is intended for lighting and daylighting professionals or researchers who are interested in studying the indoor visual environment and especially discomfort glare.
 
