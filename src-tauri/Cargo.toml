@@ -1,6 +1,6 @@
 [package]
 name = "HDRICalibrationInterface"
-version = "2.0.0"
+version = "3.0.0"
 description = "GUI to calibrate HDR images using Radiance, hdrgen, and dcraw_emu."
 authors = ["Clotilde Pierson", "Alexander Ulbrich"]
 license = "GNU General Public License v3.0"

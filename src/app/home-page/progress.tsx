@@ -1,6 +1,6 @@
 /**
  * Progress Component for the HDRI Calibration Tool.
- * 
+ *
  * This component displays a progress modal during HDR image processing.
  * It listens for progress events from the backend pipeline and updates
  * the UI accordingly. It also handles error states and provides options
@@ -13,7 +13,7 @@ import { useSettingsStore } from "../stores/settings-store";
 
 /**
  * Props for the Progress component
- * 
+ *
  * @property fakePipeline - Flag indicating if using a fake pipeline for testing
  */
 interface ProgressProps {
@@ -22,20 +22,21 @@ interface ProgressProps {
 
 /**
  * Progress modal component shown during image processing
- * 
+ *
  * @param props - Component props
  * @returns Modal component showing processing progress
  */
 export default function Progress({ fakePipeline }: ProgressProps) {
   // Access global configuration
-  const { progressButton, processError, showProgress, setConfig } = useConfigStore();
+  const { progressButton, processError, showProgress, setConfig } =
+    useConfigStore();
   const { settings } = useSettingsStore();
-  
+
   // Local state for current progress percentage
   const [progress, setProgress] = useState(0);
   /**
    * Resets all progress-related state
-   * 
+   *
    * Clears progress indicators and hides the progress modal
    */
   function ResetProgress() {
@@ -49,7 +50,7 @@ export default function Progress({ fakePipeline }: ProgressProps) {
 
   /**
    * Updates the progress button state
-   * 
+   *
    * @param progress - New state for the progress button
    */
   const setProgressButton = (progress: boolean) => {
@@ -58,7 +59,7 @@ export default function Progress({ fakePipeline }: ProgressProps) {
 
   /**
    * Updates the process error state
-   * 
+   *
    * @param error - Whether an error has occurred
    */
   const setProcessError = (error: boolean) => {
@@ -66,24 +67,27 @@ export default function Progress({ fakePipeline }: ProgressProps) {
   };
   /**
    * Set up event listener for progress updates from the backend
-   * 
+   *
    * Subscribes to 'pipeline-progress' events from the Tauri backend
    * and updates the local progress state with the received values
    */
   useEffect(() => {
-    let unlisten: () => void;
-    
+    let unlisten: (() => void) | undefined = undefined;
+
     async function subscribe() {
       // Listen for progress events from backend
-      unlisten = await listen("pipeline-progress", (event: { payload: unknown }) => {
-        if (event.payload !== undefined) {
-          setProgress(event.payload as number);
+      unlisten = await listen(
+        "pipeline-progress",
+        (event: { payload: unknown }) => {
+          if (event.payload !== undefined) {
+            setProgress(event.payload as number);
+          }
         }
-      });
+      );
     }
-    
+
     subscribe();
-    
+
     // Clean up event listener on component unmount
     return () => {
       if (unlisten) {
@@ -119,28 +123,30 @@ export default function Progress({ fakePipeline }: ProgressProps) {
                 )}
                 {!progressButton && !processError && (
                   <div>
-                    <h2>Your Images Are Being Generated</h2>
-                    <div>Please Wait For Process to Finish</div>
+                    {/* TODO: make this a nice modal with dark app background */}
+                    <p>The pipeline is running. Please wait.</p>
                     <div className="w-full m-4 bg-gray-200 rounded-full h-4 border-gray-400">
                       <div
                         className="bg-osu-beaver-orange h-4 rounded-full"
-                        style={{ width: `${progress}%`, transition: "width 0.5" }}
-                      
+                        style={{
+                          width: `${progress}%`,
+                          transition: "width 0.5",
+                        }}
                       ></div>
                     </div>
                   </div>
                 )}
                 {progressButton && !processError && (
                   <div>
-                    <h2>Process Finished</h2>
-                    <div>The final hdr image has been saved to:</div>
+                    <p>The image generation pipeline has finished.</p>
+                    <p>The final .hdr image has been saved to:</p>
                     <p className="text-xs mt-3">{settings.outputPath}</p>
-                    {/* <div>Please Check The Output Directory</div> */}
+                    {/* TODO: fix button style to match rest of app */}
                     <button
                       onClick={() => ResetProgress()}
                       className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 mt-4 border-gray-400 rounded h-fit"
                     >
-                      Okay
+                      Close
                     </button>
                   </div>
                 )}
@@ -150,14 +156,15 @@ export default function Progress({ fakePipeline }: ProgressProps) {
                     <p className=" text-sm pt-1">
                       There was an error with the pipeline. Please make sure all
                       the inputs are correct, and that you have entered the
-                      paths for the HDRGen and dcraw_emu binaries in the
-                      settings.
+                      paths for the <span className="font-mono">hdrgen</span> or{" "}
+                      <span className="font-mono">dcraw_emu</span> binaries in
+                      the settings.
                     </p>
                     <button
                       onClick={() => ResetProgress()}
                       className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold py-1 px-2 m-5 border-gray-400 rounded h-fit"
                     >
-                      Okay
+                      Close
                     </button>
                   </div>
                 )}

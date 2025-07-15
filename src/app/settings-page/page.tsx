@@ -138,7 +138,7 @@ export default function SettingsPage() {
             {[
               { id: "radiancePath", label: "Radiance", value: localSettings.radiancePath, placeholder: "This path is required" },
               { id: "hdrgenPath", label: "hdrgen", value: localSettings.hdrgenPath, placeholder: "This path is required" },
-              { id: "dcrawEmuPath", label: "dcraw_emu (Optional)", value: localSettings.dcrawEmuPath,
+              { id: "dcrawEmuPath", label: "dcraw_emu (optional)", value: localSettings.dcrawEmuPath,
                 placeholder: "This path is optional, only enter a new path if you wish to override the included dcraw_emu binary"
               },
               { id: "outputPath", label: "HDRI Output", value: localSettings.outputPath, placeholder: "This path is required" },
@@ -169,7 +169,7 @@ export default function SettingsPage() {
                   </button>
                 </div>
                 {id == "dcrawEmuPath" && <div className="block h-full mr-5 text-sm">
-                    *licensed under LGPL-2.1 - source code can be obtained from https://www.libraw.org/
+                    <span className="font-mono">dcraw_emu</span> is part of LibRaw, which is licensed under <a className="underline hover:no-underline" href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html">LGPL-2.1</a>. The source code can be obtained from <a className="underline hover:no-underline" href="https://www.libraw.org/">the LibRaw official website</a>.
                   </div>
                 }
               </div>
