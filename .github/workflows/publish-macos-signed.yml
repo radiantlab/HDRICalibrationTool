@@ -66,10 +66,13 @@ jobs:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ env.CERT_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_PATH: $${{ secrets.APPLE_API_KEY_PATH }}
         with:
           tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
-          releaseName: "App v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
+          releaseName: 'App v__VERSION__'
+          releaseBody: 'See the assets to download this version and install.'
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
