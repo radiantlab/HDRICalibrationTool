@@ -72,6 +72,8 @@
     "core:app:allow-app-hide",
     "dialog:default",
     "fs:default",
-    "os:default"
+    "os:default",
+    "opener:default",
+    "opener:default"
   ]
 }

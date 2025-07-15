@@ -203,10 +203,10 @@ pub fn merge_exposures(
     // Create a new command for hdrgen
     if config_settings.hdrgen_path.as_os_str().is_empty() {
         command = app.shell().sidecar("hdrgen").unwrap().into();
-        
+
         // Get working directory for libraries (same approach as dcraw_emu)
         let cur_exe = env::current_exe().unwrap().parent().unwrap().to_path_buf();
-        
+
         let hdrgen_working_directory = if cfg!(target_os = "macos") {
             if cfg!(debug_assertions) {
                 // macOS dev mode
@@ -219,10 +219,10 @@ pub fn merge_exposures(
             // Linux and Windows
             cur_exe.join("binaries")
         };
-        
+
         // Set the working directory to find libraries
         command.current_dir(&hdrgen_working_directory);
-        
+
         if DEBUG {
             let sidecar_path = command.get_program();
             println!("Executing bundled sidecar at: {:?}", sidecar_path);

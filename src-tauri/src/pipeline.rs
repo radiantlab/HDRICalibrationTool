@@ -18,8 +18,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use chrono::prelude::*;
 use crop::crop;
 use evalglare::evalglare;
+use falsecolor::falsecolor;
 use header_editing::header_editing;
 use merge_exposures::merge_exposures;
 use neutral_density::neutral_density;
@@ -28,8 +30,6 @@ use photometric_adjustment::photometric_adjustment;
 use projection_adjustment::projection_adjustment;
 use resize::resize;
 use vignetting_effect_correction::vignetting_effect_correction;
-use falsecolor::falsecolor;
-use chrono::prelude::*;
 
 // Used to print out debug information
 pub const DEBUG: bool = true;
@@ -45,7 +45,11 @@ pub struct ConfigSettings {
 }
 
 // Helper functon to emit progress events
-fn emit_progress(app: &tauri::AppHandle, current_step: usize, total_steps: usize) -> Result<(), String> {
+fn emit_progress(
+    app: &tauri::AppHandle,
+    current_step: usize,
+    total_steps: usize,
+) -> Result<(), String> {
     let progress = ((current_step as f64 / total_steps as f64) * 100.0) as i32;
     app.emit("pipeline-progress", progress)
         .map_err(|e| format!("Failed to emit progress event: {}", e))
@@ -134,8 +138,12 @@ pub async fn pipeline(
         xdim = "1000".to_string();
         ydim = "1000".to_string();
     }
-    if vertical_angle.len() < 1 {vertical_angle = "180".to_string();}
-    if horizontal_angle.len() < 1 {horizontal_angle = "180".to_string();}
+    if vertical_angle.len() < 1 {
+        vertical_angle = "180".to_string();
+    }
+    if horizontal_angle.len() < 1 {
+        horizontal_angle = "180".to_string();
+    }
 
     if DEBUG {
         println!("Pipeline module called...");
@@ -153,7 +161,7 @@ pub async fn pipeline(
         println!("\txleft: {xleft}");
         println!("\tydown: {ydown}");
         println!("\txdim: {xdim}");
-        println!("\tydim: {ydim}"); 
+        println!("\tydim: {ydim}");
 
         println!("\n\nPROCESSING MODE");
         if is_directory {
@@ -191,7 +199,7 @@ pub async fn pipeline(
     let total_steps: usize = if is_directory { 5 } else { 5 };
 
     let mut current_step: usize = 0;
-    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)    
+    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)
 
     let mut return_path: PathBuf = PathBuf::new();
     if is_directory {
@@ -250,9 +258,7 @@ pub async fn pipeline(
             // Set output file name to be the same as the input directory name (i.e. <dir_name>.hdr)
             // Get current local date and time and format output name with it
             let datetime = format!("{}", Local::now().format("%F_%H-%M-%S"));
-            return_path = config_settings
-                .output_path
-                .join(Path::new(input_dir));
+            return_path = config_settings.output_path.join(Path::new(input_dir));
             let base_name = Path::new(input_dir)
                 .file_name()
                 .unwrap_or_default()
@@ -268,10 +274,14 @@ pub async fn pipeline(
                 output_file_name,
             );
             if copy_result.is_err() {
-                return Result::Err(("Error copying final hdr image to output directory.").to_string());
+                return Result::Err(
+                    ("Error copying final hdr image to output directory.").to_string(),
+                );
             }
             if copy_result.is_err() {
-                return Result::Err(("Error copying evalglare value to output directory.").to_string());
+                return Result::Err(
+                    ("Error copying evalglare value to output directory.").to_string(),
+                );
             }
             let base_name2 = Path::new(input_dir)
                 .file_name()
@@ -280,15 +290,17 @@ pub async fn pipeline(
             let luminance_file_name = config_settings
                 .output_path
                 .join(format!("{}_{}_fc.hdr", base_name2, datetime));
-                copy_result = copy(
+            copy_result = copy(
                 &config_settings.temp_path.join("falsecolor_output.hdr"),
                 luminance_file_name,
             );
             if copy_result.is_err() {
-                return Result::Err(("Error copying final luminance map hdr image to output directory.").to_string());
+                return Result::Err(
+                    ("Error copying final luminance map hdr image to output directory.")
+                        .to_string(),
+                );
             }
         }
-        
     } else {
         // Individual images were selected (single scene)
 
@@ -327,7 +339,9 @@ pub async fn pipeline(
 
         // Get current local date and time and format output name with it
         let datetime = format!("{}", Local::now().format("%F_%H-%M-%S"));
-        let output_file_name = config_settings.output_path.join(format!("{}.hdr", datetime));
+        let output_file_name = config_settings
+            .output_path
+            .join(format!("{}.hdr", datetime));
 
         // Copy the final output hdr image to output directory
         let mut copy_result = copy(
@@ -338,13 +352,17 @@ pub async fn pipeline(
             return Result::Err(("Error copying final hdr image to output directory.").to_string());
         }
 
-        let luminance_file_name = config_settings.output_path.join(format!("{}_fc.hdr", datetime));
+        let luminance_file_name = config_settings
+            .output_path
+            .join(format!("{}_fc.hdr", datetime));
         copy_result = copy(
             &config_settings.temp_path.join("falsecolor_output.hdr"),
             luminance_file_name,
         );
         if copy_result.is_err() {
-            return Result::Err(("Error copying final hdr luminance image to output directory.").to_string());
+            return Result::Err(
+                ("Error copying final hdr luminance image to output directory.").to_string(),
+            );
         }
         return_path = config_settings.output_path;
     }
@@ -352,8 +370,6 @@ pub async fn pipeline(
     // If no errors, return Ok
     return Result::Ok(return_path.to_string_lossy().to_string());
 }
-
-
 
 /*
  * Retrieves all JPG and CR2 images from a directory, ignoring other files or directories.
@@ -444,7 +460,7 @@ pub fn process_image_set(
         return merge_exposures_result;
     };
 
-    current_step+= 1;
+    current_step += 1;
     emit_progress(app, current_step, total_steps)?;
 
     // Nullify the exposure value
@@ -467,9 +483,9 @@ pub fn process_image_set(
         return nullify_exposure_result;
     }
 
-    current_step+= 1;
+    current_step += 1;
     emit_progress(app, current_step, total_steps)?;
-    
+
     // Crop the HDR image to a square fitting the fisheye view
     let crop_result = crop(
         &config_settings,
@@ -495,7 +511,7 @@ pub fn process_image_set(
 
     let mut next_path = "crop.hdr";
 
-    current_step+= 1;
+    current_step += 1;
     emit_progress(app, current_step, total_steps)?;
 
     // Check diameter instead of ydim or xdim in case user wanted image smaller than 1000
@@ -524,7 +540,7 @@ pub fn process_image_set(
 
         next_path = "resize.hdr";
     }
-    
+
     /* Start Calibration Files - able to be skipped in some instances */
 
     if fisheye_correction_cal.len() > 0 {
@@ -640,14 +656,14 @@ pub fn process_image_set(
         vertical_angle.clone(),
         horizontal_angle.clone(),
     );
-    
+
     // If the command encountered an error, abort the pipeline
     if evalglare_result.is_err() {
         return evalglare_result;
     }
     let evalglare_value = evalglare_result.unwrap();
 
-    current_step+= 1;
+    current_step += 1;
     emit_progress(app, current_step, total_steps)?;
 
     // Edit the header
@@ -673,7 +689,7 @@ pub fn process_image_set(
         return header_editing_result;
     }
 
-    current_step+= 1;
+    current_step += 1;
     emit_progress(app, current_step, total_steps)?;
 
     // Create luminance map
