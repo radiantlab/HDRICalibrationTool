@@ -5,7 +5,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
-use serde_json::{from_str};
+use serde_json::from_str;
 
 use tauri::Manager;
 
@@ -31,7 +31,10 @@ struct Config {
 
 // Retrieves saved configurations by looking for directories in "{app_config_dir}/configurations/".
 #[tauri::command]
-pub async fn delete_config(app_handle: tauri::AppHandle, config_name: String) -> Result<(), String> {
+pub async fn delete_config(
+    app_handle: tauri::AppHandle,
+    config_name: String,
+) -> Result<(), String> {
     // Retrieved part of this code from https://github.com/tauri-apps/tauri/discussions/5557
     let binding_result = app_handle.path().app_config_dir();
     let binding = match binding_result {

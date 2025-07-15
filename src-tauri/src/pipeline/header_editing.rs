@@ -44,14 +44,18 @@ pub fn header_editing(
     // Set up piping of the input and output file
     let file_output_result = File::create(&output_file);
     if file_output_result.is_err() {
-        return Err("pipeline: header_editing: failed to create output file for 'getinfo' command.".into());
+        return Err(
+            "pipeline: header_editing: failed to create output file for 'getinfo' command.".into(),
+        );
     }
 
     let file = file_output_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
 
     let file_input_result = File::open(&input_file);
     if file_input_result.is_err() {
-        return Err("pipeline: header_editing: failed to create input file for 'getinfo' command.".into());
+        return Err(
+            "pipeline: header_editing: failed to create input file for 'getinfo' command.".into(),
+        );
     }
 
     let file_input = file_input_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err

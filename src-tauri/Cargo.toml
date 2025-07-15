@@ -1,6 +1,6 @@
 [package]
 name = "HDRICalibrationInterface"
-version = "3.0.0"
+version = "3.1.0"
 description = "GUI to calibrate HDR images using Radiance, hdrgen, and dcraw_emu."
 authors = ["Clotilde Pierson", "Alexander Ulbrich"]
 license = "GNU General Public License v3.0"
@@ -30,6 +30,7 @@ tauri-plugin-fs = "2"
 tauri-plugin-os = "2"
 tauri-plugin-shell = "2"
 directories-next = "2"
+tauri-plugin-opener = "2"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

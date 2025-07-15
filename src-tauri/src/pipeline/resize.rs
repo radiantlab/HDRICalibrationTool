@@ -1,4 +1,3 @@
-
 /**
  * @module resize
  * @description This module provides functionality for resizing HDR images to specific dimensions.
@@ -7,7 +6,6 @@
  * pipeline to ensure consistent image dimensions for analysis and comparison, or to reduce
  * computational demands for subsequent processing steps.
  */
-
 use crate::pipeline::DEBUG;
 use std::fs::File;
 use std::process::Command;
@@ -19,13 +17,13 @@ use super::ConfigSettings;
  * Resizes an HDR image to the target x and y resolution using Radiance's pfilt utility.
  * The function maintains the image's photometric properties while changing its dimensions.
  * The -1 flag is used to keep the original exposure settings during the resize operation.
- * 
+ *
  * @param config_settings - Contains configuration settings including paths to Radiance tools and temp directory
  * @param input_file - The path to the input HDR image (must be in .hdr format)
  * @param output_file - The path and filename where the resized HDR image will be saved
  * @param xdim - The target x-dimensional resolution in pixels
  * @param ydim - The target y-dimensional resolution in pixels
- * 
+ *
  * @returns Result<String, String> - On success, returns the path to the output file.
  *                                  On failure, returns an error message.
  */
@@ -58,7 +56,9 @@ pub fn resize(
     // Direct command's output to specifed output file
     let file_result = File::create(&output_file);
     if file_result.is_err() {
-        return Err("pipeline: resize: failed to create output file for 'pfilt' (resizing) command.".into());
+        return Err(
+            "pipeline: resize: failed to create output file for 'pfilt' (resizing) command.".into(),
+        );
     }
 
     let file = file_result.unwrap(); // Can safely unwrap result w/o panicking after checking for Err
