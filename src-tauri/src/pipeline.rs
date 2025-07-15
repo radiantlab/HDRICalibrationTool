@@ -249,7 +249,7 @@ pub async fn pipeline(
 
             // Set output file name to be the same as the input directory name (i.e. <dir_name>.hdr)
             // Get current local date and time and format output name with it
-            let datetime = format!("{}", Local::now().format("%F_%T"));
+            let datetime = format!("{}", Local::now().format("%F_%H-%M-%S"));
             return_path = config_settings
                 .output_path
                 .join(Path::new(input_dir));
@@ -326,7 +326,7 @@ pub async fn pipeline(
         }
 
         // Get current local date and time and format output name with it
-        let datetime = format!("{}", Local::now().format("%F_%T"));
+        let datetime = format!("{}", Local::now().format("%F_%H-%M-%S"));
         let output_file_name = config_settings.output_path.join(format!("{}.hdr", datetime));
 
         // Copy the final output hdr image to output directory
