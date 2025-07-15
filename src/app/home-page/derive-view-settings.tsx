@@ -17,9 +17,9 @@ export default function DeriveViewSettings({
 
   const canv = useRef<HTMLCanvasElement | null>(null);
   const ctx = useRef<CanvasRenderingContext2D | null>(null);
-  const renderer = useRef<THREE.WebGLRenderer>();
+  const renderer = useRef<THREE.WebGLRenderer>(undefined);
   const mousePos = useRef({ posX: 0, posY: 0 });
-  const texture = useRef<THREE.CanvasTexture>();
+  const texture = useRef<THREE.CanvasTexture>(undefined);
 
   const [scene, setScene] = useState<THREE.Scene>();
   const [cam, setCam] = useState<THREE.OrthographicCamera>();
