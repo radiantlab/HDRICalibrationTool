@@ -171,7 +171,11 @@ export default function SettingsPage() {
                   </button>
                 </div>
                 {id == "dcrawEmuPath" && <div className="block h-full mr-5 text-sm">
-                    <span className="font-mono">dcraw_emu</span> is part of LibRaw, which is licensed under <a className="underline hover:no-underline" href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html">LGPL-2.1</a>. The source code can be obtained from <a className="underline hover:no-underline" href="https://www.libraw.org/">the LibRaw official website</a>.
+                    <span className="font-mono">dcraw_emu</span> is part of LibRaw, which is licensed under <a className="underline hover:no-underline" target="_blank" rel="noopener noreferrer" href="https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html">LGPL-2.1</a>. The source code can be obtained from <a className="underline hover:no-underline" target="_blank" rel="noopener noreferrer" href="https://www.libraw.org/">the LibRaw official website</a>.
+                  </div>
+                }
+                {id == "hdrgenPath" && <div className="block h-full mr-5 text-sm">
+                    <span className="font-mono">hdrgen</span> is the work of Gregory J. Ward and is licensed under <a className="underline hover:no-underline" target="_blank" rel="noopener noreferrer" href="https://github.com/radiance-org/hdrgen/blob/main/LICENSE">BSD 3-Clause License</a>. The source code can be obtained from <a className="underline hover:no-underline" target="_blank" rel="noopener noreferrer" href="https://github.com/radiance-org/hdrgen/">the GitHub repository</a>.
                   </div>
                 }
               </div>
