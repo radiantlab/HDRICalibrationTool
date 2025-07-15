@@ -1,4 +1,3 @@
-
 /**
  * @module photometric_adjustment
  * @description This module provides functionality for applying photometric adjustments to HDR images.
@@ -8,7 +7,6 @@
  * -h flag to preserve header information while applying mathematical transformations defined in a
  * calibration file.
  */
-
 use crate::pipeline::DEBUG;
 use std::fs::File;
 use std::process::Command;
@@ -21,16 +19,16 @@ use super::ConfigSettings;
  * This function transforms pixel values in the HDR image to ensure accurate luminance representation
  * based on calibration data. The process is essential for scientific and architectural applications
  * that require precise luminance measurements.
- * 
+ *
  * @param config_settings - Contains configuration settings including paths to Radiance tools and temp directory
  * @param input_file - The path to the input HDR image (must be in .hdr format)
  * @param output_file - The path and filename where the photometrically adjusted HDR image will be saved
  * @param photometric_adjustment - Path to the photometric adjustment calibration file that contains
  *                                mathematical functions to transform pixel values to accurate luminance
- * 
+ *
  * @returns Result<String, String> - On success, returns the path to the output file.
  *                                  On failure, returns an error message.
- * 
+ *
  * @note The -h flag is used to preserve header information from the original file
  */
 

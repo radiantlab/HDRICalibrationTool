@@ -1,6 +1,9 @@
 use std::{
-    fs, path::Path, process::{Command, ExitStatus}, str::Chars, env
-}; 
+    env, fs,
+    path::Path,
+    process::{Command, ExitStatus},
+    str::Chars,
+};
 
 use tauri_plugin_shell::ShellExt;
 
@@ -8,7 +11,11 @@ use tauri::Manager;
 
 /// Converts raw image into .tiff image for front end use.
 #[tauri::command]
-pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: Vec<String>) -> Result<Vec<String>, String> {
+pub async fn convert_raw_img(
+    app_handle: tauri::AppHandle,
+    dcraw: String,
+    pths: Vec<String>,
+) -> Result<Vec<String>, String> {
     // Get app directory
     let b_res = app_handle.path().app_config_dir();
     let b = match b_res {
@@ -20,7 +27,7 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
     let data_dir = match data_dir_res {
         Some(r) => r,
         None => return Err("Unable to get dir".to_string()),
-    }; 
+    };
 
     // Prevent buildup of unneeded images
     let _clear = fs::remove_dir_all(Path::new(data_dir).join("converted_raws"));
@@ -74,10 +81,13 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
             "-b",
             "1.1",
             "-Z",
-            dir.join(format!("{}.tiff", tst2)).display().to_string().as_str(),
+            dir.join(format!("{}.tiff", tst2))
+                .display()
+                .to_string()
+                .as_str(),
             format!("{}", pths[i]).as_str(),
         ]);
-        
+
         let stat = cmd.status();
         if !stat.is_ok() || !stat.unwrap_or(ExitStatus::default()).success() {
             return Err("Error, non-zero exit status. dcraw_emu command (converting to tiff images) failed.".to_string());
@@ -86,7 +96,7 @@ pub async fn convert_raw_img(app_handle: tauri::AppHandle, dcraw: String, pths: 
         tiffs.push(dir.join(format!("{}.tiff", tst2)).display().to_string());
     }
 
-    return Ok(tiffs); 
+    return Ok(tiffs);
 }
 
 fn get_file_name(img: Chars<'_>) -> String {
@@ -95,11 +105,9 @@ fn get_file_name(img: Chars<'_>) -> String {
     for c in img.rev() {
         if c == '/' || c == '\\' {
             break;
-        }
-        else if check == true {
+        } else if check == true {
             name.insert(0, c);
-        }
-        else if c == '.' {
+        } else if c == '.' {
             check = true;
         }
     }

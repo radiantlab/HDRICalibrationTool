@@ -1,6 +1,6 @@
 /**
  * Module for reading binary tool paths from the application's configuration.
- * 
+ *
  * This module provides functionality to retrieve the paths to external binary tools
  * (HDRGen and dcraw_emu) that are required for HDR image processing. These paths
  * are stored in a JSON file in the application's configuration directory.
@@ -12,7 +12,7 @@ use tauri::Manager;
 
 /**
  * Represents the paths to binary tools that are deserialized from JSON
- * 
+ *
  * @field hdrgenpath - Path to the HDRGen binary
  * @field dcrawemupath - Path to the dcraw_emu binary
  */
@@ -26,10 +26,10 @@ struct Paths {
 
 /**
  * Tauri command to read binary paths from the configuration file
- * 
+ *
  * This function retrieves the paths to the HDRGen and dcraw_emu binaries
  * from a JSON file in the application's configuration directory.
- * 
+ *
  * @param app_handle - Tauri application handle for accessing app paths
  * @returns Result containing the serialized JSON string with paths or an error message
  */
@@ -60,7 +60,7 @@ pub fn read_binary_paths(app_handle: tauri::AppHandle) -> Result<String, String>
                 paths_file
             ))
         }
-    };    // Read binary paths from file
+    }; // Read binary paths from file
     match fs::read_to_string(file_path) {
         Ok(contents) => Ok(contents), // Return the file contents (JSON string)
         Err(_) => Ok("".to_string()), // Return empty string if file doesn't exist or can't be read
