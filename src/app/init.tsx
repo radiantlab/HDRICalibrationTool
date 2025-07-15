@@ -65,12 +65,6 @@ const Initialization: React.FC = () => {
           outputPath: (contentsObject.outputpath === "" || !contentsObject.outputpath) ? outputDefaultPath : contentsObject.outputpath, // queries backend for suggested place to store files
           osPlatform: osPlatform
         });
-        // Show alert if HDRGen path is not set, which is required for operation
-        if (!contentsObject.hdrgenpath) {
-          alert(
-            "Please enter the path to the HDRGen binary in the settings before generating HDR images."
-          );
-        }
       })
       .catch((error) => {
         console.error(error);

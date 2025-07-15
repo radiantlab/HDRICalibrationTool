@@ -155,10 +155,8 @@ export default function Progress({ fakePipeline }: ProgressProps) {
                     <h2>Error</h2>
                     <p className=" text-sm pt-1">
                       There was an error with the pipeline. Please make sure all
-                      the inputs are correct, and that you have entered the
-                      paths for the <span className="font-mono">hdrgen</span> or{" "}
-                      <span className="font-mono">dcraw_emu</span> binaries in
-                      the settings.
+                      the inputs are correct. If you have custom <span className="font-mono">hdrgen</span> or <span className="font-mono">dcraw_emu</span> binaries,
+                      verify the paths are correct in the settings.
                     </p>
                     <button
                       onClick={() => ResetProgress()}
