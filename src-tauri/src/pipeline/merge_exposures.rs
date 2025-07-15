@@ -223,11 +223,6 @@ pub fn merge_exposures(
         // Set the working directory to find libraries
         command.current_dir(&hdrgen_working_directory);
         
-        // Also set DYLD_LIBRARY_PATH for macOS
-        if cfg!(target_os = "macos") {
-            command.env("DYLD_LIBRARY_PATH", &hdrgen_working_directory);
-        }
-        
         if DEBUG {
             let sidecar_path = command.get_program();
             println!("Executing bundled sidecar at: {:?}", sidecar_path);
@@ -267,22 +262,22 @@ pub fn merge_exposures(
     }
 
     // START
-    let output_result = command.output();
-    if output_result.is_err() {
-        if DEBUG {
-            println!("Failed to start hdrgen command: {:?}", output_result.err());
-        }
-        return Err("pipeline: merge_exposures: failed to start command.".into());
-    }
-    let output = output_result.unwrap();
-    if DEBUG {
-        println!("\nCommand exit status: {:?}", output.status);
-        if let Some(code) = output.status.code() {
-            println!("Exit code: {}", code);
-        }
-        println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
-        println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
-    }
+    // let output_result = command.output();
+    // if output_result.is_err() {
+    //     if DEBUG {
+    //         println!("Failed to start hdrgen command: {:?}", output_result.err());
+    //     }
+    //     return Err("pipeline: merge_exposures: failed to start command.".into());
+    // }
+    // let output = output_result.unwrap();
+    // if DEBUG {
+    //     println!("\nCommand exit status: {:?}", output.status);
+    //     if let Some(code) = output.status.code() {
+    //         println!("Exit code: {}", code);
+    //     }
+    //     println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+    //     println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+    // }
     // STOP
 
     // Run the command
