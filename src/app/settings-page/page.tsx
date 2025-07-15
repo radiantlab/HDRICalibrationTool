@@ -137,7 +137,9 @@ export default function SettingsPage() {
             */}
             {[
               { id: "radiancePath", label: "Radiance", value: localSettings.radiancePath, placeholder: "This path is required" },
-              { id: "hdrgenPath", label: "hdrgen", value: localSettings.hdrgenPath, placeholder: "This path is required" },
+              { id: "hdrgenPath", label: "hdrgen (optional)", value: localSettings.hdrgenPath, 
+                placeholder: "This path is optional, only enter a new path if you wish to override the included hdrgen binary"
+              },
               { id: "dcrawEmuPath", label: "dcraw_emu (optional)", value: localSettings.dcrawEmuPath,
                 placeholder: "This path is optional, only enter a new path if you wish to override the included dcraw_emu binary"
               },
