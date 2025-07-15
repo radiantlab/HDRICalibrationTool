@@ -19,8 +19,8 @@ use read_dynamic_dir::read_dynamic_dir;
 
 // Commands to read the header or a specific header value from an HDR file
 mod read_header;
-use read_header::read_header_value;
 use read_header::read_header;
+use read_header::read_header_value;
 
 // Command used to read from a file and return its contents to frontend
 mod read_host_file;
@@ -63,6 +63,7 @@ use tauri::Manager;
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_fs::init())
@@ -78,7 +79,7 @@ fn main() {
             write_binary_paths,
             write_host_file,
             delete_config,
-            get_default_output_path, 
+            get_default_output_path,
             save_config,
             get_saved_configs,
             convert_raw_img,

@@ -1,14 +1,12 @@
-
 /**
  * @module vignetting_effect_correction
  * @description This module provides functionality for correcting vignetting effects in HDR images.
  * Vignetting is a reduction in image brightness or saturation toward the periphery compared to the
- * image center, which is common in photographs taken with certain lenses. This correction is 
- * essential for accurate luminance measurements across the entire image field. The module uses 
- * Radiance's 'pcomb' tool with a calibration file that contains mathematical functions to compensate 
+ * image center, which is common in photographs taken with certain lenses. This correction is
+ * essential for accurate luminance measurements across the entire image field. The module uses
+ * Radiance's 'pcomb' tool with a calibration file that contains mathematical functions to compensate
  * for the specific vignetting characteristics of the lens used.
  */
-
 use crate::pipeline::DEBUG;
 use std::{
     fs::File,
@@ -22,13 +20,13 @@ use super::ConfigSettings;
  * Vignetting causes darker corners/edges in images, which can significantly affect luminance
  * measurements. This function applies a calibrated correction to ensure even luminance response
  * across the entire image.
- * 
+ *
  * @param config_settings - Contains configuration settings including paths to Radiance tools and temp directory
  * @param input_file - The path to the input HDR image (must be in .hdr format)
  * @param output_file - The path and filename where the vignetting-corrected HDR image will be saved
  * @param vignetting_correction_cal - Path to the vignetting correction calibration file that contains
  *                                   mathematical functions to correct the specific lens vignetting pattern
- * 
+ *
  * @returns Result<String, String> - On success, returns the path to the output file.
  *                                  On failure, returns an error message.
  */

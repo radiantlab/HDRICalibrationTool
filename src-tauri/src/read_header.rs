@@ -1,26 +1,30 @@
+use std::path::Path;
 /**
  * Module for reading header contents from an HDR file.
- * 
- * This module provides Tauri commands to read the contents of the header 
+ *
+ * This module provides Tauri commands to read the contents of the header
  * in a specified HDR file. It's used by the application to display the evalglare
  * value in the image viewer.
  */
 use std::process::Command;
-use std::path::Path;
 
 /**
  * Tauri command to read a specific key from the header of an HDR file
- * 
+ *
  * This function retrieves the value in the header of the given HDR file
  * associated with the given key.
- * 
- * @param file_path - The path to the HDR file 
+ *
+ * @param file_path - The path to the HDR file
  * @param radiance_path_string - The path to Radiance binaries
  * @param key - The key to look for in the header; of the form "KEY="
- * @returns Result containing the value 
+ * @returns Result containing the value
  */
 #[tauri::command]
-pub fn read_header_value(file_path: String, radiance_path_string: String, key: String) -> Result<String, String> {
+pub fn read_header_value(
+    file_path: String,
+    radiance_path_string: String,
+    key: String,
+) -> Result<String, String> {
     // Convert radiance_path string to path so .join() can be used
     let radiance_path = Path::new(&radiance_path_string);
 
@@ -54,11 +58,11 @@ pub fn read_header_value(file_path: String, radiance_path_string: String, key: S
 }
 
 /**
- * Tauri command to read the entirety of the header from an HDR file 
- * 
+ * Tauri command to read the entirety of the header from an HDR file
+ *
  * This function retrieves the header of the given HDR file
- * 
- * @param file_path - The path to the HDR file 
+ *
+ * @param file_path - The path to the HDR file
  * @param radiance_path_string - The path to Radiance binaries
  * @returns Result containing the header
  */
@@ -87,5 +91,4 @@ pub fn read_header(file_path: String, radiance_path_string: String) -> Result<St
     } else {
         Err("read_header: failed to retrieve file header.".into())
     }
-
 }

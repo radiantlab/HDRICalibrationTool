@@ -1,12 +1,12 @@
 use crate::pipeline::DEBUG;
+use anyhow::{Context, Result};
+use image::{GenericImageView, Pixel};
+use rayon::prelude::*;
+use std::env;
 use std::{
     path::Path,
     process::{Command, ExitStatus},
 };
-use std::env;
-use image::{GenericImageView, Pixel};
-use rayon::prelude::*;
-use anyhow::{Result, Context};
 
 use super::ConfigSettings;
 use tauri_plugin_shell::ShellExt;
@@ -75,14 +75,12 @@ pub fn merge_exposures(
 
         let mut index = 1;
         for input_image in &input_images {
-
             // Add command arguments
-            let output_arg = 
-                config_settings
-                    .temp_path
-                    .join(format!("input{}.tiff", index))
-                    .display()
-                    .to_string();
+            let output_arg = config_settings
+                .temp_path
+                .join(format!("input{}.tiff", index))
+                .display()
+                .to_string();
             let input_arg = format!("{}", input_image);
             let args = [
                 "-T",
@@ -101,7 +99,7 @@ pub fn merge_exposures(
                 "1.1",
                 "-Z",
                 &output_arg,
-                &input_arg
+                &input_arg,
             ];
 
             if config_settings.dcraw_emu_path.as_os_str().is_empty() {
@@ -115,7 +113,10 @@ pub fn merge_exposures(
                 }
             } else {
                 if DEBUG {
-                    println!("Overwriting bundled sidecar, running command at: {:?}\n", config_settings.dcraw_emu_path.join("dcraw_emu"));
+                    println!(
+                        "Overwriting bundled sidecar, running command at: {:?}\n",
+                        config_settings.dcraw_emu_path.join("dcraw_emu")
+                    );
                 }
                 command = Command::new(config_settings.dcraw_emu_path.join("dcraw_emu"));
             }
@@ -143,31 +144,99 @@ pub fn merge_exposures(
         }
 
         input_images = new_inputs;
-    } else if filter_images_flag { // images might include jpeg, so try to filter them if allowed
+    } else if filter_images_flag {
+        // images might include jpeg, so try to filter them if allowed
         // convert float strings to f32
-        let diameter_f32 = diameter.parse::<f32>()
-            .map_err(|error| format!("pipeline: merge_exposures: failed to parse diameter as float - {}", error))?;
-        let xleft_f32 = xleft.parse::<f32>()
-            .map_err(|error| format!("pipeline: merge_exposures: failed to parse xleft as float - {}", error))?;
-        let ydown_f32 = ydown.parse::<f32>()
-            .map_err(|error| format!("pipeline: merge_exposures: failed to parse ydown as float - {}", error))?;
-        let xdim_f32 = xdim.parse::<f32>()
-            .map_err(|error| format!("pipeline: merge_exposures: failed to parse xdim as float - {}", error))?;
-        let ydim_f32 = ydim.parse::<f32>()
-            .map_err(|error| format!("pipeline: merge_exposures: failed to parse ydim as float - {}", error))?;
-        
+        let diameter_f32 = diameter.parse::<f32>().map_err(|error| {
+            format!(
+                "pipeline: merge_exposures: failed to parse diameter as float - {}",
+                error
+            )
+        })?;
+        let xleft_f32 = xleft.parse::<f32>().map_err(|error| {
+            format!(
+                "pipeline: merge_exposures: failed to parse xleft as float - {}",
+                error
+            )
+        })?;
+        let ydown_f32 = ydown.parse::<f32>().map_err(|error| {
+            format!(
+                "pipeline: merge_exposures: failed to parse ydown as float - {}",
+                error
+            )
+        })?;
+        let xdim_f32 = xdim.parse::<f32>().map_err(|error| {
+            format!(
+                "pipeline: merge_exposures: failed to parse xdim as float - {}",
+                error
+            )
+        })?;
+        let ydim_f32 = ydim.parse::<f32>().map_err(|error| {
+            format!(
+                "pipeline: merge_exposures: failed to parse ydim as float - {}",
+                error
+            )
+        })?;
+
         // try and filter images, updating input images if successful
         if is_jpeg(&input_images[0]) {
-            let filtered_images = match filter_images(input_images, diameter_f32, xleft_f32, ydown_f32, xdim_f32, ydim_f32) {
+            let filtered_images = match filter_images(
+                input_images,
+                diameter_f32,
+                xleft_f32,
+                ydown_f32,
+                xdim_f32,
+                ydim_f32,
+            ) {
                 Ok(image_vec) => image_vec,
-                Err(error) => return Err(format!("pipeline: merge_exposures: failed to filter images - {}", error)),
+                Err(error) => {
+                    return Err(format!(
+                        "pipeline: merge_exposures: failed to filter images - {}",
+                        error
+                    ))
+                }
             };
             input_images = filtered_images;
         }
     }
 
     // Create a new command for hdrgen
-    command = Command::new(config_settings.hdrgen_path.join("hdrgen"));
+    if config_settings.hdrgen_path.as_os_str().is_empty() {
+        command = app.shell().sidecar("hdrgen").unwrap().into();
+
+        // Get working directory for libraries (same approach as dcraw_emu)
+        let cur_exe = env::current_exe().unwrap().parent().unwrap().to_path_buf();
+
+        let hdrgen_working_directory = if cfg!(target_os = "macos") {
+            if cfg!(debug_assertions) {
+                // macOS dev mode
+                cur_exe.join("binaries")
+            } else {
+                // macOS release mode (inside .app bundle)
+                cur_exe.join("../Resources/binaries")
+            }
+        } else {
+            // Linux and Windows
+            cur_exe.join("binaries")
+        };
+
+        // Set the working directory to find libraries
+        command.current_dir(&hdrgen_working_directory);
+
+        if DEBUG {
+            let sidecar_path = command.get_program();
+            println!("Executing bundled sidecar at: {:?}", sidecar_path);
+            println!("Working directory: {:?}", hdrgen_working_directory);
+        }
+    } else {
+        if DEBUG {
+            println!(
+                "Overwriting bundled sidecar, running command at: {:?}\n",
+                config_settings.hdrgen_path.join("hdrgen")
+            );
+        }
+        command = Command::new(config_settings.hdrgen_path.join("hdrgen"));
+    }
 
     // Add input LDR images as args
     for input_image in input_images {
@@ -186,6 +255,30 @@ pub fn merge_exposures(
 
     // Add remaining flags for hdrgen step
     command.args(["-a", "-e", "-f", "-g", "-F"]);
+
+    if DEBUG {
+        println!("Full hdrgen command: {:?}", command);
+        println!("About to execute hdrgen...");
+    }
+
+    // START
+    // let output_result = command.output();
+    // if output_result.is_err() {
+    //     if DEBUG {
+    //         println!("Failed to start hdrgen command: {:?}", output_result.err());
+    //     }
+    //     return Err("pipeline: merge_exposures: failed to start command.".into());
+    // }
+    // let output = output_result.unwrap();
+    // if DEBUG {
+    //     println!("\nCommand exit status: {:?}", output.status);
+    //     if let Some(code) = output.status.code() {
+    //         println!("Exit code: {}", code);
+    //     }
+    //     println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
+    //     println!("stderr: {}", String::from_utf8_lossy(&output.stderr));
+    // }
+    // STOP
 
     // Run the command
     let status_result = command.status();
@@ -213,7 +306,14 @@ pub fn merge_exposures(
 // Pixels with luminance values either below 27 or above 228 are counted respectively
 // Once all images have had their pixel counts resolved, the input array is filtered by starting at the first brighter image that doesn't have \
 // any pixel below 27; and ending at the first darker image that doesn't have any pixel above 228
-fn filter_images(input_images: Vec<String>, diameter: f32, xleft: f32, ydown: f32, xdim: f32, ydim: f32) -> Result<Vec<String>> {
+fn filter_images(
+    input_images: Vec<String>,
+    diameter: f32,
+    xleft: f32,
+    ydown: f32,
+    xdim: f32,
+    ydim: f32,
+) -> Result<Vec<String>> {
     if DEBUG {
         println!("filter_images was called...");
     }
@@ -228,8 +328,12 @@ fn filter_images(input_images: Vec<String>, diameter: f32, xleft: f32, ydown: f3
     }
 
     // Compute mask using first image
-    let image = image::open(&input_images[0])
-        .with_context(|| format!("pipeline: merge_exposures: filter_images: failed to open image: {}", input_images[0]))?;
+    let image = image::open(&input_images[0]).with_context(|| {
+        format!(
+            "pipeline: merge_exposures: filter_images: failed to open image: {}",
+            input_images[0]
+        )
+    })?;
     let (width, height) = image.dimensions();
     let mask = compute_circle_mask(height as usize, width as usize, xcenter, ycenter, radius);
 
@@ -237,17 +341,25 @@ fn filter_images(input_images: Vec<String>, diameter: f32, xleft: f32, ydown: f3
     let pixel_counts: Result<Vec<(usize, u32, u32, f32)>, anyhow::Error> = input_images
         .par_iter() // create parallel iterator
         .enumerate()
-        .map(|(index, input_image)| { // allow for skipping images
+        .map(|(index, input_image)| {
+            // allow for skipping images
             if DEBUG {
                 println!("Processing image: {}", input_image);
             }
 
             if !is_jpeg(input_image) {
-                return Err(anyhow::anyhow!("pipeline: merge_exposures: filter_images: image is not a JPEG: {}", input_image));
+                return Err(anyhow::anyhow!(
+                    "pipeline: merge_exposures: filter_images: image is not a JPEG: {}",
+                    input_image
+                ));
             }
 
-            let image = image::open(input_image)
-                .with_context(|| format!("pipeline: merge_exposures: filter_images: failed to open image: {}", input_image))?;
+            let image = image::open(input_image).with_context(|| {
+                format!(
+                    "pipeline: merge_exposures: filter_images: failed to open image: {}",
+                    input_image
+                )
+            })?;
 
             // Start processing the image
             let mut pixels_below = 0;
@@ -258,14 +370,17 @@ fn filter_images(input_images: Vec<String>, diameter: f32, xleft: f32, ydown: f3
             for y in 0..height {
                 for x in 0..width {
                     let mask_index = (y * width + x) as usize;
-                    if mask[mask_index] { // if it's in the fisheye view
+                    if mask[mask_index] {
+                        // if it's in the fisheye view
                         let pixel = image.get_pixel(x, y).to_rgb();
                         let [r, g, b] = pixel.0;
                         // weighted average is used to get "perceived brightness" to the human eye
                         avg_brightness += 0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32;
-                        if r < 27 && g < 27 && b < 27 { // all values below allowed threshold
+                        if r < 27 && g < 27 && b < 27 {
+                            // all values below allowed threshold
                             pixels_below += 1;
-                        } else if r > 228 && g > 228 && b > 228 { // all values above allowed threshold
+                        } else if r > 228 && g > 228 && b > 228 {
+                            // all values above allowed threshold
                             pixels_above += 1;
                         }
                     }
@@ -273,58 +388,69 @@ fn filter_images(input_images: Vec<String>, diameter: f32, xleft: f32, ydown: f3
             }
             avg_brightness = avg_brightness / ((width * height) as f32);
             if DEBUG {
-                println!("Processed Image: {:?}", (input_image, pixels_below, pixels_above, avg_brightness));
+                println!(
+                    "Processed Image: {:?}",
+                    (input_image, pixels_below, pixels_above, avg_brightness)
+                );
             }
             Ok((index, pixels_below, pixels_above, avg_brightness)) // return the tuple of pixel values
         })
         .collect(); // collect everything into the vector
-        // The vector returned by the above logic has a bunch of 4-element tuples; the first element
-        // is the index of the input image so they can be filtered appropriately; the second and third
-        // elements are the counts for the number of pixels below and above 27 and 228 respectively; and the
-        // fourth element is the average brightness of the image so the images can be sorted from brightest to darkest
+                    // The vector returned by the above logic has a bunch of 4-element tuples; the first element
+                    // is the index of the input image so they can be filtered appropriately; the second and third
+                    // elements are the counts for the number of pixels below and above 27 and 228 respectively; and the
+                    // fourth element is the average brightness of the image so the images can be sorted from brightest to darkest
 
-        // The below is not the cleanest and could be written in a more idiomatic Rust way/a fancier way
-        // However, it is very understandable as written
-        let mut sorted_array = pixel_counts?; // unwrap result
-        // sort images in descending order of brightness by comparing the avg_brightness
-        sorted_array.sort_by(|a, b| b.3.partial_cmp(&a.3).unwrap_or(std::cmp::Ordering::Equal)); 
-        if DEBUG {
-            println!("Sorted Pixel Counts: {:?}", sorted_array);
+    // The below is not the cleanest and could be written in a more idiomatic Rust way/a fancier way
+    // However, it is very understandable as written
+    let mut sorted_array = pixel_counts?; // unwrap result
+                                          // sort images in descending order of brightness by comparing the avg_brightness
+    sorted_array.sort_by(|a, b| b.3.partial_cmp(&a.3).unwrap_or(std::cmp::Ordering::Equal));
+    if DEBUG {
+        println!("Sorted Pixel Counts: {:?}", sorted_array);
+    }
+    let mut start_index: i32 = -1;
+    let mut end_index: i32 = -1;
+
+    // Go from the start and find the FIRST pixel of the brighter images that has no pixel below 27
+    for (i, (index, pixels_below, pixels_above, avg_brightness)) in sorted_array.iter().enumerate()
+    {
+        if *pixels_below == 0 {
+            start_index = i as i32;
+            break;
         }
-        let mut start_index: i32 = -1;
-        let mut end_index: i32 = -1;
-        
-        // Go from the start and find the FIRST pixel of the brighter images that has no pixel below 27
-        for (i, (index, pixels_below, pixels_above, avg_brightness)) in sorted_array.iter().enumerate() {
-            if *pixels_below == 0 {
-                start_index = i as i32;
-                break;
-            }
+    }
+    if start_index == -1 {
+        start_index = 0;
+    }
+    // Go from the start and find the FIRST pixel of the darker images that has no pixel above 228
+    for (i, (index, pixels_below, pixels_above, avg_brightness)) in sorted_array.iter().enumerate()
+    {
+        if i > start_index as usize && *pixels_above == 0 {
+            end_index = i as i32; // don't break, cause the loop starts from the first array element
         }
-        if start_index == -1 {
-            start_index = 0;
-        }
-        // Go from the start and find the FIRST pixel of the darker images that has no pixel above 228
-        for (i, (index, pixels_below, pixels_above, avg_brightness)) in sorted_array.iter().enumerate() {
-            if i > start_index as usize && *pixels_above == 0 {
-                end_index = i as i32; // don't break, cause the loop starts from the first array element
-            }
-        }
-        if end_index == -1 {
-            end_index = sorted_array.len() as i32;
-        }
-        if DEBUG {
-            println!("Selecting images: {}:{}", start_index, end_index);
-        }
-        // Push and return all the images
-        for i in start_index..end_index {
-            filtered_images.push(input_images[sorted_array[i as usize].0 as usize].clone());
-        }
+    }
+    if end_index == -1 {
+        end_index = sorted_array.len() as i32;
+    }
+    if DEBUG {
+        println!("Selecting images: {}:{}", start_index, end_index);
+    }
+    // Push and return all the images
+    for i in start_index..end_index {
+        filtered_images.push(input_images[sorted_array[i as usize].0 as usize].clone());
+    }
     Ok(filtered_images)
 }
 
 // Returns an index mask for the pixels that fall inside the fisheye view
-fn compute_circle_mask(height: usize, width: usize, xcenter: f32, ycenter: f32, radius: f32) -> Vec<bool> {
+fn compute_circle_mask(
+    height: usize,
+    width: usize,
+    xcenter: f32,
+    ycenter: f32,
+    radius: f32,
+) -> Vec<bool> {
     let mut mask = vec![false; width * height];
     let rsquare = radius * radius;
 
