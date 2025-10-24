@@ -9,10 +9,10 @@
  */
 use crate::pipeline::DEBUG;
 use std::fs::File;
-use std::process::Command;
+// Command is created by invoke_radiance helper
 use std::process::Stdio;
 
-use super::ConfigSettings;
+use super::{ConfigSettings, invoke_radiance};
 
 /**
  * Applies photometric adjustments to an HDR image using Radiance's pcomb utility.
@@ -43,7 +43,7 @@ pub fn photometric_adjustment(
     }
 
     // Command to run
-    let mut command = Command::new(config_settings.radiance_path.join("pcomb"));
+    let mut command = invoke_radiance(config_settings, "pcomb");
 
     // Add arguments
     command.args([

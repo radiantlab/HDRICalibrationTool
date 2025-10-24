@@ -1,10 +1,9 @@
 use crate::pipeline::DEBUG;
 use std::fs::File;
-use std::process::Command;
 use std::process::Stdio;
 // use regex::Regex;
 
-use super::ConfigSettings;
+use super::{ConfigSettings, invoke_radiance};
 
 // Header Editing
 // config_settings:
@@ -31,7 +30,7 @@ pub fn header_editing(
     }
 
     // Apply the new header
-    let mut command = Command::new(config_settings.radiance_path.join("getinfo"));
+    let mut command = invoke_radiance(config_settings, "getinfo");
 
     // Add arguments
     command.args([

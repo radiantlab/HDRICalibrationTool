@@ -9,23 +9,11 @@
 use crate::pipeline::DEBUG;
 use std::env;
 use std::fs::File;
-use std::process::Command;
+// removed unused Command import; we use invoke_radiance helper instead
 use std::process::Stdio;
 
-use super::ConfigSettings;
+use super::{ConfigSettings, invoke_radiance};
 use super::LuminanceArgs;
-
-// Allow radiance to access helvet.fnt
-#[cfg(target_os = "windows")]
-fn set_env_vars(path: String) {
-    std::env::set_var("RAYPATH", format!(r"{}\lib", path));
-}
-
-// Allow radiance to access helvet.fnt
-#[cfg(not(target_os = "windows"))]
-fn set_env_vars(path: String) {
-    std::env::set_var("RAYPATH", format!("{}/lib", path));
-}
 
 /**
  * Generates a falsecolor luminance map from an HDR image
@@ -47,15 +35,6 @@ pub fn falsecolor(
     luminance_args: &LuminanceArgs,
 ) -> Result<String, String> {
     // Print debug information about the function call parameters
-    set_env_vars(
-        config_settings
-            .radiance_path
-            .parent()
-            .unwrap()
-            .display()
-            .to_string(),
-    );
-
     if DEBUG {
         println!(
             "falsecolor() was called with parameters:\n\t {},\n\t {},\n\t {},\n\t {}\n",
@@ -67,7 +46,7 @@ pub fn falsecolor(
     }
 
     // Create command to run falsecolor from the Radiance path
-    let mut command = Command::new(config_settings.radiance_path.join("falsecolor"));
+    let mut command = invoke_radiance(config_settings, "falsecolor");
 
     // Provide path to radiance binaries by modifying system path (PATH env variable) for child process
     // The falsecolor tool relies on other Radiance utilities like pcomb, so we need to make sure
@@ -76,18 +55,6 @@ pub fn falsecolor(
     if env_var.is_err() {
         return Err("pipeline: falsecolor: could not find PATH environment variable.".into());
     }
-
-    // Set the PATH environment variable for the child process
-    // Windows separates directory entries in system path with ';', Linux and MacOS use ':'
-    command.env(
-        "PATH",
-        format!(
-            "{}{}{}",
-            config_settings.radiance_path.to_string_lossy(),
-            path_separator(),
-            env_var.unwrap()
-        ),
-    );
 
     // Add arguments
     if luminance_args.scale_label != "" {
@@ -141,14 +108,5 @@ pub fn falsecolor(
     } else {
         // On error, return an error message
         Err("PIPELINE ERROR: command 'falsecolor' failed.".into())
-    }
-}
-
-// Returns the proper separator for system path environment variable based on OS
-fn path_separator() -> &'static str {
-    if cfg!(windows) {
-        ";"
-    } else {
-        ":"
     }
 }

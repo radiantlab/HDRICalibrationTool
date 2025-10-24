@@ -17,7 +17,7 @@ This application provides a graphical user interface for the creation and calibr
 
 ## Getting Started
 
-Install [Radiance](https://www.radiance-online.org/) and [hdrgen](http://www.anyhere.com/) to your local machine and note where these tools are located (the folder path). After these dependencies have been installed, install the [HDRI Calibration Interface](https://github.com/radiantlab/HDRICalibrationTool/releases/latest) for your operating system. The binary for dcraw_emu is already included with the application (see Acknowledgements & Licensing below).
+Install the [HDRI Calibration Interface](https://github.com/radiantlab/HDRICalibrationTool/releases/latest) for your operating system. The dependencies are already included with the application (see Acknowledgements & Licensing below).
 
 Note that the binaries are unsigned and might be flagged as untrusted by your operating system. On macOS, you need to right click on the application and select Open to have the option to run it.
 

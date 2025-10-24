@@ -10,6 +10,7 @@ use std::{
 
 use super::ConfigSettings;
 use tauri_plugin_shell::ShellExt;
+use crate::vendored_binaries::vendored_working_dir;
 
 // Merges multiple LDR images into an HDR image using hdrgen. If images are in JPG or TIFF format,
 // runs hdrgen command regularly. If images are not in JPG or TIFF format, converts the inputs
@@ -57,21 +58,8 @@ pub fn merge_exposures(
 
     // If raw image format other than TIFF, need to first convert them to TIFF to be used by hdrgen
     if convert_to_tiff {
-        // Get working directory of libraw.dll (only needed for windows)
-        let cur_exe = env::current_exe().unwrap().parent().unwrap().to_path_buf();
-
-        let dcraw_emu_build_working_directory = if cfg!(target_os = "macos") {
-            if cfg!(debug_assertions) {
-                // macOS dev mode
-                cur_exe.join("binaries")
-            } else {
-                // macOS release mode (inside .app bundle)
-                cur_exe.join("../Resources/binaries")
-            }
-        } else {
-            // Linux and Windows
-            cur_exe.join("binaries")
-        };
+        // Get working directory for dcraw_emu dependent libraries
+        let dcraw_emu_build_working_directory = vendored_working_dir();
 
         let mut index = 1;
         for input_image in &input_images {
@@ -204,21 +192,8 @@ pub fn merge_exposures(
     if config_settings.hdrgen_path.as_os_str().is_empty() {
         command = app.shell().sidecar("hdrgen").unwrap().into();
 
-        // Get working directory for libraries (same approach as dcraw_emu)
-        let cur_exe = env::current_exe().unwrap().parent().unwrap().to_path_buf();
-
-        let hdrgen_working_directory = if cfg!(target_os = "macos") {
-            if cfg!(debug_assertions) {
-                // macOS dev mode
-                cur_exe.join("binaries")
-            } else {
-                // macOS release mode (inside .app bundle)
-                cur_exe.join("../Resources/binaries")
-            }
-        } else {
-            // Linux and Windows
-            cur_exe.join("binaries")
-        };
+        // Get working directory for hdrgen dependent libraries (reuse vendored dir)
+        let hdrgen_working_directory = vendored_working_dir();
 
         // Set the working directory to find libraries
         command.current_dir(&hdrgen_working_directory);

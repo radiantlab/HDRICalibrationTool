@@ -1,0 +1,85 @@
+.\" RCSid "$Id: genbox.1,v 1.7 2023/03/09 23:48:45 greg Exp $"
+.TH GENBOX 1 11/15/93 RADIANCE
+.SH NAME
+genbox - generate a RADIANCE or Wavefront description of a box
+.SH SYNOPSIS
+.B "genbox mat name xsiz ysiz zsiz"
+[
+.B \-i
+][
+.B "\-b bev"
+|
+.B "\-r rad"
+[
+.B "\-n nseg
+][
+.B \-s
+]
+][
+.B \-o
+]
+.SH DESCRIPTION
+.I Genbox
+produces a RADIANCE scene description of a parallelepiped
+with one corner at the origin and the opposite corner at
+.I "(xsiz, ysiz, zsiz)."
+The sides of the box will be parallel to the three coordinate
+planes.
+The surfaces that make up the box will be modified by
+.I mat
+and their identifiers will begin with
+.I name.
+.PP
+The
+.I \-i
+option can be used to produce a box with inward directed surface
+normals.
+.PP
+The
+.I \-b
+option can be used to specify the indentation for beveled edges.
+.PP
+The
+.I \-r
+option can be used to specify the radius for rounded edges, which
+are normally
+modeled as cylinders and spheres for non-inverted RADIANCE output.
+However, this type of model only makes sense for external views of
+an opaque object.
+If a rounded box is inverted using
+.I \-i,
+then the corners and edges are modeled with polygons, instead.
+This option can also be forced by specifying a minimum number of
+segments with the
+.I \-n
+option.
+The
+.I \-s
+option controls whether surface normal smoothing is applied as well.
+.PP
+The
+.I \-o
+option specifies Wavefront .OBJ output, and
+also forces polygons to be used with the
+.I \-r
+option.
+If the
+.I \-s
+option is present, vertex normals are also produced for smooth rendering.
+.SH EXAMPLE
+To produce a rectangular box made of wood with rounded edges:
+.IP "" .2i
+genbox wood box1 5 8 3 \-r .5 > box1.rad
+.PP
+To produce a box made of crystal with beveled edges:
+.IP "" .2i
+genbox crystal box2 3 7 1 \-b .1 > box2.rad
+.PP
+To produce a transparent box with smoothed, rounded edges:
+.IP "" .2i
+genbox glassy box3 2 4 3 -r .25 -n 16 -s > box3.rad
+.SH AUTHOR
+Greg Ward
+.SH "SEE ALSO"
+genrev(1), gensurf(1), genworm(1), obj2mesh(1), obj2rad(1),
+robjutil(1), rpict(1), rvu(1), xform(1)

@@ -8,6 +8,7 @@ use std::{
 use tauri_plugin_shell::ShellExt;
 
 use tauri::Manager;
+use crate::vendored_binaries::vendored_working_dir;
 
 /// Converts raw image into .tiff image for front end use.
 #[tauri::command]
@@ -37,21 +38,7 @@ pub async fn convert_raw_img(
         return Err("Couldn't create new directory".to_string());
     }
 
-    let cur_exe = env::current_exe().unwrap().parent().unwrap().to_path_buf();
-
-    // Get working directory of libraw.dll (only really needed for windows)
-    let dcraw_emu_build_working_directory = if cfg!(target_os = "macos") {
-        if cfg!(debug_assertions) {
-            // macOS dev mode
-            cur_exe.join("binaries")
-        } else {
-            // macOS release mode (inside .app bundle)
-            cur_exe.join("../Resources/binaries")
-        }
-    } else {
-        // Linux and Windows
-        cur_exe.join("binaries")
-    };
+    let dcraw_emu_build_working_directory = vendored_working_dir();
 
     let mut cmd: Command;
     let mut tiffs: Vec<String> = Vec::new();

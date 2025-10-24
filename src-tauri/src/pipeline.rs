@@ -15,7 +15,7 @@ mod falsecolor;
 use std::{
     fs::{self, copy, create_dir_all},
     io,
-    path::{Path, PathBuf},
+    path::{Path, PathBuf}, process::Command,
 };
 
 use chrono::prelude::*;
@@ -31,6 +31,8 @@ use projection_adjustment::projection_adjustment;
 use resize::resize;
 use vignetting_effect_correction::vignetting_effect_correction;
 
+use crate::vendored_binaries::vendored_working_dir;
+
 // Used to print out debug information
 pub const DEBUG: bool = true;
 
@@ -42,6 +44,27 @@ pub struct ConfigSettings {
     dcraw_emu_path: PathBuf,
     output_path: PathBuf,
     temp_path: PathBuf, // used to store temp path in output dir, i.e. "output_path/tmp/"
+}
+
+fn invoke_radiance(config_settings: &ConfigSettings, binary_name: &str) -> Command {
+    let radiance_binary_path = config_settings.radiance_path.join("bin");
+    let mut cmd = Command::new(radiance_binary_path.join(binary_name));
+    cmd.current_dir(&config_settings.radiance_path);
+
+    // Set the PATH environment variable for the child tool invocations
+    // Windows separates directory entries in system path with ';', Linux and MacOS use ':'
+    cmd.env(
+        "PATH",
+        format!(
+            "{}{}{}",
+            radiance_binary_path.to_string_lossy(),
+            if cfg!(windows) { ";" } else { ":" },
+            std::env::var("PATH").unwrap_or_default()
+        ),
+    );
+    cmd.env("RAYPATH", config_settings.radiance_path.join("lib"));
+
+    cmd
 }
 
 // Helper functon to emit progress events
@@ -180,6 +203,10 @@ pub async fn pipeline(
         temp_path: Path::new(&output_path).join("tmp").to_owned(), // Temp directory is located in output directory
     };
 
+    if config_settings.radiance_path.as_os_str().is_empty() {
+        config_settings.radiance_path = vendored_working_dir().join(std::env::consts::OS).join("radiance");
+    }
+
     // Add arguments for falsecolor2 to luminance arguments struct
     let luminance_args = LuminanceArgs {
         scale_limit: scale_limit,
@@ -198,7 +225,7 @@ pub async fn pipeline(
     //Define total steps for progress bar (adjust this count as needed)
     let total_steps: usize = if is_directory { 5 } else { 5 };
 
-    let mut current_step: usize = 0;
+    let current_step: usize = 0;
     emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)
 
     let mut return_path: PathBuf = PathBuf::new();
@@ -264,7 +291,7 @@ pub async fn pipeline(
                 .unwrap_or_default()
                 .to_string_lossy();
 
-            let mut output_file_name = config_settings
+            let output_file_name = config_settings
                 .output_path
                 .join(format!("{}_{}.hdr", base_name, datetime));
 

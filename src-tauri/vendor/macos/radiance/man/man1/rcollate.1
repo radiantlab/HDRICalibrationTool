@@ -1,0 +1,188 @@
+.\" RCSid "$Id: rcollate.1,v 1.19 2024/01/26 00:47:17 greg Exp $"
+.TH RCOLLATE 1 9/5/2013 RADIANCE
+.SH NAME
+rcollate - resize or re-order matrix data
+.SH SYNOPSIS
+.B rcollate
+[
+.B \-h[io]
+][
+.B \-w
+][
+.B \-c
+][
+.B \-f{a|f|d|b}[N]
+][
+.B \-t
+][
+.B "\-ic in_col"
+][
+.B "\-ir in_row"
+][
+.B "\-oc out_col"
+][
+.B "\-or out_row"
+][
+.B "\-o RxC[xR1xC2..]"
+]
+[
+.B input.dat
+]
+.SH DESCRIPTION
+.I Rcollate
+reads in a single matrix file (table) and reshapes it to have
+the number of columns specified by the
+.I \-oc
+option.
+The number of rows may be specified with a
+.I \-or
+option, or may be determined automatically from the size of the input if
+it is an even multiple of the number of columns (as it should be).
+Alternatively, both may be specified using a
+.I \-o
+option with the number of rows and columns separated by an 'x', as in "30x14"
+for 30 rows by 14 columns.
+.I Rcollate
+can also reorder the input into nested blocks by continuing the output size
+string.
+For example, "3x10X7x2" would order output data with a 3x10 super-array of
+7x2 subblocks.
+This type of block hierarchy is convenient for visualizing tensor data.
+.PP
+By default, the file is assumed to include an information header, which
+is copied to the standard output along with the command name.
+The
+.I \-hi
+option may be used to turn off the expectation of a header on input.
+The
+.I \-ho
+option turns off header output, and
+.I \-h
+by itself turns off both input and output headers.
+The
+.I \-w
+option turns off non-fatal warning messages, such as unexpected EOD.
+.PP
+Normally,
+.I rcollate
+detects whether any transformation is actually taking place, and will
+reproduce the data verbatim if the input size and shape should be unaltered.
+The
+.I \-c
+opiton forces the operation to proceed, even if it appears to be a no-op,
+which can be useful to correct a misshapen input matrix or check that
+the data is the proper size and formatted correctly (in the case of ASCII input).
+.PP
+The input format is assumed to be ASCII, with three white-space separated words
+(typically numbers) in each record.
+A different input format may be specified with the
+.I \-f
+option.
+The suboptions are
+.I \-fa,
+.I \-ff,
+.I \-fd,
+and
+.I \-fb
+for ASCII, float, double, and binary, respectively.
+An optional count may be attached to specify the number of data elements per
+record, which defaults to 1.
+Thus, the default setting is
+.I \-fa3.
+Since
+.I rcollate
+does not interpret the fields, all binary options of the same
+length have the same result.
+On most architectures,
+.I \-ff6,
+.I \-fd3,
+and
+.I \-fb24
+would all be equivalent.
+Note that the lack of row separators in binary files means that
+.I rcollate
+does not actually do anything for binary files unless the data is being
+re-ordered.
+.PP
+If an input header is present, it may contain the format, number of components
+and matrix dimensions.
+In such cases, the
+.I \-ic,
+.I \-ir
+and
+.I \-f
+options are not required, but will be checked against the header
+information if provided.
+An exception is made for
+.I \-fbN
+where N>1 and the
+.I \-c
+option is not present.
+In this case, the header may indicate a different format or number of
+components
+and the specified byte length is taken instead to be the exact size
+of each data record.
+.PP
+The transpose option,
+.I \-t
+swaps rows and columns on the input.
+For binary files with no header information, the user must
+specify at least one input or output dimension to define the matrix size.
+For ASCII files,
+.I rcollate
+will automatically determine the number of columns based on the
+position of the first EOL (end-of-line) character, and the number
+of rows based on the total count of records in the file.
+The user may override these determinations, allowing the matrix to
+be resized or re-ordered as well as transposed.
+If input and output dimensions are given and there is no block re-ordering,
+the number of input rows must equal the number of output columns,
+and the number of input columns must equal the number of output rows.
+If the
+.I \-o
+option is also given with multiple block levels, the transpose operation
+will logically precede the re-ordering operation, regardless of their
+position on the command line.
+.SH EXAMPLES
+To change put 8760 color triplets per row in a matrix with no header:
+.IP "" .2i
+rcollate -h \-oc 8760 input.dat > col8760.dat
+.PP
+To transpose a binary file with 145 float triplets per input row:
+.IP "" .2i
+rcollate -ff3 -ic 145 -t orig.flt > transpose.flt
+.PP
+To create an appropriate header for a binary float matrix as required by
+.I rmtxop(1)\:
+.IP "" .2i
+rcollate -hi -ff3 -or 145 -oc 8760 input.smx | rmtxop dcoef.dmx - > res.txt
+.PP
+To visualize a Shirley-Chiu BTDF matrix where the interior resolution is
+64x64 and the exterior resolution is 32x32:
+.IP "" .2i
+rcollate -o 64x64X32x32 s-c_bsdf.mtx | rmtxop -fc - > s-c_bsdf.hdr
+.SH AUTHOR
+Greg Ward
+.SH NOTES
+For large transpose or re-ordering operations on Unix systems,
+it is most efficient to specify the input file on the command line,
+rather than reading from the standard input, since
+.I rcollate
+can map the file directly into virtual memory.
+.PP
+The
+.I rcollate
+command is rather inflexible when it comes to output field and record
+separators for ASCII data.
+It accepts any amount of white space between fields
+on input, but only produces spaces as field separators
+between words and tabs as record separators on output.
+Output row separtors will always be an EOL, which may differ between systems.
+.PP
+If no options are given on the command line, or a binary file is specified
+without a transpose or re-ordering,
+.I rcollate
+issues a warning and simply copies its input to its standard output.
+.SH "SEE ALSO"
+cnt(1), histo(1), neaten(1), rcalc(1), rcomb(1), rcrop(1), rlam(1),
+rsensor(1), rmtxop(1), rsplit(1), tabfunc(1), total(1)

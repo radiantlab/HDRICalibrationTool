@@ -7,12 +7,9 @@
  * for evaluating visual comfort.
  */
 use crate::pipeline::DEBUG;
-use std::fs::File;
-use std::io::Write;
-use std::process::Command;
-use std::process::Stdio;
+// no extra io traits needed
 
-use super::ConfigSettings;
+use super::{ConfigSettings, invoke_radiance};
 
 /**
  * Runs the evalglare command on an HDR image and saves the output
@@ -39,7 +36,7 @@ pub fn evalglare(
     }
 
     // Create command to run evalglare from the Radiance path
-    let mut command = Command::new(config_settings.radiance_path.join("evalglare"));
+    let mut command = invoke_radiance(config_settings, "evalglare");
 
     // Add arguments:
     // -V: Verbose output with detailed information about glare sources

@@ -7,10 +7,10 @@
  */
 use crate::pipeline::DEBUG;
 use std::fs::File;
-use std::process::Command;
+// Command is created by invoke_radiance helper
 use std::process::Stdio;
 
-use super::ConfigSettings;
+use super::{ConfigSettings, invoke_radiance};
 
 /**
  * Crops a fisheye view HDR image to a square which circumscribes the circular fisheye view.
@@ -43,7 +43,7 @@ pub fn crop(
     }
 
     // Create a new command for pcompos
-    let mut command = Command::new(config_settings.radiance_path.join("pcompos"));
+    let mut command = invoke_radiance(config_settings, "pcompos");
 
     // Add arguments to pcompos command
     command.args([

@@ -8,10 +8,10 @@
  */
 use crate::pipeline::DEBUG;
 use std::fs::File;
-use std::process::Command;
+// Command is created by invoke_radiance helper
 use std::process::Stdio;
 
-use super::ConfigSettings;
+use super::{ConfigSettings, invoke_radiance};
 
 /**
  * Resizes an HDR image to the target x and y resolution using Radiance's pfilt utility.
@@ -41,7 +41,7 @@ pub fn resize(
     }
 
     // Create a new command for pfilt
-    let mut command = Command::new(config_settings.radiance_path.join("pfilt"));
+    let mut command = invoke_radiance(config_settings, "pfilt");
 
     // Add arguments to pfilt command
     command.args([

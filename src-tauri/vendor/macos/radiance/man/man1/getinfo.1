@@ -1,0 +1,133 @@
+.\" RCSid "$Id: getinfo.1,v 1.11 2022/03/21 17:12:49 greg Exp $"
+.TH GETINFO 1 1/15/99 RADIANCE
+.SH NAME
+getinfo - get header information from a RADIANCE file
+.SH SYNOPSIS
+.B getinfo
+[
+.B -d
+|
+.B +d
+][
+.B "file .."
+]
+.br
+.B getinfo
+[
+.B -d
+]
+-
+.br
+.B getinfo
+{
+.B -a
+|
+.B -r
+}
+.B "info_line1 .."
+.br
+.B getinfo
+[
+.B -d
+|
+.B +d
+]
+.B -c
+.B "command .."
+.SH DESCRIPTION
+.I Getinfo
+reads the header of each RADIANCE
+.I file
+and writes it to the standard output.
+Octree and picture files are in a binary format, which makes
+it difficult to determine their content.
+Therefore, a few lines of text are placed at the beginning
+of each file by the RADIANCE program that creates it.
+The end of the header information and the start of the
+data is indicated by an empty line.
+The
+.I \-d
+option can be used to print the dimensions of an octree or
+picture file instead.
+For an octree,
+.I "getinfo \-d"
+prints the bounding cube (xmin ymin zmin size).
+For a picture,
+.I "getinfo \-d"
+prints the y and x resolution (\-Y yres +X xres).
+The
+.I \+d
+option prints the header followed by a newline and the dimensions.
+If no
+.I file
+is given, the standard input is read.
+.PP
+The second form of
+.I getinfo
+with a hyphen simply removes the header
+and copies the body of the file from the standard
+input to the standard output.
+If the
+.I \-d
+option is given, then the resolution string will be elided as well.
+.PP
+The third form of
+.I "getinfo \-a"
+adds one or more header lines to the standard input.
+These lines are given as arguments to
+.I getinfo,
+and must be quoted if they contain spaces.
+The alternative form with
+.I \-r
+replaces any previous occurances of the settings in the given
+line(s) with nothing if there is only one word, or with
+the whole line if quoted and containing interior white space or
+an equals sign ('=').
+Any leading white space matches any leading number of spaces and
+tabs in the input header.
+.PP
+The fourth form of
+.I "getinfo \-c"
+is followed by a command and its arguments, which is executed
+on the data segment of the standard input.
+The header is passed along, with the addition of the command
+at the end.
+This is roughly equivalent to the following sequence, but does not
+require the input to be in a file:
+.IP "" .2i
+( getinfo < input ; getinfo - < input | command .. )
+.PP
+If the
+.I \+d
+option is given with
+.I \-c,
+then the resolution string will be copied before the command is called.
+If the
+.I \-d
+option is given, then the resolution string is read in but not copied.
+.SH EXAMPLES
+To print the header information from scene1.oct and scene2.hdr:
+.IP "" .2i
+getinfo scene1.oct scene2.hdr
+.PP
+To print the dimensions of a set of pictures:
+.IP "" .2i
+getinfo -d *.hdr
+.PP
+To add two header lines modifying the view
+and exposure calibration of a picture:
+.IP "" .2i
+getinfo -a "VIEW= -vta -vh 180 -vv 180" "EXPOSURE=1.5" < orig.hdr > modified.hdr
+.PP
+To remove any indented lines containing "EXPOSURE=" and replace any
+left-justified "EXPOSURE=" lines with a single value of 16:
+.IP "" .2i
+getinfo -r " EXPOSURE=" "EXPOSURE=16" < orig.hdr > fixed.hdr
+.PP
+To raise floating-point matrix elements to a power of 2.7:
+.IP "" .2i
+getinfo -c rcalc -if -of -e '$1=$1^2.7' < input.fmx > output.fmx
+.SH AUTHOR
+Greg Ward
+.SH "SEE ALSO"
+oconv(1), pfilt(1), rcalc(1), rhinfo(1), rpict(1), rsplit(1), rtrace(1), rvu(1)

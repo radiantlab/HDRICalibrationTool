@@ -1,0 +1,294 @@
+.\" RCSid "$Id: rmtxop.1,v 1.36 2025/04/04 18:06:48 greg Exp $"
+.TH RMTXOP 1 5/31/2014 RADIANCE
+.SH NAME
+rmtxop - concatenate, add, multiply, divide, transpose, scale, and convert matrices
+.SH SYNOPSIS
+.B rmtxop
+[
+.B \-v
+][
+.B \-f[afdc]
+][
+.B "\-C {symbols|file}"
+][
+.B "\-c ce .."
+][
+.B "\-s sf .."
+][
+.B \-t
+][
+.B "\-rf|\-rb"
+]
+.B m1
+[
+.B ".+*/"
+]
+.B ".."
+.SH DESCRIPTION
+.I Rmtxop
+loads and concatenates or adds/multiplies/divides
+together component matrix files given on the command line.
+Each file must have a header containing the following metadata:
+.sp
+.nf
+NROWS={number of rows}
+NCOLS={number of columns}
+NCOMP={number of components}
+FORMAT={ascii|float|double|32-bit_rle_rgbe|32-bit_rle_xyze|Radiance_spectra}
+.fi
+.sp
+The number of components indicates that each matrix element is actually
+composed of multiple channels, most commonly an RGB triple.
+This is essentially dividing the matrix into planes, where each component
+participates in a separate calculation.
+If an appropriate header is not present, it may be added with a call to
+.I rcollate(1).
+A matrix may be read from the standard input using a hyphen by itself ('-')
+in the appropriate place on the command line.
+Similarly, any of the inputs may be read from a command
+instead of a file by
+using quotes and a beginning exclamation point ('!').
+.PP
+Two special cases are handled for component matrices that are either
+XML files containing BSDF data, or Radiance picture files.
+In the first case, the BSDF library loads and interprets the
+transmission matrix by default.
+Alternatively, the front (normal-side) reflectance is selected if the
+.I \-rf
+option precedes the file name, or the backside reflectance if
+.I \-rb
+is specified.
+(XML files cannot be read from the standard input or from a command.)\0
+In the second case, the RGBE or XYZE values are loaded in a 3-component
+matrix where the number of columns match the X-dimension of the picture, and
+the number of rows match the Y-dimension.
+The picture must be in standard pixel ordering, and the first row
+is at the top with the first column on the left.
+Any exposure changes that were applied to the pictures before
+.I rmtxop
+will be undone, similar to the
+.I pcomb(1)
+.I \-o
+option.
+Radiance spectral pictures with more than 3 components are also supported.
+These are typically produced by
+.I rtrace(1)
+or
+.I rfluxmtx(1).
+.PP
+Before each input, the
+.I \-t
+and
+.I \-c
+and/or
+.I \-s
+options may be used to modify the matrix.
+The
+.I \-t
+option transposes the matrix, swapping rows and columns.
+The
+.I \-c
+option can "transform" the element values, possibly changing
+the number of components in the matrix.
+For example, a 3-component matrix can be transformed into a single-component
+matrix by using
+.I \-c
+with three coefficients.
+A four-component matrix can be turned into a two-component matrix using 8
+coefficients, where the first four coefficients will be used to compute
+the first new component, and the second four coefficients
+yield the second new component.
+Note that the number of coefficients must be an even multiple of the number
+of original components.
+.PP
+Alternatively, a set of symbolic output components may be given to the
+.I \-c
+option, with the following definitions:
+.sp
+.nf
+R	- red channel
+G	- green channel
+B	- blue channel
+X	- CIE X channel
+Y	- CIE Y channel (aka., luminance or illuminance)
+Z	- CIE Z channel
+S	- scotopic luminance or illuminance
+M	- melanopic luminance or illuminance
+A	- average component value
+.fi
+.sp
+These letters may be given in any order as a single string, and if
+.I "-c RGB"
+or
+.I "-c XYZ"
+is specified for an input picture or the
+.I "-fc"
+option is given, the output will be written as a RGBE or XYZE picture.
+Note that conversion from a float or RGBE color space applies a conversion
+of 179 lumens/watt (for CIE or melanopic output) or 412 (for scotopic output),
+and the reverse happens for conversion from XYZE input to RGB or RGBE output.
+Lower case versions of all these components are also supported, the only
+difference is that the aforementioned efficacy factors
+will be left out of the conversion.
+.PP
+If a matrix or picture file path is given to the
+.I \-c
+option, then the color space of that file will be used, instead.
+.PP
+The
+.I \-C
+option takes either a symbolic color space or an input file, and will be
+applied to all subsequent matrices that do not have their own associated
+.I \-c
+option.
+.PP
+Additionally, the
+.I \-s
+option applies the given scalar factor(s) to the elements of the matrix.
+If only one factor is provided,
+it will be used for all components.
+If multiple factors are given, their number must match the number of matrix
+components
+.I after
+application of any
+.I \-c
+option for this input matrix or picture, even if the
+.I \-s
+option appears first.
+.PP
+If present, the second and subsequent matrices on the command
+line are concatenated together, unless separated by a plus ('+'),
+asterisk ('*'), or forward slash ('/') symbol,
+in which case the individual matrix elements are added,
+multiplied, or divided, respectively.
+The concatenation operator ('.') is the default and need not be specified.
+Note also that the asterisk must be quoted or escaped in most shells.
+In the case of addition, the two matrices involved must have the same number
+of components.
+If subtraction is desired, use addition ('+') with a scaling parameter of -1
+for the second matrix (the
+.I \-s
+option).
+For element-wise multiplication and division, the second matrix is
+permitted to have a single component per element, which will be
+applied equally to all components of the first matrix.
+If element-wise division is specified, any zero elements in the second
+matrix will result in a warning and the corresponding component(s) in the
+first matrix will be set to zero.
+.PP
+Evaluation proceeds from left to right, and all operations have
+the same precedence.
+If a different evaluation order is desired, pipe the result of one
+.I rmtxop
+command into another, as shown in one of the examples below.
+.PP
+The number of components in the next matrix after applying any
+.I -c
+transform must agree with the prior result.
+For concatenation (matrix multiplication), the number of columns
+in the prior result must equal the number of rows in the next matrix, and
+the result will have the number of rows of the previous and the number
+of columns of the next matrix.
+In the case of addition, multiplication, and division,
+the number of rows and columns of the prior result and the
+next matrix must match, and will not be changed by the operation.
+.PP
+A final transpose or transform/scaling operation may be applied to
+the results by appending the
+.I \-t
+and
+.I \-c
+and/or
+.I \-s
+options after the last matrix on the command line.
+.PP
+Results are sent to the standard output.
+By default, the values will be written in the lowest precision format
+among the inputs, but the
+.I \-f[adfc]
+option may be used to explicitly output components
+as ASCII (-fa), binary doubles (-fd), floats (-ff), or common-exponent
+colors/spectra (-fc).
+In the latter case, the actual matrix dimensions are written in
+the resolution string rather than the header.
+Also, matrix results will be written as standard
+Radiance pictures if they have either one
+or three components.
+In the one-component case, the output is written as grayscale.
+If more than 3 components are in the final matrix and
+.I -fc
+is specified, the output will be a Radiance spectral picture.
+.PP
+The
+.I \-v
+option turns on verbose reporting, which announces each operation.
+.SH EXAMPLES
+To concatenate two matrix files with a BTDF between them and write
+the result as binary float:
+.IP "" .2i
+rmtxop -ff view.vmx blinds.xml exterior.dmx > dcoef.dmx
+.PP
+To convert a BTDF matrix into a Radiance picture:
+.IP "" .2i
+rmtxop -fc blinds.xml > blinds.hdr
+.PP
+To extract the luminance values from a picture as an ASCII matrix:
+.IP "" .2i
+rmtxop -fa -c .265 .670 .065 image.hdr > image_lum.mtx
+.PP
+To render a melanopic illuminance image with
+.I rtrace\:
+.IP "" .2i
+vwrays -ff -x 1024 -y 1024 -vf myview.vf |
+rtrace -fff -cs 18 -co+ -i+ `vwrays -x 1024 -y 1024 -vf myview.vf -d` scene.oct |
+rmtxop -fc -c M - > scene_meli.hdr
+.PP
+To scale a matrix by 4 and add it to the transpose of another matrix:
+.IP "" .2i
+rmtxop -s 4 first.mtx + -t second.mtx > result.mtx
+.PP
+To multiply elements of two matrices, then concatenate with a third,
+applying a final transpose to the result:
+.IP "" .2i
+rmtxop first.mtx \\* second.mtx . third.mtx -t > result.mtx
+.PP
+To left-multiply the element-wise division of two matrices:
+.IP "" .2i
+rmtxop -fd numerator.mtx / denominator.mtx | rmtxop left.mtx - > result.mtx
+.PP
+To send the elements of a binary matrix to 
+.I rcalc(1)
+for further processing:
+.IP "" .2i
+rmtxop -fa orig.mtx | rcollate -ho -oc 1 | rcalc [operations]
+.SH NOTES
+Matrix concatenation is associative but not commutative, so order
+matters to the result.
+.I Rmtxop
+takes advantage of this associative property to concatenate
+from right to left when it reduces the number of basic operations.
+If the rightmost matrix is a column vector for example, it is
+much faster to concatenate from the right, and the result will
+be the same.
+Note that this only applies to concatenation;
+element-wise addition, multiplication, and division are always
+evaluated from left to right.
+.PP
+All calculations are peformed internally using 32-bit floating-point,
+so there is little benefit in either reading or writing 64-bit double
+data.
+This may be overridden at compile time using the macro
+"-DDTrmx_native=DTdouble".
+.SH BUGS
+The
+.I rmtxop
+command currently ignores the "PRIMARIES" setting in input
+headers, and does not produce any on output, even in
+circumstances where it would make sense to.
+.SH AUTHOR
+Greg Ward
+.SH "SEE ALSO"
+cnt(1), dctimestep(1), getinfo(1), pcomb(1), pfilt(1),
+pvsum(1), ra_xyze(1), rcalc(1),
+rcollate(1), rcomb(1), rcontrib(1), rcrop(1), rfluxmtx(1),
+rtpict(1), rtrace(1), vwrays(1), wrapBSDF(1)

@@ -1,7 +1,6 @@
 use crate::pipeline::DEBUG;
-use std::process::Command;
 
-use super::ConfigSettings;
+use super::{ConfigSettings, invoke_radiance};
 
 // Nullifies the exposure value of an HDR image using ra_xyze.
 // config_settings:
@@ -21,7 +20,7 @@ pub fn nullify_exposure_value(
     }
 
     // Create a new command for ra_xyze
-    let mut command = Command::new(config_settings.radiance_path.join("ra_xyze"));
+    let mut command = invoke_radiance(config_settings, "ra_xyze");
 
     // Add arguments to ra_xyze command
     command.args(["-r", "-o", input_file.as_str(), output_file.as_str()]);

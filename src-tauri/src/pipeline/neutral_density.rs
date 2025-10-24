@@ -1,9 +1,8 @@
 use crate::pipeline::DEBUG;
 use std::fs::File;
-use std::process::Command;
 use std::process::Stdio;
 
-use super::ConfigSettings;
+use super::{ConfigSettings, invoke_radiance};
 
 // Neutral Density Filter
 // config_settings:
@@ -28,7 +27,7 @@ pub fn neutral_density(
     }
 
     // Command to run
-    let mut command = Command::new(config_settings.radiance_path.join("pcomb"));
+    let mut command = invoke_radiance(config_settings, "pcomb");
 
     // Add arguments
     command.args(["-f", neutral_density.as_str(), input_file.as_str()]);

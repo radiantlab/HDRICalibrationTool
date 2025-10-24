@@ -10,10 +10,10 @@
 use crate::pipeline::DEBUG;
 use std::{
     fs::File,
-    process::{Command, Stdio},
+    process::Stdio,
 };
 
-use super::ConfigSettings;
+use super::{ConfigSettings, invoke_radiance};
 
 /**
  * Corrects for the vignetting effect of an HDR image using Radiance's pcomb utility.
@@ -42,7 +42,7 @@ pub fn vignetting_effect_correction(
     }
 
     // Create a new command for pcomb
-    let mut command = Command::new(config_settings.radiance_path.join("pcomb"));
+    let mut command = invoke_radiance(config_settings, "pcomb");
 
     // Add arguments to pcomb command
     command.args([
