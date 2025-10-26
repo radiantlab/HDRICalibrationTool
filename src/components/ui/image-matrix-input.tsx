@@ -5,17 +5,26 @@ import {
 	useController,
 } from "react-hook-form";
 import { Field, FieldContent } from "./field";
-import TauriDropzone, {
+import {
+	TauriDropzone,
 	DropzoneChildrenProps,
 	FileRejection,
 } from "@/components/ui/tauri-dropzone";
 import { cn } from "@/lib/utils";
 import { ArrowDownOnSquareStackIcon } from "@heroicons/react/24/solid";
-import type { FileWithPath } from "react-dropzone";
 import { imageFileExtensions } from "@/lib/image-file-extensions";
 import { toast } from "sonner";
 import path from "path";
 import { useCallback } from "react";
+import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { DialogFilter, open } from "@tauri-apps/plugin-dialog";
+import { readDir, stat } from "@tauri-apps/plugin-fs";
+import { FileGroup, ImageSetPreview } from "./file-group-preview";
 
 type FileMatrixFieldName<T extends FieldValues> = FieldPathByValue<
 	T,
@@ -29,10 +38,9 @@ type FileMatrixInputProps<
 	name: TName;
 };
 
-type FileGroup = {
-	name: string;
-	files: string[];
-};
+const imageFilters: DialogFilter[] = [
+	{ name: "Images", extensions: imageFileExtensions },
+];
 
 export function ImageMatrixInput<
 	T extends FieldValues,
@@ -43,21 +51,35 @@ export function ImageMatrixInput<
 	const value = field.value as FileGroup[] | undefined;
 
 	const onDrop = useCallback(
-		(acceptedFiles: string[]) => {
-			if (!acceptedFiles?.length) return;
+		async (acceptedFiles: string[]) => {
+			if (!acceptedFiles.length) return;
 
 			// group by top-level directory name (first segment of path)
 			const groups = new Map<string, FileGroup>();
 			for (const rawPath of acceptedFiles) {
-				const fileDir = path.dirname(rawPath);
-				const directParent = path.basename(fileDir);
+				const { isFile } = await stat(rawPath);
+				const fileDir = isFile ? path.dirname(rawPath) : rawPath;
+				const groupingDir = path.basename(fileDir);
+				console.log("groupingDir", groupingDir);
 
-				const arr = groups.get(directParent) ?? {
-					name: directParent,
+				const arr = groups.get(groupingDir) ?? {
+					name: groupingDir,
 					files: [],
 				};
-				arr.files.push(rawPath);
-				groups.set(directParent, arr);
+				if (isFile) {
+					arr.files.push(rawPath);
+				} else {
+					const files = await readDir(rawPath);
+					const acceptedPaths = files
+						.filter((f) => {
+							if (!f.isFile) return false;
+							const ext = path.extname(f.name).slice(1).toLowerCase();
+							return imageFileExtensions.includes(ext);
+						})
+						.map((f) => path.join(rawPath, f.name));
+					arr.files.push(...acceptedPaths);
+				}
+				groups.set(groupingDir, arr);
 			}
 
 			const newRows = Array.from(groups.values());
@@ -66,62 +88,90 @@ export function ImageMatrixInput<
 		[field, value]
 	);
 
+	const selectOneDirectory = useCallback(async () => {
+		const selectedDirectory = await open({
+			multiple: false,
+			directory: true,
+			filters: imageFilters,
+		});
+		if (selectedDirectory) onDrop([selectedDirectory]);
+	}, [onDrop]);
+
+	const selectMultipleDirectories = useCallback(async () => {
+		const selectedDirectories = await open({
+			multiple: true,
+			directory: true,
+			filters: imageFilters,
+		});
+		if (selectedDirectories) onDrop(selectedDirectories);
+	}, [onDrop]);
 	return (
 		<Field>
 			<FieldContent className="flex flex-col gap-0">
 				{value?.map((row: FileGroup, index: number) => (
-					<div key={index} className="h-56 border-b px-8">
-						<div className="text-lg font-bold">{row.name}</div>
-						{/* {row.files.map((file) => (
-							<div key={file.name}>{file.name}</div>
-						))} */}
-					</div>
+					<ImageSetPreview key={index} {...row} />
 				))}
-				<TauriDropzone
-					accept={useCallback((p: string) => {
-						const ext = path.extname(p).slice(1).toLowerCase();
-						return imageFileExtensions.includes(ext);
-					}, [])}
-					multiple
-					onDrop={onDrop}
-					onError={useCallback(
-						(err: Error) =>
-							toast.error(`Error accepting files: ${err.message}`),
-						[]
-					)}
-					onDropRejected={useCallback(
-						(fileRejections: FileRejection[]) =>
-							fileRejections.forEach((fr) =>
-								toast.error(
-									<>
-										File rejected:{" "}
-										{"path" in fr.file ? fr.file.path : "unknown"}
-										<br />
-										<br />
-										{fr.errors.map((e) => e.message).join(", ")}
-									</>
-								)
-							),
-						[]
-					)}
-				>
-					{useCallback(
-						({ isDragActive }: DropzoneChildrenProps) => (
-							<div
-								className={cn(
-									"transition-colors border-8 border-dashed text-border h-56 grid place-items-center p-4 cursor-pointer focus:outline-none",
-									{ "text-foreground border-foreground": isDragActive }
-								)}
-							>
-								<div className="grid place-items-center gap-2">
-									<ArrowDownOnSquareStackIcon className="size-16" />
-									<p>Drag and drop images here</p>
-								</div>
-							</div>
-						),
-						[]
-					)}
-				</TauriDropzone>
+				<ContextMenu>
+					<ContextMenuTrigger asChild>
+						<TauriDropzone
+							accept={useCallback((p: string) => {
+								const ext = path.extname(p).slice(1).toLowerCase();
+								return imageFileExtensions.includes(ext);
+							}, [])}
+							multiple
+							onDrop={onDrop}
+							onError={useCallback(
+								(err: Error) =>
+									toast.error(`Error accepting files: ${err.message}`),
+								[]
+							)}
+							onDropRejected={useCallback(
+								(fileRejections: FileRejection[]) =>
+									fileRejections.forEach((fr) =>
+										toast.error(
+											<>
+												File rejected:{" "}
+												{"path" in fr.file ? fr.file.path : "unknown"}
+												<br />
+												<br />
+												{fr.errors.map((e) => e.message).join(", ")}
+											</>
+										)
+									),
+								[]
+							)}
+							onClick={selectOneDirectory}
+						>
+							{useCallback(
+								({ isDragActive }: DropzoneChildrenProps) => (
+									<div
+										className={cn(
+											"transition-colors border-8 border-dashed text-border h-56 grid place-items-center p-4 cursor-pointer focus:outline-none",
+											"hover:text-foreground hover:border-foreground",
+											{ "text-foreground border-foreground": isDragActive }
+										)}
+									>
+										<div className="grid place-items-center gap-2">
+											<ArrowDownOnSquareStackIcon className="size-16" />
+											<p>Drag and drop images here</p>
+										</div>
+									</div>
+								),
+								[]
+							)}
+						</TauriDropzone>
+					</ContextMenuTrigger>
+					<ContextMenuContent className="w-52">
+						<ContextMenuItem inset onClick={selectOneDirectory}>
+							Create one...
+							{/* <ContextMenuShortcut>⌘[</ContextMenuShortcut> */}
+						</ContextMenuItem>
+						<ContextMenuItem inset onClick={selectMultipleDirectories}>
+							Create multiple...
+							{/* <ContextMenuShortcut>⌘]</ContextMenuShortcut> */}
+						</ContextMenuItem>
+					</ContextMenuContent>
+				</ContextMenu>
 			</FieldContent>
 		</Field>
 	);

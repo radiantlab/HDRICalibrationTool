@@ -14,7 +14,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { DropzoneInput } from "@/components/ui/dropzone-input";
 import { Controller, useForm } from "react-hook-form";
 import {
 	Accordion,
@@ -60,12 +59,6 @@ export default function Home() {
 					console.log("configForm submitted", data);
 				})}
 			>
-				{/* <DropzoneInput
-					className="w-full h-full flex-grow p-16"
-					name="inputSets"
-					control={form.control}
-					multiple
-				/> */}
 				<ImageMatrixInput control={control} name="inputSets" />
 				<div className="bg-accent w-96">
 					<Controller

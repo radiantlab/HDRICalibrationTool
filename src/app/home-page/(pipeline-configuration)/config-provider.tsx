@@ -1,8 +1,9 @@
+import { FileGroup } from "@/components/ui/file-group-preview";
 import { createContext, useContext } from "react";
 import { UseFormReturn } from "react-hook-form";
 
 export type pipelineConfig = {
-	inputSets: File[][];
+	inputSets: FileGroup[];
 	cameraResponseLocation: string[];
 	lensMask: {
 		diameter: number;

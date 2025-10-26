@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { Ref } from "react";
 import { cn } from "@/lib/utils";
-import { getCurrentWindow } from "@tauri-apps/api/window";
-import path from "path";
-import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { open } from "@tauri-apps/plugin-dialog";
+import { imageFileExtensions } from "@/lib/image-file-extensions";
 
 type DragDropEvent =
 	| { type: "enter"; paths: string[]; position: { x: number; y: number } }
@@ -25,13 +24,14 @@ export type DropzoneChildrenProps = {
 type TauriDropzoneProps = {
 	accept?: (path: string) => boolean;
 	multiple?: boolean;
-	disabled?: boolean;
 	onDrop?: (paths: string[]) => void;
-	onError?: (error: Error) => void;
 	onDropRejected?: (rejected: FileRejection[]) => void;
+	onError?: (error: Error) => void;
 	children?: (opts: DropzoneChildrenProps) => React.ReactNode;
-	className?: string;
-};
+} & Omit<
+	React.ComponentProps<"button">,
+	"onDrop" | "onError" | "onDropRejected" | "children"
+>;
 
 export function TauriDropzone({
 	accept,
@@ -42,11 +42,12 @@ export function TauriDropzone({
 	onDropRejected,
 	children,
 	className,
+	ref,
+	...props
 }: TauriDropzoneProps) {
 	const [isDragActive, setIsDragActive] = React.useState(false);
-	const rootRef = React.useRef<HTMLDivElement | null>(null);
+	const rootRef = React.useRef<HTMLButtonElement>(null);
 
-	const setupRef = useRef<boolean>(false);
 	React.useEffect(() => {
 		if (disabled) return;
 
@@ -108,10 +109,22 @@ export function TauriDropzone({
 	}, [disabled, multiple, accept, onDrop, onError, onDropRejected]);
 
 	return (
-		<div ref={rootRef} className={cn("relative", className)}>
+		<button
+			{...props}
+			ref={(val) => {
+				rootRef.current = val;
+				switch (typeof ref) {
+					case "function":
+						ref(val);
+						break;
+					default:
+						if (ref) ref.current = val;
+						break;
+				}
+			}}
+			className={cn("relative", className)}
+		>
 			{children?.({ isDragActive })}
-		</div>
+		</button>
 	);
 }
-
-export default TauriDropzone;
