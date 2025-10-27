@@ -11,7 +11,6 @@ export default function TiffImageInner({
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
-		let cancelled = false;
 		const container = containerRef.current;
 		if (!container) return;
 
@@ -26,26 +25,36 @@ export default function TiffImageInner({
 			type: "module",
 		});
 
+		let cancelled = false;
+		const cleanupWorker = () => {
+			cancelled = true;
+			worker.removeEventListener("message", onMessage);
+			worker.terminate();
+		};
 		const onMessage = (e: MessageEvent) => {
 			if (cancelled) return;
-			const data = e.data as
-				| { width: number; height: number; buffer: ArrayBuffer }
-				| { error: string };
-			if ("error" in data) {
-				console.error("TIFF decode error", data.error);
-				return;
-			}
-			if ("buffer" in data) {
-				const { width, height, buffer } = data;
-				canvas.width = width;
-				canvas.height = height;
-				const imageData = new ImageData(
-					new Uint8ClampedArray(buffer),
-					width,
-					height
-				);
-				ctx.putImageData(imageData, 0, 0);
-				fit(canvas, container);
+			try {
+				const data = e.data as
+					| { width: number; height: number; buffer: ArrayBuffer }
+					| { error: string };
+				if ("error" in data) {
+					console.error("TIFF decode error", data.error);
+					return;
+				}
+				if ("buffer" in data) {
+					const { width, height, buffer } = data;
+					canvas.width = width;
+					canvas.height = height;
+					const imageData = new ImageData(
+						new Uint8ClampedArray(buffer),
+						width,
+						height
+					);
+					ctx.putImageData(imageData, 0, 0);
+					fit(canvas, container);
+				}
+			} finally {
+				cleanupWorker();
 			}
 		};
 
@@ -61,7 +70,7 @@ export default function TiffImageInner({
 		worker.postMessage(
 			{
 				buffer: bufferCopy,
-				memoryBytes: 256 * 1024 * 1024,
+				memoryBytes: bufferCopy.byteLength * 2,
 				maxWidth,
 				maxHeight,
 			},
@@ -72,10 +81,8 @@ export default function TiffImageInner({
 		resizeObserver.observe(container);
 
 		return () => {
-			cancelled = true;
+			cleanupWorker();
 			resizeObserver.disconnect();
-			worker.removeEventListener("message", onMessage);
-			worker.terminate();
 			if (container.contains(canvas)) container.removeChild(canvas);
 		};
 	}, [tiffBuffer.buffer]);

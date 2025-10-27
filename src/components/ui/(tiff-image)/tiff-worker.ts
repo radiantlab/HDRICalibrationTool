@@ -4,7 +4,7 @@ import Tiff from "tiff.js";
 
 type DecodeRequest = {
 	buffer: ArrayBuffer;
-	memoryBytes?: number;
+	memoryBytes: number;
 	maxWidth?: number;
 	maxHeight?: number;
 };
@@ -22,7 +22,7 @@ type DecodeError = {
 self.onmessage = (event: MessageEvent<DecodeRequest>) => {
 	const { buffer, memoryBytes, maxWidth, maxHeight } = event.data;
 	try {
-		Tiff.initialize({ TOTAL_MEMORY: memoryBytes ?? 256 * 1024 * 1024 });
+		Tiff.initialize({ TOTAL_MEMORY: memoryBytes });
 		const tiff = new Tiff({ buffer });
 		const width = tiff.width();
 		const height = tiff.height();
