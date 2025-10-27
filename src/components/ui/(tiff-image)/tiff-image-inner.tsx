@@ -11,6 +11,7 @@ export default function TiffImageInner({
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
+		// todo: consider turning this into a promise, so we can properly suspend while the worker is running
 		const container = containerRef.current;
 		if (!container) return;
 

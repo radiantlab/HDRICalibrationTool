@@ -83,6 +83,7 @@ export function ImageMatrixInput<
 			}
 
 			const newRows = Array.from(groups.values());
+			// todo: sort these by total alpha value, so we can see the images sorted from most exposed to least exposed
 			field.onChange([...(value ?? []), ...newRows]);
 		},
 		[field, value]

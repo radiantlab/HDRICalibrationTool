@@ -23,8 +23,8 @@ export function ImageSetPreview({ name, files }: ImageSet) {
 	);
 
 	return (
-		<div className="h-56">
-			<div className="grid grid-flow-col bg-accent divide-x border-b px-2">
+		<div className="flex flex-col h-56 bg-accent">
+			<div className="grid grid-flow-col divide-x border-b px-2">
 				<div className="font-bold text-2xl">{name}</div>
 				{Object.entries({
 					Files: files.length,
@@ -70,7 +70,7 @@ export function ImageSetPreview({ name, files }: ImageSet) {
 							break;
 					}
 					return (
-						<div key={file} className="size-48 bg-accent">
+						<div key={file} className="size-48 shrink-0 bg-accent">
 							{imageElem}
 						</div>
 					);
