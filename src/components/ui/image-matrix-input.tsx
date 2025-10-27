@@ -24,11 +24,11 @@ import {
 } from "@/components/ui/context-menu";
 import { DialogFilter, open } from "@tauri-apps/plugin-dialog";
 import { readDir, stat } from "@tauri-apps/plugin-fs";
-import { FileGroup, ImageSetPreview } from "./file-group-preview";
+import { ImageSet, ImageSetPreview } from "./image-set-preview";
 
 type FileMatrixFieldName<T extends FieldValues> = FieldPathByValue<
 	T,
-	FileGroup[] | undefined
+	ImageSet[] | undefined
 >;
 type FileMatrixInputProps<
 	T extends FieldValues,
@@ -48,19 +48,18 @@ export function ImageMatrixInput<
 >({ control, name }: FileMatrixInputProps<T, TName>) {
 	// todo: properly handle field states
 	const { field } = useController<T, TName>({ control, name });
-	const value = field.value as FileGroup[] | undefined;
+	const value = field.value as ImageSet[] | undefined;
 
 	const onDrop = useCallback(
 		async (acceptedFiles: string[]) => {
 			if (!acceptedFiles.length) return;
 
 			// group by top-level directory name (first segment of path)
-			const groups = new Map<string, FileGroup>();
+			const groups = new Map<string, ImageSet>();
 			for (const rawPath of acceptedFiles) {
 				const { isFile } = await stat(rawPath);
 				const fileDir = isFile ? path.dirname(rawPath) : rawPath;
 				const groupingDir = path.basename(fileDir);
-				console.log("groupingDir", groupingDir);
 
 				const arr = groups.get(groupingDir) ?? {
 					name: groupingDir,
@@ -108,7 +107,7 @@ export function ImageMatrixInput<
 	return (
 		<Field>
 			<FieldContent className="flex flex-col gap-0">
-				{value?.map((row: FileGroup, index: number) => (
+				{value?.map((row: ImageSet, index: number) => (
 					<ImageSetPreview key={index} {...row} />
 				))}
 				<ContextMenu>
@@ -162,11 +161,11 @@ export function ImageMatrixInput<
 						</TauriDropzone>
 					</ContextMenuTrigger>
 					<ContextMenuContent className="w-52">
-						<ContextMenuItem inset onClick={selectOneDirectory}>
+						<ContextMenuItem onClick={selectOneDirectory}>
 							Create one...
 							{/* <ContextMenuShortcut>⌘[</ContextMenuShortcut> */}
 						</ContextMenuItem>
-						<ContextMenuItem inset onClick={selectMultipleDirectories}>
+						<ContextMenuItem onClick={selectMultipleDirectories}>
 							Create multiple...
 							{/* <ContextMenuShortcut>⌘]</ContextMenuShortcut> */}
 						</ContextMenuItem>

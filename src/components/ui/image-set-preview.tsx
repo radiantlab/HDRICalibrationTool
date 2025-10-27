@@ -1,15 +1,17 @@
 import { stat } from "@tauri-apps/plugin-fs";
+import { convertFileSrc } from "@tauri-apps/api/core";
 import path from "path";
 import { useMemo } from "react";
 import { SkeletonSuspended } from "./skeleton-suspended";
 import prettyBytes from "pretty-bytes";
+import { TiffImage } from "./(tiff-image)/tiff-image";
 
-export type FileGroup = {
+export type ImageSet = {
 	name: string;
 	files: string[];
 };
 
-export function ImageSetPreview({ name, files }: FileGroup) {
+export function ImageSetPreview({ name, files }: ImageSet) {
 	const fileStats = useMemo(
 		() => Promise.all(files.map((f) => stat(f))),
 		[files]
@@ -21,8 +23,8 @@ export function ImageSetPreview({ name, files }: FileGroup) {
 	);
 
 	return (
-		<div className="h-56 border-b px-4">
-			<div className="grid grid-flow-col">
+		<div className="h-56 border-b">
+			<div className="grid grid-flow-col bg-accent divide-x border-b">
 				<div className="font-bold text-2xl">{name}</div>
 				{Object.entries({
 					Files: files.length,
@@ -46,6 +48,25 @@ export function ImageSetPreview({ name, files }: FileGroup) {
 						</div>
 					)
 				)}
+			</div>
+			<div className="flex overflow-x-auto gap-2">
+				{files.map((file) => {
+					let imageElem: React.ReactNode;
+					switch (path.extname(file).toLowerCase()) {
+						case ".jpg":
+						case ".jpeg":
+							imageElem = <img src={convertFileSrc(file)} />;
+							break;
+						default:
+							imageElem = <TiffImage src={file} />;
+							break;
+					}
+					return (
+						<div key={file} className="size-48 bg-accent">
+							{imageElem}
+						</div>
+					);
+				})}
 			</div>
 		</div>
 	);
