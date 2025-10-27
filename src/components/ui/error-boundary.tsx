@@ -37,7 +37,7 @@ export function ErrorBoundary({
 							</PopoverTrigger>
 						</ContextMenuContent>
 					</ContextMenu>
-					<PopoverContent className="w-[50rem]">
+					<PopoverContent className="w-200">
 						<pre>{String(error)}</pre>
 					</PopoverContent>
 				</Popover>

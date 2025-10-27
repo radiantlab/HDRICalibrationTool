@@ -71,7 +71,7 @@ export function DropzoneInput<
 						<div
 							{...getRootProps({
 								className: cn(
-									"transition-colors border-8 border-dashed text-border size-full grid place-items-center p-4 cursor-pointer focus:outline-none",
+									"transition-colors border-8 border-dashed text-border size-full grid place-items-center p-4 cursor-pointer focus:outline-hidden",
 									{ "text-foreground border-foreground": isDragActive },
 									{ "opacity-50 cursor-not-allowed": disabled }
 								),

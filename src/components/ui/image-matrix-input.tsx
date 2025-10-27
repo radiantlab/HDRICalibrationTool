@@ -146,7 +146,7 @@ export function ImageMatrixInput<
 								({ isDragActive }: DropzoneChildrenProps) => (
 									<div
 										className={cn(
-											"transition-colors border-8 border-dashed text-border h-56 grid place-items-center p-4 cursor-pointer focus:outline-none",
+											"transition-colors border-8 border-dashed text-border h-56 grid place-items-center p-4 cursor-pointer focus:outline-hidden",
 											"hover:text-foreground hover:border-foreground",
 											{ "text-foreground border-foreground": isDragActive }
 										)}
