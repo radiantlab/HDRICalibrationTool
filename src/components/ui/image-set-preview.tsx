@@ -49,7 +49,10 @@ export function ImageSetPreview({ name, files }: ImageSet) {
 					)
 				)}
 			</div>
-			<div className="flex overflow-x-auto gap-2">
+			<div
+				className="flex overflow-x-auto gap-4"
+				style={{ scrollbarWidth: "none" }}
+			>
 				{files.map((file) => {
 					let imageElem: React.ReactNode;
 					switch (path.extname(file).toLowerCase()) {
