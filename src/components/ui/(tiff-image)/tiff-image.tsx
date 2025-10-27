@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { memo, Suspense } from "react";
 import { useTiffPath } from "./useTiffPath";
 import { readFile } from "@tauri-apps/plugin-fs";
 import { Spinner } from "../spinner";
@@ -10,7 +10,8 @@ import { ErrorBoundary } from "@/components/ui/error-boundary";
 // this is a huge import (from tiff.js), so lets lazy load it
 const TiffImageInner = lazy(() => import("./tiff-image-inner"));
 
-export function TiffImage({ src }: { src: string }) {
+export const TiffImage = memo(function TiffImage({ src }: { src: string }) {
+	console.log("TiffImage", src);
 	const tiffPath = useTiffPath(src);
 
 	return (
@@ -20,4 +21,4 @@ export function TiffImage({ src }: { src: string }) {
 			</Suspense>
 		</ErrorBoundary>
 	);
-}
+});

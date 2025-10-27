@@ -36,6 +36,7 @@ type FileMatrixInputProps<
 > = {
 	control: Control<T>;
 	name: TName;
+	className?: string;
 };
 
 const imageFilters: DialogFilter[] = [
@@ -45,7 +46,7 @@ const imageFilters: DialogFilter[] = [
 export function ImageMatrixInput<
 	T extends FieldValues,
 	TName extends FileMatrixFieldName<T>
->({ control, name }: FileMatrixInputProps<T, TName>) {
+>({ control, name, className }: FileMatrixInputProps<T, TName>) {
 	// todo: properly handle field states
 	const { field } = useController<T, TName>({ control, name });
 	const value = field.value as ImageSet[] | undefined;
@@ -105,8 +106,8 @@ export function ImageMatrixInput<
 		if (selectedDirectories) onDrop(selectedDirectories);
 	}, [onDrop]);
 	return (
-		<Field>
-			<FieldContent className="flex flex-col gap-0">
+		<Field className={className}>
+			<FieldContent className="flex flex-col gap-0 divide-y">
 				{value?.map((row: ImageSet, index: number) => (
 					<ImageSetPreview key={index} {...row} />
 				))}

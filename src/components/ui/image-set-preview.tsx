@@ -23,8 +23,8 @@ export function ImageSetPreview({ name, files }: ImageSet) {
 	);
 
 	return (
-		<div className="h-56 border-b">
-			<div className="grid grid-flow-col bg-accent divide-x border-b">
+		<div className="h-56">
+			<div className="grid grid-flow-col bg-accent divide-x border-b px-2">
 				<div className="font-bold text-2xl">{name}</div>
 				{Object.entries({
 					Files: files.length,
@@ -39,7 +39,7 @@ export function ImageSetPreview({ name, files }: ImageSet) {
 					([key, value]) => (
 						<div
 							key={key}
-							className="flex gap-1 items-center text-sm text-muted-foreground"
+							className="flex gap-1 items-center text-sm text-muted-foreground px-2"
 						>
 							{key}:
 							<SkeletonSuspended sizePlaceholder={"placeholder"}>
@@ -55,10 +55,15 @@ export function ImageSetPreview({ name, files }: ImageSet) {
 					switch (path.extname(file).toLowerCase()) {
 						case ".jpg":
 						case ".jpeg":
-							imageElem = <img src={convertFileSrc(file)} />;
+							imageElem = (
+								<img
+									src={convertFileSrc(file)}
+									className="size-full object-contain"
+								/>
+							);
 							break;
 						default:
-							imageElem = <TiffImage src={file} />;
+							imageElem = <TiffImage key={file} src={file} />;
 							break;
 					}
 					return (

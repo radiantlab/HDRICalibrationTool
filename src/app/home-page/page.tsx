@@ -54,13 +54,17 @@ export default function Home() {
 	return (
 		<PipelineConfigProvider form={form}>
 			<form
-				className="flex h-full w-full divide-x"
+				className="flex h-full w-screen divide-x"
 				onSubmit={form.handleSubmit((data) => {
 					console.log("configForm submitted", data);
 				})}
 			>
-				<ImageMatrixInput control={control} name="inputSets" />
-				<div className="bg-accent w-96">
+				<ImageMatrixInput
+					control={control}
+					name="inputSets"
+					className="flex-1 overflow-hidden"
+				/>
+				<div className="bg-accent w-96 shrink-0">
 					<Controller
 						name="cameraResponseLocation"
 						control={control}
