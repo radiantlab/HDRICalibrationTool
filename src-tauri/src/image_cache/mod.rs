@@ -19,14 +19,10 @@ fn dcraw_context() -> String {
     format!("dcraw_emu|{}", dcraw_base_args().join(" "))
 }
 
-pub fn get_cache_dir(app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
-    let binding_result = app_handle.path().app_config_dir();
-    let base_dir = match binding_result {
-        Ok(v) => v,
-        Err(_) => return Err("Unable to get app directory (binding)".to_string()),
-    };
-
-    // TODO: consider using an OS designated temp directory
+pub fn get_cache_dir(_app_handle: &tauri::AppHandle) -> Result<PathBuf, String> {
+    // use OS-designated temporary directory so the cache can be evicted by the OS when necessary,
+    // and we don't have to worry about cleanup.
+    let base_dir = env::temp_dir().join(env!("CARGO_PKG_NAME"));
     let cache_dir = base_dir.join("image_cache");
     if fs::create_dir_all(&cache_dir).is_err() {
         return Err("Couldn't create image cache directory".to_string());
