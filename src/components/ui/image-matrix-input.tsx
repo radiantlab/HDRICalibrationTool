@@ -8,7 +8,6 @@ import { Field, FieldContent } from "./field";
 import {
 	TauriDropzone,
 	DropzoneChildrenProps,
-	FileRejection,
 } from "@/components/ui/tauri-dropzone";
 import { cn } from "@/lib/utils";
 import { ArrowDownOnSquareStackIcon } from "@heroicons/react/24/solid";
@@ -23,7 +22,7 @@ import {
 	ContextMenuTrigger,
 } from "@/components/ui/context-menu";
 import { DialogFilter, open } from "@tauri-apps/plugin-dialog";
-import { readDir, stat } from "@tauri-apps/plugin-fs";
+import { DirEntry, readDir, stat } from "@tauri-apps/plugin-fs";
 import { ImageSet, ImageSetPreview } from "./image-set-preview";
 
 type FileMatrixFieldName<T extends FieldValues> = FieldPathByValue<
@@ -43,6 +42,10 @@ const imageFilters: DialogFilter[] = [
 	{ name: "Images", extensions: imageFileExtensions },
 ];
 
+type FullDirEntry = DirEntry & {
+	path: string;
+};
+
 export function ImageMatrixInput<
 	T extends FieldValues,
 	TName extends FileMatrixFieldName<T>
@@ -51,14 +54,29 @@ export function ImageMatrixInput<
 	const { field } = useController<T, TName>({ control, name });
 	const value = field.value as ImageSet[] | undefined;
 
+	const filterForAcceptance = useCallback(
+		(entries: FullDirEntry[]): FullDirEntry[] =>
+			entries.filter((e) => {
+				const ext = path.extname(e.name).slice(1).toLowerCase();
+				const accepted = e.isFile && imageFileExtensions.includes(ext);
+				if (!accepted)
+					toast.error(`'${e.name}' is not an acceptable image file`);
+
+				return accepted;
+			}),
+		[]
+	);
+
 	const onDrop = useCallback(
-		async (acceptedFiles: string[]) => {
-			if (!acceptedFiles.length) return;
+		async (files: string[]) => {
+			if (!files.length) return;
 
 			// group by top-level directory name (first segment of path)
 			const groups = new Map<string, ImageSet>();
-			for (const rawPath of acceptedFiles) {
-				const { isFile } = await stat(rawPath);
+			for (const rawPath of files) {
+				console.log("rawPath", rawPath);
+				const fileStats = await stat(rawPath);
+				const { isFile } = fileStats;
 				const fileDir = isFile ? path.dirname(rawPath) : rawPath;
 				const groupingDir = path.basename(fileDir);
 
@@ -66,19 +84,20 @@ export function ImageMatrixInput<
 					name: groupingDir,
 					files: [],
 				};
+				let pendingEntries: FullDirEntry[] = [];
 				if (isFile) {
-					arr.files.push(rawPath);
+					pendingEntries = [
+						{ ...fileStats, name: path.basename(rawPath), path: rawPath },
+					];
 				} else {
-					const files = await readDir(rawPath);
-					const acceptedPaths = files
-						.filter((f) => {
-							if (!f.isFile) return false;
-							const ext = path.extname(f.name).slice(1).toLowerCase();
-							return imageFileExtensions.includes(ext);
-						})
-						.map((f) => path.join(rawPath, f.name));
-					arr.files.push(...acceptedPaths);
+					pendingEntries = (await readDir(rawPath)).map((e) => ({
+						...e,
+						path: path.join(rawPath, e.name),
+					}));
 				}
+				arr.files.push(
+					...filterForAcceptance(pendingEntries).map((e) => e.path)
+				);
 				groups.set(groupingDir, arr);
 			}
 
@@ -115,32 +134,8 @@ export function ImageMatrixInput<
 				<ContextMenu>
 					<ContextMenuTrigger asChild>
 						<TauriDropzone
-							accept={useCallback((p: string) => {
-								const ext = path.extname(p).slice(1).toLowerCase();
-								return imageFileExtensions.includes(ext);
-							}, [])}
 							multiple
 							onDrop={onDrop}
-							onError={useCallback(
-								(err: Error) =>
-									toast.error(`Error accepting files: ${err.message}`),
-								[]
-							)}
-							onDropRejected={useCallback(
-								(fileRejections: FileRejection[]) =>
-									fileRejections.forEach((fr) =>
-										toast.error(
-											<>
-												File rejected:{" "}
-												{"path" in fr.file ? fr.file.path : "unknown"}
-												<br />
-												<br />
-												{fr.errors.map((e) => e.message).join(", ")}
-											</>
-										)
-									),
-								[]
-							)}
 							onClick={selectOneDirectory}
 						>
 							{useCallback(

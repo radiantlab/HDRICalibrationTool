@@ -13,7 +13,7 @@
  */
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
 	Accordion,
@@ -23,19 +23,18 @@ import {
 } from "@/components/ui/accordion";
 import {
 	Field,
-	FieldDescription,
+	FieldContent,
 	FieldError,
 	FieldLabel,
 } from "@/components/ui/field";
 import { TauriFileButtonInput } from "@/components/ui/tauri-file-button-input";
 import { Input } from "@/components/ui/input";
-import { ControlledFormInputField } from "@/components/ui/input-field";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Diameter, MoveHorizontal, MoveVertical, Radius } from "lucide-react";
+import { MoveHorizontal, MoveVertical, Radius, Rotate3D } from "lucide-react";
 import {
 	pipelineConfig,
 	PipelineConfigProvider,
@@ -68,7 +67,7 @@ export default function Home() {
 					<Controller
 						name="cameraResponseLocation"
 						control={control}
-						render={({ field, fieldState }) => (
+						render={({ fieldState }) => (
 							<Field data-invalid={fieldState.invalid} className="p-4">
 								<FieldLabel htmlFor="form-rhf-demo-title">
 									Camera response file(s)
@@ -140,7 +139,33 @@ export default function Home() {
 							</AccordionContent>
 						</AccordionItem>
 						<AccordionItem value="item-2" className="px-4">
-							<AccordionTrigger>Luminance Mapping</AccordionTrigger>
+							<AccordionTrigger>Fisheye configuration</AccordionTrigger>
+							<AccordionContent className="flex gap-1 text-balance">
+								<Field>
+									<FieldLabel className="items-center">
+										<Rotate3D /> Fisheye view angles
+									</FieldLabel>
+									<FieldContent className="flex-row gap-1">
+										<Input
+											icon={"°"}
+											type="number"
+											placeholder="Vertical view angle"
+											{...register("lensMask.x")}
+										/>
+										<Input
+											icon={"°"}
+											type="number"
+											// TODO: refactor this to be from the top, not the bottom.
+											// thats just more intuitive/standardized.
+											placeholder="Horizontal view angle"
+											{...register("lensMask.y")}
+										/>
+									</FieldContent>
+								</Field>
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem value="item-3" className="px-4">
+							<AccordionTrigger>Correction pipeline</AccordionTrigger>
 							<AccordionContent className="flex flex-col gap-4 text-balance">
 								placeholder
 							</AccordionContent>

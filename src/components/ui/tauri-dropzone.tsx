@@ -3,8 +3,6 @@
 import React, { Ref } from "react";
 import { cn } from "@/lib/utils";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
-import { open } from "@tauri-apps/plugin-dialog";
-import { imageFileExtensions } from "@/lib/image-file-extensions";
 
 type DragDropEvent =
 	| { type: "enter"; paths: string[]; position: { x: number; y: number } }
@@ -12,34 +10,20 @@ type DragDropEvent =
 	| { type: "drop"; paths: string[]; position: { x: number; y: number } }
 	| { type: "leave" };
 
-export type FileRejection = {
-	file: { path: string };
-	errors: { message: string }[];
-};
-
 export type DropzoneChildrenProps = {
 	isDragActive: boolean;
 };
 
 type TauriDropzoneProps = {
-	accept?: (path: string) => boolean;
 	multiple?: boolean;
 	onDrop?: (paths: string[]) => void;
-	onDropRejected?: (rejected: FileRejection[]) => void;
-	onError?: (error: Error) => void;
 	children?: (opts: DropzoneChildrenProps) => React.ReactNode;
-} & Omit<
-	React.ComponentProps<"button">,
-	"onDrop" | "onError" | "onDropRejected" | "children"
->;
+} & Omit<React.ComponentProps<"button">, "onDrop" | "children">;
 
 export function TauriDropzone({
-	accept,
 	multiple,
 	disabled,
 	onDrop,
-	onError,
-	onDropRejected,
 	children,
 	className,
 	ref,
@@ -82,23 +66,7 @@ export function TauriDropzone({
 					setIsDragActive(false);
 					const paths = payload.paths || [];
 
-					// filter by accept
-					const rejected: FileRejection[] = [];
-					const accepted: string[] = [];
-					for (const p of paths) {
-						if (!accept || !accept(p)) {
-							rejected.push({
-								file: { path: p },
-								errors: [{ message: `${p} not accepted` }],
-							});
-							continue;
-						}
-						accepted.push(p);
-					}
-
-					const finalAccepted = multiple ? accepted : accepted.slice(0, 1);
-					if (finalAccepted.length && onDrop) onDrop(finalAccepted);
-					if (rejected.length && onDropRejected) onDropRejected(rejected);
+					onDrop?.(paths);
 				}
 			}
 		);
@@ -106,7 +74,7 @@ export function TauriDropzone({
 		return () => {
 			unlistenPromise.then((unlisten) => unlisten());
 		};
-	}, [disabled, multiple, accept, onDrop, onError, onDropRejected]);
+	}, [disabled, multiple, onDrop]);
 
 	return (
 		<button
