@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 	output: "export",
+	turbopack: {
+		// stub fs and path for client-side
+		// for tiff.js compatibility
+		resolveAlias: {
+			fs: "./src/lib/empty-module.ts",
+			path: "./src/lib/empty-module.ts",
+		},
+	},
 	webpack: (config, { isServer }) => {
 		if (!isServer) {
 			config.resolve = config.resolve || {};
