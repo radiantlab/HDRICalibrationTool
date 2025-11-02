@@ -6,7 +6,7 @@ const nextConfig = {
 		// for tiff.js compatibility
 		resolveAlias: {
 			fs: "./src/lib/empty-module.ts",
-			path: "./src/lib/empty-module.ts",
+			path: "path-browserify",
 		},
 	},
 	webpack: (config, { isServer }) => {
@@ -17,7 +17,7 @@ const nextConfig = {
 			config.resolve.fallback = {
 				...(config.resolve.fallback || {}),
 				fs: false,
-				path: false,
+				path: require.resolve("path-browserify"),
 			};
 		}
 		return config;

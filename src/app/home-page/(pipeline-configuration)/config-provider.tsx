@@ -10,6 +10,10 @@ export type pipelineConfig = {
 		x: number;
 		y: number;
 	};
+	fisheyeView: {
+		horizontalViewDegrees: number;
+		verticalViewDegrees: number;
+	};
 };
 
 const pipelineConfigContext = createContext<

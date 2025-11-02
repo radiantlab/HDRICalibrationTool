@@ -13,7 +13,7 @@
  */
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
 	Accordion,
@@ -40,6 +40,8 @@ import {
 	PipelineConfigProvider,
 } from "./(pipeline-configuration)/config-provider";
 import { ImageMatrixInput } from "@/components/ui/image-matrix-input";
+import { CircularMaskSelection } from "@/components/ui/circular-mask-selection";
+import { convertFileSrc } from "@tauri-apps/api/core";
 
 /**
  * Main Home page component for image configuration and processing
@@ -49,6 +51,12 @@ import { ImageMatrixInput } from "@/components/ui/image-matrix-input";
 export default function Home() {
 	const form = useForm<pipelineConfig>();
 	const { control, register } = form;
+
+	const inputSets = form.watch("inputSets");
+
+	const maskPreviewImage = useMemo(() => {
+		return inputSets?.[0]?.files?.[0];
+	}, [inputSets]);
 
 	return (
 		<PipelineConfigProvider form={form}>
@@ -106,7 +114,15 @@ export default function Home() {
 							<AccordionContent className="flex flex-col gap-4 text-balance">
 								<div className="space-y-1">
 									<div className="aspect-square border border-dashed border-yellow-500 grid place-items-center text-center text-muted-foreground">
-										VISUAL PREVIEW/SELECTOR COMING SOON
+										<CircularMaskSelection>
+											{maskPreviewImage && (
+												<img
+													className="size-full object-contain"
+													src={convertFileSrc(maskPreviewImage)}
+													alt="Mask preview"
+												/>
+											)}
+										</CircularMaskSelection>
 									</div>
 									<Tooltip>
 										<TooltipTrigger asChild>

@@ -50,7 +50,7 @@ export function ImageSetPreview({ name, files }: ImageSet) {
 				)}
 			</div>
 			<div
-				className="flex overflow-x-auto gap-4"
+				className="flex overflow-x-auto gap-4 grow overflow-y-hidden"
 				style={{ scrollbarWidth: "none" }}
 			>
 				{files.map((file) => {
