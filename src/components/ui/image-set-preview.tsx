@@ -4,7 +4,7 @@ import path from "path";
 import { useMemo } from "react";
 import { SkeletonSuspended } from "./skeleton-suspended";
 import prettyBytes from "pretty-bytes";
-import { TiffImage } from "./(tiff-image)/tiff-image";
+import { GenericImage } from "./(image)/generic-image";
 
 export type ImageSet = {
 	name: string;
@@ -53,28 +53,11 @@ export function ImageSetPreview({ name, files }: ImageSet) {
 				className="flex overflow-x-auto gap-4 grow overflow-y-hidden"
 				style={{ scrollbarWidth: "none" }}
 			>
-				{files.map((file) => {
-					let imageElem: React.ReactNode;
-					switch (path.extname(file).toLowerCase()) {
-						case ".jpg":
-						case ".jpeg":
-							imageElem = (
-								<img
-									src={convertFileSrc(file)}
-									className="size-full object-contain"
-								/>
-							);
-							break;
-						default:
-							imageElem = <TiffImage key={file} src={file} />;
-							break;
-					}
-					return (
-						<div key={file} className="size-48 shrink-0 bg-accent">
-							{imageElem}
-						</div>
-					);
-				})}
+				{files.map((file) => (
+					<div key={file} className="size-48 shrink-0 bg-accent">
+						<GenericImage fsSrc={file} />
+					</div>
+				))}
 			</div>
 		</div>
 	);

@@ -9,18 +9,24 @@ export function useTiffPath(path: string) {
 	const { settings } = useSettingsStore();
 	const convertRawImg = useCallback(
 		async (path: string) => {
-			await new Promise((resolve) => setTimeout(resolve, 1000));
-			console.log("invoking convert_raw_img", path);
-			const paths = await invoke("convert_raw_img", {
-				dcraw: settings.dcrawEmuPath,
-				paths: [path],
-			});
-			const p = z.string().array().parse(paths)[0];
-			console.log("tiff path", p);
-			return p;
+			return getTiffPath(path, settings.dcrawEmuPath);
 		},
 		[settings.dcrawEmuPath]
 	);
 
 	return useMemo(() => convertRawImg(path), [path]);
+}
+
+export async function getTiffPath(path: string, dcrawEmuPath: string) {
+	const paths = await invoke("convert_raw_img", {
+		dcraw: dcrawEmuPath,
+		paths: [path],
+	});
+	const p = z.string().array().parse(paths)[0];
+	if (!p)
+		throw new Error(
+			`Failed to convert raw image to TIFF, got output: ${paths}`
+		);
+
+	return p;
 }

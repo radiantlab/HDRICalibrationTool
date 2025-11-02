@@ -6,7 +6,7 @@ export type pipelineConfig = {
 	inputSets: ImageSet[];
 	cameraResponseLocation: string[];
 	lensMask: {
-		diameter: number;
+		radius: number;
 		x: number;
 		y: number;
 	};

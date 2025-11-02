@@ -13,7 +13,7 @@
  */
 "use client";
 
-import React, { useMemo } from "react";
+import React, { Suspense, useMemo } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
 	Accordion,
@@ -34,14 +34,16 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { MoveHorizontal, MoveVertical, Radius, Rotate3D } from "lucide-react";
+import { Rotate3D } from "lucide-react";
 import {
 	pipelineConfig,
 	PipelineConfigProvider,
 } from "./(pipeline-configuration)/config-provider";
 import { ImageMatrixInput } from "@/components/ui/image-matrix-input";
-import { CircularMaskSelection } from "@/components/ui/circular-mask-selection";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { useMotionValue, useTransform } from "framer-motion";
+import { useMotionValueFormState } from "@/lib/useMotionValueFormState";
+import { LensMaskInput } from "./lens-mask-input";
+import { useGenericImageMetadata } from "@/lib/generic-image-metadata";
 
 /**
  * Main Home page component for image configuration and processing
@@ -50,13 +52,25 @@ import { convertFileSrc } from "@tauri-apps/api/core";
  */
 export default function Home() {
 	const form = useForm<pipelineConfig>();
-	const { control, register } = form;
+	const { control, register, setValue } = form;
 
 	const inputSets = form.watch("inputSets");
 
 	const maskPreviewImage = useMemo(() => {
 		return inputSets?.[0]?.files?.[0];
 	}, [inputSets]);
+
+	const centerX = useMotionValueFormState(0, setValue, "lensMask.x");
+	const centerY = useMotionValueFormState(0, setValue, "lensMask.y");
+
+	const radiusAjusterCenterX = useMotionValue(100);
+	const radiusAjusterCenterY = useMotionValue(100);
+
+	const radius = useTransform<number, number>(
+		[centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
+		([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2)
+	);
+	radius.on("change", (value) => setValue("lensMask.radius", value));
 
 	return (
 		<PipelineConfigProvider form={form}>
@@ -112,46 +126,14 @@ export default function Home() {
 								</TooltipContent>
 							</Tooltip>
 							<AccordionContent className="flex flex-col gap-4 text-balance">
-								<div className="space-y-1">
-									<div className="aspect-square border border-dashed border-yellow-500 grid place-items-center text-center text-muted-foreground">
-										<CircularMaskSelection>
-											{maskPreviewImage && (
-												<img
-													className="size-full object-contain"
-													src={convertFileSrc(maskPreviewImage)}
-													alt="Mask preview"
-												/>
-											)}
-										</CircularMaskSelection>
-									</div>
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<div className="flex gap-1">
-												<Input
-													icon={<Radius />}
-													type="number"
-													placeholder="Radius"
-													{...register("lensMask.diameter")}
-												/>
-												<Input
-													icon={<MoveHorizontal />}
-													type="number"
-													placeholder="X"
-													{...register("lensMask.x")}
-												/>
-												<Input
-													icon={<MoveVertical />}
-													type="number"
-													// TODO: refactor this to be from the top, not the bottom.
-													// thats just more intuitive/standardized.
-													placeholder="Y"
-													{...register("lensMask.y")}
-												/>
-											</div>
-										</TooltipTrigger>
-										<TooltipContent>Values in pixels.</TooltipContent>
-									</Tooltip>
-								</div>
+								<LensMaskInput
+									maskPreviewImage={maskPreviewImage}
+									centerX={centerX}
+									centerY={centerY}
+									radiusAjusterCenterX={radiusAjusterCenterX}
+									radiusAjusterCenterY={radiusAjusterCenterY}
+									register={register}
+								/>
 							</AccordionContent>
 						</AccordionItem>
 						<AccordionItem value="item-2" className="px-4">
@@ -166,7 +148,7 @@ export default function Home() {
 											icon={"°"}
 											type="number"
 											placeholder="Vertical view angle"
-											{...register("lensMask.x")}
+											{...register("fisheyeView.verticalViewDegrees")}
 										/>
 										<Input
 											icon={"°"}
@@ -174,7 +156,7 @@ export default function Home() {
 											// TODO: refactor this to be from the top, not the bottom.
 											// thats just more intuitive/standardized.
 											placeholder="Horizontal view angle"
-											{...register("lensMask.y")}
+											{...register("fisheyeView.horizontalViewDegrees")}
 										/>
 									</FieldContent>
 								</Field>

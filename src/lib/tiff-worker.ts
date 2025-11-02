@@ -1,27 +1,52 @@
 /// <reference lib="webworker" />
 
 import Tiff from "tiff.js";
+import type {
+	TiffMetadataRequest,
+	TiffDecodeRequest,
+	TiffWorkerRequest,
+	TiffMetadataResponse,
+	TiffDecodeResponse,
+	TiffWorkerErrorResponse,
+} from "./tiff-worker.types";
 
-type DecodeRequest = {
+// Back-compat: legacy decode messages without an "op" field
+type LegacyDecodeRequest = {
 	buffer: ArrayBuffer;
-	memoryBytes: number;
+	memoryBytes?: number;
 	maxWidth?: number;
 	maxHeight?: number;
 };
 
-type DecodeBufferResponse = {
-	width: number;
-	height: number;
-	buffer: ArrayBuffer;
-};
+type WorkerRequest = TiffWorkerRequest | LegacyDecodeRequest;
 
-type DecodeError = {
-	error: string;
-};
-
-self.onmessage = (event: MessageEvent<DecodeRequest>) => {
-	const { buffer, memoryBytes, maxWidth, maxHeight } = event.data;
+self.onmessage = (event: MessageEvent<WorkerRequest>) => {
+	const data = event.data as WorkerRequest & { op?: string };
 	try {
+		if (data && (data as { op?: string }).op === "metadata") {
+			const { buffer } = data as TiffMetadataRequest;
+			const memoryBytes = pickMemoryBytes(data.memoryBytes, buffer.byteLength);
+			Tiff.initialize({ TOTAL_MEMORY: memoryBytes });
+			const tiff = new Tiff({ buffer });
+			const width = tiff.width();
+			const height = tiff.height();
+			tiff.close();
+			self.postMessage({
+				op: "metadata",
+				width,
+				height,
+			} satisfies TiffMetadataResponse);
+			return;
+		}
+
+		// Decode path (supports both new and legacy request shapes)
+		const { buffer, maxWidth, maxHeight } = data as
+			| TiffDecodeRequest
+			| LegacyDecodeRequest;
+		const memoryBytes = pickMemoryBytes(
+			(data as TiffDecodeRequest).memoryBytes,
+			buffer.byteLength
+		);
 		Tiff.initialize({ TOTAL_MEMORY: memoryBytes });
 		const tiff = new Tiff({ buffer });
 		const width = tiff.width();
@@ -58,7 +83,7 @@ self.onmessage = (event: MessageEvent<DecodeRequest>) => {
 					width: targetWidth,
 					height: targetHeight,
 					buffer: downscaled.buffer as ArrayBuffer,
-				} satisfies DecodeBufferResponse,
+				} satisfies TiffDecodeResponse,
 				[downscaled.buffer as ArrayBuffer]
 			);
 			return;
@@ -66,14 +91,23 @@ self.onmessage = (event: MessageEvent<DecodeRequest>) => {
 
 		// Send raw RGBA buffer to the main thread (transferable, fast and compatible)
 		self.postMessage(
-			{ width, height, buffer: copy.buffer } satisfies DecodeBufferResponse,
+			{ width, height, buffer: copy.buffer } satisfies TiffDecodeResponse,
 			[copy.buffer]
 		);
 	} catch (e: unknown) {
 		const message = (e as { message?: string })?.message ?? String(e);
-		self.postMessage({ error: message } satisfies DecodeError);
+		self.postMessage({ error: message } satisfies TiffWorkerErrorResponse);
 	}
 };
+
+function pickMemoryBytes(
+	explicit: number | undefined,
+	bufferLen: number
+): number {
+	if (typeof explicit === "number" && explicit > 0) return explicit;
+	// heuristic: a small multiple of input size; default to 2x
+	return Math.max(4 << 20, Math.min(256 << 20, bufferLen * 2));
+}
 
 function downscale(
 	src: Uint8ClampedArray,

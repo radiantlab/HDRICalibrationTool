@@ -1,26 +1,32 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
 	motion,
-	useDragControls,
+	MotionValue,
 	useMotionTemplate,
-	useMotionValue,
 	useTransform,
 } from "framer-motion";
 import { Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function CircularMaskSelection({
 	children,
+	centerX,
+	centerY,
+	radiusAjusterCenterX,
+	radiusAjusterCenterY,
+	ref,
+	className,
 }: {
 	children: React.ReactNode;
+	centerX: MotionValue<number>;
+	centerY: MotionValue<number>;
+	radiusAjusterCenterX: MotionValue<number>;
+	radiusAjusterCenterY: MotionValue<number>;
+	ref?: React.RefObject<HTMLDivElement | null>;
+	className?: string;
 }) {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const maskRef = useRef<HTMLDivElement>(null);
-
-	const centerX = useMotionValue(0);
-	const centerY = useMotionValue(0);
-
-	const radiusAjusterCenterX = useMotionValue(100);
-	const radiusAjusterCenterY = useMotionValue(100);
 
 	const selectorRadius = 12;
 
@@ -49,7 +55,13 @@ export function CircularMaskSelection({
 		return Math.round(cy - hd);
 	});
 	return (
-		<div ref={containerRef} className="relative">
+		<div
+			ref={(r) => {
+				containerRef.current = r;
+				if (ref) ref.current = r;
+			}}
+			className={cn("relative group", className)}
+		>
 			<motion.div
 				drag
 				style={{
@@ -58,7 +70,7 @@ export function CircularMaskSelection({
 					transform: useMotionTemplate`translate3d(${snappedPosX}px, ${snappedPosY}px, 0)`,
 					willChange: "transform, width, height",
 				}}
-				className="absolute rounded-full z-10 border-3 border-red-500 grid place-items-center"
+				className="absolute rounded-full z-10 border-3 border-red-500 grid place-items-center hover:cursor-grab active:cursor-grabbing"
 				dragMomentum={false}
 				dragConstraints={containerRef}
 				ref={maskRef}
@@ -98,7 +110,7 @@ export function CircularMaskSelection({
 					width: selectorRadius * 2,
 					height: selectorRadius * 2,
 				}}
-				className="absolute rounded-full bg-blue-500 z-10"
+				className="absolute rounded-full bg-blue-500 z-10 opacity-0 group-hover:opacity-100 transition-opacity hover:cursor-grab active:cursor-grabbing"
 				dragMomentum={false}
 				onDrag={(e, info) => {
 					radiusAjusterCenterX.set(radiusAjusterCenterX.get() + info.delta.x);
