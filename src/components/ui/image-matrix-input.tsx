@@ -129,7 +129,13 @@ export function ImageMatrixInput<
 		<Field className={className}>
 			<FieldContent className="flex flex-col gap-0 divide-y overflow-y-auto">
 				{value?.map((row: ImageSet, index: number) => (
-					<ImageSetPreview key={index} {...row} />
+					<ImageSetPreview
+						key={index}
+						{...row}
+						onRemove={() => {
+							field.onChange(value?.filter((_, i) => i !== index) ?? []);
+						}}
+					/>
 				))}
 				<ContextMenu>
 					<ContextMenuTrigger asChild>
