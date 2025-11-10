@@ -3,8 +3,10 @@ import {
 	FieldValues,
 	FieldPathByValue,
 	useController,
+	RegisterOptions,
 } from "react-hook-form";
 import { Field, FieldContent } from "./field";
+import { FieldError } from "./field";
 import {
 	TauriDropzone,
 	DropzoneChildrenProps,
@@ -36,6 +38,9 @@ type FileMatrixInputProps<
 	control: Control<T>;
 	name: TName;
 	className?: string;
+	rules?: Omit<RegisterOptions<T, TName>, "validate"> & {
+		validate?: RegisterOptions<T, TName>["validate"];
+	};
 };
 
 const imageFilters: DialogFilter[] = [
@@ -49,9 +54,13 @@ type FullDirEntry = DirEntry & {
 export function ImageMatrixInput<
 	T extends FieldValues,
 	TName extends FileMatrixFieldName<T>
->({ control, name, className }: FileMatrixInputProps<T, TName>) {
+>({ control, name, className, rules }: FileMatrixInputProps<T, TName>) {
 	// todo: properly handle field states
-	const { field } = useController<T, TName>({ control, name });
+	const { field, fieldState } = useController<T, TName>({
+		control,
+		name,
+		rules,
+	});
 	const value = field.value as ImageSet[] | undefined;
 
 	const filterForAcceptance = useCallback(
@@ -126,7 +135,7 @@ export function ImageMatrixInput<
 		if (selectedDirectories) onDrop(selectedDirectories);
 	}, [onDrop]);
 	return (
-		<Field className={className}>
+		<Field className={className} data-invalid={fieldState.invalid}>
 			<FieldContent className="flex flex-col gap-0 divide-y overflow-y-auto">
 				{value?.map((row: ImageSet, index: number) => (
 					<ImageSetPreview
@@ -150,6 +159,8 @@ export function ImageMatrixInput<
 										className={cn(
 											"transition-colors border-8 border-dashed text-border h-56 grid place-items-center p-4 cursor-pointer focus:outline-hidden",
 											"hover:text-foreground hover:border-foreground",
+											// show invalid via group parent from Field as red
+											"group-data-[invalid=true]/field:text-destructive",
 											{ "text-foreground border-foreground": isDragActive }
 										)}
 									>
@@ -175,6 +186,7 @@ export function ImageMatrixInput<
 					</ContextMenuContent>
 				</ContextMenu>
 			</FieldContent>
+			{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
 		</Field>
 	);
 }

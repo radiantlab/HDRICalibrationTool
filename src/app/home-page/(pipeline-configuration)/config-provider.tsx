@@ -4,7 +4,7 @@ import { UseFormReturn } from "react-hook-form";
 
 export type pipelineConfig = {
 	inputSets: ImageSet[];
-	cameraResponseLocation: string[];
+	cameraResponseLocation?: string;
 	lensMask: {
 		radius: number;
 		x: number;
@@ -13,6 +13,16 @@ export type pipelineConfig = {
 	fisheyeView: {
 		horizontalViewDegrees: number;
 		verticalViewDegrees: number;
+	};
+	correctionFiles: {
+		fisheye: string;
+		vignetting: string;
+		neutralDensity: string;
+		calibrationFactor: string;
+	};
+	outputSettings: {
+		targetRes: number;
+		filterIrrelevantSrcImages: boolean;
 	};
 };
 

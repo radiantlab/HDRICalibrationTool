@@ -12,6 +12,7 @@ import Navigation from "./navigation";
 import Initialization from "./init";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
+import { cn } from "@/lib/utils";
 
 // Configure the Inter font from Google Fonts
 const inter = Inter({ subsets: ["latin"] });
@@ -35,16 +36,19 @@ export default function RootLayout({
 }) {
 	return (
 		<html lang="en">
-			<body className={inter.className}>
+			<body
+				className={cn(
+					inter.className,
+					"h-screen w-screen overflow-hidden flex flex-col"
+				)}
+			>
 				{/* Initialize the application settings */}
 				<Initialization />
 				{/* Render the navigation bar */}
 				<Navigation />
 				{/* Render the current page content */}
 				<Toaster />
-				<TooltipProvider>
-					<div className="h-screen w-screen pt-32">{children}</div>
-				</TooltipProvider>
+				<TooltipProvider>{children}</TooltipProvider>
 			</body>
 		</html>
 	);

@@ -35,7 +35,7 @@ export function CircularMaskSelection({
 
 	const radius = useTransform<number, number>(
 		[centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
-		([cx, cy, rx, ry]) => Math.sqrt((cx - rx) ** 2 + (cy - ry) ** 2)
+		([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2)
 	);
 	const diameter = useTransform<number, number>(radius, (r) => r * 2);
 

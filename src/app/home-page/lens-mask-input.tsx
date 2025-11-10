@@ -103,6 +103,7 @@ function LensMaskInputInner({
 									radiusAjusterCenterY.set(centerY.get());
 								},
 							})}
+							step="any"
 						/>
 						<Input
 							icon={<MoveHorizontal />}
@@ -117,6 +118,7 @@ function LensMaskInputInner({
 									radiusAjusterCenterX.set(radiusAjusterCenterX.get() + deltaX);
 								},
 							})}
+							step="any"
 						/>
 						<Input
 							icon={<MoveVertical />}
@@ -131,6 +133,7 @@ function LensMaskInputInner({
 									radiusAjusterCenterY.set(radiusAjusterCenterY.get() + deltaY);
 								},
 							})}
+							step="any"
 						/>
 					</div>
 				</TooltipTrigger>
