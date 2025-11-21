@@ -5,6 +5,7 @@ import type {
 	TiffDecodeResponse,
 	TiffWorkerErrorResponse,
 } from "./tiff-worker.types";
+import { Sema } from "async-sema";
 
 function createWorker(): Worker {
 	return new Worker(new URL("./tiff-worker.ts", import.meta.url), {
@@ -49,12 +50,15 @@ function onceMessage<T = unknown>(
 	});
 }
 
+// limit the number of concurrent tiff workers to 4 so memory usage doesnt spike
+const tiffSem = new Sema(4);
 export async function getTiffMetadata(
 	buffer: ArrayBuffer,
 	options?: { memoryBytes?: number; signal?: AbortSignal }
 ): Promise<{ width: number; height: number }> {
 	const worker = createWorker();
 	try {
+		await tiffSem.acquire();
 		if (options?.signal?.aborted) {
 			worker.terminate();
 			throw new DOMException("Aborted", "AbortError");
@@ -76,6 +80,7 @@ export async function getTiffMetadata(
 		return { width, height };
 	} finally {
 		worker.terminate();
+		tiffSem.release();
 	}
 }
 
