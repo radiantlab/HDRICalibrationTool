@@ -53,7 +53,7 @@ export type FileInputProps<
 	/**
 	 * When true, renders a "None" button that explicitly sets the field to null.
 	 */
-	optional?: boolean;
+	explicitOptional?: boolean;
 };
 
 export function FileInput<
@@ -70,7 +70,7 @@ export function FileInput<
 	filters,
 	disabled,
 	rules,
-	optional,
+	explicitOptional,
 }: FileInputProps<T, TName>) {
 	const { required: incomingRequired, ...rulesWithoutRequired } = rules ?? {};
 
@@ -82,7 +82,7 @@ export function FileInput<
 			// If empty/undefined, treat as valid; leave required handling to caller.
 			validate: async (value: unknown) => {
 				if (typeof value !== "string") {
-					if (value === null && optional) return true;
+					if (value === null && explicitOptional) return true;
 					return incomingRequired;
 				}
 
@@ -140,7 +140,7 @@ export function FileInput<
 				>
 					{buttonText}
 				</Button>
-				{optional && (
+				{explicitOptional && (
 					<Button
 						type="button"
 						variant={isNoneSelected ? "default" : "ghost"}

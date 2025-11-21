@@ -164,7 +164,7 @@ export default function Home() {
 							>
 								<FileInput
 									control={control}
-									optional
+									explicitOptional
 									name="cameraResponseLocation"
 									placeholder="Select or paste a .rsp file…"
 									filters={[
@@ -265,7 +265,7 @@ export default function Home() {
 							>
 								<FileInput
 									control={control}
-									optional
+									explicitOptional
 									name="correctionFiles.fisheye"
 									label="Fisheye correction (.cal)"
 									placeholder="Select or paste a .cal file…"
@@ -274,7 +274,7 @@ export default function Home() {
 								/>
 								<FileInput
 									control={control}
-									optional
+									explicitOptional
 									name="correctionFiles.vignetting"
 									label="Vignetting correction (.cal)"
 									placeholder="Select or paste a .cal file…"
@@ -283,7 +283,7 @@ export default function Home() {
 								/>
 								<FileInput
 									control={control}
-									optional
+									explicitOptional
 									name="correctionFiles.neutralDensity"
 									label="Neutral density correction (.cal)"
 									placeholder="Select or paste a .cal file…"
@@ -294,7 +294,7 @@ export default function Home() {
 								/>
 								<FileInput
 									control={control}
-									optional
+									explicitOptional
 									name="correctionFiles.calibrationFactor"
 									label="Calibration factor correction (.cal)"
 									placeholder="Select or paste a .cal file…"
