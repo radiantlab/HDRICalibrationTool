@@ -60,6 +60,7 @@ export default function Home() {
 	const { settings } = useSettingsStore();
 	const form = useForm<pipelineConfig>();
 	const { control, register, setValue } = form;
+	console.log("form", form.formState.errors);
 
 	const inputSets = form.watch("inputSets");
 
@@ -91,7 +92,7 @@ export default function Home() {
 
 						setProgressVisible(true);
 						const imageSet = data.inputSets[0]!; // TODO: implement batch processing
-						const invokePromise = invoke<string>("pipeline", {
+						const params = {
 							// Paths to external tools
 							radiancePath: settings.radiancePath,
 							hdrgenPath: settings.hdrgenPath,
@@ -119,10 +120,14 @@ export default function Home() {
 							scaleLevels: "",
 							legendDimensions: "",
 							filterImages: data.outputSettings.filterIrrelevantSrcImages,
-						}).catch((error) => {
-							setProgressVisible(false);
-							toast.error("Error generating HDR image: " + error);
-						});
+						};
+						console.log("pipeline params", params);
+						const invokePromise = invoke<string>("pipeline", params).catch(
+							(error) => {
+								setProgressVisible(false);
+								toast.error("Error generating HDR image: " + error);
+							}
+						);
 						console.log("invokePromise", invokePromise);
 					},
 					(errors) => {
@@ -159,6 +164,7 @@ export default function Home() {
 							>
 								<FileInput
 									control={control}
+									optional
 									name="cameraResponseLocation"
 									placeholder="Select or paste a .rsp file…"
 									filters={[
@@ -259,6 +265,7 @@ export default function Home() {
 							>
 								<FileInput
 									control={control}
+									optional
 									name="correctionFiles.fisheye"
 									label="Fisheye correction (.cal)"
 									placeholder="Select or paste a .cal file…"
@@ -267,6 +274,7 @@ export default function Home() {
 								/>
 								<FileInput
 									control={control}
+									optional
 									name="correctionFiles.vignetting"
 									label="Vignetting correction (.cal)"
 									placeholder="Select or paste a .cal file…"
@@ -275,6 +283,7 @@ export default function Home() {
 								/>
 								<FileInput
 									control={control}
+									optional
 									name="correctionFiles.neutralDensity"
 									label="Neutral density correction (.cal)"
 									placeholder="Select or paste a .cal file…"
@@ -285,6 +294,7 @@ export default function Home() {
 								/>
 								<FileInput
 									control={control}
+									optional
 									name="correctionFiles.calibrationFactor"
 									label="Calibration factor correction (.cal)"
 									placeholder="Select or paste a .cal file…"

@@ -21,7 +21,7 @@ import { exists } from "@tauri-apps/plugin-fs";
 
 type FilePathFieldName<T extends FieldValues> = FieldPathByValue<
 	T,
-	string | undefined
+	string | null
 >;
 
 export type FileInputProps<
@@ -46,7 +46,14 @@ export type FileInputProps<
 	 * Disable the input and button.
 	 */
 	disabled?: boolean;
-	rules?: Omit<RegisterOptions<T, TName>, "validate">;
+	rules?: Omit<
+		RegisterOptions<T, TName>,
+		"validate" | "setValueAs" | "required"
+	> & { required?: string };
+	/**
+	 * When true, renders a "None" button that explicitly sets the field to null.
+	 */
+	optional?: boolean;
 };
 
 export function FileInput<
@@ -63,7 +70,10 @@ export function FileInput<
 	filters,
 	disabled,
 	rules,
+	optional,
 }: FileInputProps<T, TName>) {
+	const { required: incomingRequired, ...rulesWithoutRequired } = rules ?? {};
+
 	const { field, fieldState } = useController<T, TName>({
 		control,
 		name,
@@ -71,8 +81,12 @@ export function FileInput<
 			// Async validation via Tauri FS plugin.
 			// If empty/undefined, treat as valid; leave required handling to caller.
 			validate: async (value: unknown) => {
-				const path = typeof value === "string" ? value.trim() : "";
-				if (!path) return true;
+				if (typeof value !== "string") {
+					if (value === null && optional) return true;
+					return incomingRequired;
+				}
+
+				const path = value.trim();
 				try {
 					const ok = await exists(path);
 					return ok || "Path does not exist";
@@ -81,7 +95,7 @@ export function FileInput<
 					return "Unable to validate path";
 				}
 			},
-			...rules,
+			...rulesWithoutRequired,
 		},
 	});
 
@@ -99,7 +113,8 @@ export function FileInput<
 	}
 
 	const inputId = field.name;
-	const currentValue = (field.value as string | undefined) ?? "";
+	const isNoneSelected = field.value === null;
+	const currentValue = typeof field.value === "string" ? field.value : "";
 
 	return (
 		<Field data-invalid={fieldState.invalid} className={className}>
@@ -114,17 +129,35 @@ export function FileInput<
 					value={currentValue}
 					onChange={(e) => field.onChange(e.target.value)}
 					onBlur={field.onBlur}
-					disabled={disabled}
+					disabled={disabled || isNoneSelected}
 					aria-invalid={fieldState.invalid || undefined}
 				/>
 				<Button
 					type="button"
 					variant="outline"
 					onClick={handleBrowse}
-					disabled={disabled}
+					disabled={disabled || isNoneSelected}
 				>
 					{buttonText}
 				</Button>
+				{optional && (
+					<Button
+						type="button"
+						variant={isNoneSelected ? "default" : "ghost"}
+						onClick={() => {
+							if (isNoneSelected) {
+								field.onChange("");
+							} else {
+								field.onChange(null);
+							}
+							field.onBlur();
+						}}
+						aria-pressed={isNoneSelected}
+						disabled={disabled}
+					>
+						{"None"}
+					</Button>
+				)}
 			</FieldContent>
 			{fieldState.invalid && <FieldError errors={[fieldState.error]} />}
 		</Field>

@@ -7,6 +7,7 @@ import prettyBytes from "pretty-bytes";
 import { GenericImage } from "./(image)/generic-image";
 import { Trash2 } from "lucide-react";
 import { Button } from "./button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
 
 export type ImageSet = {
 	name: string;
@@ -69,9 +70,16 @@ export function ImageSetPreview({
 				style={{ scrollbarWidth: "none" }}
 			>
 				{files.map((file) => (
-					<div key={file} className="size-48 shrink-0 bg-accent">
-						<GenericImage fsSrc={file} />
-					</div>
+					<Tooltip>
+						<TooltipTrigger>
+							<div key={file} className="size-48 shrink-0 bg-accent">
+								<GenericImage fsSrc={file} />
+							</div>
+						</TooltipTrigger>
+						<TooltipContent>
+							<p>{file}</p>
+						</TooltipContent>
+					</Tooltip>
 				))}
 			</div>
 		</div>
