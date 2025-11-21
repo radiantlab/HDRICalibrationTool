@@ -170,7 +170,7 @@ export default function Home() {
 									filters={[
 										{ name: "Camera response files", extensions: ["rsp"] },
 									]}
-									// rules={{ required: "Camera response file is required" }}
+									rules={{ required: "Camera response file is required" }}
 								/>
 							</AccordionContent>
 						</AccordionItem>
