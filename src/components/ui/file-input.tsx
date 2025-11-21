@@ -145,11 +145,8 @@ export function FileInput<
 						type="button"
 						variant={isNoneSelected ? "default" : "ghost"}
 						onClick={() => {
-							if (isNoneSelected) {
-								field.onChange("");
-							} else {
-								field.onChange(null);
-							}
+							if (isNoneSelected) field.onChange("");
+							else field.onChange(null);
 							field.onBlur();
 						}}
 						aria-pressed={isNoneSelected}
