@@ -102,10 +102,11 @@ export default function Home() {
 							// Input images and correction files
 							inputImages: imageSet.files,
 							responseFunction: data.cameraResponseLocation ?? "",
-							fisheyeCorrectionCal: data.correctionFiles.fisheye,
-							vignettingCorrectionCal: data.correctionFiles.vignetting,
-							photometricAdjustmentCal: data.correctionFiles.calibrationFactor,
-							neutralDensityCal: data.correctionFiles.neutralDensity,
+							fisheyeCorrectionCal: data.correctionFiles.fisheye ?? "",
+							vignettingCorrectionCal: data.correctionFiles.vignetting ?? "",
+							photometricAdjustmentCal:
+								data.correctionFiles.calibrationFactor ?? "",
+							neutralDensityCal: data.correctionFiles.neutralDensity ?? "",
 							// todo: refactor the backend to accept proper numerical types instead of icky strings that will be coerced later.
 							diameter: String(Math.round(data.lensMask.radius * 2)),
 							xleft: String(Math.round(data.lensMask.x - data.lensMask.radius)),
