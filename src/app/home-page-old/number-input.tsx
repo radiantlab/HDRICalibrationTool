@@ -68,7 +68,7 @@ export default function NumberInput({
           rounded
           py-2 px-3
           leading-tight
-          focus:outline-none focus:shadow-outline
+          focus:outline-hidden focus:shadow-outline
         "
       />
     </div>

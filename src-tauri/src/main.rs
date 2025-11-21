@@ -54,6 +54,9 @@ use get_saved_configs::get_saved_configs;
 mod raw_image_help;
 use raw_image_help::convert_raw_img;
 
+// Image cache utilities
+mod image_cache;
+
 // Command to display HDR image using ximage utility
 mod display_hdr_img;
 use display_hdr_img::display_hdr_img;

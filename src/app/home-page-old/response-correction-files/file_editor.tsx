@@ -162,7 +162,7 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor
           </button>
         </div>
         
-        <div className="flex border border-gray-300 rounded flex-grow overflow-hidden h-[50vh]">
+        <div className="flex border border-gray-300 rounded grow overflow-hidden h-[50vh]">
           <div 
             ref={lineNumbersRef}
             className="bg-gray-100 py-1 px-2 overflow-y-hidden"
@@ -172,7 +172,7 @@ const FileEditor: React.FC<ConfigEditorProps> = ({ filePath, isOpen, closeEditor
           </div>
           <textarea 
             ref={textAreaRef}
-            className="w-full outline-none py-1 px-2 resize-none font-mono overflow-y-auto"
+            className="w-full outline-hidden py-1 px-2 resize-none font-mono overflow-y-auto"
             value={text}
             onChange={handleTextChange}
             onScroll={handleScroll}

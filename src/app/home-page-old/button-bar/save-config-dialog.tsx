@@ -130,7 +130,7 @@ export default function SaveConfigDialog({
                       type="text"
                       value={configName}
                       onChange={(e) => setConfigName(e.target.value)}
-                      className="placeholder:text-right no-spinner w-40 shadow appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-none focus:shadow-outline"
+                      className="placeholder:text-right no-spinner w-40 shadow-sm appearance-none border border-gray-400 rounded py-2 px-3 leading-tight focus:outline-hidden focus:shadow-outline"
                     ></input>
                     {showError && (
                       <p className=" text-red-600">
