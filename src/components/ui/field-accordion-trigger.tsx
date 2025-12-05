@@ -45,6 +45,7 @@ export function FieldContainerAccordionTrigger({
 	return (
 		<AccordionTrigger
 			className={cn(
+				"text-xl font-bold",
 				hasError && "text-destructive [&>svg]:text-destructive",
 				className
 			)}

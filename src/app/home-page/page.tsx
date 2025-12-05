@@ -32,7 +32,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Rotate3D } from "lucide-react";
+import { Eclipse, ImageUpscale, Rotate3D, SwitchCamera } from "lucide-react";
 import {
 	pipelineConfig,
 	PipelineConfigProvider,
@@ -153,103 +153,100 @@ export default function Home() {
 						className="flex-1 min-h-0 overflow-y-auto"
 						// defaultValue="item-1"
 					>
-						<AccordionItem value="item-0" className="px-4">
+						<AccordionItem value="item-pre" className="px-4">
 							<FieldContainerAccordionTrigger
-								fields={["cameraResponseLocation"]}
+								fields={[
+									"cameraResponseLocation",
+									"lensMask.radius",
+									"lensMask.x",
+									"lensMask.y",
+									"outputSettings.filterIrrelevantSrcImages",
+								]}
 							>
-								Camera Response
+								Preprocessing
 							</FieldContainerAccordionTrigger>
 							<AccordionContent
 								forceMount
-								className="flex flex-col gap-4 text-balance"
+								className="flex flex-col gap-6 text-balance"
 							>
-								<FileInput
-									control={control}
-									explicitOptional
-									name="cameraResponseLocation"
-									placeholder="Select or paste a .rsp file…"
-									filters={[
-										{ name: "Camera response files", extensions: ["rsp"] },
-									]}
-									rules={{ required: "Camera response file is required" }}
-								/>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<div className="flex items-center gap-2">
+											<Controller
+												name="outputSettings.filterIrrelevantSrcImages"
+												control={control}
+												defaultValue={true}
+												render={({ field }) => (
+													<Checkbox
+														checked={!!field.value}
+														onCheckedChange={(checked) =>
+															field.onChange(Boolean(checked))
+														}
+														onBlur={field.onBlur}
+														ref={field.ref}
+													/>
+												)}
+											/>
+											<Label>Filter irrelevant source images</Label>
+										</div>
+									</TooltipTrigger>
+									<TooltipContent className="max-w-xs">
+										Some LDR images do not provide value to the HDR image
+										generation process. Checking this box will filter out those
+										images before generating the HDR image. This increases
+										accuracy but also adds a minor increase in the time it takes
+										to finish the generation process.
+									</TooltipContent>
+								</Tooltip>
+								<div className="flex flex-col gap-2">
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<FieldLabel className="items-center">
+												<SwitchCamera /> Camera response
+											</FieldLabel>
+										</TooltipTrigger>
+										<TooltipContent className="max-w-xs">
+											A camera response function is the rule that tells your
+											camera how to turn the brightness of a scene into digital
+											pixel numbers. (Important for preprocessed image formats
+											like JPEG)
+										</TooltipContent>
+									</Tooltip>
+									<FileInput
+										control={control}
+										explicitOptional
+										name="cameraResponseLocation"
+										placeholder="Select or paste a .rsp file…"
+										filters={[
+											{ name: "Camera response files", extensions: ["rsp"] },
+										]}
+										rules={{ required: "Camera response file is required" }}
+									/>
+								</div>
+								<div className="flex flex-col gap-2">
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<FieldLabel className="items-center">
+												<Eclipse /> Lens mask
+											</FieldLabel>
+										</TooltipTrigger>
+										<TooltipContent className="max-w-xs">
+											A circular mask applied to remove the parts of the image
+											that are obstructed by the lens.
+										</TooltipContent>
+									</Tooltip>
+									<LensMaskInput
+										maskPreviewImage={maskPreviewImage}
+										centerX={centerX}
+										centerY={centerY}
+										radiusAjusterCenterX={radiusAjusterCenterX}
+										radiusAjusterCenterY={radiusAjusterCenterY}
+										register={register}
+									/>
+								</div>
 							</AccordionContent>
 						</AccordionItem>
-						<AccordionItem value="item-1" className="px-4">
-							<Tooltip>
-								<TooltipTrigger asChild>
-									<FieldContainerAccordionTrigger
-										fields={["lensMask.radius", "lensMask.x", "lensMask.y"]}
-									>
-										Lens mask
-									</FieldContainerAccordionTrigger>
-								</TooltipTrigger>
-								<TooltipContent>
-									A circular mask applied to remove the parts of the image that
-									are obstructed by the lens.
-								</TooltipContent>
-							</Tooltip>
-							<AccordionContent className="flex flex-col gap-4 text-balance">
-								<LensMaskInput
-									maskPreviewImage={maskPreviewImage}
-									centerX={centerX}
-									centerY={centerY}
-									radiusAjusterCenterX={radiusAjusterCenterX}
-									radiusAjusterCenterY={radiusAjusterCenterY}
-									register={register}
-								/>
-							</AccordionContent>
-						</AccordionItem>
-						<AccordionItem value="item-2" className="px-4">
-							<FieldContainerAccordionTrigger
-								fields={[
-									"fisheyeView.verticalViewDegrees",
-									"fisheyeView.horizontalViewDegrees",
-								]}
-							>
-								Fisheye configuration
-							</FieldContainerAccordionTrigger>
-							<AccordionContent forceMount className="flex gap-1 text-balance">
-								<Field>
-									<FieldLabel className="items-center">
-										<Rotate3D /> Fisheye view angles
-									</FieldLabel>
-									<FieldContent className="flex-row gap-1">
-										<Input
-											icon={"°"}
-											type="number"
-											placeholder="Vertical view angle"
-											{...register("fisheyeView.verticalViewDegrees", {
-												required: "Vertical view angle is required",
-											})}
-											aria-invalid={
-												form.formState.errors.fisheyeView?.verticalViewDegrees
-													? "true"
-													: undefined
-											}
-											defaultValue={180}
-										/>
-										<Input
-											icon={"°"}
-											type="number"
-											// TODO: refactor this to be from the top, not the bottom.
-											// thats just more intuitive/standardized.
-											placeholder="Horizontal view angle"
-											{...register("fisheyeView.horizontalViewDegrees", {
-												required: "Horizontal view angle is required",
-											})}
-											aria-invalid={
-												form.formState.errors.fisheyeView?.horizontalViewDegrees
-													? "true"
-													: undefined
-											}
-											defaultValue={180}
-										/>
-									</FieldContent>
-								</Field>
-							</AccordionContent>
-						</AccordionItem>
-						<AccordionItem value="item-3" className="px-4">
+						<AccordionItem value="item-correction" className="px-4">
 							<FieldContainerAccordionTrigger
 								fields={[
 									"correctionFiles.fisheye",
@@ -306,53 +303,67 @@ export default function Home() {
 								/>
 							</AccordionContent>
 						</AccordionItem>
-						<AccordionItem value="item-4" className="px-4">
+						<AccordionItem value="item-post" className="px-4">
 							<FieldContainerAccordionTrigger
 								fields={[
 									"outputSettings.targetRes",
-									"outputSettings.filterIrrelevantSrcImages",
+									"fisheyeView.verticalViewDegrees",
+									"fisheyeView.horizontalViewDegrees",
 								]}
 							>
-								Output settings
+								Postprocessing
 							</FieldContainerAccordionTrigger>
-							<AccordionContent className="flex flex-col gap-4 text-balance">
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<div className="flex items-center gap-2">
-											<Controller
-												name="outputSettings.filterIrrelevantSrcImages"
-												control={control}
-												defaultValue={true}
-												render={({ field }) => (
-													<Checkbox
-														checked={!!field.value}
-														onCheckedChange={(checked) =>
-															field.onChange(Boolean(checked))
-														}
-														onBlur={field.onBlur}
-														ref={field.ref}
-													/>
-												)}
-											/>
-											<Label>Filter irrelevant source images</Label>
-										</div>
-									</TooltipTrigger>
-									<TooltipContent className="max-w-xs">
-										Some LDR images do not provide value to the HDR image
-										generation process. Checking this box will filter out those
-										images before generating the HDR image. This increases
-										accuracy but also adds a minor increase in the time it takes
-										to finish the generation process.
-									</TooltipContent>
-								</Tooltip>
+							<AccordionContent
+								forceMount
+								className="flex flex-col gap-4 text-balance"
+							>
 								<Field>
-									<FieldLabel>Target width/height</FieldLabel>
+									<FieldLabel>
+										<ImageUpscale /> Target width/height
+									</FieldLabel>
 									<Input
 										type="number"
 										placeholder="Value in pixels"
 										defaultValue={1000}
 										{...register("outputSettings.targetRes")}
 									/>
+								</Field>
+								<Field>
+									<FieldLabel>
+										<Rotate3D /> Fisheye view angles
+									</FieldLabel>
+									<FieldContent className="flex-row gap-1">
+										<Input
+											icon={"°"}
+											type="number"
+											placeholder="Vertical view angle"
+											{...register("fisheyeView.verticalViewDegrees", {
+												required: "Vertical view angle is required",
+											})}
+											aria-invalid={
+												form.formState.errors.fisheyeView?.verticalViewDegrees
+													? "true"
+													: undefined
+											}
+											defaultValue={180}
+										/>
+										<Input
+											icon={"°"}
+											type="number"
+											// TODO: refactor this to be from the top, not the bottom.
+											// thats just more intuitive/standardized.
+											placeholder="Horizontal view angle"
+											{...register("fisheyeView.horizontalViewDegrees", {
+												required: "Horizontal view angle is required",
+											})}
+											aria-invalid={
+												form.formState.errors.fisheyeView?.horizontalViewDegrees
+													? "true"
+													: undefined
+											}
+											defaultValue={180}
+										/>
+									</FieldContent>
 								</Field>
 							</AccordionContent>
 						</AccordionItem>

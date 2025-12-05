@@ -41,7 +41,7 @@ export function LensMaskInput({
 					{...props}
 				/>
 			) : (
-				<p className="text-lg text-muted-foreground h-16 grid place-items-center">
+				<p className="w-full h-48 border-dashed border-4 text-lg text-muted-foreground grid place-items-center">
 					No image selected
 				</p>
 			)}
