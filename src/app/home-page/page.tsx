@@ -153,7 +153,7 @@ export default function Home() {
 						className="flex-1 min-h-0 overflow-y-auto"
 						// defaultValue="item-1"
 					>
-						<AccordionItem value="item-pre" className="px-4">
+						<AccordionItem value="item-hdr-gen" className="px-4">
 							<FieldContainerAccordionTrigger
 								fields={[
 									"cameraResponseLocation",
@@ -163,7 +163,7 @@ export default function Home() {
 									"outputSettings.filterIrrelevantSrcImages",
 								]}
 							>
-								Preprocessing
+								HDR Generation
 							</FieldContainerAccordionTrigger>
 							<AccordionContent
 								forceMount
@@ -213,6 +213,16 @@ export default function Home() {
 										</TooltipContent>
 									</Tooltip>
 									<FileInput
+										// disabled={true}
+										disabled={inputSets?.every((set) =>
+											set.files.every((file) => {
+												const fileextension = file
+													.split(".")
+													.pop()
+													?.toLowerCase();
+												return fileextension !== "jpeg";
+											})
+										)}
 										control={control}
 										explicitOptional
 										name="cameraResponseLocation"
@@ -223,6 +233,35 @@ export default function Home() {
 										rules={{ required: "Camera response file is required" }}
 									/>
 								</div>
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem value="item-crop-resize" className="px-4">
+							<FieldContainerAccordionTrigger
+								fields={[
+									"cameraResponseLocation",
+									"lensMask.radius",
+									"lensMask.x",
+									"lensMask.y",
+									"outputSettings.filterIrrelevantSrcImages",
+								]}
+							>
+								Cropping and Resizing
+							</FieldContainerAccordionTrigger>
+							<AccordionContent
+								forceMount
+								className="flex flex-col gap-6 text-balance"
+							>
+								<Field>
+									<FieldLabel>
+										<ImageUpscale /> Target width/height
+									</FieldLabel>
+									<Input
+										type="number"
+										placeholder="Value in pixels"
+										defaultValue={1000}
+										{...register("outputSettings.targetRes")}
+									/>
+								</Field>
 								<div className="flex flex-col gap-2">
 									<Tooltip>
 										<TooltipTrigger asChild>
@@ -246,16 +285,11 @@ export default function Home() {
 								</div>
 							</AccordionContent>
 						</AccordionItem>
-						<AccordionItem value="item-correction" className="px-4">
+						<AccordionItem value="item-correction-fisheye" className="px-4">
 							<FieldContainerAccordionTrigger
-								fields={[
-									"correctionFiles.fisheye",
-									"correctionFiles.vignetting",
-									"correctionFiles.neutralDensity",
-									"correctionFiles.calibrationFactor",
-								]}
+								fields={["correctionFiles.fisheye"]}
 							>
-								Correction pipeline
+								Fisheye correction
 							</FieldContainerAccordionTrigger>
 							<AccordionContent
 								forceMount
@@ -265,36 +299,74 @@ export default function Home() {
 									control={control}
 									explicitOptional
 									name="correctionFiles.fisheye"
-									label="Fisheye correction (.cal)"
 									placeholder="Select or paste a .cal file…"
 									filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
 									rules={{ required: "Fisheye correction file is required" }}
 								/>
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem value="item-correction-vignetting" className="px-4">
+							<FieldContainerAccordionTrigger
+								fields={["correctionFiles.vignetting"]}
+							>
+								Vignetting correction
+							</FieldContainerAccordionTrigger>
+							<AccordionContent
+								forceMount
+								className="flex flex-col gap-4 text-balance"
+							>
 								<FileInput
 									control={control}
 									explicitOptional
 									name="correctionFiles.vignetting"
-									label="Vignetting correction (.cal)"
 									placeholder="Select or paste a .cal file…"
 									filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
 									rules={{ required: "Vignetting correction file is required" }}
 								/>
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem
+							value="item-correction-neutral-density"
+							className="px-4"
+						>
+							<FieldContainerAccordionTrigger
+								fields={["correctionFiles.neutralDensity"]}
+							>
+								Neutral density correction
+							</FieldContainerAccordionTrigger>
+							<AccordionContent
+								forceMount
+								className="flex flex-col gap-4 text-balance"
+							>
 								<FileInput
 									control={control}
 									explicitOptional
 									name="correctionFiles.neutralDensity"
-									label="Neutral density correction (.cal)"
 									placeholder="Select or paste a .cal file…"
 									filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
 									rules={{
 										required: "Neutral density correction file is required",
 									}}
 								/>
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem
+							value="item-correction-calibration-factor"
+							className="px-4"
+						>
+							<FieldContainerAccordionTrigger
+								fields={["correctionFiles.calibrationFactor"]}
+							>
+								Calibration factor correction
+							</FieldContainerAccordionTrigger>
+							<AccordionContent
+								forceMount
+								className="flex flex-col gap-4 text-balance"
+							>
 								<FileInput
 									control={control}
 									explicitOptional
 									name="correctionFiles.calibrationFactor"
-									label="Calibration factor correction (.cal)"
 									placeholder="Select or paste a .cal file…"
 									filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
 									rules={{
@@ -311,23 +383,12 @@ export default function Home() {
 									"fisheyeView.horizontalViewDegrees",
 								]}
 							>
-								Postprocessing
+								Output Header Editing
 							</FieldContainerAccordionTrigger>
 							<AccordionContent
 								forceMount
 								className="flex flex-col gap-4 text-balance"
 							>
-								<Field>
-									<FieldLabel>
-										<ImageUpscale /> Target width/height
-									</FieldLabel>
-									<Input
-										type="number"
-										placeholder="Value in pixels"
-										defaultValue={1000}
-										{...register("outputSettings.targetRes")}
-									/>
-								</Field>
 								<Field>
 									<FieldLabel>
 										<Rotate3D /> Fisheye view angles
