@@ -13,7 +13,7 @@
  */
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
 	Accordion,
@@ -51,18 +51,60 @@ import { FieldContainerAccordionTrigger } from "@/components/ui/field-accordion-
 import { PipelineStatus } from "./pipeline-status";
 import { toast } from "sonner";
 
+import { create } from "zustand";
+
+const useGlobalPipelineConfig = create<
+	pipelineConfig & { set: (config: pipelineConfig) => void }
+>((set) => ({
+	inputSets: [],
+	cameraResponseLocation: null,
+	lensMask: {
+		radius: 0,
+		x: 0,
+		y: 0,
+	},
+	fisheyeView: {
+		horizontalViewDegrees: 0,
+		verticalViewDegrees: 0,
+	},
+	correctionFiles: {
+		fisheye: null,
+		vignetting: null,
+		neutralDensity: null,
+		calibrationFactor: null,
+	},
+	outputSettings: {
+		targetRes: 0,
+		filterIrrelevantSrcImages: false,
+	},
+
+	set,
+}));
+
 /**
  * Main Home page component for image configuration and processing
  *
  * @returns React component with the main application interface
  */
 export default function Home() {
-	const { settings } = useSettingsStore();
-	const form = useForm<pipelineConfig>();
-	const { control, register, setValue } = form;
-	console.log("form", form.formState.errors);
+	// since this is at the page level, it id safe to assume this is the only instance of the global pipeline config
+	const globalPipelineConfig = useGlobalPipelineConfig();
+	const form = useForm<pipelineConfig>({
+		defaultValues: globalPipelineConfig,
+	});
+	const { control, register, setValue, watch } = form;
+	const formValues = watch();
+	// keep the global pipeline config in sync with the form values
+	useEffect(() => {
+		globalPipelineConfig.set(formValues);
+	}, [
+		// avoid infinite re-renders by stringifying the form values (so we only compare the values, not the reference)
+		JSON.stringify(formValues),
+	]);
 
-	const inputSets = form.watch("inputSets");
+	const { settings } = useSettingsStore();
+
+	const inputSets = watch("inputSets");
 
 	const maskPreviewImage = useMemo(() => {
 		return inputSets?.[0]?.files?.[0];
@@ -78,7 +120,6 @@ export default function Home() {
 		[centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
 		([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2)
 	);
-	radius.on("change", (value) => setValue("lensMask.radius", value));
 
 	const [progressVisible, setProgressVisible] = useState(false);
 

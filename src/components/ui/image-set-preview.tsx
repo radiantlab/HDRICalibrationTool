@@ -70,9 +70,9 @@ export function ImageSetPreview({
 				style={{ scrollbarWidth: "none" }}
 			>
 				{files.map((file) => (
-					<Tooltip>
+					<Tooltip key={file}>
 						<TooltipTrigger>
-							<div key={file} className="size-48 shrink-0 bg-accent">
+							<div className="size-48 shrink-0 bg-accent">
 								<GenericImage fsSrc={file} />
 							</div>
 						</TooltipTrigger>
