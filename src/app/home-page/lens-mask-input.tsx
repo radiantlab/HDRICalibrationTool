@@ -96,6 +96,11 @@ function LensMaskInputInner({
 							type="number"
 							placeholder="Radius"
 							{...register("lensMask.radius", {
+								valueAsNumber: true,
+								min: {
+									value: 1,
+									message: "Radius must be greater than 0",
+								},
 								onChange(e: React.ChangeEvent<HTMLInputElement>) {
 									const n = Number(e.target.value);
 									if (isNaN(n)) return;
@@ -110,6 +115,7 @@ function LensMaskInputInner({
 							type="number"
 							placeholder="X"
 							{...register("lensMask.x", {
+								valueAsNumber: true,
 								onChange(e: React.ChangeEvent<HTMLInputElement>) {
 									const n = Number(e.target.value);
 									if (isNaN(n)) return;
@@ -125,6 +131,7 @@ function LensMaskInputInner({
 							type="number"
 							placeholder="Y"
 							{...register("lensMask.y", {
+								valueAsNumber: true,
 								onChange(e: React.ChangeEvent<HTMLInputElement>) {
 									const n = Number(e.target.value);
 									if (isNaN(n)) return;

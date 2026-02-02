@@ -1,51 +1,26 @@
-use crate::pipeline::DEBUG;
-use std::process::Command;
+use std::path::PathBuf;
 
-use super::ConfigSettings;
+use crate::command::{run_with_io, CommandSpec, SystemCommandRunner};
 
-// Nullifies the exposure value of an HDR image using ra_xyze.
-// config_settings:
-//    contains config settings - used for path to radiance and temp directory
-// input_file:
-//    the path to the input HDR image. Input image must be in .hdr format.
-// output_file:
-//    a string for the path and filename where the HDR image with nullified
-//    exposure value will be saved.
+use super::{ConfigSettings, PipelineError, DEBUG};
+
 pub fn nullify_exposure_value(
     config_settings: &ConfigSettings,
     input_file: String,
     output_file: String,
-) -> Result<String, String> {
+) -> Result<PathBuf, PipelineError> {
     if DEBUG {
         println!("nullify_exposure_value was called!");
     }
 
-    // Create a new command for ra_xyze
-    let mut command = Command::new(config_settings.radiance_path.join("ra_xyze"));
+    let spec = CommandSpec::new(config_settings.radiance_path.join("ra_xyze"))
+        .arg("-r")
+        .arg("-o")
+        .arg(input_file.as_str())
+        .arg(output_file.as_str())
+        .inherit_stdout();
 
-    // Add arguments to ra_xyze command
-    command.args(["-r", "-o", input_file.as_str(), output_file.as_str()]);
+    run_with_io(&spec, &SystemCommandRunner)?;
 
-    // Run the command
-    let status_result = command.status();
-    if status_result.is_err() {
-        return Err("pipeline: nullify_exposure: failed to start command.".into());
-    }
-    let status = status_result.unwrap();
-
-    if DEBUG {
-        println!(
-            "\nNullication of exposure value command exit status: {:?}\n",
-            status
-        );
-    }
-
-    // Return a Result object to indicate whether ra_xyze command was successful
-    if status.success() {
-        // On success, return output path of HDR image
-        Ok(output_file.into())
-    } else {
-        // On error, return an error message
-        Err("PIPELINE ERROR: command 'ra_xyze' (nullify exposure value) failed.".into())
-    }
+    Ok(PathBuf::from(output_file))
 }

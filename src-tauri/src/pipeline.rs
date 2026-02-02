@@ -9,18 +9,19 @@ mod projection_adjustment;
 mod resize;
 mod vignetting_effect_correction;
 
+use serde::Serialize;
 use tauri::Emitter;
 mod falsecolor;
 
 use std::{
     fs::{self, copy, create_dir_all},
-    io,
     path::{Path, PathBuf},
 };
 
+use crate::command::CommandError;
 use chrono::prelude::*;
 use crop::crop;
-use evalglare::evalglare;
+use evalglare::{evalglare, EvalglareResult};
 use falsecolor::falsecolor;
 use header_editing::header_editing;
 use merge_exposures::merge_exposures;
@@ -34,6 +35,21 @@ use vignetting_effect_correction::vignetting_effect_correction;
 // Used to print out debug information
 pub const DEBUG: bool = true;
 
+#[derive(Debug, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum PipelineError {
+    Command { error: CommandError },
+    InvalidInput { field: String, value: String },
+    Processing { message: String },
+    Event { message: String },
+}
+
+impl From<CommandError> for PipelineError {
+    fn from(error: CommandError) -> Self {
+        PipelineError::Command { error }
+    }
+}
+
 // Struct to hold some configuration settings (e.g. path settings).
 // Used when various stages of the pipeline are called.
 pub struct ConfigSettings {
@@ -44,15 +60,57 @@ pub struct ConfigSettings {
     temp_path: PathBuf, // used to store temp path in output dir, i.e. "output_path/tmp/"
 }
 
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum PipelineStatusKind {
+    Step,
+    Progress,
+    Warning,
+    Error,
+    Done,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct PipelineStatusPayload {
+    pub kind: PipelineStatusKind,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub progress: Option<i32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub step: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
+}
+
+fn emit_status(
+    app: &tauri::AppHandle,
+    payload: PipelineStatusPayload,
+) -> Result<(), PipelineError> {
+    app.emit("pipeline-status", payload)
+        .map_err(|e| PipelineError::Event {
+            message: format!("Failed to emit status event: {}", e),
+        })
+}
+
 // Helper functon to emit progress events
 fn emit_progress(
     app: &tauri::AppHandle,
     current_step: usize,
     total_steps: usize,
-) -> Result<(), String> {
+) -> Result<(), PipelineError> {
     let progress = ((current_step as f64 / total_steps as f64) * 100.0) as i32;
     app.emit("pipeline-progress", progress)
-        .map_err(|e| format!("Failed to emit progress event: {}", e))
+        .map_err(|e| PipelineError::Event {
+            message: format!("Failed to emit progress event: {}", e),
+        })?;
+    emit_status(
+        app,
+        PipelineStatusPayload {
+            kind: PipelineStatusKind::Progress,
+            progress: Some(progress),
+            step: None,
+            message: None,
+        },
+    )
 }
 
 // Struct to hold argument values for falsecolor2/luminance mapping
@@ -110,22 +168,25 @@ pub async fn pipeline(
     vignetting_correction_cal: String,
     photometric_adjustment_cal: String,
     neutral_density_cal: String,
-    diameter: String,
-    xleft: String,
-    ydown: String,
-    mut xdim: String,
-    mut ydim: String,
-    mut vertical_angle: String,
-    mut horizontal_angle: String,
+    diameter: f64,
+    xleft: f64,
+    ydown: f64,
+    xdim: f64,
+    ydim: f64,
+    vertical_angle: f64,
+    horizontal_angle: f64,
     scale_limit: String,
     scale_label: String,
     scale_levels: String,
     legend_dimensions: String,
     filter_images: bool,
-) -> Result<String, String> {
+) -> Result<String, PipelineError> {
     // Return error if pipeline was called with no input images
-    if input_images.len() == 0 {
-        return Err("No input images were provided.".into());
+    if input_images.is_empty() {
+        return Err(PipelineError::InvalidInput {
+            field: "inputImages".to_string(),
+            value: "empty".to_string(),
+        });
     }
 
     let is_directory = if input_images.len() > 0 {
@@ -190,16 +251,16 @@ pub async fn pipeline(
     };
 
     // Creates output directory with /tmp subdirectory
-    let create_dirs_result = create_dir_all(&config_settings.temp_path);
-
-    if create_dirs_result.is_err() {
-        return Result::Err(("Error creating tmp and output directories.").to_string());
+    if create_dir_all(&config_settings.temp_path).is_err() {
+        return Err(PipelineError::Processing {
+            message: "Error creating tmp and output directories.".to_string(),
+        });
     }
 
     //Define total steps for progress bar (adjust this count as needed)
     let total_steps: usize = if is_directory { 5 } else { 5 };
 
-    let mut current_step: usize = 0;
+    let current_step: usize = 0;
     emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)
 
     let mut return_path: PathBuf = PathBuf::new();
@@ -214,20 +275,20 @@ pub async fn pipeline(
                 .join(Path::new(input_dir).file_name().unwrap_or_default());
 
             if create_dir_all(&config_settings.temp_path).is_err() {
-                return Result::Err(
-                    ("Error creating directories for outputs in temp directory.").to_string(),
-                );
+                return Err(PipelineError::Processing {
+                    message: "Error creating directories for outputs in temp directory."
+                        .to_string(),
+                });
             }
 
             // Grab all JPG or CR2 images from the directory and ignore all other files
-            let input_images_from_dir_result = get_images_from_dir(&input_dir);
-            if input_images_from_dir_result.is_err() {
-                return Err(input_images_from_dir_result.unwrap_err());
-            }
-            let input_images_from_dir = input_images_from_dir_result.unwrap();
+            let input_images_from_dir = get_images_from_dir(&input_dir)?;
 
-            if input_images_from_dir.len() == 0 {
-                return Err("All directories must contain at least one LDR image".to_string());
+            if input_images_from_dir.is_empty() {
+                return Err(PipelineError::InvalidInput {
+                    field: "inputImages".to_string(),
+                    value: "directory-without-images".to_string(),
+                });
             }
 
             // Run the HDRGen and Radiance pipeline on the input images
@@ -252,8 +313,17 @@ pub async fn pipeline(
                 total_steps,
                 filter_images,
             );
-            if result.is_err() {
-                return result;
+            if let Err(error) = result {
+                emit_status(
+                    &app,
+                    PipelineStatusPayload {
+                        kind: PipelineStatusKind::Error,
+                        progress: None,
+                        step: None,
+                        message: Some(format!("{:?}", error)),
+                    },
+                )?;
+                return Err(error);
             }
 
             // Set output file name to be the same as the input directory name (i.e. <dir_name>.hdr)
@@ -265,7 +335,7 @@ pub async fn pipeline(
                 .unwrap_or_default()
                 .to_string_lossy();
 
-            let mut output_file_name = config_settings
+            let output_file_name = config_settings
                 .output_path
                 .join(format!("{}_{}.hdr", base_name, datetime));
 
@@ -275,14 +345,14 @@ pub async fn pipeline(
                 output_file_name,
             );
             if copy_result.is_err() {
-                return Result::Err(
-                    ("Error copying final hdr image to output directory.").to_string(),
-                );
+                return Err(PipelineError::Processing {
+                    message: "Error copying final hdr image to output directory.".to_string(),
+                });
             }
             if copy_result.is_err() {
-                return Result::Err(
-                    ("Error copying evalglare value to output directory.").to_string(),
-                );
+                return Err(PipelineError::Processing {
+                    message: "Error copying evalglare value to output directory.".to_string(),
+                });
             }
             let base_name2 = Path::new(input_dir)
                 .file_name()
@@ -296,10 +366,10 @@ pub async fn pipeline(
                 luminance_file_name,
             );
             if copy_result.is_err() {
-                return Result::Err(
-                    ("Error copying final luminance map hdr image to output directory.")
+                return Err(PipelineError::Processing {
+                    message: "Error copying final luminance map hdr image to output directory."
                         .to_string(),
-                );
+                });
             }
         }
     } else {
@@ -308,7 +378,10 @@ pub async fn pipeline(
         // Ensure images are a supported format
         for input_image in &input_images {
             if !is_supported_format(&PathBuf::from(input_image)) {
-                return Err("Unsupported image format.".to_string());
+                return Err(PipelineError::InvalidInput {
+                    field: "inputImages".to_string(),
+                    value: "unsupported-format".to_string(),
+                });
             }
         }
 
@@ -334,8 +407,17 @@ pub async fn pipeline(
             total_steps,
             filter_images,
         );
-        if result.is_err() {
-            return result;
+        if let Err(error) = result {
+            emit_status(
+                &app,
+                PipelineStatusPayload {
+                    kind: PipelineStatusKind::Error,
+                    progress: None,
+                    step: None,
+                    message: Some(format!("{:?}", error)),
+                },
+            )?;
+            return Err(error);
         }
 
         // Get current local date and time and format output name with it
@@ -350,7 +432,9 @@ pub async fn pipeline(
             output_file_name,
         );
         if copy_result.is_err() {
-            return Result::Err(("Error copying final hdr image to output directory.").to_string());
+            return Err(PipelineError::Processing {
+                message: "Error copying final hdr image to output directory.".to_string(),
+            });
         }
 
         let luminance_file_name = config_settings
@@ -361,41 +445,44 @@ pub async fn pipeline(
             luminance_file_name,
         );
         if copy_result.is_err() {
-            return Result::Err(
-                ("Error copying final hdr luminance image to output directory.").to_string(),
-            );
+            return Err(PipelineError::Processing {
+                message: "Error copying final hdr luminance image to output directory.".to_string(),
+            });
         }
         return_path = config_settings.output_path;
     }
 
+    emit_status(
+        &app,
+        PipelineStatusPayload {
+            kind: PipelineStatusKind::Done,
+            progress: Some(100),
+            step: None,
+            message: Some("Pipeline complete.".to_string()),
+        },
+    )?;
+
     // If no errors, return Ok
-    return Result::Ok(return_path.to_string_lossy().to_string());
+    Ok(return_path.to_string_lossy().to_string())
 }
 
 /*
  * Retrieves all JPG and CR2 images from a directory, ignoring other files or directories.
  * Does not check for images to be of the same format.
  */
-pub fn get_images_from_dir(input_dir: &String) -> Result<Vec<String>, String> {
+pub fn get_images_from_dir(input_dir: &String) -> Result<Vec<String>, PipelineError> {
     // Taken from example code at https://doc.rust-lang.org/std/fs/fn.read_dir.html
 
     // Get everything in the directory (all files and directories)
-    let read_dir_result = fs::read_dir(input_dir);
-    if read_dir_result.is_err() {
-        return Err(format!("Error reading input directory: {input_dir}."));
-    }
-
-    let collect_files_result = read_dir_result
-        .unwrap()
+    let entries = fs::read_dir(input_dir)
+        .map_err(|_| PipelineError::Processing {
+            message: format!("Error reading input directory: {input_dir}."),
+        })?
         .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, io::Error>>();
-    if collect_files_result.is_err() {
-        return Err(format!(
-            "Error getting input directory contents: {input_dir}."
-        ));
-    }
-
-    let entries = collect_files_result.unwrap();
+        .collect::<Result<Vec<_>, std::io::Error>>()
+        .map_err(|_| PipelineError::Processing {
+            message: format!("Error getting input directory contents: {input_dir}."),
+        })?;
 
     // Find the files that have a JPG, TIFF, or CR2 extension
     let mut input_image_paths: Vec<String> = Vec::new();
@@ -412,7 +499,7 @@ pub fn get_images_from_dir(input_dir: &String) -> Result<Vec<String>, String> {
 
 /*
  * Run the HDRGen and Radiance pipeline on one set of LDR images
- * Returns a Result<String, String> either indicating images processed successfully
+ * Returns a Result<String, PipelineError> either indicating images processed successfully
  * or representing an error, which is passed to the frontend in the pipeline function.
  */
 pub fn process_image_set(
@@ -425,20 +512,28 @@ pub fn process_image_set(
     vignetting_correction_cal: String,
     photometric_adjustment_cal: String,
     neutral_density_cal: String,
-    diameter: String,
-    xleft: String,
-    ydown: String,
-    xdim: String,
-    ydim: String,
-    vertical_angle: String,
-    horizontal_angle: String,
+    diameter: f64,
+    xleft: f64,
+    ydown: f64,
+    xdim: f64,
+    ydim: f64,
+    vertical_angle: f64,
+    horizontal_angle: f64,
     mut current_step: usize,
     total_steps: usize,
     filter_images: bool,
-) -> Result<String, String> {
-    // Merge exposures
-    // TODO: Examine a safer way to convert paths to strings that works for non utf-8?
-    let merge_exposures_result = merge_exposures(
+) -> Result<String, PipelineError> {
+    emit_status(
+        app,
+        PipelineStatusPayload {
+            kind: PipelineStatusKind::Step,
+            progress: None,
+            step: Some("merge_exposures".to_string()),
+            message: Some("Merging exposures".to_string()),
+        },
+    )?;
+
+    merge_exposures(
         app,
         &config_settings,
         input_images,
@@ -454,18 +549,22 @@ pub fn process_image_set(
         xdim.clone(),
         ydim.clone(),
         filter_images,
-    );
-
-    // If the command to merge exposures encountered an error, abort pipeline
-    if merge_exposures_result.is_err() {
-        return merge_exposures_result;
-    };
+    )?;
 
     current_step += 1;
     emit_progress(app, current_step, total_steps)?;
 
-    // Nullify the exposure value
-    let nullify_exposure_result = nullify_exposure_value(
+    emit_status(
+        app,
+        PipelineStatusPayload {
+            kind: PipelineStatusKind::Step,
+            progress: None,
+            step: Some("nullify_exposure".to_string()),
+            message: Some("Normalizing exposure".to_string()),
+        },
+    )?;
+
+    nullify_exposure_value(
         &config_settings,
         config_settings
             .temp_path
@@ -477,18 +576,22 @@ pub fn process_image_set(
             .join("nullify_exposure_value.hdr")
             .display()
             .to_string(),
-    );
-
-    // If the command to nullify the exposure value encountered an error, abort pipeline
-    if nullify_exposure_result.is_err() {
-        return nullify_exposure_result;
-    }
+    )?;
 
     current_step += 1;
     emit_progress(app, current_step, total_steps)?;
 
-    // Crop the HDR image to a square fitting the fisheye view
-    let crop_result = crop(
+    emit_status(
+        app,
+        PipelineStatusPayload {
+            kind: PipelineStatusKind::Step,
+            progress: None,
+            step: Some("crop".to_string()),
+            message: Some("Cropping HDR image".to_string()),
+        },
+    )?;
+
+    crop(
         &config_settings,
         config_settings
             .temp_path
@@ -503,22 +606,25 @@ pub fn process_image_set(
         diameter.clone(),
         xleft,
         ydown,
-    );
-
-    // If the cropping command encountered an error, abort pipeline
-    if crop_result.is_err() {
-        return crop_result;
-    }
+    )?;
 
     let mut next_path = "crop.hdr";
 
     current_step += 1;
     emit_progress(app, current_step, total_steps)?;
 
-    // Check diameter instead of ydim or xdim in case user wanted image smaller than 1000
-    if diameter.parse::<u32>().unwrap() > 1000 {
-        // Resize the HDR image
-        let resize_result = resize(
+    if diameter > 1000.0 {
+        emit_status(
+            app,
+            PipelineStatusPayload {
+                kind: PipelineStatusKind::Step,
+                progress: None,
+                step: Some("resize".to_string()),
+                message: Some("Resizing HDR image".to_string()),
+            },
+        )?;
+
+        resize(
             &config_settings,
             config_settings
                 .temp_path
@@ -532,21 +638,23 @@ pub fn process_image_set(
                 .to_string(),
             xdim,
             ydim,
-        );
-
-        // If the resizing command encountered an error, abort pipeline
-        if resize_result.is_err() {
-            return resize_result;
-        }
+        )?;
 
         next_path = "resize.hdr";
     }
 
-    /* Start Calibration Files - able to be skipped in some instances */
+    if !fisheye_correction_cal.is_empty() {
+        emit_status(
+            app,
+            PipelineStatusPayload {
+                kind: PipelineStatusKind::Step,
+                progress: None,
+                step: Some("projection_adjustment".to_string()),
+                message: Some("Applying fisheye correction".to_string()),
+            },
+        )?;
 
-    if fisheye_correction_cal.len() > 0 {
-        // Apply the projection adjustment to the HDR image
-        let projection_adjustment_result = projection_adjustment(
+        projection_adjustment(
             &config_settings,
             config_settings
                 .temp_path
@@ -559,19 +667,23 @@ pub fn process_image_set(
                 .display()
                 .to_string(),
             fisheye_correction_cal,
-        );
-
-        // If the command to apply projection adjustment encountered an error, abort pipeline
-        if projection_adjustment_result.is_err() {
-            return projection_adjustment_result;
-        }
+        )?;
 
         next_path = "projection_adjustment.hdr"
     }
 
-    if vignetting_correction_cal.len() > 0 {
-        // Correct for the vignetting effect
-        let vignetting_effect_correction_result = vignetting_effect_correction(
+    if !vignetting_correction_cal.is_empty() {
+        emit_status(
+            app,
+            PipelineStatusPayload {
+                kind: PipelineStatusKind::Step,
+                progress: None,
+                step: Some("vignetting_correction".to_string()),
+                message: Some("Applying vignetting correction".to_string()),
+            },
+        )?;
+
+        vignetting_effect_correction(
             &config_settings,
             config_settings
                 .temp_path
@@ -584,19 +696,23 @@ pub fn process_image_set(
                 .display()
                 .to_string(),
             vignetting_correction_cal,
-        );
-
-        // If the command encountered an error, abort pipeline
-        if vignetting_effect_correction_result.is_err() {
-            return vignetting_effect_correction_result;
-        }
+        )?;
 
         next_path = "vignetting_correction.hdr";
     }
 
-    if neutral_density_cal.len() > 0 {
-        // Apply the neutral density filter.
-        let neutral_density_result: Result<String, String> = neutral_density(
+    if !neutral_density_cal.is_empty() {
+        emit_status(
+            app,
+            PipelineStatusPayload {
+                kind: PipelineStatusKind::Step,
+                progress: None,
+                step: Some("neutral_density".to_string()),
+                message: Some("Applying neutral density correction".to_string()),
+            },
+        )?;
+
+        neutral_density(
             &config_settings,
             config_settings
                 .temp_path
@@ -609,19 +725,23 @@ pub fn process_image_set(
                 .display()
                 .to_string(),
             neutral_density_cal,
-        );
-
-        // If the command encountered an error, abort pipeline
-        if neutral_density_result.is_err() {
-            return neutral_density_result;
-        }
+        )?;
 
         next_path = "neutral_density.hdr";
     }
 
-    if photometric_adjustment_cal.len() > 0 {
-        // Correct for photometric adjustments
-        let photometric_adjustment_result = photometric_adjustment(
+    if !photometric_adjustment_cal.is_empty() {
+        emit_status(
+            app,
+            PipelineStatusPayload {
+                kind: PipelineStatusKind::Step,
+                progress: None,
+                step: Some("photometric_adjustment".to_string()),
+                message: Some("Applying photometric adjustment".to_string()),
+            },
+        )?;
+
+        photometric_adjustment(
             &config_settings,
             config_settings
                 .temp_path
@@ -634,19 +754,21 @@ pub fn process_image_set(
                 .display()
                 .to_string(),
             photometric_adjustment_cal,
-        );
-
-        // If the command encountered an error, abort pipeline
-        if photometric_adjustment_result.is_err() {
-            return photometric_adjustment_result;
-        }
+        )?;
 
         next_path = "photometric_adjustment.hdr";
     }
 
-    /* End Calibration Files */
+    emit_status(
+        app,
+        PipelineStatusPayload {
+            kind: PipelineStatusKind::Step,
+            progress: None,
+            step: Some("evalglare".to_string()),
+            message: Some("Evaluating glare".to_string()),
+        },
+    )?;
 
-    // Evalglare
     let evalglare_result = evalglare(
         &config_settings,
         config_settings
@@ -656,19 +778,34 @@ pub fn process_image_set(
             .to_string(),
         vertical_angle.clone(),
         horizontal_angle.clone(),
-    );
-
-    // If the command encountered an error, abort the pipeline
-    if evalglare_result.is_err() {
-        return evalglare_result;
+    )?;
+    if let Some(message) = evalglare_result.warning {
+        emit_status(
+            app,
+            PipelineStatusPayload {
+                kind: PipelineStatusKind::Warning,
+                progress: None,
+                step: Some("evalglare".to_string()),
+                message: Some(message),
+            },
+        )?;
     }
-    let evalglare_value = evalglare_result.unwrap();
+    let evalglare_value = evalglare_result.value;
 
     current_step += 1;
     emit_progress(app, current_step, total_steps)?;
 
-    // Edit the header
-    let header_editing_result = header_editing(
+    emit_status(
+        app,
+        PipelineStatusPayload {
+            kind: PipelineStatusKind::Step,
+            progress: None,
+            step: Some("header_editing".to_string()),
+            message: Some("Updating HDR header".to_string()),
+        },
+    )?;
+
+    header_editing(
         &config_settings,
         config_settings
             .temp_path
@@ -683,18 +820,22 @@ pub fn process_image_set(
         vertical_angle,
         horizontal_angle,
         evalglare_value,
-    );
-
-    // If the command encountered an error, abort pipeline
-    if header_editing_result.is_err() {
-        return header_editing_result;
-    }
+    )?;
 
     current_step += 1;
     emit_progress(app, current_step, total_steps)?;
 
-    // Create luminance map
-    let falsecolor_result = falsecolor(
+    emit_status(
+        app,
+        PipelineStatusPayload {
+            kind: PipelineStatusKind::Step,
+            progress: None,
+            step: Some("falsecolor".to_string()),
+            message: Some("Generating luminance map".to_string()),
+        },
+    )?;
+
+    falsecolor(
         &config_settings,
         config_settings
             .temp_path
@@ -707,15 +848,9 @@ pub fn process_image_set(
             .display()
             .to_string(),
         luminance_args,
-    );
+    )?;
 
-    // If the command encountered an error, abort pipeline
-    if falsecolor_result.is_err() {
-        return falsecolor_result;
-    }
-
-    // Pipeline has completed successfully. Return Ok
-    return Result::Ok(("Image set processed.").to_string());
+    Ok("Image set processed.".to_string())
 }
 
 fn is_supported_format(entry: &PathBuf) -> bool {
