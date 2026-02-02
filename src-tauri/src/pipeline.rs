@@ -21,7 +21,7 @@ use std::{
 use crate::command::CommandError;
 use chrono::prelude::*;
 use crop::crop;
-use evalglare::{evalglare, EvalglareResult};
+use evalglare::evalglare;
 use falsecolor::falsecolor;
 use header_editing::header_editing;
 use merge_exposures::merge_exposures;

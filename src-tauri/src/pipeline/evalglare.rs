@@ -41,21 +41,9 @@ pub fn evalglare(
                 stderr,
             } => {
                 if !stdout.trim().is_empty() {
-                    let warning = if stderr.trim().is_empty() {
-                        format!(
-                            "evalglare exited with status {:?}; using returned value.",
-                            status_code
-                        )
-                    } else {
-                        format!(
-                            "evalglare exited with status {:?}; stderr: {}",
-                            status_code,
-                            stderr.trim()
-                        )
-                    };
                     Ok(EvalglareResult {
                         value: stdout,
-                        warning: Some(warning),
+                        warning: None,
                     })
                 } else {
                     Err(PipelineError::Command {
