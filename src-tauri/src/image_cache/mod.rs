@@ -139,3 +139,54 @@ pub fn ensure_tiff_for_raw(
     }
     Ok(output_path)
 }
+
+fn ra_tiff_context() -> String {
+    "ra_tiff".to_string()
+}
+
+fn run_hdr_to_tiff_conversion(
+    radiance_dir: &Path,
+    input: &Path,
+    output: &Path,
+) -> Result<(), String> {
+    let mut cmd = Command::new(radiance_dir.join("ra_tiff"));
+    cmd.args([
+        input.display().to_string().as_str(),
+        output.display().to_string().as_str(),
+    ]);
+
+    let stat = cmd.status();
+    if !stat.is_ok() || !stat.unwrap_or(ExitStatus::default()).success() {
+        return Err(
+            "Error, non-zero exit status. ra_tiff command (converting HDR to TIFF) failed."
+                .to_string(),
+        );
+    }
+
+    Ok(())
+}
+
+pub fn ensure_tiff_for_hdr(
+    app_handle: &tauri::AppHandle,
+    radiance_dir: &Path,
+    input: &Path,
+) -> Result<PathBuf, String> {
+    let cache_dir = get_cache_dir(app_handle)?;
+    let key = compute_hash_for_file(input, &ra_tiff_context())?;
+    let output_path = cache_dir.join(format!("{}.tiff", key));
+
+    if output_path.exists() {
+        println!("cache hit for {}", output_path.display());
+        let meta_result = output_path.metadata();
+        if meta_result.is_ok() && meta_result.unwrap().len() > 0 {
+            return Ok(output_path);
+        }
+    }
+
+    let result = run_hdr_to_tiff_conversion(radiance_dir, input, &output_path);
+    if result.is_err() {
+        let _ = fs::remove_file(&output_path);
+        return Err(result.err().unwrap());
+    }
+    Ok(output_path)
+}

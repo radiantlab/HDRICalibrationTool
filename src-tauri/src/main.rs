@@ -61,6 +61,10 @@ mod image_cache;
 mod display_hdr_img;
 use display_hdr_img::display_hdr_img;
 
+// Command to convert HDR image into tiff image using ra_tiff utility
+mod hdr_image_help;
+use hdr_image_help::convert_hdr_img;
+
 use std::env;
 use tauri::Manager;
 
@@ -87,6 +91,7 @@ fn main() {
             get_saved_configs,
             convert_raw_img,
             display_hdr_img,
+            convert_hdr_img,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
