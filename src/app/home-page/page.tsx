@@ -75,7 +75,7 @@ const useGlobalPipelineConfig = create<
 	},
 	outputSettings: {
 		targetRes: null,
-		filterIrrelevantSrcImages: false,
+		filterIrrelevantSrcImages: true,
 	},
 
 	set,
@@ -240,10 +240,9 @@ export default function Home() {
 											<Controller
 												name="outputSettings.filterIrrelevantSrcImages"
 												control={control}
-												defaultValue={true}
 												render={({ field }) => (
 													<Checkbox
-														checked={!!field.value}
+														checked={field.value ?? false}
 														onCheckedChange={(checked) =>
 															field.onChange(Boolean(checked))
 														}
