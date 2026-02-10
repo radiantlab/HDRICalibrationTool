@@ -134,16 +134,17 @@ pub async fn pipeline(
         false
     };
 
-    if xdim.len() < 1 {
-        xdim = "1000".to_string();
-        ydim = "1000".to_string();
-    }
-    if vertical_angle.len() < 1 {
-        vertical_angle = "180".to_string();
-    }
-    if horizontal_angle.len() < 1 {
-        horizontal_angle = "180".to_string();
-    }
+    // let the frontend handle defaults
+    // if xdim.len() < 1 {
+    //     xdim = "1000".to_string();
+    //     ydim = "1000".to_string();
+    // }
+    // if vertical_angle.len() < 1 {
+    //     vertical_angle = "180".to_string();
+    // }
+    // if horizontal_angle.len() < 1 {
+    //     horizontal_angle = "180".to_string();
+    // }
 
     if DEBUG {
         println!("Pipeline module called...");

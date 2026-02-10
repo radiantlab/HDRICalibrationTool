@@ -36,12 +36,16 @@ export default function ImageViewer() {
     images: string[],
     evals: (string | null)[],
     fullPaths: string[]
-  ) {
+  ): {
+    images: string[];
+    evalglares: (string | null)[];
+    imageFullPaths: string[];
+  } {
     // Create array of objects for sorting
     const combined = images.map((img, idx) => ({
       img,
-      eval: evals[idx],
-      fullPath: fullPaths[idx],
+      eval: evals[idx] ?? null,
+      fullPath: fullPaths[idx] ?? "",
     }));
     combined.sort((a, b) => {
       const aName = a.img.split("/").pop()?.toLowerCase() || "";
@@ -65,11 +69,12 @@ export default function ImageViewer() {
       const evalglareValues: (string | null)[] = await Promise.all(
         files.map(async (file) => {
           try {
-            return await invoke("read_header_value", {
+            const value = await invoke<string | null>("read_header_value", {
               filePath: file,
               radiancePathString: settings.radiancePath,
               key: "EVALGLARE=",
             });
+            return value ?? null;
           } catch (error) {
             console.error(
               `ImageViewer: loadFiles: error getting evalglare value for file ${file}`
@@ -210,7 +215,10 @@ export default function ImageViewer() {
                 <div
                   key={index}
                   className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 p-2 rounded group"
-                  onClick={() => launchXimage(imageFullPaths[index])}
+                  onClick={() => {
+                    const fullPath = imageFullPaths[index];
+                    if (fullPath) void launchXimage(fullPath);
+                  }}
                 >
                   {/* Image thumbnail placeholder */}
                   <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded">

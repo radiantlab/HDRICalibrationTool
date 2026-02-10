@@ -184,7 +184,7 @@ export default function SettingsPage() {
                     value={value}
                     placeholder={placeholder}
                     onChange={handleSettingsChange}
-                    className="flex-grow border border-gray-400 rounded px-2 py-1"
+                    className="grow border border-gray-400 rounded px-2 py-1"
                   />
                   <button
                     onClick={() =>

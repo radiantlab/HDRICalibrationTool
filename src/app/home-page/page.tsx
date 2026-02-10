@@ -1,6 +1,6 @@
 /**
  * Home Page Component for the HDRI Calibration Tool.
- * 
+ *
  * This component serves as the main page for configuring and generating HDR images.
  * It integrates various subcomponents for:
  * - Image selection
@@ -8,303 +8,532 @@
  * - Response and correction files
  * - Luminance configuration
  * - Process control and execution
- * 
+ *
  * The component manages the main workflow for generating HDR images using the Tauri backend.
  */
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import {
+	Accordion,
+	AccordionContent,
+	AccordionItem,
+} from "@/components/ui/accordion";
+import {
+	Field,
+	FieldContent,
+	FieldError,
+	FieldLabel,
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { Eclipse, ImageUpscale, Rotate3D, SwitchCamera } from "lucide-react";
+import {
+	pipelineConfig,
+	PipelineConfigProvider,
+} from "./(pipeline-configuration)/config-provider";
+import { ImageMatrixInput } from "@/components/ui/image-matrix-input";
+import { FileInput } from "@/components/ui/file-input";
+import { useMotionValue, useTransform } from "framer-motion";
+import { useMotionValueFormState } from "@/lib/useMotionValueFormState";
+import { LensMaskInput } from "./lens-mask-input";
 import { invoke } from "@tauri-apps/api/core";
-import Images from "./images";
-import CroppingResizingViewSettings from "./cropping-resizing-view-settings";
-import LuminanceConfiguration from "./luminance-configuration";
-import ButtonBar from "./button-bar/button-bar";
-import Response_and_correction from "./response-correction-files/response_and_correction";
-import Progress from "./progress";
-import { exists } from "@tauri-apps/plugin-fs";
 import { useSettingsStore } from "../stores/settings-store";
-import { useConfigStore } from "../stores/config-store";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { FieldContainerAccordionTrigger } from "@/components/ui/field-accordion-trigger";
+import { PipelineStatus } from "./pipeline-status";
+import { toast } from "sonner";
 
-/** Enable debug logging */
-const DEBUG = true;
+import { create } from "zustand";
 
-/** Flag to use fake pipeline for testing */
-const fakePipeline = false;
+const useGlobalPipelineConfig = create<
+	pipelineConfig & { set: (config: pipelineConfig) => void }
+>((set) => ({
+	inputSets: [],
+	cameraResponseLocation: null,
+	lensMask: {
+		radius: 0,
+		x: 0,
+		y: 0,
+	},
+	fisheyeView: {
+		horizontalViewDegrees: null,
+		verticalViewDegrees: null,
+	},
+	correctionFiles: {
+		fisheye: null,
+		vignetting: null,
+		neutralDensity: null,
+		calibrationFactor: null,
+	},
+	outputSettings: {
+		targetRes: null,
+		filterIrrelevantSrcImages: true,
+	},
+
+	set,
+}));
 
 /**
  * Main Home page component for image configuration and processing
- * 
+ *
  * @returns React component with the main application interface
  */
 export default function Home() {
-  // Access application settings from global store
-  const { settings } = useSettingsStore();
+	// since this is at the page level, it id safe to assume this is the only instance of the global pipeline config
+	const globalPipelineConfig = useGlobalPipelineConfig();
+	const form = useForm<pipelineConfig>({
+		defaultValues: globalPipelineConfig,
+	});
+	const { control, register, setValue, watch } = form;
+	const formValues = watch();
+	// keep the global pipeline config in sync with the form values
+	useEffect(() => {
+		globalPipelineConfig.set(formValues);
+	}, [
+		// avoid infinite re-renders by stringifying the form values (so we only compare the values, not the reference)
+		JSON.stringify(formValues),
+	]);
 
-  // Access configuration state from global store
-  const {
-    viewSettings,         // Settings for cropping and view angle
-    luminanceSettings,    // Settings for luminance visualization
-    devicePaths,          // Paths to input image files
-    responsePaths,        // Path to response function file
-    fe_correctionPaths,   // Path to fisheye correction file
-    v_correctionPaths,    // Path to vignetting correction file
-    nd_correctionPaths,   // Path to neutral density correction file
-    cf_correctionPaths,   // Path to calibration factor file
-    jpeg_present,
-    setConfig,           // Function to update configuration
-    filterImages,         // Flag to filter images or not        // Function to update configuration
-  } = useConfigStore();
-  // HARD CODED PATHS FOR TESTING (used when fakePipeline is true)
-  // These paths are only used for development and testing purposes
+	const { settings } = useSettingsStore();
 
-  /** Hardcoded path to Radiance binaries for testing */
-  const fakeRadiancePath = "/usr/local/radiance/bin/";
-  /** Hardcoded path to HDRGen binary for testing */
-  const fakeHdrgenPath = "/usr/local/bin/";
-  /** Hardcoded output path for testing */
-  const fakeOutputPath = "../output/";
+	const inputSets = watch("inputSets");
 
-  /**
-   * Handles the generation of HDR images
-   * 
-   * This function:
-   * 1. Validates input files and settings
-   * 2. Displays confirmation prompts for missing or problematic inputs
-   * 3. Shows progress indicators
-   * 4. Invokes the backend pipeline to process images
-   */
-  const handleGenerateHDRImage = async () => {
-    // Check if image files exist
-    if (!(await missingImage())) {
-      alert("Image files are not found");
-      return;
-    }    // Check if all required inputs are provided
-    const { isValid, missingInputs } = allInputsEntered();
+	const maskPreviewImage = useMemo(() => {
+		return inputSets?.[0]?.files?.[0];
+	}, [inputSets]);
 
-    // Abort if no input images or directories are provided
-    if (!isValid) {
-      alert(
-        "No input images or directories were provided. Please select at least one input image or directory to proceed."
-      );
-      return;
-    }
+	const initialLensMaskX = form.getValues("lensMask.x");
+	const initialLensMaskY = form.getValues("lensMask.y");
+	const initialLensMaskRadius = form.getValues("lensMask.radius");
 
-    // If some optional inputs are missing, ask user for confirmation before proceeding
-    if (missingInputs.length > 0) {
-      const proceed = await confirm(
-        `The following inputs are missing:\n\n- ${missingInputs.join(
-          "\n- "
-        )}\n\nThe HDR image generation may be inaccurate or incomplete without these inputs. Do you want to proceed anyway?`
-      );
-      if (!proceed) {
-        return; // Abort if the user chooses not to proceed
-      }
-    } 
-    
-    // Warn about missing response function for JPEG images
-    if (!responsePaths && jpeg_present) {
-      // If the user didn't select a response function,
-      // display a warning that the output HDR image might be inaccurate if converting from JPEG
-      // and ask for confirmation before proceeding with pipeline call
-      let proceed = await confirm(
-        "Warning: No response function selected. If you're converting JPEG images, the automatically" +
-        "generated response function may result in an inaccurate HDR image. Continue anyway?"
-      );
-      if (!proceed) {
-        return;
-      }
-    }
-    
-    // Warn if vertical and horizontal view angles don't match
-    if (viewSettings.vv !== viewSettings.vh) {
-      let proceed = await confirm(
-        "Warning: vv (Vertical Angle) and vh (Horizontal Angle) values do not match. Continue anyway?"
-      );
-      if (!proceed) {
-        return;
-      }
-    }    // Show progress indicator
-    setConfig({ showProgress: true });
+	const centerX = useMotionValueFormState(
+		initialLensMaskX,
+		setValue,
+		"lensMask.x"
+	);
+	const centerY = useMotionValueFormState(
+		initialLensMaskY,
+		setValue,
+		"lensMask.y"
+	);
 
-    // Error if no output path exists
-    if (settings.outputPath === "") {
-      alert(
-        "Error: no output path was given, please enter an output path in the settings"
-      );
-      return;
-    }
-    setConfig({ showProgress: true }); // show progress indicator
+	const radiusAjusterCenterX = useMotionValue(
+		initialLensMaskX + initialLensMaskRadius
+	);
+	const radiusAjusterCenterY = useMotionValue(initialLensMaskY);
 
-    // Call backend pipeline function with all parameters
-    invoke<string>("pipeline", {
-      // Paths to external tools
-      radiancePath: settings.radiancePath,
-      hdrgenPath: settings.hdrgenPath,
-      dcrawEmuPath: settings.dcrawEmuPath,
-      outputPath: settings.outputPath,
-      
-      // Input images and correction files
-      inputImages: devicePaths,
-      responseFunction: responsePaths,
-      fisheyeCorrectionCal: fe_correctionPaths,
-      vignettingCorrectionCal: v_correctionPaths,
-      photometricAdjustmentCal: cf_correctionPaths,
-      neutralDensityCal: nd_correctionPaths,
-      diameter: viewSettings.diameter,
-      xleft: viewSettings.xleft,
-      ydown: viewSettings.ydown,
-      xdim: viewSettings.targetRes,
-      ydim: viewSettings.targetRes,
-      verticalAngle: viewSettings.vv,
-      horizontalAngle: viewSettings.vh,
-      scaleLimit: luminanceSettings.scale_limit,
-      scaleLabel: luminanceSettings.scale_label,
-      scaleLevels: luminanceSettings.scale_levels,
-      legendDimensions: luminanceSettings.legend_dimensions,
-      filterImages: filterImages,
-    })
-      .then((result: any) => {
-        console.log("Process finished. Result: ", result);
-        if (!fakePipeline) {
-          setConfig({ progressButton: true, outputPath: result });
-        }
-      })
-      // .then((result: any) => console.log("Process finished. Result: ", result))
-      // .then(() => {
-      //   if (!fakePipeline) {
-      //     setConfig({ progressButton: true });
-      //   }
-      // })
-      .catch((error: any) => {
-        console.error(error);
-        alert(error);   // not all returned errors are related to the dcraw_emu or hdrgen paths
-        if (!fakePipeline) {
-          setConfig({ processError: true });
-        }
-      });
-  };
+	const radius = useTransform<number, number>(
+		[centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
+		([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2)
+	);
 
-  async function missingImage() {
-    if (devicePaths.length === 0) {
-      return false;
-    }
+	useEffect(() => {
+		const unsub = radius.on("change", (r) => {
+			setValue("lensMask.radius", r);
+		});
+		return () => unsub();
+	}, [radius, setValue]);
 
-    // Check if all provided paths exist
-    for (const path of devicePaths) {
-      const isValid = await exists(path);
-      if (!isValid) {
-        console.error("File not found");
-        return false; 
-      }
-    }
-    return true;
-  }
+	const [progressVisible, setProgressVisible] = useState(false);
 
-  function allInputsEntered() {
-    const missingInputs = [];
+	return (
+		<PipelineConfigProvider form={form}>
+			<form
+				className="flex h-full w-full divide-x overflow-auto"
+				onSubmit={form.handleSubmit(
+					async (data) => {
+						console.log("configForm submitted", data);
 
-    if (devicePaths.length === 0) {
-      return {
-        isValid: false,
-        missingInputs: ["Input images or directories (this is required)"],
-      };
-    }
+						setProgressVisible(true);
+						const targetRes = data.outputSettings.targetRes!;
+						const verticalAngle = data.fisheyeView.verticalViewDegrees!;
+						const horizontalAngle = data.fisheyeView.horizontalViewDegrees!;
+						const imageSet = data.inputSets[0]!; // TODO: implement batch processing
+						const params = {
+							// Paths to external tools
+							radiancePath: settings.radiancePath,
+							hdrgenPath: settings.hdrgenPath,
+							dcrawEmuPath: settings.dcrawEmuPath,
+							outputPath: settings.outputPath,
 
-    if (!fe_correctionPaths) missingInputs.push("Fisheye Correction");
-    if (!v_correctionPaths) missingInputs.push("Vignetting Correction");
-    if (!cf_correctionPaths) missingInputs.push("Calibration Factor Correction");
-    if (!nd_correctionPaths)
-      missingInputs.push("Neutral Density Correction");
-    if (!viewSettings.diameter)
-      missingInputs.push("Diameter");
-    if (!viewSettings.xleft)
-      missingInputs.push(
-        "X Left Offset"
-      );
-    if (!viewSettings.ydown)
-      missingInputs.push(
-        "Y Bottom Offset"
-      );
-      
-    // This loop isn't the prettiest, but because the luminance map is optional, we have to check that they input at least one value but
-    // didn't input the others; no inputs is fine.
-    let enteredSetting = false;
-    let name = "";
-    Object.entries(luminanceSettings).forEach(([key, value]) => {
-      if (value)
-        enteredSetting = true;
-      if (!value && enteredSetting) {
-        // Just formatting the message to not use the snake case key name
-        name = key
-          .split('_')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-        missingInputs.push(
-          `${name} in Falsecolor Settings`
-        );
-      }
-    });
-
-    return {
-      isValid: true,
-      missingInputs,
-    };
-  }
-
-  return (
-    <div className="bg-gray-300 text-black grid grid-cols-4 min-h-screen">
-      <main className="bg-white col-span-4 m-8 mt-0 p-5 border-l border-r border-gray-400">
-        {/* Progress Bar */}
-        <Progress fakePipeline={fakePipeline} />
-        {/* Section 1 and 2 side-by-side */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Section 1 */}
-          <div className="border border-gray-300 rounded-lg p-4 px-6">
-            <h2 className="flex items-center font-semibold mb-4 text-lg">
-              <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
-                1
-              </span>
-              Image Selection & Preview
-            </h2>
-            <Images />
-          </div>
-
-          {/* Section 2 */}
-          <div className="border border-gray-300 rounded-lg p-4">
-            <h2 className="flex items-center font-semibold mb-4 text-lg">
-              <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
-                2
-              </span>
-              Geometry of Fisheye View
-            </h2>
-            <CroppingResizingViewSettings />
-          </div>
-        </div>
-
-        {/* Section 3 below */}
-       <div className="border border-gray-300 rounded-lg p-4 px-6 mt-5">
-          <h2 className="flex items-center font-semibold mb-4 text-lg">
-            <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
-              3
-            </span>
-            Correction Files
-          </h2>
-          <Response_and_correction />
-        </div>
-
-        {/* Section 4 */}
-        <div className="border border-gray-300 rounded-lg p-4 px-6 mt-5 mb-10">
-          <h2 className="flex items-center font-semibold mb-4 text-lg">
-            <span className="bg-gray-400 text-white rounded-full w-6 h-6 flex items-center justify-center mr-2 text-sm">
-              4
-            </span>
-            Luminance Map Configuration
-          </h2>
-          <LuminanceConfiguration />
-        </div>
-      </main>
-
-      <ButtonBar handleGenerateHDRImage={handleGenerateHDRImage} />
-    </div>
-  );
+							// Input images and correction files
+							inputImages: imageSet.files,
+							responseFunction: data.cameraResponseLocation ?? "",
+							fisheyeCorrectionCal: data.correctionFiles.fisheye ?? "",
+							vignettingCorrectionCal: data.correctionFiles.vignetting ?? "",
+							photometricAdjustmentCal:
+								data.correctionFiles.calibrationFactor ?? "",
+							neutralDensityCal: data.correctionFiles.neutralDensity ?? "",
+							// todo: refactor the backend to accept proper numerical types instead of icky strings that will be coerced later.
+							diameter: String(Math.round(data.lensMask.radius * 2)),
+							xleft: String(Math.round(data.lensMask.x - data.lensMask.radius)),
+							ydown: String(Math.round(data.lensMask.y - data.lensMask.radius)),
+							xdim: String(targetRes),
+							ydim: String(targetRes),
+							verticalAngle: String(verticalAngle),
+							horizontalAngle: String(horizontalAngle),
+							// todo: remove these from this form completely when we get to refactoring the backend. These should only be exposed on the image viewer, where they are relevant
+							scaleLimit: "",
+							scaleLabel: "",
+							scaleLevels: "",
+							legendDimensions: "",
+							filterImages: data.outputSettings.filterIrrelevantSrcImages,
+						};
+						console.log("pipeline params", params);
+						const invokePromise = invoke<string>("pipeline", params).catch(
+							(error) => {
+								setProgressVisible(false);
+								toast.error("Error generating HDR image: " + error);
+							}
+						);
+						console.log("invokePromise", invokePromise);
+					},
+					(errors) => {
+						console.log("form errors", errors);
+					}
+				)}
+			>
+				<ImageMatrixInput
+					control={control}
+					name="inputSets"
+					className="flex-1 overflow-hidden"
+					rules={{
+						validate: (v) =>
+							(Array.isArray(v) && v.length > 0) ||
+							"At least one image set is required",
+					}}
+				/>
+				<div className="bg-accent w-96 h-full flex flex-col min-h-0">
+					<Accordion
+						type="single"
+						collapsible
+						className="flex-1 min-h-0 overflow-y-auto"
+						// defaultValue="item-1"
+					>
+						<AccordionItem value="item-hdr-gen" className="px-4">
+							<FieldContainerAccordionTrigger
+								fields={[
+									"cameraResponseLocation",
+									"lensMask.radius",
+									"lensMask.x",
+									"lensMask.y",
+									"outputSettings.filterIrrelevantSrcImages",
+								]}
+							>
+								HDR Generation
+							</FieldContainerAccordionTrigger>
+							<AccordionContent
+								forceMount
+								className="flex flex-col gap-6 text-balance"
+							>
+								<Tooltip>
+									<TooltipTrigger asChild>
+										<div className="flex items-center gap-2">
+											<Controller
+												name="outputSettings.filterIrrelevantSrcImages"
+												control={control}
+												render={({ field }) => (
+													<Checkbox
+														checked={field.value ?? false}
+														onCheckedChange={(checked) =>
+															field.onChange(Boolean(checked))
+														}
+														onBlur={field.onBlur}
+														ref={field.ref}
+													/>
+												)}
+											/>
+											<Label>Filter irrelevant source images</Label>
+										</div>
+									</TooltipTrigger>
+									<TooltipContent className="max-w-xs">
+										Some LDR images do not provide value to the HDR image
+										generation process. Checking this box will filter out those
+										images before generating the HDR image. This increases
+										accuracy but also adds a minor increase in the time it takes
+										to finish the generation process.
+									</TooltipContent>
+								</Tooltip>
+								<div className="flex flex-col gap-2">
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<FieldLabel className="items-center">
+												<SwitchCamera /> Camera response
+											</FieldLabel>
+										</TooltipTrigger>
+										<TooltipContent className="max-w-xs">
+											A camera response function is the rule that tells your
+											camera how to turn the brightness of a scene into digital
+											pixel numbers. (Important for preprocessed image formats
+											like JPEG)
+										</TooltipContent>
+									</Tooltip>
+									<FileInput
+										// disabled={true}
+										disabled={inputSets?.every((set) =>
+											set.files.every((file) => {
+												const fileextension = file
+													.split(".")
+													.pop()
+													?.toLowerCase();
+												return fileextension !== "jpg" && fileextension !== "jpeg";
+											})
+										)}
+										control={control}
+										explicitOptional
+										name="cameraResponseLocation"
+										placeholder="Select or paste a .rsp file…"
+										filters={[
+											{ name: "Camera response files", extensions: ["rsp"] },
+										]}
+										rules={{ required: "Camera response file is required" }}
+									/>
+								</div>
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem value="item-crop-resize" className="px-4">
+							<FieldContainerAccordionTrigger
+								fields={[
+									"cameraResponseLocation",
+									"lensMask.radius",
+									"lensMask.x",
+									"lensMask.y",
+									"outputSettings.targetRes",
+									"outputSettings.filterIrrelevantSrcImages",
+								]}
+							>
+								Cropping and Resizing
+							</FieldContainerAccordionTrigger>
+							<AccordionContent
+								forceMount
+								className="flex flex-col gap-6 text-balance"
+							>
+								<Field>
+									<FieldLabel>
+										<ImageUpscale /> Target width/height
+									</FieldLabel>
+									<Input
+										type="number"
+										placeholder="Value in pixels"
+										{...register("outputSettings.targetRes", {
+											setValueAs: (value) =>
+												value === "" || value == null ? null : Number(value),
+											validate: (value) =>
+												(value != null && Number.isFinite(value)) ||
+												"Target width/height is required",
+										})}
+										aria-invalid={
+											form.formState.errors.outputSettings?.targetRes
+												? "true"
+												: undefined
+										}
+									/>
+									<FieldError
+										errors={[form.formState.errors.outputSettings?.targetRes]}
+									/>
+								</Field>
+								<div className="flex flex-col gap-2">
+									<Tooltip>
+										<TooltipTrigger asChild>
+											<FieldLabel className="items-center">
+												<Eclipse /> Lens mask
+											</FieldLabel>
+										</TooltipTrigger>
+										<TooltipContent className="max-w-xs">
+											A circular mask applied to remove the parts of the image
+											that are obstructed by the lens.
+										</TooltipContent>
+									</Tooltip>
+									<LensMaskInput
+										maskPreviewImage={maskPreviewImage}
+										centerX={centerX}
+										centerY={centerY}
+										radiusAjusterCenterX={radiusAjusterCenterX}
+										radiusAjusterCenterY={radiusAjusterCenterY}
+										register={register}
+									/>
+								</div>
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem value="item-correction-fisheye" className="px-4">
+							<FieldContainerAccordionTrigger
+								fields={["correctionFiles.fisheye"]}
+							>
+								Fisheye correction
+							</FieldContainerAccordionTrigger>
+							<AccordionContent
+								forceMount
+								className="flex flex-col gap-4 text-balance"
+							>
+								<FileInput
+									control={control}
+									explicitOptional
+									name="correctionFiles.fisheye"
+									placeholder="Select or paste a .cal file…"
+									filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
+									rules={{ required: "Fisheye correction file is required" }}
+								/>
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem value="item-correction-vignetting" className="px-4">
+							<FieldContainerAccordionTrigger
+								fields={["correctionFiles.vignetting"]}
+							>
+								Vignetting correction
+							</FieldContainerAccordionTrigger>
+							<AccordionContent
+								forceMount
+								className="flex flex-col gap-4 text-balance"
+							>
+								<FileInput
+									control={control}
+									explicitOptional
+									name="correctionFiles.vignetting"
+									placeholder="Select or paste a .cal file…"
+									filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
+									rules={{ required: "Vignetting correction file is required" }}
+								/>
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem
+							value="item-correction-neutral-density"
+							className="px-4"
+						>
+							<FieldContainerAccordionTrigger
+								fields={["correctionFiles.neutralDensity"]}
+							>
+								Neutral density correction
+							</FieldContainerAccordionTrigger>
+							<AccordionContent
+								forceMount
+								className="flex flex-col gap-4 text-balance"
+							>
+								<FileInput
+									control={control}
+									explicitOptional
+									name="correctionFiles.neutralDensity"
+									placeholder="Select or paste a .cal file…"
+									filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
+									rules={{
+										required: "Neutral density correction file is required",
+									}}
+								/>
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem
+							value="item-correction-calibration-factor"
+							className="px-4"
+						>
+							<FieldContainerAccordionTrigger
+								fields={["correctionFiles.calibrationFactor"]}
+							>
+								Calibration factor correction
+							</FieldContainerAccordionTrigger>
+							<AccordionContent
+								forceMount
+								className="flex flex-col gap-4 text-balance"
+							>
+								<FileInput
+									control={control}
+									explicitOptional
+									name="correctionFiles.calibrationFactor"
+									placeholder="Select or paste a .cal file…"
+									filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
+									rules={{
+										required: "Calibration factor correction file is required",
+									}}
+								/>
+							</AccordionContent>
+						</AccordionItem>
+						<AccordionItem value="item-post" className="px-4">
+							<FieldContainerAccordionTrigger
+								fields={[
+									"outputSettings.targetRes",
+									"fisheyeView.verticalViewDegrees",
+									"fisheyeView.horizontalViewDegrees",
+								]}
+							>
+								Output Header Editing
+							</FieldContainerAccordionTrigger>
+							<AccordionContent
+								forceMount
+								className="flex flex-col gap-4 text-balance"
+							>
+								<Field>
+									<FieldLabel>
+										<Rotate3D /> Fisheye view angles
+									</FieldLabel>
+									<FieldContent className="gap-1">
+										<div className="flex flex-row gap-1">
+											<Input
+												icon={"°"}
+												type="number"
+												placeholder="Vertical view angle"
+												{...register("fisheyeView.verticalViewDegrees", {
+													setValueAs: (value) =>
+														value === "" || value == null ? null : Number(value),
+													validate: (value) =>
+														(value != null && Number.isFinite(value)) ||
+														"Vertical view angle is required",
+												})}
+												aria-invalid={
+													form.formState.errors.fisheyeView?.verticalViewDegrees
+														? "true"
+														: undefined
+												}
+											/>
+											<Input
+												icon={"°"}
+												type="number"
+												// TODO: refactor this to be from the top, not the bottom.
+												// thats just more intuitive/standardized.
+												placeholder="Horizontal view angle"
+												{...register("fisheyeView.horizontalViewDegrees", {
+													setValueAs: (value) =>
+														value === "" || value == null ? null : Number(value),
+													validate: (value) =>
+														(value != null && Number.isFinite(value)) ||
+														"Horizontal view angle is required",
+												})}
+												aria-invalid={
+													form.formState.errors.fisheyeView?.horizontalViewDegrees
+														? "true"
+														: undefined
+												}
+											/>
+										</div>
+										<FieldError
+											errors={[
+												form.formState.errors.fisheyeView?.verticalViewDegrees,
+												form.formState.errors.fisheyeView?.horizontalViewDegrees,
+											]}
+										/>
+									</FieldContent>
+								</Field>
+							</AccordionContent>
+						</AccordionItem>
+					</Accordion>
+					<div className="bottom-0 border-t left-0 right-0 w-full p-4 mt-auto bg-background drop-shadow-lg">
+						{progressVisible ? (
+							<PipelineStatus
+								onFinishAcknowledgment={() => setProgressVisible(false)}
+							/>
+						) : (
+							<Button className="w-full bg-osu-beaver-orange">
+								Generate HDR Image
+							</Button>
+						)}
+					</div>
+				</div>
+			</form>
+		</PipelineConfigProvider>
+	);
 }
