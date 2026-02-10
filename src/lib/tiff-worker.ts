@@ -159,10 +159,10 @@ function downscale(
 			const sx = Math.floor((x * srcW) / dstW);
 			const sIdx = (sy * srcW + sx) * 4;
 			const dIdx = (y * dstW + x) * 4;
-			dst[dIdx] = src[sIdx];
-			dst[dIdx + 1] = src[sIdx + 1];
-			dst[dIdx + 2] = src[sIdx + 2];
-			dst[dIdx + 3] = src[sIdx + 3];
+			dst[dIdx] = src[sIdx] ?? 0;
+			dst[dIdx + 1] = src[sIdx + 1] ?? 0;
+			dst[dIdx + 2] = src[sIdx + 2] ?? 0;
+			dst[dIdx + 3] = src[sIdx + 3] ?? 0;
 		}
 	}
 	return dst;
