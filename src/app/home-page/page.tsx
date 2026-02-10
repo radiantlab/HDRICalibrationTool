@@ -64,8 +64,8 @@ const useGlobalPipelineConfig = create<
 		y: 0,
 	},
 	fisheyeView: {
-		horizontalViewDegrees: 0,
-		verticalViewDegrees: 0,
+		horizontalViewDegrees: null,
+		verticalViewDegrees: null,
 	},
 	correctionFiles: {
 		fisheye: null,
@@ -74,7 +74,7 @@ const useGlobalPipelineConfig = create<
 		calibrationFactor: null,
 	},
 	outputSettings: {
-		targetRes: 0,
+		targetRes: null,
 		filterIrrelevantSrcImages: false,
 	},
 
@@ -153,6 +153,9 @@ export default function Home() {
 						console.log("configForm submitted", data);
 
 						setProgressVisible(true);
+						const targetRes = data.outputSettings.targetRes!;
+						const verticalAngle = data.fisheyeView.verticalViewDegrees!;
+						const horizontalAngle = data.fisheyeView.horizontalViewDegrees!;
 						const imageSet = data.inputSets[0]!; // TODO: implement batch processing
 						const params = {
 							// Paths to external tools
@@ -173,10 +176,10 @@ export default function Home() {
 							diameter: String(Math.round(data.lensMask.radius * 2)),
 							xleft: String(Math.round(data.lensMask.x - data.lensMask.radius)),
 							ydown: String(Math.round(data.lensMask.y - data.lensMask.radius)),
-							xdim: String(data.outputSettings.targetRes),
-							ydim: String(data.outputSettings.targetRes),
-							verticalAngle: data.fisheyeView.verticalViewDegrees,
-							horizontalAngle: data.fisheyeView.horizontalViewDegrees,
+							xdim: String(targetRes),
+							ydim: String(targetRes),
+							verticalAngle: String(verticalAngle),
+							horizontalAngle: String(horizontalAngle),
 							// todo: remove these from this form completely when we get to refactoring the backend. These should only be exposed on the image viewer, where they are relevant
 							scaleLimit: "",
 							scaleLabel: "",
@@ -304,6 +307,7 @@ export default function Home() {
 									"lensMask.radius",
 									"lensMask.x",
 									"lensMask.y",
+									"outputSettings.targetRes",
 									"outputSettings.filterIrrelevantSrcImages",
 								]}
 							>
@@ -320,8 +324,21 @@ export default function Home() {
 									<Input
 										type="number"
 										placeholder="Value in pixels"
-										defaultValue={1000}
-										{...register("outputSettings.targetRes")}
+										{...register("outputSettings.targetRes", {
+											setValueAs: (value) =>
+												value === "" || value == null ? null : Number(value),
+											validate: (value) =>
+												(value != null && Number.isFinite(value)) ||
+												"Target width/height is required",
+										})}
+										aria-invalid={
+											form.formState.errors.outputSettings?.targetRes
+												? "true"
+												: undefined
+										}
+									/>
+									<FieldError
+										errors={[form.formState.errors.outputSettings?.targetRes]}
 									/>
 								</Field>
 								<div className="flex flex-col gap-2">
@@ -455,36 +472,50 @@ export default function Home() {
 									<FieldLabel>
 										<Rotate3D /> Fisheye view angles
 									</FieldLabel>
-									<FieldContent className="flex-row gap-1">
-										<Input
-											icon={"°"}
-											type="number"
-											placeholder="Vertical view angle"
-											{...register("fisheyeView.verticalViewDegrees", {
-												required: "Vertical view angle is required",
-											})}
-											aria-invalid={
-												form.formState.errors.fisheyeView?.verticalViewDegrees
-													? "true"
-													: undefined
-											}
-											defaultValue={180}
-										/>
-										<Input
-											icon={"°"}
-											type="number"
-											// TODO: refactor this to be from the top, not the bottom.
-											// thats just more intuitive/standardized.
-											placeholder="Horizontal view angle"
-											{...register("fisheyeView.horizontalViewDegrees", {
-												required: "Horizontal view angle is required",
-											})}
-											aria-invalid={
-												form.formState.errors.fisheyeView?.horizontalViewDegrees
-													? "true"
-													: undefined
-											}
-											defaultValue={180}
+									<FieldContent className="gap-1">
+										<div className="flex flex-row gap-1">
+											<Input
+												icon={"°"}
+												type="number"
+												placeholder="Vertical view angle"
+												{...register("fisheyeView.verticalViewDegrees", {
+													setValueAs: (value) =>
+														value === "" || value == null ? null : Number(value),
+													validate: (value) =>
+														(value != null && Number.isFinite(value)) ||
+														"Vertical view angle is required",
+												})}
+												aria-invalid={
+													form.formState.errors.fisheyeView?.verticalViewDegrees
+														? "true"
+														: undefined
+												}
+											/>
+											<Input
+												icon={"°"}
+												type="number"
+												// TODO: refactor this to be from the top, not the bottom.
+												// thats just more intuitive/standardized.
+												placeholder="Horizontal view angle"
+												{...register("fisheyeView.horizontalViewDegrees", {
+													setValueAs: (value) =>
+														value === "" || value == null ? null : Number(value),
+													validate: (value) =>
+														(value != null && Number.isFinite(value)) ||
+														"Horizontal view angle is required",
+												})}
+												aria-invalid={
+													form.formState.errors.fisheyeView?.horizontalViewDegrees
+														? "true"
+														: undefined
+												}
+											/>
+										</div>
+										<FieldError
+											errors={[
+												form.formState.errors.fisheyeView?.verticalViewDegrees,
+												form.formState.errors.fisheyeView?.horizontalViewDegrees,
+											]}
 										/>
 									</FieldContent>
 								</Field>

@@ -11,8 +11,8 @@ export type pipelineConfig = {
 		y: number;
 	};
 	fisheyeView: {
-		horizontalViewDegrees: number;
-		verticalViewDegrees: number;
+		horizontalViewDegrees: number | null;
+		verticalViewDegrees: number | null;
 	};
 	correctionFiles: {
 		fisheye: string | null;
@@ -21,7 +21,7 @@ export type pipelineConfig = {
 		calibrationFactor: string | null;
 	};
 	outputSettings: {
-		targetRes: number;
+		targetRes: number | null;
 		filterIrrelevantSrcImages: boolean;
 	};
 };
