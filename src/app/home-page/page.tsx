@@ -110,16 +110,37 @@ export default function Home() {
 		return inputSets?.[0]?.files?.[0];
 	}, [inputSets]);
 
-	const centerX = useMotionValueFormState(0, setValue, "lensMask.x");
-	const centerY = useMotionValueFormState(0, setValue, "lensMask.y");
+	const initialLensMaskX = form.getValues("lensMask.x");
+	const initialLensMaskY = form.getValues("lensMask.y");
+	const initialLensMaskRadius = form.getValues("lensMask.radius");
 
-	const radiusAjusterCenterX = useMotionValue(100);
-	const radiusAjusterCenterY = useMotionValue(100);
+	const centerX = useMotionValueFormState(
+		initialLensMaskX,
+		setValue,
+		"lensMask.x"
+	);
+	const centerY = useMotionValueFormState(
+		initialLensMaskY,
+		setValue,
+		"lensMask.y"
+	);
+
+	const radiusAjusterCenterX = useMotionValue(
+		initialLensMaskX + initialLensMaskRadius
+	);
+	const radiusAjusterCenterY = useMotionValue(initialLensMaskY);
 
 	const radius = useTransform<number, number>(
 		[centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
 		([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2)
 	);
+
+	useEffect(() => {
+		const unsub = radius.on("change", (r) => {
+			setValue("lensMask.radius", r);
+		});
+		return () => unsub();
+	}, [radius, setValue]);
 
 	const [progressVisible, setProgressVisible] = useState(false);
 
@@ -261,7 +282,7 @@ export default function Home() {
 													.split(".")
 													.pop()
 													?.toLowerCase();
-												return fileextension !== "jpeg";
+												return fileextension !== "jpg" && fileextension !== "jpeg";
 											})
 										)}
 										control={control}
