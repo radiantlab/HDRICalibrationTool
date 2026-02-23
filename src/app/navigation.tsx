@@ -93,7 +93,7 @@ export default function Navigation() {
 				<Link
 					href="/image-viewer"
 					className={`flex items-center justify-center w-full h-full p-2 font-bold ${
-						pathname === "/image-viewer"
+						pathname.startsWith("/image-viewer")
 							? "bg-white cursor-default"
 							: "hover:bg-gray-200 cursor-pointer"
 					}`}
