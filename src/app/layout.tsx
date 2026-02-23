@@ -13,6 +13,7 @@ import Initialization from "./init";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 // Configure the Inter font from Google Fonts
 const inter = Inter({ subsets: ["latin"] });
@@ -48,7 +49,9 @@ export default function RootLayout({
 				<Navigation />
 				{/* Render the current page content */}
 				<Toaster />
-				<TooltipProvider>{children}</TooltipProvider>
+				<NuqsAdapter>
+					<TooltipProvider>{children}</TooltipProvider>
+				</NuqsAdapter>
 			</body>
 		</html>
 	);
