@@ -3,7 +3,7 @@
   "productName": "HDRI Calibration Interface",
   "build": {
     "beforeBuildCommand": "npm run build",
-    "beforeDevCommand": "npm run dev",
+    "beforeDevCommand": "NODE_OPTIONS=--no-webstorage npm run dev",
     "frontendDist": "../out",
     "devUrl": "http://localhost:3000/"
   },
