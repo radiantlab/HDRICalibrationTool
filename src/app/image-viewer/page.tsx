@@ -78,7 +78,7 @@ export default function ImageViewer() {
 					>
 						<div className="grid place-items-center gap-2">
 							<ArrowDownOnSquareStackIcon className="size-16" />
-							<p>Drop a .hdr image here</p>
+							<p>Drop or select an .hdr image here</p>
 						</div>
 					</div>
 				),
