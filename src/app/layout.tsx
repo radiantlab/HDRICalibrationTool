@@ -10,6 +10,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navigation from "./navigation";
 import Initialization from "./init";
+import { PipelineStatusProvider } from "./pipeline-status-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
@@ -50,7 +51,9 @@ export default function RootLayout({
 				{/* Render the current page content */}
 				<Toaster />
 				<NuqsAdapter>
-					<TooltipProvider>{children}</TooltipProvider>
+					<PipelineStatusProvider>
+						<TooltipProvider>{children}</TooltipProvider>
+					</PipelineStatusProvider>
 				</NuqsAdapter>
 			</body>
 		</html>
