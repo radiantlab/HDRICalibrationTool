@@ -21,6 +21,10 @@ import {
 } from "@heroicons/react/24/solid";
 import { pipelineConfig } from "@/app/home-page/(pipeline-configuration)/config-provider";
 
+function isFile(value: unknown): value is File {
+	return typeof File !== "undefined" && value instanceof File;
+}
+
 export type DropzoneInputProps<TFieldValues extends FieldValues> = {
 	control: Control<TFieldValues>;
 	name: Path<TFieldValues>;
@@ -48,11 +52,23 @@ export function DropzoneInput<
 }: DropzoneInputProps<TFieldValues>) {
 	const { field, fieldState } = useController({ control, name });
 
-	const files: File[] = Array.isArray(field.value)
+	const values: unknown[] = Array.isArray(field.value)
 		? field.value
-		: field.value
-		? [field.value as File]
+		: field.value != null
+		? [field.value]
 		: [];
+
+	const fileNames = values
+		.map((value) => {
+			if (isFile(value)) return value.name;
+			if (typeof value === "string") return value;
+			if (value && typeof value === "object" && "name" in value) {
+				const maybeName = (value as { name?: unknown }).name;
+				if (typeof maybeName === "string") return maybeName;
+			}
+			return null;
+		})
+		.filter((name): name is string => !!name);
 
 	return (
 		<Field data-invalid={!!fieldState.error} className={className}>
@@ -89,10 +105,10 @@ export function DropzoneInput<
 						</div>
 					)}
 				</Dropzone>
-				{files.length > 0 && (
+				{fileNames.length > 0 && (
 					<ul className="mt-2 text-sm">
-						{files.map((f, i) => (
-							<li key={i}>{f.name}</li>
+						{fileNames.map((name, i) => (
+							<li key={i}>{name}</li>
 						))}
 					</ul>
 				)}
