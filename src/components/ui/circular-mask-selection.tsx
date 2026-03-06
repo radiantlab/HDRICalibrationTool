@@ -112,9 +112,25 @@ export function CircularMaskSelection({
 				}}
 				className="absolute rounded-full bg-blue-500 z-10 opacity-0 group-hover:opacity-100 transition-opacity hover:cursor-grab active:cursor-grabbing"
 				dragMomentum={false}
+				dragConstraints={containerRef}
 				onDrag={(e, info) => {
-					radiusAjusterCenterX.set(radiusAjusterCenterX.get() + info.delta.x);
-					radiusAjusterCenterY.set(radiusAjusterCenterY.get() + info.delta.y);
+					const containerRect = containerRef.current?.getBoundingClientRect();
+					if (!containerRect) return;
+
+					radiusAjusterCenterX.set(
+						clamp(
+							radiusAjusterCenterX.get() + info.delta.x,
+							0,
+							containerRect.width
+						)
+					);
+					radiusAjusterCenterY.set(
+						clamp(
+							radiusAjusterCenterY.get() + info.delta.y,
+							0,
+							containerRect.height
+						)
+					);
 				}}
 			/>
 			{children}

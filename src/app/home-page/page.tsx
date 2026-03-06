@@ -159,11 +159,25 @@ export default function Home() {
 		return inputSets?.[0]?.files?.[0];
 	}, [inputSets]);
 
-	const centerX = useMotionValueFormState(0, setValue, "lensMask.x");
-	const centerY = useMotionValueFormState(0, setValue, "lensMask.y");
+	const initialLensMaskX = form.getValues("lensMask.x");
+	const initialLensMaskY = form.getValues("lensMask.y");
+	const initialLensMaskRadius = form.getValues("lensMask.radius");
 
-	const radiusAjusterCenterX = useMotionValue(100);
-	const radiusAjusterCenterY = useMotionValue(100);
+	const centerX = useMotionValueFormState(
+		initialLensMaskX,
+		setValue,
+		"lensMask.x"
+	);
+	const centerY = useMotionValueFormState(
+		initialLensMaskY,
+		setValue,
+		"lensMask.y"
+	);
+
+	const radiusAjusterCenterX = useMotionValue(
+		initialLensMaskX + initialLensMaskRadius
+	);
+	const radiusAjusterCenterY = useMotionValue(initialLensMaskY);
 
 	const radius = useTransform<number, number>(
 		[centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
@@ -176,6 +190,13 @@ export default function Home() {
 				shouldValidate: true,
 				shouldDirty: true,
 			});
+		});
+		return () => unsub();
+	}, [radius, setValue]);
+
+	useEffect(() => {
+		const unsub = radius.on("change", (r) => {
+			setValue("lensMask.radius", r);
 		});
 		return () => unsub();
 	}, [radius, setValue]);
@@ -200,7 +221,8 @@ export default function Home() {
 						}
 						if (
 							!Number.isFinite(data.outputSettings.targetRes) ||
-							data.outputSettings.targetRes <= 0
+							(data.outputSettings.targetRes != null &&
+								data.outputSettings.targetRes <= 0)
 						) {
 							toast.error("Target resolution must be greater than 0.");
 							return;
@@ -208,14 +230,19 @@ export default function Home() {
 						if (
 							!Number.isFinite(data.fisheyeView.verticalViewDegrees) ||
 							!Number.isFinite(data.fisheyeView.horizontalViewDegrees) ||
-							data.fisheyeView.verticalViewDegrees <= 0 ||
-							data.fisheyeView.horizontalViewDegrees <= 0
+							(data.fisheyeView.verticalViewDegrees != null &&
+								data.fisheyeView.verticalViewDegrees <= 0) ||
+							(data.fisheyeView.horizontalViewDegrees != null &&
+								data.fisheyeView.horizontalViewDegrees <= 0)
 						) {
 							toast.error("Fisheye view angles must be greater than 0.");
 							return;
 						}
 
 						setProgressVisible(true);
+						const targetRes = data.outputSettings.targetRes!;
+						const verticalAngle = data.fisheyeView.verticalViewDegrees!;
+						const horizontalAngle = data.fisheyeView.horizontalViewDegrees!;
 						const imageSet = data.inputSets[0]!; // TODO: implement batch processing
 						const params = {
 							// Paths to external tools
@@ -325,10 +352,9 @@ export default function Home() {
 											<Controller
 												name="outputSettings.filterIrrelevantSrcImages"
 												control={control}
-												defaultValue={true}
 												render={({ field }) => (
 													<Checkbox
-														checked={!!field.value}
+														checked={field.value ?? false}
 														onCheckedChange={(checked) =>
 															field.onChange(Boolean(checked))
 														}
@@ -370,7 +396,9 @@ export default function Home() {
 													.split(".")
 													.pop()
 													?.toLowerCase();
-												return fileextension !== "jpeg";
+												return (
+													fileextension !== "jpg" && fileextension !== "jpeg"
+												);
 											})
 										)}
 										control={control}
@@ -392,6 +420,7 @@ export default function Home() {
 									"lensMask.radius",
 									"lensMask.x",
 									"lensMask.y",
+									"outputSettings.targetRes",
 									"outputSettings.filterIrrelevantSrcImages",
 								]}
 							>
@@ -413,10 +442,12 @@ export default function Home() {
 											valueAsNumber: true,
 											min: {
 												value: 1,
-												message:
-													"Target resolution must be greater than 0",
+												message: "Target resolution must be greater than 0",
 											},
 										})}
+									/>
+									<FieldError
+										errors={[form.formState.errors.outputSettings?.targetRes]}
 									/>
 								</Field>
 								<div className="flex flex-col gap-2">
@@ -560,8 +591,7 @@ export default function Home() {
 												valueAsNumber: true,
 												min: {
 													value: 1,
-													message:
-														"Vertical view angle must be greater than 0",
+													message: "Vertical view angle must be greater than 0",
 												},
 											})}
 											aria-invalid={
@@ -594,6 +624,12 @@ export default function Home() {
 											defaultValue={180}
 										/>
 									</FieldContent>
+									<FieldError
+										errors={[
+											form.formState.errors.fisheyeView?.verticalViewDegrees,
+											form.formState.errors.fisheyeView?.horizontalViewDegrees,
+										]}
+									/>
 								</Field>
 							</AccordionContent>
 						</AccordionItem>
