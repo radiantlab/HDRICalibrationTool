@@ -6,7 +6,6 @@ use std::{
     process::{Command, ExitStatus},
 };
 
-use tauri::Manager;
 use tauri_plugin_shell::ShellExt;
 
 fn dcraw_base_args() -> &'static [&'static str] {

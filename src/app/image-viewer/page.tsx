@@ -1,12 +1,3 @@
-/**
- * Image Viewer Component for the HDRI Calibration Tool.
- *
- * This component allows users to browse and view HDR images from the file system.
- * It displays a grid of available HDR images in the output directory and offers
- * functionality to select and view these images using external viewers.
- *
- * Note: The HDR viewing functionality is currently not supported on Windows platforms.
- */
 "use client";
 
 import React, { useCallback } from "react";
@@ -27,11 +18,6 @@ const serializeViewerUrl = createSerializer({
 	filePath: parseAsString,
 });
 
-/**
- * Main Image Viewer component
- *
- * @returns React component with image viewer interface
- */
 export default function ImageViewer() {
 	// Access global settings to get output path and platform information
 	const { settings } = useSettingsStore();

@@ -32,7 +32,13 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Eclipse, ImageUpscale, Rotate3D, SwitchCamera } from "lucide-react";
+import {
+	AlertTriangle,
+	Eclipse,
+	ImageUpscale,
+	Rotate3D,
+	SwitchCamera,
+} from "lucide-react";
 import {
 	pipelineConfig,
 	PipelineConfigProvider,
@@ -43,6 +49,9 @@ import { useMotionValue, useTransform } from "framer-motion";
 import { useMotionValueFormState } from "@/lib/useMotionValueFormState";
 import { LensMaskInput } from "./lens-mask-input";
 import { invoke } from "@tauri-apps/api/core";
+import { documentDir, join } from "@tauri-apps/api/path";
+import { mkdir, writeTextFile } from "@tauri-apps/plugin-fs";
+import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useSettingsStore } from "../stores/settings-store";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -64,8 +73,8 @@ const useGlobalPipelineConfig = create<
 		y: 0,
 	},
 	fisheyeView: {
-		horizontalViewDegrees: null,
-		verticalViewDegrees: null,
+		horizontalViewDegrees: 180,
+		verticalViewDegrees: 180,
 	},
 	correctionFiles: {
 		fisheye: null,
@@ -74,12 +83,52 @@ const useGlobalPipelineConfig = create<
 		calibrationFactor: null,
 	},
 	outputSettings: {
-		targetRes: null,
-		filterIrrelevantSrcImages: true,
+		targetRes: 1000,
+		filterIrrelevantSrcImages: false,
 	},
 
 	set,
 }));
+
+type PipelineTrace = {
+	createdAt: string;
+	input: Record<string, unknown>;
+	error: unknown;
+};
+
+function normalizePipelineError(error: unknown) {
+	if (error instanceof Error) {
+		return { message: error.message, stack: error.stack };
+	}
+	if (typeof error === "string") {
+		return { message: error };
+	}
+	return error;
+}
+
+async function writePipelineTrace(
+	input: Record<string, unknown>,
+	error: unknown,
+	outputPath: string
+) {
+	const createdAt = new Date().toISOString();
+	const baseDir =
+		outputPath || (await join(await documentDir(), "HDRICalibrationInterface"));
+	const traceDir = await join(baseDir, "pipeline-traces");
+	await mkdir(traceDir, { recursive: true });
+	const safeTimestamp = createdAt.replace(/[:.]/g, "-");
+	const tracePath = await join(
+		traceDir,
+		`pipeline-trace-${safeTimestamp}.json`
+	);
+	const trace: PipelineTrace = {
+		createdAt,
+		input,
+		error: normalizePipelineError(error),
+	};
+	await writeTextFile(tracePath, JSON.stringify(trace, null, 2));
+	return tracePath;
+}
 
 /**
  * Main Home page component for image configuration and processing
@@ -134,6 +183,16 @@ export default function Home() {
 		[centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
 		([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2)
 	);
+	useEffect(() => {
+		const unsub = radius.on("change", (value) => {
+			if (!Number.isFinite(value)) return;
+			setValue("lensMask.radius", value, {
+				shouldValidate: true,
+				shouldDirty: true,
+			});
+		});
+		return () => unsub();
+	}, [radius, setValue]);
 
 	useEffect(() => {
 		const unsub = radius.on("change", (r) => {
@@ -151,6 +210,34 @@ export default function Home() {
 				onSubmit={form.handleSubmit(
 					async (data) => {
 						console.log("configForm submitted", data);
+
+						const diameter = Math.round(data.lensMask.radius * 2);
+						const xleft = Math.round(data.lensMask.x - data.lensMask.radius);
+						const ydown = Math.round(data.lensMask.y - data.lensMask.radius);
+
+						if (!Number.isFinite(diameter) || diameter <= 0) {
+							toast.error("Lens mask radius must be greater than 0.");
+							return;
+						}
+						if (
+							!Number.isFinite(data.outputSettings.targetRes) ||
+							(data.outputSettings.targetRes != null &&
+								data.outputSettings.targetRes <= 0)
+						) {
+							toast.error("Target resolution must be greater than 0.");
+							return;
+						}
+						if (
+							!Number.isFinite(data.fisheyeView.verticalViewDegrees) ||
+							!Number.isFinite(data.fisheyeView.horizontalViewDegrees) ||
+							(data.fisheyeView.verticalViewDegrees != null &&
+								data.fisheyeView.verticalViewDegrees <= 0) ||
+							(data.fisheyeView.horizontalViewDegrees != null &&
+								data.fisheyeView.horizontalViewDegrees <= 0)
+						) {
+							toast.error("Fisheye view angles must be greater than 0.");
+							return;
+						}
 
 						setProgressVisible(true);
 						const targetRes = data.outputSettings.targetRes!;
@@ -172,14 +259,13 @@ export default function Home() {
 							photometricAdjustmentCal:
 								data.correctionFiles.calibrationFactor ?? "",
 							neutralDensityCal: data.correctionFiles.neutralDensity ?? "",
-							// todo: refactor the backend to accept proper numerical types instead of icky strings that will be coerced later.
-							diameter: String(Math.round(data.lensMask.radius * 2)),
-							xleft: String(Math.round(data.lensMask.x - data.lensMask.radius)),
-							ydown: String(Math.round(data.lensMask.y - data.lensMask.radius)),
-							xdim: String(targetRes),
-							ydim: String(targetRes),
-							verticalAngle: String(verticalAngle),
-							horizontalAngle: String(horizontalAngle),
+							diameter,
+							xleft,
+							ydown,
+							xdim: data.outputSettings.targetRes,
+							ydim: data.outputSettings.targetRes,
+							verticalAngle: data.fisheyeView.verticalViewDegrees,
+							horizontalAngle: data.fisheyeView.horizontalViewDegrees,
 							// todo: remove these from this form completely when we get to refactoring the backend. These should only be exposed on the image viewer, where they are relevant
 							scaleLimit: "",
 							scaleLabel: "",
@@ -189,9 +275,35 @@ export default function Home() {
 						};
 						console.log("pipeline params", params);
 						const invokePromise = invoke<string>("pipeline", params).catch(
-							(error) => {
+							async (error) => {
 								setProgressVisible(false);
-								toast.error("Error generating HDR image: " + error);
+								let tracePath: string | null = null;
+								try {
+									tracePath = await writePipelineTrace(
+										params,
+										error,
+										settings.outputPath
+									);
+								} catch (traceError) {
+									toast.error(`Failed to write pipeline trace: ${traceError}`);
+								}
+								const toastMessage = tracePath
+									? "Pipeline failed. Trace saved."
+									: "Pipeline failed. Trace could not be saved.";
+								toast.error(toastMessage, {
+									icon: <AlertTriangle className="size-4 text-red-500" />,
+									action: tracePath
+										? {
+												label: "Show in folder",
+												onClick: () =>
+													toast.promise(revealItemInDir(tracePath), {
+														loading: "Revealing in folder...",
+														success: "Revealed in folder",
+														error: "Failed to reveal in folder",
+													}),
+										  }
+										: undefined,
+								});
 							}
 						);
 						console.log("invokePromise", invokePromise);
@@ -284,7 +396,9 @@ export default function Home() {
 													.split(".")
 													.pop()
 													?.toLowerCase();
-												return fileextension !== "jpg" && fileextension !== "jpeg";
+												return (
+													fileextension !== "jpg" && fileextension !== "jpeg"
+												);
 											})
 										)}
 										control={control}
@@ -323,18 +437,14 @@ export default function Home() {
 									<Input
 										type="number"
 										placeholder="Value in pixels"
+										defaultValue={1000}
 										{...register("outputSettings.targetRes", {
-											setValueAs: (value) =>
-												value === "" || value == null ? null : Number(value),
-											validate: (value) =>
-												(value != null && Number.isFinite(value)) ||
-												"Target width/height is required",
+											valueAsNumber: true,
+											min: {
+												value: 1,
+												message: "Target resolution must be greater than 0",
+											},
 										})}
-										aria-invalid={
-											form.formState.errors.outputSettings?.targetRes
-												? "true"
-												: undefined
-										}
 									/>
 									<FieldError
 										errors={[form.formState.errors.outputSettings?.targetRes]}
@@ -471,52 +581,55 @@ export default function Home() {
 									<FieldLabel>
 										<Rotate3D /> Fisheye view angles
 									</FieldLabel>
-									<FieldContent className="gap-1">
-										<div className="flex flex-row gap-1">
-											<Input
-												icon={"°"}
-												type="number"
-												placeholder="Vertical view angle"
-												{...register("fisheyeView.verticalViewDegrees", {
-													setValueAs: (value) =>
-														value === "" || value == null ? null : Number(value),
-													validate: (value) =>
-														(value != null && Number.isFinite(value)) ||
-														"Vertical view angle is required",
-												})}
-												aria-invalid={
-													form.formState.errors.fisheyeView?.verticalViewDegrees
-														? "true"
-														: undefined
-												}
-											/>
-											<Input
-												icon={"°"}
-												type="number"
-												// TODO: refactor this to be from the top, not the bottom.
-												// thats just more intuitive/standardized.
-												placeholder="Horizontal view angle"
-												{...register("fisheyeView.horizontalViewDegrees", {
-													setValueAs: (value) =>
-														value === "" || value == null ? null : Number(value),
-													validate: (value) =>
-														(value != null && Number.isFinite(value)) ||
-														"Horizontal view angle is required",
-												})}
-												aria-invalid={
-													form.formState.errors.fisheyeView?.horizontalViewDegrees
-														? "true"
-														: undefined
-												}
-											/>
-										</div>
-										<FieldError
-											errors={[
-												form.formState.errors.fisheyeView?.verticalViewDegrees,
-												form.formState.errors.fisheyeView?.horizontalViewDegrees,
-											]}
+									<FieldContent className="flex-row gap-1">
+										<Input
+											icon={"°"}
+											type="number"
+											placeholder="Vertical view angle"
+											{...register("fisheyeView.verticalViewDegrees", {
+												required: "Vertical view angle is required",
+												valueAsNumber: true,
+												min: {
+													value: 1,
+													message: "Vertical view angle must be greater than 0",
+												},
+											})}
+											aria-invalid={
+												form.formState.errors.fisheyeView?.verticalViewDegrees
+													? "true"
+													: undefined
+											}
+											defaultValue={180}
+										/>
+										<Input
+											icon={"°"}
+											type="number"
+											// TODO: refactor this to be from the top, not the bottom.
+											// thats just more intuitive/standardized.
+											placeholder="Horizontal view angle"
+											{...register("fisheyeView.horizontalViewDegrees", {
+												required: "Horizontal view angle is required",
+												valueAsNumber: true,
+												min: {
+													value: 1,
+													message:
+														"Horizontal view angle must be greater than 0",
+												},
+											})}
+											aria-invalid={
+												form.formState.errors.fisheyeView?.horizontalViewDegrees
+													? "true"
+													: undefined
+											}
+											defaultValue={180}
 										/>
 									</FieldContent>
+									<FieldError
+										errors={[
+											form.formState.errors.fisheyeView?.verticalViewDegrees,
+											form.formState.errors.fisheyeView?.horizontalViewDegrees,
+										]}
+									/>
 								</Field>
 							</AccordionContent>
 						</AccordionItem>
