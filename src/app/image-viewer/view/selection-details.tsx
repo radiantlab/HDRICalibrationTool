@@ -22,7 +22,6 @@ import type {
 
 type SelectionDetailsProps = {
 	luminanceSummary: LuminanceSummary;
-	isLuminanceLoading: boolean;
 };
 
 const formatLuminance = (value: number) => {
@@ -41,8 +40,7 @@ const CHART_PADDING = {
 	left: 0,
 };
 
-function formatLuminanceText(value: number | null, isLoading: boolean) {
-	if (isLoading) return "computing...";
+function formatLuminanceText(value: number | null) {
 	if (value === null) return "n/a";
 	return `${formatLuminance(value)} cd/m2`;
 }
@@ -52,12 +50,7 @@ function formatLegendValue(value: number | null) {
 	return formatLuminance(value);
 }
 
-function formatOutlierText(
-	outlierCount: number,
-	sampleCount: number,
-	isLoading: boolean
-) {
-	if (isLoading) return "computing...";
+function formatOutlierText(outlierCount: number, sampleCount: number) {
 	if (sampleCount === 0) return "n/a";
 	return `${outlierCount} removed (${(
 		(outlierCount / sampleCount) *
@@ -69,15 +62,13 @@ function SelectionHistogramChart({
 	histogram,
 	histogramMinimum,
 	histogramMaximum,
-	isLoading,
 }: {
 	histogram: LuminanceHistogramBin[];
 	histogramMinimum: number | null;
 	histogramMaximum: number | null;
-	isLoading: boolean;
 }) {
 	const bars = useMemo(() => {
-		if (isLoading || histogram.length === 0) return [];
+		if (histogram.length === 0) return [];
 
 		const contentHeight =
 			CHART_HEIGHT - CHART_PADDING.top - CHART_PADDING.bottom;
@@ -108,15 +99,7 @@ function SelectionHistogramChart({
 				hoverY: CHART_PADDING.top,
 			};
 		});
-	}, [histogram, isLoading]);
-
-	if (isLoading) {
-		return (
-			<div className="h-14 rounded-sm border border-dashed border-border/80 bg-muted/20 grid place-items-center text-[0.58rem] text-muted-foreground">
-				computing...
-			</div>
-		);
-	}
+	}, [histogram]);
 
 	if (histogram.length === 0) {
 		return (
@@ -177,7 +160,6 @@ function SelectionHistogramChart({
 
 export function SelectionDetails({
 	luminanceSummary,
-	isLuminanceLoading,
 }: SelectionDetailsProps) {
 	const { selection } = useImageSelection();
 
@@ -207,32 +189,27 @@ export function SelectionDetails({
 	}, [selection]);
 
 	const averageText = useMemo(() => {
-		return formatLuminanceText(luminanceSummary.average, isLuminanceLoading);
-	}, [isLuminanceLoading, luminanceSummary.average]);
+		return formatLuminanceText(luminanceSummary.average);
+	}, [luminanceSummary.average]);
 
 	const medianText = useMemo(() => {
-		return formatLuminanceText(luminanceSummary.median, isLuminanceLoading);
-	}, [isLuminanceLoading, luminanceSummary.median]);
+		return formatLuminanceText(luminanceSummary.median);
+	}, [luminanceSummary.median]);
 
 	const minimumText = useMemo(() => {
-		return formatLuminanceText(luminanceSummary.minimum, isLuminanceLoading);
-	}, [isLuminanceLoading, luminanceSummary.minimum]);
+		return formatLuminanceText(luminanceSummary.minimum);
+	}, [luminanceSummary.minimum]);
 
 	const maximumText = useMemo(() => {
-		return formatLuminanceText(luminanceSummary.maximum, isLuminanceLoading);
-	}, [isLuminanceLoading, luminanceSummary.maximum]);
+		return formatLuminanceText(luminanceSummary.maximum);
+	}, [luminanceSummary.maximum]);
 
 	const outlierText = useMemo(() => {
 		return formatOutlierText(
 			luminanceSummary.outlierCount,
-			luminanceSummary.sampleCount,
-			isLuminanceLoading
+			luminanceSummary.sampleCount
 		);
-	}, [
-		isLuminanceLoading,
-		luminanceSummary.outlierCount,
-		luminanceSummary.sampleCount,
-	]);
+	}, [luminanceSummary.outlierCount, luminanceSummary.sampleCount]);
 
 	return (
 		<Card
@@ -280,7 +257,6 @@ export function SelectionDetails({
 							histogram={luminanceSummary.histogram}
 							histogramMinimum={luminanceSummary.histogramMinimum}
 							histogramMaximum={luminanceSummary.histogramMaximum}
-							isLoading={isLuminanceLoading}
 						/>
 					</div>
 					<div className="flex items-center justify-between gap-2">

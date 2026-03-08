@@ -2,10 +2,19 @@
 
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import { convertFileSrc } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { parseAsString, useQueryState } from "nuqs";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	Suspense,
+	use,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "react";
 import { redirect } from "next/navigation";
+import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import {
 	DataTexture,
@@ -26,6 +35,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { HdrMetadataDetails } from "@/app/image-viewer/view/illuminance-details";
 import { ImageSelectionProvider, useImageSelection } from "./image-selection-context";
 import {
 	HoverLuminanceDetails,
@@ -46,6 +56,11 @@ type LoadedHdrData = {
 	texture: DataTexture;
 	rgbaData: Float32Array | null;
 	exposure: number;
+};
+
+type HdrMetadata = {
+	FORMAT: string;
+	[key: string]: string;
 };
 
 const clamp = (value: number, min: number, max: number) =>
@@ -83,6 +98,71 @@ async function loadHdrData(filePath: string): Promise<LoadedHdrData> {
 	});
 }
 
+async function readHdrMetadata(filePath: string): Promise<HdrMetadata> {
+	return invoke<HdrMetadata>("read_hdr_metadata", { path: filePath });
+}
+
+type ImageViewerData = LoadedHdrData & {
+	hdrMetadata: HdrMetadata | null;
+	imageWidth: number;
+	imageHeight: number;
+	luminanceMatrix: FalsecolorLuminanceMatrix | null;
+};
+
+async function loadImageViewerData(filePath: string): Promise<ImageViewerData> {
+	const [loadedHdrData, hdrMetadata] = await Promise.all([
+		loadHdrData(filePath),
+		readHdrMetadata(filePath).catch(() => null),
+	]);
+	const imageWidth = loadedHdrData.texture.image.width;
+	const imageHeight = loadedHdrData.texture.image.height;
+	let luminanceMatrix: FalsecolorLuminanceMatrix | null = null;
+
+	if (loadedHdrData.rgbaData) {
+		try {
+			luminanceMatrix = await computeFalsecolorLuminance({
+				rgba: loadedHdrData.rgbaData,
+				width: imageWidth,
+				height: imageHeight,
+				exposure: loadedHdrData.exposure,
+			});
+		} catch {
+			luminanceMatrix = null;
+		}
+	}
+
+	return {
+		...loadedHdrData,
+		hdrMetadata,
+		imageWidth,
+		imageHeight,
+		luminanceMatrix,
+	};
+}
+
+function ImageViewerLoadingState() {
+	return (
+		<div className="size-full grid place-items-center relative">
+			<div className="absolute inset-0 grid place-items-center bg-background/60">
+				<Spinner />
+			</div>
+		</div>
+	);
+}
+
+function ImageViewerErrorState({ error }: FallbackProps) {
+	return (
+		<div className="size-full grid place-items-center relative">
+			<Card className="absolute w-full max-w-md">
+				<CardHeader>
+					<CardTitle>Failed to load image</CardTitle>
+					<CardDescription>{error.message}</CardDescription>
+				</CardHeader>
+			</Card>
+		</div>
+	);
+}
+
 export default function ImageViewerViewPage() {
 	const [filePath] = useQueryState("filePath", parseAsString);
 	if (!filePath) redirect("/image-viewer");
@@ -95,24 +175,31 @@ export default function ImageViewerViewPage() {
 }
 
 function ImageViewerCanvas({ filePath }: { filePath: string }) {
+	const viewerDataPromise = useMemo(() => loadImageViewerData(filePath), [filePath]);
+
+	return (
+		<ErrorBoundary fallbackRender={(props) => <ImageViewerErrorState {...props} />}>
+			<Suspense fallback={<ImageViewerLoadingState />}>
+				<ImageViewerCanvasContent viewerDataPromise={viewerDataPromise} />
+			</Suspense>
+		</ErrorBoundary>
+	);
+}
+
+function ImageViewerCanvasContent({
+	viewerDataPromise,
+}: {
+	viewerDataPromise: Promise<ImageViewerData>;
+}) {
+	const viewerData = use(viewerDataPromise);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
-	const hdrRgbaDataRef = useRef<Float32Array | null>(null);
-	const luminanceScaleRef = useRef({
-		multiplier: DEFAULT_FALSECOLOR_MULTIPLIER,
-		exposure: 1,
-	});
-	const [error, setError] = useState<string | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
-	const [isLuminanceLoading, setIsLuminanceLoading] = useState(false);
-	const [hasLuminanceSource, setHasLuminanceSource] = useState(false);
 	const [hoverLuminanceSample, setHoverLuminanceSample] =
 		useState<HoverLuminanceSample | null>(null);
-	const [dimensions, setDimensions] = useState<
-		[width: number, height: number] | null
-	>(null);
-	const [luminanceMatrix, setLuminanceMatrix] =
-		useState<FalsecolorLuminanceMatrix | null>(null);
 	const { selection } = useImageSelection();
+	const dimensions = useMemo<[number, number]>(
+		() => [viewerData.imageWidth, viewerData.imageHeight],
+		[viewerData.imageHeight, viewerData.imageWidth]
+	);
 	const {
 		overlay,
 		isSelectionInputEnabled,
@@ -125,13 +212,13 @@ function ImageViewerCanvas({ filePath }: { filePath: string }) {
 		});
 	const isHoverLuminanceVisible = !selection && !isSelecting;
 	const luminanceSummary = useMemo(
-		() => computeLuminanceSummary(luminanceMatrix, selection),
-		[luminanceMatrix, selection]
+		() => computeLuminanceSummary(viewerData.luminanceMatrix, selection),
+		[selection, viewerData.luminanceMatrix]
 	);
 	const onCanvasPointerMove = useCallback(
 		(event: React.PointerEvent<HTMLCanvasElement>) => {
 			if (!isHoverLuminanceVisible || !dimensions) return;
-			const rgbaData = hdrRgbaDataRef.current;
+			const rgbaData = viewerData.rgbaData;
 			if (!rgbaData) {
 				setHoverLuminanceSample(null);
 				return;
@@ -163,13 +250,12 @@ function ImageViewerCanvas({ filePath }: { filePath: string }) {
 			const red = rgbaData[rgbaOffset] ?? 0;
 			const green = rgbaData[rgbaOffset + 1] ?? 0;
 			const blue = rgbaData[rgbaOffset + 2] ?? 0;
-			const { multiplier, exposure } = luminanceScaleRef.current;
 			const luminance = computeFalsecolorPixelLuminanceCpu({
 				red,
 				green,
 				blue,
-				multiplier,
-				exposure,
+				multiplier: DEFAULT_FALSECOLOR_MULTIPLIER,
+				exposure: viewerData.exposure,
 			});
 
 			setHoverLuminanceSample((previousSample) => {
@@ -184,7 +270,7 @@ function ImageViewerCanvas({ filePath }: { filePath: string }) {
 				return { x: pixelX, y: pixelY, luminance };
 			});
 		},
-		[dimensions, isHoverLuminanceVisible]
+		[dimensions, isHoverLuminanceVisible, viewerData.exposure, viewerData.rgbaData]
 	);
 	const onCanvasPointerLeave = useCallback(() => {
 		setHoverLuminanceSample(null);
@@ -201,8 +287,7 @@ function ImageViewerCanvas({ filePath }: { filePath: string }) {
 		let renderer: WebGLRenderer | null = null;
 		let geometry: PlaneGeometry | null = null;
 		let material: MeshBasicMaterial | null = null;
-		let texture: DataTexture | null = null;
-		let isCancelled = false;
+		const texture = viewerData.texture;
 
 		const dispose = () => {
 			texture?.dispose();
@@ -210,97 +295,29 @@ function ImageViewerCanvas({ filePath }: { filePath: string }) {
 			geometry?.dispose();
 			renderer?.dispose();
 		};
+		texture.generateMipmaps = false;
+		texture.magFilter = LinearFilter;
+		texture.minFilter = LinearFilter;
+		texture.needsUpdate = true;
 
-		const loadAndRender = async () => {
-			setIsLoading(true);
-			setIsLuminanceLoading(false);
-			setError(null);
-			setDimensions(null);
-			setLuminanceMatrix(null);
-			setHasLuminanceSource(false);
-			setHoverLuminanceSample(null);
-			hdrRgbaDataRef.current = null;
-			luminanceScaleRef.current = {
-				multiplier: DEFAULT_FALSECOLOR_MULTIPLIER,
-				exposure: 1,
-			};
+		renderer = new WebGLRenderer({ canvas, antialias: false });
+		// Keep source values untouched by display tone mapping.
+		renderer.toneMapping = NoToneMapping;
+		renderer.setPixelRatio(1);
+		renderer.setSize(viewerData.imageWidth, viewerData.imageHeight, false);
 
-			try {
-				const loadedHdrData = await loadHdrData(filePath);
-				texture = loadedHdrData.texture;
-				if (isCancelled) return;
-				texture.generateMipmaps = false;
-				texture.magFilter = LinearFilter;
-				texture.minFilter = LinearFilter;
-				texture.needsUpdate = true;
+		const scene = new Scene();
+		const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+		geometry = new PlaneGeometry(2, 2);
+		material = new MeshBasicMaterial({ map: texture, toneMapped: false });
+		scene.add(new Mesh(geometry, material));
+		renderer.render(scene, camera);
 
-				renderer = new WebGLRenderer({ canvas, antialias: false });
-				// Keep source values untouched by display tone mapping.
-				renderer.toneMapping = NoToneMapping;
-				renderer.setPixelRatio(1);
-				renderer.setSize(texture.image.width, texture.image.height, false);
+		return dispose;
+	}, [viewerData.imageHeight, viewerData.imageWidth, viewerData.texture]);
 
-				const scene = new Scene();
-				const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
-				geometry = new PlaneGeometry(2, 2);
-				material = new MeshBasicMaterial({ map: texture, toneMapped: false });
-				scene.add(new Mesh(geometry, material));
-				renderer.render(scene, camera);
-				const imageWidth = texture.image.width;
-				const imageHeight = texture.image.height;
-				setDimensions([imageWidth, imageHeight]);
-
-				if (loadedHdrData.rgbaData) {
-					hdrRgbaDataRef.current = loadedHdrData.rgbaData;
-					luminanceScaleRef.current = {
-						multiplier: DEFAULT_FALSECOLOR_MULTIPLIER,
-						exposure: loadedHdrData.exposure,
-					};
-					setHasLuminanceSource(true);
-					setIsLuminanceLoading(true);
-					try {
-						const nextLuminanceMatrix = await computeFalsecolorLuminance({
-							rgba: loadedHdrData.rgbaData,
-							width: imageWidth,
-							height: imageHeight,
-							exposure: loadedHdrData.exposure,
-						});
-						if (!isCancelled) {
-							setLuminanceMatrix(nextLuminanceMatrix);
-						}
-					} catch {
-						if (!isCancelled) {
-							setLuminanceMatrix(null);
-						}
-					}
-				} else {
-					hdrRgbaDataRef.current = null;
-					setHasLuminanceSource(false);
-				}
-			} catch (cause) {
-				if (isCancelled) return;
-				const errorMessage =
-					cause instanceof Error
-						? cause.message
-						: "Failed to load the HDR image.";
-				setError(errorMessage);
-			} finally {
-				if (!isCancelled) {
-					setIsLoading(false);
-					setIsLuminanceLoading(false);
-				}
-			}
-		};
-
-		void loadAndRender();
-		return () => {
-			isCancelled = true;
-			dispose();
-		};
-	}, [filePath]);
-
-	const canInteractWithSelection =
-		isSelectionInputEnabled && Boolean(dimensions) && !isLoading && !error;
+	const canInteractWithSelection = isSelectionInputEnabled;
+	const hasLuminanceSource = Boolean(viewerData.rgbaData);
 
 	return (
 		<div className="size-full grid place-items-center relative">
@@ -317,12 +334,9 @@ function ImageViewerCanvas({ filePath }: { filePath: string }) {
 						ref={canvasRef}
 						onPointerMove={onCanvasPointerMove}
 						onPointerLeave={onCanvasPointerLeave}
-						className={cn(
-							"max-w-full max-h-full cursor-grab",
-							(isLoading || Boolean(error)) && "hidden"
-						)}
+						className="max-w-full max-h-full cursor-grab"
 					/>
-					{overlay && !isLoading && !error && (
+					{overlay && (
 						<div className="absolute inset-0 pointer-events-none">
 							<div
 								className={cn(
@@ -349,11 +363,11 @@ function ImageViewerCanvas({ filePath }: { filePath: string }) {
 					/>
 				</TransformComponent>
 			</TransformWrapper>
+			<div className="absolute top-4 left-4 z-20 pointer-events-none w-56">
+				<HdrMetadataDetails metadata={viewerData.hdrMetadata} />
+			</div>
 			<div className="absolute top-4 right-4 z-20 w-56">
-				<SelectionDetails
-					luminanceSummary={luminanceSummary}
-					isLuminanceLoading={isLuminanceLoading}
-				/>
+				<SelectionDetails luminanceSummary={luminanceSummary} />
 			</div>
 			<div className="absolute bottom-4 right-4 z-20 pointer-events-none w-56">
 				<HoverLuminanceDetails
@@ -362,19 +376,6 @@ function ImageViewerCanvas({ filePath }: { filePath: string }) {
 					isLuminanceReady={hasLuminanceSource}
 				/>
 			</div>
-			{isLoading && (
-				<div className="absolute inset-0 grid place-items-center bg-background/60">
-					<Spinner />
-				</div>
-			)}
-			{error && (
-				<Card className="absolute w-full max-w-md">
-					<CardHeader>
-						<CardTitle>Failed to load image</CardTitle>
-						<CardDescription>{error}</CardDescription>
-					</CardHeader>
-				</Card>
-			)}
 		</div>
 	);
 }
