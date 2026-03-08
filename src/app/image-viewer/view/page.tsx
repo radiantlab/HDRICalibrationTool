@@ -37,7 +37,7 @@ import {
 	computeFalsecolorPixelLuminanceCpu,
 	type FalsecolorLuminanceMatrix,
 } from "./falsecolor-luminance-webgpu";
-import { computeLuminanceAggregates } from "./luminance-aggregates";
+import { computeLuminanceSummary } from "./luminance-aggregates";
 import { useImageSelectionLayer } from "./use-image-selection-layer";
 
 const DEFAULT_FALSECOLOR_MULTIPLIER = 179;
@@ -124,8 +124,8 @@ function ImageViewerCanvas({ filePath }: { filePath: string }) {
 			surfaceRef: canvasRef,
 		});
 	const isHoverLuminanceVisible = !selection && !isSelecting;
-	const luminanceAggregates = useMemo(
-		() => computeLuminanceAggregates(luminanceMatrix, selection),
+	const luminanceSummary = useMemo(
+		() => computeLuminanceSummary(luminanceMatrix, selection),
 		[luminanceMatrix, selection]
 	);
 	const onCanvasPointerMove = useCallback(
@@ -349,9 +349,9 @@ function ImageViewerCanvas({ filePath }: { filePath: string }) {
 					/>
 				</TransformComponent>
 			</TransformWrapper>
-			<div className="absolute top-4 right-4 z-20 pointer-events-none w-56">
+			<div className="absolute top-4 right-4 z-20 w-56">
 				<SelectionDetails
-					luminanceAggregates={luminanceAggregates}
+					luminanceSummary={luminanceSummary}
 					isLuminanceLoading={isLuminanceLoading}
 				/>
 			</div>
