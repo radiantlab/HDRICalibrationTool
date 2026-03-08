@@ -19,13 +19,13 @@ pub fn header_editing(
     }
 
     let view_arg = format!("VIEW= -vta -vv {} -vh {}", vertical_angle, horizontal_angle);
-    let evalglare_arg = format!("EVALGLARE={}", evalglare_value);
+    let illuminance_arg = format!("ILLUMINANCE={}", evalglare_value);
 
     let spec = CommandSpec::new(config_settings.radiance_path.join("getinfo"))
         .arg("-a")
         .arg(view_arg)
         .arg("-c")
-        .arg(evalglare_arg)
+        .arg(illuminance_arg)
         .stdin_file(input_file.as_str())
         .stdout_file(output_file.as_str());
 
