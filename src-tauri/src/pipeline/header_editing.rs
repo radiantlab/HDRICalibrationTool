@@ -19,7 +19,7 @@ pub fn header_editing(
     }
 
     let view_arg = format!("VIEW= -vta -vv {} -vh {}", vertical_angle, horizontal_angle);
-    let illuminance_arg = format!("ILLUMINANCE={}", evalglare_value);
+    let illuminance_arg = format!("PHOTOPIC_ILLUMINANCE={}", evalglare_value);
 
     let spec = CommandSpec::new(config_settings.radiance_path.join("getinfo"))
         .arg("-a")
