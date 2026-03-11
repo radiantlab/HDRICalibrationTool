@@ -7,21 +7,23 @@ type HdrMetadataDetailsProps = {
 	metadata: Record<string, string> | null;
 };
 
-const PRIORITY_KEYS = ["FORMAT", "ILLUMINANCE", "VIEW"];
+const PRIORITY_KEYS = ["FORMAT", "PHOTOPIC_ILLUMINANCE", "VIEW"];
 
 export function HdrMetadataDetails({ metadata }: HdrMetadataDetailsProps) {
-	const entries = Object.entries(metadata ?? {}).sort(([leftKey], [rightKey]) => {
-		const leftPriority = PRIORITY_KEYS.indexOf(leftKey);
-		const rightPriority = PRIORITY_KEYS.indexOf(rightKey);
+	const entries = Object.entries(metadata ?? {}).sort(
+		([leftKey], [rightKey]) => {
+			const leftPriority = PRIORITY_KEYS.indexOf(leftKey);
+			const rightPriority = PRIORITY_KEYS.indexOf(rightKey);
 
-		if (leftPriority !== -1 || rightPriority !== -1) {
-			if (leftPriority === -1) return 1;
-			if (rightPriority === -1) return -1;
-			return leftPriority - rightPriority;
+			if (leftPriority !== -1 || rightPriority !== -1) {
+				if (leftPriority === -1) return 1;
+				if (rightPriority === -1) return -1;
+				return leftPriority - rightPriority;
+			}
+
+			return leftKey.localeCompare(rightKey);
 		}
-
-		return leftKey.localeCompare(rightKey);
-	});
+	);
 
 	return (
 		<Card
