@@ -2,7 +2,7 @@
 
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
-import { convertFileSrc, invoke } from "@tauri-apps/api/core";
+import { invoke } from "@tauri-apps/api/core";
 import { parseAsString, useQueryState } from "nuqs";
 import {
 	Suspense,
@@ -20,6 +20,7 @@ import {
 	DataTexture,
 	FloatType,
 	LinearFilter,
+	LinearSRGBColorSpace,
 	Mesh,
 	MeshBasicMaterial,
 	NoToneMapping,
@@ -28,7 +29,6 @@ import {
 	Scene,
 	WebGLRenderer,
 } from "three";
-import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import {
 	Card,
 	CardDescription,
@@ -49,6 +49,13 @@ import {
 } from "./falsecolor-luminance-webgpu";
 import { computeLuminanceSummary } from "./luminance-aggregates";
 import { useImageSelectionLayer } from "./use-image-selection-layer";
+import { ExposureSlider, EXPOSURE_DEFAULT } from "./exposure-slider";
+import { HeatmapOverlayToggle } from "./heatmap-overlay-toggle";
+import {
+	buildHeatmapTexture,
+	computeAutoScaleRange,
+	type HeatmapScaleRange,
+} from "./heatmap-texture";
 
 const DEFAULT_FALSECOLOR_MULTIPLIER = 179;
 
@@ -67,35 +74,143 @@ const clamp = (value: number, min: number, max: number) =>
 	Math.max(min, Math.min(max, value));
 
 async function loadHdrData(filePath: string): Promise<LoadedHdrData> {
-	return new Promise((resolve, reject) => {
-		const loader = new RGBELoader().setDataType(FloatType);
-		loader.load(
-			convertFileSrc(filePath),
-			(texture, texData) => {
-				const typedTexData = texData as { data?: unknown; exposure?: number };
-				const fromTexData = typedTexData.data;
-				let rgbaData = fromTexData instanceof Float32Array ? fromTexData : null;
+	const { readFile } = await import("@tauri-apps/plugin-fs");
+	const fileData = await readFile(filePath);
 
-				if (!rgbaData && "data" in texture.image) {
-					const fromImage = (texture.image as { data?: unknown }).data;
-					rgbaData = fromImage instanceof Float32Array ? fromImage : null;
+	// Parse the HDR file ourselves since RGBELoader.parse() has bugs
+	// with Radiance headers that contain long lines
+	const { width, height, rgbeData, exposure } = parseRadianceHDR(fileData);
+
+	// Convert RGBE bytes to float32 RGBA
+	const floatData = new Float32Array(width * height * 4);
+	for (let i = 0; i < width * height; i++) {
+	const r = rgbeData[i * 4] ?? 0;
+	const g = rgbeData[i * 4 + 1] ?? 0;
+	const b = rgbeData[i * 4 + 2] ?? 0;
+	const e = rgbeData[i * 4 + 3] ?? 0;
+	const scale = e !== 0 ? Math.pow(2.0, e - 128.0) / 255.0 : 0;
+	floatData[i * 4] = r * scale;
+	floatData[i * 4 + 1] = g * scale;
+	floatData[i * 4 + 2] = b * scale;
+	floatData[i * 4 + 3] = 1.0;
+}
+
+	const texture = new DataTexture(floatData, width, height);
+	texture.type = FloatType;
+	texture.colorSpace = LinearSRGBColorSpace;
+	texture.minFilter = LinearFilter;
+	texture.magFilter = LinearFilter;
+	texture.generateMipmaps = false;
+	texture.flipY = true;
+	texture.needsUpdate = true;
+
+	return {
+		texture,
+		rgbaData: floatData,
+		exposure,
+	};
+}
+
+function parseRadianceHDR(data: Uint8Array) {
+	// Find header end (empty line = two consecutive newlines)
+	let headerEnd = -1;
+	for (let i = 0; i < Math.min(data.length, 65536); i++) {
+		if (data[i] === 0x0a && data[i + 1] === 0x0a) {
+			headerEnd = i;
+			break;
+		}
+	}
+	if (headerEnd === -1) throw new Error("Invalid HDR: no header terminator found");
+
+	// Parse header for exposure
+	const headerStr = new TextDecoder().decode(data.subarray(0, headerEnd));
+	const exposureMatch = headerStr.match(/EXPOSURE\s*=\s*([\d.eE+-]+)/);
+	const exposure = exposureMatch && exposureMatch[1] ? parseFloat(exposureMatch[1]) : 1.0;
+
+	// Parse resolution line (right after the empty line)
+	const resStart = headerEnd + 2;
+	let resEnd = resStart;
+	while (resEnd < data.length && data[resEnd] !== 0x0a) resEnd++;
+	const resLine = new TextDecoder().decode(data.subarray(resStart, resEnd));
+	const resMatch = resLine.match(/([+-][XY])\s+(\d+)\s+([+-][XY])\s+(\d+)/);
+	if (!resMatch || !resMatch[1] || !resMatch[2] || !resMatch[3] || !resMatch[4]) {
+		throw new Error(`Invalid HDR resolution line: "${resLine}"`);
+	}
+
+	let width: number;
+	let height: number;
+	if (resMatch[1].charAt(1) === "Y") {
+		height = parseInt(resMatch[2], 10);
+		width = parseInt(resMatch[4], 10);
+	} else {
+		width = parseInt(resMatch[2], 10);
+		height = parseInt(resMatch[4], 10);
+	}
+
+	// Decode RLE pixel data
+	let pos = resEnd + 1;
+	const rgbeData = new Uint8Array(width * height * 4);
+	let offset = 0;
+
+	for (let y = 0; y < height; y++) {
+		if (pos + 4 > data.length) {
+			throw new Error(`Ran out of data at scanline ${y}`);
+		}
+
+		// Check for new-style RLE
+		if (data[pos] !== 2 || data[pos + 1] !== 2 || ((data[pos + 2] ?? 0) & 0x80)) {
+			throw new Error("Unsupported HDR encoding (old-style RLE or flat)");
+		}
+		const scanlineWidth = ((data[pos + 2] ?? 0) << 8) | (data[pos + 3] ?? 0);
+		if (scanlineWidth !== width) {
+			throw new Error(`Scanline width mismatch: ${scanlineWidth} vs ${width}`);
+		}
+		pos += 4;
+
+		// Read 4 channels separately (R, G, B, E)
+		const scanline = new Uint8Array(width * 4);
+		for (let ch = 0; ch < 4; ch++) {
+			let x = 0;
+			while (x < width) {
+				if (pos >= data.length) {
+					throw new Error(`Ran out of data at scanline ${y}, channel ${ch}`);
 				}
-
-				resolve({
-					texture: texture as DataTexture,
-					rgbaData,
-					exposure:
-						typeof typedTexData.exposure === "number" && typedTexData.exposure > 0
-							? typedTexData.exposure
-							: 1,
-				});
-			},
-			undefined,
-			(cause) => {
-				reject(cause);
+				const code = data[pos] ?? 0;
+				pos++;
+				if (code > 128) {
+					// RLE run
+					const count = code - 128;
+					const val = data[pos] ?? 0;
+					pos++;
+					for (let i = 0; i < count; i++) {
+						scanline[ch * width + x] = val;
+						x++;
+					}
+				} else {
+					// Literal run
+					for (let i = 0; i < code; i++) {
+						scanline[ch * width + x] = data[pos] ?? 0;
+						pos++;
+						x++;
+					}
+				}
 			}
-		);
-	});
+		}
+
+		// Deinterleave into RGBE pixel format
+		for (let x = 0; x < width; x++) {
+			rgbeData[offset] = scanline[x] ?? 0;
+			offset++;
+			rgbeData[offset] = scanline[width + x] ?? 0;
+			offset++;
+			rgbeData[offset] = scanline[width * 2 + x] ?? 0;
+			offset++;
+			rgbeData[offset] = scanline[width * 3 + x] ?? 0;
+			offset++;
+		}
+	}
+
+	return { width, height, rgbeData, exposure };
 }
 
 async function readHdrMetadata(filePath: string): Promise<HdrMetadata> {
@@ -195,6 +310,9 @@ function ImageViewerCanvasContent({
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const [hoverLuminanceSample, setHoverLuminanceSample] =
 		useState<HoverLuminanceSample | null>(null);
+	const [exposureEv, setExposureEv] = useState(EXPOSURE_DEFAULT);
+	const [heatmapEnabled, setHeatmapEnabled] = useState(false);
+	const [heatmapScaleRange, setHeatmapScaleRange] = useState<HeatmapScaleRange | null>(null);
 	const { selection } = useImageSelection();
 	const dimensions = useMemo<[number, number]>(
 		() => [viewerData.imageWidth, viewerData.imageHeight],
@@ -215,6 +333,14 @@ function ImageViewerCanvasContent({
 		() => computeLuminanceSummary(viewerData.luminanceMatrix, selection),
 		[selection, viewerData.luminanceMatrix]
 	);
+
+	const heatmapTexture = useMemo(() => {
+		if (!viewerData.luminanceMatrix) return null;
+		const range = computeAutoScaleRange(viewerData.luminanceMatrix);
+		setHeatmapScaleRange(range);
+		return buildHeatmapTexture(viewerData.luminanceMatrix, range);
+	}, [viewerData.luminanceMatrix]);
+
 	const onCanvasPointerMove = useCallback(
 		(event: React.PointerEvent<HTMLCanvasElement>) => {
 			if (!isHoverLuminanceVisible || !dimensions) return;
@@ -281,40 +407,47 @@ function ImageViewerCanvasContent({
 	}, [isHoverLuminanceVisible]);
 
 	useEffect(() => {
-		const canvas = canvasRef.current;
-		if (!canvas) return;
+	const canvas = canvasRef.current;
+	if (!canvas) return;
 
-		let renderer: WebGLRenderer | null = null;
-		let geometry: PlaneGeometry | null = null;
-		let material: MeshBasicMaterial | null = null;
-		const texture = viewerData.texture;
+	let renderer: WebGLRenderer | null = null;
+	let geometry: PlaneGeometry | null = null;
+	let material: MeshBasicMaterial | null = null;
+	const baseTexture = viewerData.texture;
+	const activeTexture = heatmapEnabled && heatmapTexture ? heatmapTexture : baseTexture;
 
-		const dispose = () => {
-			texture?.dispose();
-			material?.dispose();
-			geometry?.dispose();
-			renderer?.dispose();
-		};
-		texture.generateMipmaps = false;
-		texture.magFilter = LinearFilter;
-		texture.minFilter = LinearFilter;
-		texture.needsUpdate = true;
+	const dispose = () => {
+		material?.dispose();
+		geometry?.dispose();
+		renderer?.dispose();
+	};
+	activeTexture.generateMipmaps = false;
+	activeTexture.magFilter = LinearFilter;
+	activeTexture.minFilter = LinearFilter;
+	activeTexture.needsUpdate = true;
 
-		renderer = new WebGLRenderer({ canvas, antialias: false });
-		// Keep source values untouched by display tone mapping.
-		renderer.toneMapping = NoToneMapping;
-		renderer.setPixelRatio(1);
-		renderer.setSize(viewerData.imageWidth, viewerData.imageHeight, false);
+	renderer = new WebGLRenderer({ canvas, antialias: false });
+	renderer.toneMapping = NoToneMapping;
+	renderer.setPixelRatio(1);
+	renderer.setSize(viewerData.imageWidth, viewerData.imageHeight, false);
 
-		const scene = new Scene();
-		const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
-		geometry = new PlaneGeometry(2, 2);
-		material = new MeshBasicMaterial({ map: texture, toneMapped: false });
-		scene.add(new Mesh(geometry, material));
-		renderer.render(scene, camera);
+	const scene = new Scene();
+	const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
+	geometry = new PlaneGeometry(2, 2);
 
-		return dispose;
-	}, [viewerData.imageHeight, viewerData.imageWidth, viewerData.texture]);
+	// Apply exposure adjustment via material color intensity
+	const exposureScale = Math.pow(2.0, exposureEv);
+	material = new MeshBasicMaterial({
+		map: activeTexture,
+		toneMapped: false,
+	});
+	material.color.setScalar(exposureScale);
+
+	scene.add(new Mesh(geometry, material));
+	renderer.render(scene, camera);
+
+	return dispose;
+}, [viewerData.imageHeight, viewerData.imageWidth, viewerData.texture, exposureEv, heatmapEnabled, heatmapTexture]);
 
 	const canInteractWithSelection = isSelectionInputEnabled;
 	const hasLuminanceSource = Boolean(viewerData.rgbaData);
@@ -375,6 +508,15 @@ function ImageViewerCanvasContent({
 					isVisible={isHoverLuminanceVisible}
 					isLuminanceReady={hasLuminanceSource}
 				/>
+			</div>
+			<div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-48 flex flex-col gap-2">
+				<HeatmapOverlayToggle
+					isEnabled={heatmapEnabled}
+					onToggle={setHeatmapEnabled}
+					scaleRange={heatmapScaleRange}
+					isAvailable={Boolean(viewerData.luminanceMatrix)}
+				/>
+				<ExposureSlider value={exposureEv} onChange={setExposureEv} />
 			</div>
 		</div>
 	);
