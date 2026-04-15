@@ -289,6 +289,14 @@ function ImageViewerErrorState({ error }: FallbackProps) {
 }
 
 export default function ImageViewerViewPage() {
+	return (
+		<Suspense>
+			<ImageViewerPageContent />
+		</Suspense>
+	);
+}
+
+function ImageViewerPageContent() {
 	const [filePath] = useQueryState("filePath", parseAsString);
 	if (!filePath) redirect("/image-viewer");
 
