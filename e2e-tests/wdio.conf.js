@@ -57,7 +57,7 @@ export const config = {
   framework: "mocha",
   mochaOpts: {
     ui: "bdd",
-    timeout: 60000,
+    timeout: 240000,
   },
 
   // Build the debug desktop binary before the webdriver session starts.

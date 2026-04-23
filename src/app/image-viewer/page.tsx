@@ -34,6 +34,7 @@ export default function ImageViewer() {
 
 	return (
 		<TauriDropzone
+			id="image-viewer-input"
 			onDrop={(paths) => {
 				if (paths.length !== 1) {
 					toast.error("Only one image can be viewed at a time");
