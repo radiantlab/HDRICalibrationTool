@@ -20,14 +20,30 @@ const applicationPath = path.resolve(
     ? "HDRICalibrationInterface.exe"
     : "HDRICalibrationInterface"
 );
+const watchMode = process.env.E2E_WATCH === "1";
+const watchPauseMs = Number.parseInt(
+  process.env.E2E_WATCH_PAUSE_MS ?? (watchMode ? "5000" : "0"),
+  10
+);
 
 let tauriDriver;
 let exit = false;
 
+function createBuildEnv() {
+  const env = { ...process.env };
+
+  // WDIO loads this config via tsx, which leaks Node loader hooks into child
+  // npm processes and breaks Next.js font resolution during the Tauri build.
+  delete env.NODE_OPTIONS;
+  delete env.npm_config_node_options;
+
+  return env;
+}
+
 export const config = {
   host: "127.0.0.1",
   port: 4444,
-  specs: ["./test/specs/**/*.js"],
+  specs: ["./test/specs/**/*.ts"],
   maxInstances: 1,
   capabilities: [
     {
@@ -57,6 +73,7 @@ export const config = {
       ["run", "tauri", "build", "--", "--debug", "--no-bundle"],
       {
         cwd: path.resolve(__dirname, ".."),
+        env: createBuildEnv(),
         stdio: "inherit",
         shell: true,
       }
@@ -87,6 +104,18 @@ export const config = {
         process.exit(code ?? 1);
       }
     });
+  },
+
+  beforeTest: async () => {
+    if (watchMode) {
+      await browser.pause(1000);
+    }
+  },
+
+  afterTest: async () => {
+    if (watchPauseMs > 0) {
+      await browser.pause(watchPauseMs);
+    }
   },
 
   afterSession: () => {

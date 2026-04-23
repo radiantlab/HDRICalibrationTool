@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { $, browser } from "@wdio/globals";
+import { describe, it } from "mocha";
 
 describe("HDRI Calibration Tool", () => {
   it("loads the application shell", async () => {

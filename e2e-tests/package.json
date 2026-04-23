@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "wdio run wdio.conf.js"
+    "test": "wdio run wdio.conf.js",
+    "test:watch": "node run-watch.mjs"
   },
   "dependencies": {
     "@wdio/cli": "^9.27.0"
