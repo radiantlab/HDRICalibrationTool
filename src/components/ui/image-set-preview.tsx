@@ -21,16 +21,19 @@ export function ImageSetPreview({
 }: ImageSet & { onRemove: () => void }) {
 	const fileStats = useMemo(
 		() => Promise.all(files.map((f) => stat(f))),
-		[files]
+		[files],
 	);
 
 	const fileTypes = useMemo(
 		() => Array.from(new Set(files.map((f) => path.extname(f).slice(1)))),
-		[files]
+		[files],
 	);
 
 	return (
-		<div className="flex flex-col h-56 bg-accent">
+		<div
+			className="flex flex-col h-56 bg-accent"
+			data-testid="image-set-preview"
+		>
 			<div className="flex w-full">
 				<div className="flex-1 grid grid-flow-col divide-x border-b pl-2">
 					<div className="font-bold text-2xl">{name}</div>
@@ -40,22 +43,23 @@ export function ImageSetPreview({
 							fileTypes.join(", "),
 						"Average File Size": fileStats.then((stats) =>
 							prettyBytes(
-								stats.reduce((acc, stat) => acc + stat.size, 0) / stats.length
-							)
+								stats.reduce((acc, stat) => acc + stat.size, 0) / stats.length,
+							),
 						),
-					} satisfies Record<string, string | number | Promise<string | number>>).map(
-						([key, value]) => (
-							<div
-								key={key}
-								className="flex gap-1 items-center text-sm text-muted-foreground px-2"
-							>
-								{key}:
-								<SkeletonSuspended sizePlaceholder={"placeholder"}>
-									{value}
-								</SkeletonSuspended>
-							</div>
-						)
-					)}
+					} satisfies Record<
+						string,
+						string | number | Promise<string | number>
+					>).map(([key, value]) => (
+						<div
+							key={key}
+							className="flex gap-1 items-center text-sm text-muted-foreground px-2"
+						>
+							{key}:
+							<SkeletonSuspended sizePlaceholder={"placeholder"}>
+								{value}
+							</SkeletonSuspended>
+						</div>
+					))}
 				</div>
 				<Button
 					variant="outline"
@@ -72,7 +76,7 @@ export function ImageSetPreview({
 				{files.map((file) => (
 					<Tooltip key={file}>
 						<TooltipTrigger>
-							<div className="size-48 shrink-0 bg-accent">
+							<div className="size-48 shrink-0 bg-accent generic-image-container">
 								<GenericImage fsSrc={file} />
 							</div>
 						</TooltipTrigger>
