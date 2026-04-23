@@ -65,4 +65,10 @@ describe("HDRI Calibration Tool", () => {
 			);
 		});
 	});
+
+	it("generates an HDR image", async () => {
+		const generateHDRImageButton = await $("#generate-hdr-image-button");
+		await generateHDRImageButton.waitForDisplayed({ timeout: 1000 });
+		await generateHDRImageButton.click();
+	});
 });
