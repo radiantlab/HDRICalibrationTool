@@ -8,7 +8,8 @@
 		"start": "next start",
 		"lint": "next lint",
 		"tauri": "tauri",
-		"test": "jest"
+		"test": "jest",
+		"test:e2e": "npm --prefix e2e-tests test"
 	},
 	"dependencies": {
 		"@heroicons/react": "^2.2.0",
