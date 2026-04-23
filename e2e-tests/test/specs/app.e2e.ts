@@ -1,26 +1,51 @@
 import assert from "node:assert/strict";
+import { fileURLToPath } from "node:url";
 import { $, browser } from "@wdio/globals";
 import { describe, it } from "mocha";
 
+const E2E_DROP_EVENT = "__hdricalibrationtool_e2e_drop__";
+const jpegInputDirectory = fileURLToPath(
+	new URL("../inputs/JPEG", import.meta.url)
+);
+
 describe("HDRI Calibration Tool", () => {
-  it("loads the application shell", async () => {
-    await browser.waitUntil(
-      async () => (await browser.getTitle()) === "HDRI Calibration Tool",
-      {
-        timeout: 10000,
-        timeoutMsg: "expected the app title to load",
-      }
-    );
+	it("opens to the home page", async () => {
+		await browser.waitUntil(
+			async () => (await browser.getUrl()).endsWith("/home-page"),
+			{
+				timeout: 10000,
+				timeoutMsg: "expected the app to load to the home page",
+			},
+		);
+	});
 
-    assert.equal(await browser.getTitle(), "HDRI Calibration Tool");
-  });
+	it("accepts image file drops in the image input component", async () => {
+		const imageInput = await $("#image-matrix-input");
+		await imageInput.waitForDisplayed({ timeout: 5000 });
 
-  it("shows the primary action on the home page", async () => {
-    const generateButton = await $(
-      '//button[contains(normalize-space(.), "Generate HDR Image")]'
-    );
+		await browser.execute(
+			(eventName, detail) => {
+				window.dispatchEvent(new CustomEvent(eventName, { detail }));
+			},
+			E2E_DROP_EVENT,
+			{
+				targetId: "image-matrix-input",
+				paths: [jpegInputDirectory],
+			}
+		);
 
-    await generateButton.waitForDisplayed({ timeout: 10000 });
-    assert.equal(await generateButton.getText(), "Generate HDR Image");
-  });
+		await browser.waitUntil(
+			async () =>
+				await browser.execute(() => document.body.innerText.includes("JPEG")),
+			{
+				timeout: 10000,
+				timeoutMsg: "expected the dropped JPEG input set to appear",
+			}
+		);
+
+		assert.equal(
+			await browser.execute(() => document.body.innerText.includes("JPEG")),
+			true
+		);
+	});
 });

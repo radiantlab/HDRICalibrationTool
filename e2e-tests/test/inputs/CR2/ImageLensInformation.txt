@@ -1,0 +1,11 @@
+Mask and cropping information (8mm Canon 5D)
+diameter <- 3728
+xleft <- 1024
+ydown <- 88
+
+Lens view angle information
+-vv 180
+-vh 180
+
+Target image resolution
+1000x1000
