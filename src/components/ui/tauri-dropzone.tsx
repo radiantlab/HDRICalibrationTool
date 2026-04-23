@@ -10,6 +10,13 @@ type DragDropEvent =
 	| { type: "drop"; paths: string[]; position: { x: number; y: number } }
 	| { type: "leave" };
 
+type E2EDropDetail = {
+	targetId: string;
+	paths: string[];
+};
+
+const E2E_DROP_EVENT = "__hdricalibrationtool_e2e_drop__";
+
 export type DropzoneChildrenProps = {
 	isDragActive: boolean;
 };
@@ -31,6 +38,13 @@ export function TauriDropzone({
 }: TauriDropzoneProps) {
 	const [isDragActive, setIsDragActive] = React.useState(false);
 	const rootRef = React.useRef<HTMLButtonElement>(null);
+	const handleDrop = React.useCallback(
+		(paths: string[]) => {
+			setIsDragActive(false);
+			onDrop?.(paths);
+		},
+		[onDrop]
+	);
 
 	React.useEffect(() => {
 		if (disabled) return;
@@ -63,10 +77,7 @@ export function TauriDropzone({
 					return;
 				}
 				if (payload.type === "drop") {
-					setIsDragActive(false);
-					const paths = payload.paths || [];
-
-					onDrop?.(paths);
+					handleDrop(payload.paths || []);
 				}
 			}
 		);
@@ -74,7 +85,23 @@ export function TauriDropzone({
 		return () => {
 			unlistenPromise.then((unlisten) => unlisten());
 		};
-	}, [disabled, multiple, onDrop]);
+	}, [disabled, handleDrop, multiple]);
+
+	React.useEffect(() => {
+		if (!props.id) return;
+
+		// Allow E2E tests to trigger the same drop path without OS-level drag automation.
+		const onE2EDrop = (event: Event) => {
+			const detail = (event as CustomEvent<E2EDropDetail>).detail;
+			if (!detail || detail.targetId !== props.id) return;
+			handleDrop(detail.paths ?? []);
+		};
+
+		window.addEventListener(E2E_DROP_EVENT, onE2EDrop as EventListener);
+		return () => {
+			window.removeEventListener(E2E_DROP_EVENT, onE2EDrop as EventListener);
+		};
+	}, [handleDrop, props.id]);
 
 	return (
 		<button

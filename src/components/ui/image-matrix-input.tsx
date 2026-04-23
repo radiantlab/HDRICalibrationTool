@@ -33,7 +33,7 @@ type FileMatrixFieldName<T extends FieldValues> = FieldPathByValue<
 >;
 type FileMatrixInputProps<
 	T extends FieldValues,
-	TName extends FileMatrixFieldName<T>
+	TName extends FileMatrixFieldName<T>,
 > = {
 	control: Control<T>;
 	name: TName;
@@ -53,7 +53,7 @@ type FullDirEntry = DirEntry & {
 
 export function ImageMatrixInput<
 	T extends FieldValues,
-	TName extends FileMatrixFieldName<T>
+	TName extends FileMatrixFieldName<T>,
 >({ control, name, className, rules }: FileMatrixInputProps<T, TName>) {
 	// todo: properly handle field states
 	const { field, fieldState } = useController<T, TName>({
@@ -73,7 +73,7 @@ export function ImageMatrixInput<
 
 				return accepted;
 			}),
-		[]
+		[],
 	);
 
 	const onDrop = useCallback(
@@ -105,7 +105,7 @@ export function ImageMatrixInput<
 					}));
 				}
 				arr.files.push(
-					...filterForAcceptance(pendingEntries).map((e) => e.path)
+					...filterForAcceptance(pendingEntries).map((e) => e.path),
 				);
 				groups.set(groupingDir, arr);
 			}
@@ -114,7 +114,7 @@ export function ImageMatrixInput<
 			// todo: sort these by total alpha value, so we can see the images sorted from most exposed to least exposed
 			field.onChange([...(value ?? []), ...newRows]);
 		},
-		[field, value]
+		[field, value],
 	);
 
 	const selectOneDirectory = useCallback(async () => {
@@ -149,6 +149,7 @@ export function ImageMatrixInput<
 				<ContextMenu>
 					<ContextMenuTrigger asChild>
 						<TauriDropzone
+							id="image-matrix-input"
 							multiple
 							onDrop={onDrop}
 							onClick={selectOneDirectory}
@@ -161,7 +162,7 @@ export function ImageMatrixInput<
 											"hover:text-foreground hover:border-foreground",
 											// show invalid via group parent from Field as red
 											"group-data-[invalid=true]/field:text-destructive",
-											{ "text-foreground border-foreground": isDragActive }
+											{ "text-foreground border-foreground": isDragActive },
 										)}
 									>
 										<div className="grid place-items-center gap-2">
@@ -170,7 +171,7 @@ export function ImageMatrixInput<
 										</div>
 									</div>
 								),
-								[]
+								[],
 							)}
 						</TauriDropzone>
 					</ContextMenuTrigger>
