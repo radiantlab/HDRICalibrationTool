@@ -1,11 +1,18 @@
+import assert from "node:assert/strict";
+import { readdirSync } from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { $, browser } from "@wdio/globals";
 import { describe, it } from "mocha";
 
 const E2E_DROP_EVENT = "__hdricalibrationtool_e2e_drop__";
 const jpegInputDirectory = fileURLToPath(
-	new URL("../inputs/JPEG", import.meta.url)
+	new URL("../inputs/JPEG", import.meta.url),
 );
+const expectedJpegFileCount = readdirSync(jpegInputDirectory).filter(
+	(fileName) =>
+		[".jpg", ".jpeg"].includes(path.extname(fileName).toLowerCase()),
+).length;
 
 describe("HDRI Calibration Tool", () => {
 	it("opens to the home page", async () => {
@@ -30,14 +37,32 @@ describe("HDRI Calibration Tool", () => {
 			{
 				targetId: "image-matrix-input",
 				paths: [jpegInputDirectory],
-			}
+			},
 		);
 
-		const bodyText = await browser.execute(() => document.body.innerText);
-		const jpegVisible = bodyText.includes("JPEG");
+		it("displays previews for the dropped images", async () => {
+			await browser.waitUntil(
+				async () => {
+					const previewCount = await browser.execute(
+						() =>
+							document.querySelectorAll('[data-testid="image-set-preview"]')
+								.length,
+					);
+					if (previewCount !== 1) return false;
 
-		console.log("JPEG visible after drop:", jpegVisible);
-
-		await browser.pause(30000);
+					const previewImageCount = await browser.execute(
+						() =>
+							document.querySelectorAll(
+								'[data-testid="image-set-preview"] .generic-image-container',
+							).length,
+					);
+					return previewImageCount === expectedJpegFileCount;
+				},
+				{
+					timeout: 10000,
+					timeoutMsg: `expected exactly ${expectedJpegFileCount} JPEG previews to render`,
+				},
+			);
+		});
 	});
 });
