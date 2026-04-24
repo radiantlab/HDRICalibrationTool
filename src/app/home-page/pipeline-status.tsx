@@ -1,44 +1,33 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { listen } from "@tauri-apps/api/event";
+import React from "react";
 import { Progress } from "@/components/ui/progress";
-import z from "zod";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
+import { usePipelineStatus } from "../pipeline-status-context";
 
 export function PipelineStatus({
 	onFinishAcknowledgment,
 }: {
 	onFinishAcknowledgment: () => void;
 }) {
-	const [progress, setProgress] = useState<number>(0);
-	// TODO: implement status texts from the backend
-	const [statusText, setStatusText] = useState<string>("");
-
-	useEffect(() => {
-		const unlistenPromise = listen(
-			"pipeline-progress",
-			(event: { payload: unknown }) => {
-				setProgress(z.number().parse(event.payload));
-			}
-		);
-
-		return () => {
-			unlistenPromise.then((unlisten) => unlisten());
-		};
-	}, []);
+	const { progress, statusText } = usePipelineStatus();
 
 	return (
-		<div className="flex items-center gap-2">
+		<div className="flex flex-col gap-2">
 			{statusText && (
-				<div className="mb-2 text-sm text-muted-foreground">{statusText}</div>
+				<div className="flex items-center justify-left gap-2 text-sm text-muted-foreground">
+					{progress !== 100 && <Spinner className="size-4" />}
+					{statusText}
+				</div>
 			)}
-			<div className="text-xs text-muted-foreground">{progress}%</div>
-			<Progress value={progress} />
-			<Button onClick={onFinishAcknowledgment} disabled={progress !== 100}>
-				OK
-			</Button>
+			<div className="flex items-center gap-2">
+				<div className="text-xs text-muted-foreground">{progress}%</div>
+				<Progress value={progress} />
+				<Button onClick={onFinishAcknowledgment} disabled={progress !== 100}>
+					OK
+				</Button>
+			</div>
 		</div>
 	);
 }

@@ -10,6 +10,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navigation from "./navigation";
 import Initialization from "./init";
+import { PipelineStatusProvider } from "./pipeline-status-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
@@ -42,13 +43,15 @@ export default function RootLayout({
 					"h-screen w-screen overflow-hidden flex flex-col"
 				)}
 			>
-				{/* Initialize the application settings */}
-				<Initialization />
-				{/* Render the navigation bar */}
-				<Navigation />
-				{/* Render the current page content */}
-				<Toaster />
-				<TooltipProvider>{children}</TooltipProvider>
+				<PipelineStatusProvider>
+					{/* Initialize the application settings */}
+					<Initialization />
+					{/* Render the navigation bar */}
+					<Navigation />
+					{/* Render the current page content */}
+					<Toaster position="bottom-left" />
+					<TooltipProvider>{children}</TooltipProvider>
+				</PipelineStatusProvider>
 			</body>
 		</html>
 	);
