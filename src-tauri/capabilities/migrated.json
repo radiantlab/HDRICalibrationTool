@@ -43,6 +43,7 @@
 		"shell:allow-open",
 		"fs:allow-read-file",
 		"fs:allow-write-file",
+		"fs:allow-write-text-file",
 		"fs:allow-read-dir",
 		"fs:allow-copy-file",
 		"fs:allow-mkdir",
@@ -71,7 +72,7 @@
 		"fs:default",
 		"os:default",
 		"opener:default",
-		"opener:default",
-		"fs:default"
+		"opener:allow-open-path",
+		"opener:allow-reveal-item-in-dir"
 	]
 }

@@ -3,7 +3,7 @@ import { LoaderCircle } from "lucide-react";
 
 export function Spinner({ className }: { className?: string }) {
 	return (
-		<div className="size-full grid place-items-center">
+		<div className={cn("size-full grid place-items-center", className)}>
 			<LoaderCircle className={cn("animate-spin", className)} />
 		</div>
 	);
