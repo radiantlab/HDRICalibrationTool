@@ -15,7 +15,12 @@ import {
 } from "react";
 import { redirect } from "next/navigation";
 import { ErrorBoundary, type FallbackProps } from "react-error-boundary";
-import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
+import {
+	getCenterPosition,
+	type ReactZoomPanPinchContentRef,
+	TransformComponent,
+	TransformWrapper,
+} from "react-zoom-pan-pinch";
 import {
 	DataTexture,
 	FloatType,
@@ -53,6 +58,8 @@ import {
 import { computeLuminanceSummary } from "./luminance-aggregates";
 import { useImageSelectionLayer } from "./use-image-selection-layer";
 import { buildHeatmapTexture, computeAutoScaleRange } from "./heatmap-texture";
+import { Button } from "@/components/ui/button";
+import { LocateFixed } from "lucide-react";
 import {
 	EXPOSURE_DEFAULT,
 	type ViewType,
@@ -74,6 +81,27 @@ type HdrMetadata = {
 
 const clamp = (value: number, min: number, max: number) =>
 	Math.max(min, Math.min(max, value));
+
+const POSITION_EPSILON = 1;
+const SCALE_EPSILON = 1e-4;
+
+type PanZoomTransformComparable = {
+	scale: number;
+	positionX: number;
+	positionY: number;
+};
+
+function isTransformAwayFromBaseline(
+	state: PanZoomTransformComparable,
+	baseline: PanZoomTransformComparable | null,
+): boolean {
+	if (!baseline) return false;
+	return (
+		Math.abs(state.scale - baseline.scale) > SCALE_EPSILON ||
+		Math.abs(state.positionX - baseline.positionX) > POSITION_EPSILON ||
+		Math.abs(state.positionY - baseline.positionY) > POSITION_EPSILON
+	);
+}
 
 async function loadHdrData(filePath: string): Promise<LoadedHdrData> {
 	const { readFile } = await import("@tauri-apps/plugin-fs");
@@ -325,6 +353,12 @@ function ImageViewerCanvas({ filePath }: { filePath: string }) {
 	);
 }
 
+type transformState = {
+	scale: number;
+	positionX: number;
+	positionY: number;
+};
+
 function ImageViewerCanvasContent({
 	viewerDataPromise,
 }: {
@@ -501,11 +535,46 @@ function ImageViewerCanvasContent({
 	const canInteractWithSelection = isSelectionInputEnabled;
 	const hasLuminanceSource = Boolean(viewerData.rgbaData);
 
+	const panZoomControlsRef = useRef<ReactZoomPanPinchContentRef | null>(null);
+
+	const [currentPosition, setCurrentPosition] = useState<transformState | null>(
+		null,
+	);
+
+	const centerPosition = useMemo(() => {
+		const controls = panZoomControlsRef.current;
+		if (!controls || !currentPosition) return null;
+		const { wrapperComponent, contentComponent } = controls.instance;
+		if (!wrapperComponent || !contentComponent) return null;
+		return getCenterPosition(
+			currentPosition.scale,
+			wrapperComponent,
+			contentComponent,
+		);
+	}, [currentPosition]);
+
+	const atDefaultZoomAndCenter =
+		centerPosition !== null &&
+		currentPosition !== null &&
+		Math.abs(currentPosition.scale - 1) <= SCALE_EPSILON &&
+		!isTransformAwayFromBaseline(currentPosition, centerPosition);
+
+	const onRecenterView = useCallback(() => {
+		panZoomControlsRef.current?.centerView(1, 200);
+	}, []);
+
 	return (
 		<div className="size-full grid place-items-center relative">
 			<TransformWrapper
+				key={viewerData.texture.uuid}
+				ref={(controls) => {
+					panZoomControlsRef.current = controls;
+				}}
 				centerOnInit
 				limitToBounds={false}
+				onTransformed={(_, state) => {
+					setCurrentPosition(state);
+				}}
 				panning={{ disabled: isSelectionInputEnabled }}
 			>
 				<TransformComponent
@@ -545,8 +614,22 @@ function ImageViewerCanvasContent({
 					/>
 				</TransformComponent>
 			</TransformWrapper>
-			<div className="absolute top-4 left-4 z-20 pointer-events-none w-56">
-				<HdrMetadataDetails metadata={viewerData.hdrMetadata} />
+			<div className="absolute top-4 left-4 z-30 flex items-start gap-2">
+				<div className="pointer-events-none w-56">
+					<HdrMetadataDetails metadata={viewerData.hdrMetadata} />
+				</div>
+				<Button
+					type="button"
+					disabled={atDefaultZoomAndCenter}
+					size="icon"
+					variant="outline"
+					className="pointer-events-auto shrink-0 bg-background/80 shadow-sm backdrop-blur-sm"
+					onClick={onRecenterView}
+					aria-label="Recenter image"
+					title="Recenter image"
+				>
+					<LocateFixed />
+				</Button>
 			</div>
 			<div className="absolute top-4 right-4 z-20 w-56">
 				<SelectionDetails luminanceSummary={luminanceSummary} />
