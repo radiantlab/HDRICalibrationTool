@@ -18,7 +18,7 @@ import {
 } from "@heroicons/react/24/solid";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useRouter } from "next/navigation";
-import { serializeViewerUrl } from "../image-viewer/page";
+import { serializeViewerUrl } from "../image-viewer/viewer-url";
 
 export function PipelineStatus({
 	onFinishAcknowledgment,
