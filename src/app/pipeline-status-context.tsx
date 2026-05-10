@@ -14,10 +14,17 @@ const pipelineStatusSchema = z.object({
 
 type PipelineStatusPayload = z.infer<typeof pipelineStatusSchema>;
 
+const pipelineOutputSchema = z.object({
+	path: z.string(),
+});
+
+export type PipelineOutputPayload = z.infer<typeof pipelineOutputSchema>;
+
 type PipelineStatusContextValue = {
 	progress: number;
 	statusText: string;
 	payload: PipelineStatusPayload | null;
+	lastEmittedOutput: PipelineOutputPayload | null;
 };
 
 const PipelineStatusContext = createContext<PipelineStatusContextValue | undefined>(
@@ -32,6 +39,8 @@ export function PipelineStatusProvider({
 	const [progress, setProgress] = useState<number>(0);
 	const [statusText, setStatusText] = useState<string>("");
 	const [payload, setPayload] = useState<PipelineStatusPayload | null>(null);
+	const [lastEmittedOutput, setLastEmittedOutput] =
+		useState<PipelineOutputPayload | null>(null);
 
 	useEffect(() => {
 		const unlistenProgressPromise = listen(
@@ -63,16 +72,23 @@ export function PipelineStatusProvider({
 				}
 			}
 		);
+		const unlistenOutputPromise = listen(
+			"pipeline-output",
+			(event: { payload: unknown }) => {
+				setLastEmittedOutput(pipelineOutputSchema.parse(event.payload));
+			}
+		);
 
 		return () => {
 			unlistenProgressPromise.then((unlisten) => unlisten());
 			unlistenStatusPromise.then((unlisten) => unlisten());
+			unlistenOutputPromise.then((unlisten) => unlisten());
 		};
 	}, []);
 
 	const value = useMemo(
-		() => ({ progress, statusText, payload }),
-		[progress, statusText, payload]
+		() => ({ progress, statusText, payload, lastEmittedOutput }),
+		[progress, statusText, payload, lastEmittedOutput]
 	);
 
 	return (

@@ -14,7 +14,7 @@ import path from "path";
 import { open } from "@tauri-apps/plugin-dialog";
 import { createSerializer, parseAsString } from "nuqs";
 
-const serializeViewerUrl = createSerializer({
+export const serializeViewerUrl = createSerializer({
 	filePath: parseAsString,
 });
 
@@ -60,7 +60,7 @@ export default function ImageViewer() {
 							"hover:text-foreground hover:border-foreground",
 							// show invalid via group parent from Field as red
 							"group-data-[invalid=true]/field:text-destructive",
-							{ "text-foreground border-foreground": isDragActive }
+							{ "text-foreground border-foreground": isDragActive },
 						)}
 					>
 						<div className="grid place-items-center gap-2">
@@ -69,7 +69,7 @@ export default function ImageViewer() {
 						</div>
 					</div>
 				),
-				[]
+				[],
 			)}
 		</TauriDropzone>
 	);
