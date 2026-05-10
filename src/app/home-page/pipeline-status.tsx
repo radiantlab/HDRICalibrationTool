@@ -11,7 +11,11 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { EllipsisVerticalIcon } from "@heroicons/react/24/solid";
+import {
+	EllipsisVerticalIcon,
+	FolderOpenIcon,
+	PhotoIcon,
+} from "@heroicons/react/24/solid";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useRouter } from "next/navigation";
 import { serializeViewerUrl } from "../image-viewer/page";
@@ -49,7 +53,8 @@ export function PipelineStatus({
 							disabled={!lastEmittedOutput}
 							onClick={() => revealItemInDir(lastEmittedOutput!.path)}
 						>
-							View in file explorer
+							<FolderOpenIcon />
+							View file
 						</DropdownMenuItem>
 						<DropdownMenuItem
 							disabled={!lastEmittedOutput}
@@ -61,6 +66,7 @@ export function PipelineStatus({
 								);
 							}}
 						>
+							<PhotoIcon />
 							View image
 						</DropdownMenuItem>
 					</DropdownMenuContent>
