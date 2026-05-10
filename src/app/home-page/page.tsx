@@ -318,9 +318,16 @@ export default function Home() {
 					name="inputSets"
 					className="flex-1 overflow-hidden"
 					rules={{
-						validate: (v) =>
-							(Array.isArray(v) && v.length > 0) ||
-							"At least one image set is required",
+						validate: (v) => {
+							if (!Array.isArray(v) || v.length === 0)
+								return "At least one image set is required";
+
+							const i = v.findIndex((set) => set.files.length < 2);
+							if (i !== -1)
+								return `"${v[i]!.name}" needs at least 2 images`;
+
+							return true;
+						},
 					}}
 				/>
 				<div className="bg-accent w-96 h-full flex flex-col min-h-0">
