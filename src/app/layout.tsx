@@ -41,7 +41,7 @@ export default function RootLayout({
 			<body
 				className={cn(
 					inter.className,
-					"h-screen w-screen overflow-hidden flex flex-col"
+					"h-screen w-screen overflow-hidden flex flex-col",
 				)}
 			>
 				{/* Initialize the application settings */}
@@ -49,7 +49,7 @@ export default function RootLayout({
 				{/* Render the navigation bar */}
 				<Navigation />
 				{/* Render the current page content */}
-				<Toaster />
+				<Toaster position="bottom-left" />
 				<NuqsAdapter>
 					<PipelineStatusProvider>
 						<TooltipProvider>{children}</TooltipProvider>
