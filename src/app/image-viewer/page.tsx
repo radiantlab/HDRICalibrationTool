@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useCallback } from "react";
-import { useSettingsStore } from "../stores/settings-store";
 import {
 	DropzoneChildrenProps,
 	TauriDropzone,
@@ -12,11 +11,7 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import path from "path";
 import { open } from "@tauri-apps/plugin-dialog";
-import { createSerializer, parseAsString } from "nuqs";
-
-export const serializeViewerUrl = createSerializer({
-	filePath: parseAsString,
-});
+import { serializeViewerUrl } from "./viewer-url";
 
 export default function ImageViewer() {
 	const router = useRouter();
