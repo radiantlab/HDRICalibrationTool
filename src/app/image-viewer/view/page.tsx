@@ -298,6 +298,7 @@ export default function ImageViewerViewPage() {
 
 function ImageViewerPageContent() {
 	const [filePath] = useQueryState("filePath", parseAsString);
+	console.log({ filePath });
 	if (!filePath) redirect("/image-viewer");
 
 	return (

@@ -81,6 +81,11 @@ pub struct PipelineStatusPayload {
     pub message: Option<String>,
 }
 
+#[derive(Debug, Serialize, Clone)]
+pub struct PipelineOutputPayload {
+    pub path: String,
+}
+
 fn emit_status(
     app: &tauri::AppHandle,
     payload: PipelineStatusPayload,
@@ -111,6 +116,19 @@ fn emit_progress(
             message: None,
         },
     )
+}
+
+fn emit_pipeline_output(
+    app: &tauri::AppHandle,
+    path: &Path,
+) -> Result<(), PipelineError> {
+    let payload = PipelineOutputPayload {
+        path: path.to_string_lossy().to_string(),
+    };
+    app.emit("pipeline-output", payload)
+        .map_err(|e| PipelineError::Event {
+            message: format!("Failed to emit pipeline-output event: {}", e),
+        })
 }
 
 // Struct to hold argument values for falsecolor2/luminance mapping
@@ -342,18 +360,14 @@ pub async fn pipeline(
             // Copy the final output hdr image to output directory
             let mut copy_result = copy(
                 &config_settings.temp_path.join("header_editing.hdr"),
-                output_file_name,
+                &output_file_name,
             );
             if copy_result.is_err() {
                 return Err(PipelineError::Processing {
                     message: "Error copying final hdr image to output directory.".to_string(),
                 });
             }
-            if copy_result.is_err() {
-                return Err(PipelineError::Processing {
-                    message: "Error copying evalglare value to output directory.".to_string(),
-                });
-            }
+            emit_pipeline_output(&app, &output_file_name)?;
             let base_name2 = Path::new(input_dir)
                 .file_name()
                 .unwrap_or_default()
@@ -363,7 +377,7 @@ pub async fn pipeline(
                 .join(format!("{}_{}_fc.hdr", base_name2, datetime));
             copy_result = copy(
                 &config_settings.temp_path.join("falsecolor_output.hdr"),
-                luminance_file_name,
+                &luminance_file_name,
             );
             if copy_result.is_err() {
                 return Err(PipelineError::Processing {
@@ -429,20 +443,21 @@ pub async fn pipeline(
         // Copy the final output hdr image to output directory
         let mut copy_result = copy(
             &config_settings.temp_path.join("header_editing.hdr"),
-            output_file_name,
+            &output_file_name,
         );
         if copy_result.is_err() {
             return Err(PipelineError::Processing {
                 message: "Error copying final hdr image to output directory.".to_string(),
             });
         }
+        emit_pipeline_output(&app, &output_file_name)?;
 
         let luminance_file_name = config_settings
             .output_path
             .join(format!("{}_fc.hdr", datetime));
         copy_result = copy(
             &config_settings.temp_path.join("falsecolor_output.hdr"),
-            luminance_file_name,
+            &luminance_file_name,
         );
         if copy_result.is_err() {
             return Err(PipelineError::Processing {
