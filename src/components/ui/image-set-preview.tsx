@@ -36,7 +36,7 @@ export function ImageSetPreview({
 		>
 			<div className="flex w-full">
 				<div className="flex-1 grid grid-flow-col divide-x border-b pl-2">
-					<div className="font-bold text-2xl">{name}</div>
+					<div className="font-bold text-2xl flex items-center">{name}</div>
 					{Object.entries({
 						Files: files.length,
 						[fileTypes.length > 1 ? "File Types" : "File Type"]:
@@ -63,7 +63,7 @@ export function ImageSetPreview({
 				</div>
 				<Button
 					variant="outline"
-					className="w-16 border-b border-l border-t-0 border-r-0 rounded-none grid place-items-center text-destructive hover:text-foreground hover:cursor-pointer transition-colors"
+					className="w-16 h-full border-b border-l border-t-0 border-r-0 rounded-none grid place-items-center text-destructive hover:text-foreground hover:cursor-pointer transition-colors"
 					onClick={onRemove}
 				>
 					<Trash2 />
