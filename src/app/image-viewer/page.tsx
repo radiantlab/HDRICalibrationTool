@@ -19,10 +19,6 @@ export const serializeViewerUrl = createSerializer({
 });
 
 export default function ImageViewer() {
-	// Access global settings to get output path and platform information
-	const { settings } = useSettingsStore();
-	const outputPath = settings.outputPath;
-
 	const router = useRouter();
 	const attemptView = (filePath: string) => {
 		if (path.extname(filePath).toLowerCase() !== ".hdr") {
