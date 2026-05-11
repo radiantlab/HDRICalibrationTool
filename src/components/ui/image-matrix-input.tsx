@@ -26,6 +26,19 @@ import {
 import { DialogFilter, open } from "@tauri-apps/plugin-dialog";
 import { DirEntry, readDir, stat } from "@tauri-apps/plugin-fs";
 import { ImageSet, ImageSetPreview } from "./image-set-preview";
+import {
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+} from "./hover-card";
+
+export type ImageSetIssue = {
+	title: string;
+	summary: string;
+	program: string;
+	statusCode: number | null;
+	stderr: string;
+};
 
 type FileMatrixFieldName<T extends FieldValues> = FieldPathByValue<
 	T,
@@ -38,6 +51,7 @@ type FileMatrixInputProps<
 	control: Control<T>;
 	name: TName;
 	className?: string;
+	issuesByIndex?: Partial<Record<number, ImageSetIssue>>;
 	rules?: Omit<RegisterOptions<T, TName>, "validate"> & {
 		validate?: RegisterOptions<T, TName>["validate"];
 	};
@@ -54,7 +68,13 @@ type FullDirEntry = DirEntry & {
 export function ImageMatrixInput<
 	T extends FieldValues,
 	TName extends FileMatrixFieldName<T>,
->({ control, name, className, rules }: FileMatrixInputProps<T, TName>) {
+>({
+	control,
+	name,
+	className,
+	issuesByIndex,
+	rules,
+}: FileMatrixInputProps<T, TName>) {
 	// todo: properly handle field states
 	const { field, fieldState } = useController<T, TName>({
 		control,
@@ -137,15 +157,66 @@ export function ImageMatrixInput<
 	return (
 		<Field className={className} data-invalid={fieldState.invalid}>
 			<FieldContent className="flex flex-col gap-0 divide-y overflow-y-auto">
-				{value?.map((row: ImageSet, index: number) => (
-					<ImageSetPreview
-						key={index}
-						{...row}
-						onRemove={() => {
-							field.onChange(value?.filter((_, i) => i !== index) ?? []);
-						}}
-					/>
-				))}
+				{value?.map((row: ImageSet, index: number) => {
+					const issue = issuesByIndex?.[index];
+
+					return (
+						<div
+							key={index}
+							className={cn(
+								"flex min-h-56 flex-col bg-accent",
+								issue && "border border-destructive/50 bg-destructive/5",
+							)}
+						>
+							<ImageSetPreview
+								{...row}
+								onRemove={() => {
+									field.onChange(value?.filter((_, i) => i !== index) ?? []);
+								}}
+							/>
+							{issue && (
+								<div className="border-t border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
+									<p className="font-medium text-destructive">{issue.title}</p>
+									<p className="mt-1 text-foreground/90">{issue.summary}</p>
+									<HoverCard openDelay={150} closeDelay={100}>
+										<HoverCardTrigger asChild>
+											<button
+												type="button"
+												className="mt-3 text-xs font-medium text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
+											>
+												Technical details
+											</button>
+										</HoverCardTrigger>
+										<HoverCardContent
+											align="start"
+											side="bottom"
+											className="w-[32rem] max-w-[calc(100vw-3rem)] space-y-2 p-3 text-xs"
+										>
+											<p>
+												<span className="font-medium">Program:</span>{" "}
+												<span className="font-mono break-all">
+													{issue.program}
+												</span>
+											</p>
+											<p>
+												<span className="font-medium">Exit code:</span>{" "}
+												<span className="font-mono">
+													{issue.statusCode ?? "unknown"}
+												</span>
+											</p>
+											<div>
+												<p className="font-medium">stderr</p>
+												<pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-md bg-background p-2 font-mono">
+													{issue.stderr || "No stderr output captured."}
+												</pre>
+											</div>
+										</HoverCardContent>
+									</HoverCard>
+								</div>
+							)}
+						</div>
+					);
+				})}
 				<ContextMenu>
 					<ContextMenuTrigger asChild>
 						<TauriDropzone

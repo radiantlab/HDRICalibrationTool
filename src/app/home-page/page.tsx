@@ -43,7 +43,10 @@ import {
 	pipelineConfig,
 	PipelineConfigProvider,
 } from "./(pipeline-configuration)/config-provider";
-import { ImageMatrixInput } from "@/components/ui/image-matrix-input";
+import {
+	ImageMatrixInput,
+	type ImageSetIssue,
+} from "@/components/ui/image-matrix-input";
 import { FileInput } from "@/components/ui/file-input";
 import { useMotionValue, useTransform } from "framer-motion";
 import { useMotionValueFormState } from "@/lib/useMotionValueFormState";
@@ -95,6 +98,73 @@ type PipelineTrace = {
 	input: Record<string, unknown>;
 	error: unknown;
 };
+
+type CommandNonZeroExitError = {
+	kind: "non_zero_exit";
+	program: string;
+	status_code?: number | null;
+	stderr?: string;
+};
+
+type PipelineCommandError = {
+	kind: "command";
+	error: CommandNonZeroExitError;
+};
+
+const HDRGEN_FAILURE_PATTERNS = [
+	"cannot solve for response function",
+	"trouble finding hdr patches",
+	"needs exposure calibration",
+	"insufficient exposures to compute hdr image",
+];
+
+const HDRGEN_MERGE_FAILURE_MESSAGE =
+	"HDRGen could not merge this image set. The selected exposures likely do not overlap enough, or HDRGen could not determine exposure calibration. Try adding more intermediate exposures or provide a camera response (.rsp) file.";
+
+function getProgramBaseName(program: string) {
+	return program.split(/[/\\]/).pop()?.toLowerCase() ?? "";
+}
+
+function getKnownHdrgenIssue(error: unknown): ImageSetIssue | null {
+	if (!error || typeof error !== "object") return null;
+
+	const pipelineError = error as Partial<PipelineCommandError>;
+	if (pipelineError.kind !== "command") return null;
+	if (!pipelineError.error || typeof pipelineError.error !== "object") return null;
+
+	const commandError = pipelineError.error as Partial<CommandNonZeroExitError>;
+	if (
+		commandError.kind !== "non_zero_exit" ||
+		typeof commandError.program !== "string"
+	) {
+		return null;
+	}
+
+	if (getProgramBaseName(commandError.program).replace(/\.exe$/, "") !== "hdrgen") {
+		return null;
+	}
+
+	const stderr = typeof commandError.stderr === "string" ? commandError.stderr : "";
+	const normalizedStderr = stderr.toLowerCase();
+	if (
+		!HDRGEN_FAILURE_PATTERNS.some((pattern) =>
+			normalizedStderr.includes(pattern),
+		)
+	) {
+		return null;
+	}
+
+	return {
+		title: "HDRGen could not merge this image set.",
+		summary: HDRGEN_MERGE_FAILURE_MESSAGE,
+		program: commandError.program,
+		statusCode:
+			typeof commandError.status_code === "number"
+				? commandError.status_code
+				: null,
+		stderr,
+	};
+}
 
 function normalizePipelineError(error: unknown) {
 	if (error instanceof Error) {
@@ -154,10 +224,22 @@ export default function Home() {
 	const { settings } = useSettingsStore();
 
 	const inputSets = watch("inputSets");
+	const cameraResponseLocation = watch("cameraResponseLocation");
 
 	const maskPreviewImage = useMemo(() => {
 		return inputSets?.[0]?.files?.[0];
 	}, [inputSets]);
+	const inputSetIssueResetKey = useMemo(
+		() =>
+			JSON.stringify({
+				inputSets: inputSets?.map((set) => ({
+					name: set.name,
+					files: set.files,
+				})),
+				cameraResponseLocation,
+			}),
+		[inputSets, cameraResponseLocation],
+	);
 
 	const initialLensMaskX = form.getValues("lensMask.x");
 	const initialLensMaskY = form.getValues("lensMask.y");
@@ -202,6 +284,15 @@ export default function Home() {
 	}, [radius, setValue]);
 
 	const [progressVisible, setProgressVisible] = useState(false);
+	const [imageSetIssues, setImageSetIssues] = useState<
+		Partial<Record<number, ImageSetIssue>>
+	>({});
+
+	useEffect(() => {
+		setImageSetIssues((currentIssues) =>
+			Object.keys(currentIssues).length > 0 ? {} : currentIssues,
+		);
+	}, [inputSetIssueResetKey]);
 
 	return (
 		<PipelineConfigProvider form={form}>
@@ -239,10 +330,8 @@ export default function Home() {
 							return;
 						}
 
+						setImageSetIssues({});
 						setProgressVisible(true);
-						const targetRes = data.outputSettings.targetRes!;
-						const verticalAngle = data.fisheyeView.verticalViewDegrees!;
-						const horizontalAngle = data.fisheyeView.horizontalViewDegrees!;
 						const imageSet = data.inputSets[0]!; // TODO: implement batch processing
 						const params = {
 							// Paths to external tools
@@ -274,39 +363,46 @@ export default function Home() {
 							filterImages: data.outputSettings.filterIrrelevantSrcImages,
 						};
 						console.log("pipeline params", params);
-						const invokePromise = invoke<string>("pipeline", params).catch(
-							async (error) => {
-								setProgressVisible(false);
-								let tracePath: string | null = null;
-								try {
-									tracePath = await writePipelineTrace(
-										params,
-										error,
-										settings.outputPath
-									);
-								} catch (traceError) {
-									toast.error(`Failed to write pipeline trace: ${traceError}`);
-								}
-								const toastMessage = tracePath
-									? "Pipeline failed. Trace saved."
-									: "Pipeline failed. Trace could not be saved.";
-								toast.error(toastMessage, {
+						void invoke<string>("pipeline", params).catch(async (error) => {
+							setProgressVisible(false);
+
+							const knownHdrgenIssue = getKnownHdrgenIssue(error);
+							if (knownHdrgenIssue) {
+								setImageSetIssues({ 0: knownHdrgenIssue });
+								toast.error("HDRGen could not merge the selected image set.", {
 									icon: <AlertTriangle className="size-4 text-red-500" />,
-									action: tracePath
-										? {
-												label: "Show in folder",
-												onClick: () =>
-													toast.promise(revealItemInDir(tracePath), {
-														loading: "Revealing in folder...",
-														success: "Revealed in folder",
-														error: "Failed to reveal in folder",
-													}),
-										  }
-										: undefined,
 								});
+								return;
 							}
-						);
-						console.log("invokePromise", invokePromise);
+
+							let tracePath: string | null = null;
+							try {
+								tracePath = await writePipelineTrace(
+									params,
+									error,
+									settings.outputPath
+								);
+							} catch (traceError) {
+								toast.error(`Failed to write pipeline trace: ${traceError}`);
+							}
+							const toastMessage = tracePath
+								? "Pipeline failed. Trace saved."
+								: "Pipeline failed. Trace could not be saved.";
+							toast.error(toastMessage, {
+								icon: <AlertTriangle className="size-4 text-red-500" />,
+								action: tracePath
+									? {
+											label: "Show in folder",
+											onClick: () =>
+												toast.promise(revealItemInDir(tracePath), {
+													loading: "Revealing in folder...",
+													success: "Revealed in folder",
+													error: "Failed to reveal in folder",
+												}),
+									  }
+									: undefined,
+							});
+						});
 					},
 					(errors) => {
 						console.log("form errors", errors);
@@ -317,6 +413,7 @@ export default function Home() {
 					control={control}
 					name="inputSets"
 					className="flex-1 overflow-hidden"
+					issuesByIndex={imageSetIssues}
 					rules={{
 						validate: (v) => {
 							if (!Array.isArray(v) || v.length === 0)

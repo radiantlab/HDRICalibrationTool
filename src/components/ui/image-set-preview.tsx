@@ -1,5 +1,4 @@
 import { stat } from "@tauri-apps/plugin-fs";
-import { convertFileSrc } from "@tauri-apps/api/core";
 import path from "path";
 import { useMemo } from "react";
 import { SkeletonSuspended } from "./skeleton-suspended";
@@ -30,10 +29,7 @@ export function ImageSetPreview({
 	);
 
 	return (
-		<div
-			className="flex flex-col h-56 bg-accent"
-			data-testid="image-set-preview"
-		>
+		<div className="flex min-h-56 flex-col bg-accent" data-testid="image-set-preview">
 			<div className="flex w-full">
 				<div className="flex-1 grid grid-flow-col divide-x border-b pl-2">
 					<div className="font-bold text-2xl flex items-center">{name}</div>
