@@ -36,6 +36,7 @@ import {
 	AlertTriangle,
 	Eclipse,
 	ImageUpscale,
+	InfoIcon,
 	Rotate3D,
 	SwitchCamera,
 } from "lucide-react";
@@ -484,6 +485,7 @@ export default function Home() {
 														)}
 													/>
 													<Label>Filter irrelevant source images</Label>
+													<InfoIcon className="size-4" />
 												</div>
 											</TooltipTrigger>
 											<TooltipContent className="max-w-xs">
@@ -499,6 +501,7 @@ export default function Home() {
 												<TooltipTrigger asChild>
 													<FieldLabel className="items-center">
 														<SwitchCamera /> Camera response
+														<InfoIcon className="size-4" />
 													</FieldLabel>
 												</TooltipTrigger>
 												<TooltipContent className="max-w-xs">
@@ -570,6 +573,7 @@ export default function Home() {
 												<TooltipTrigger asChild>
 													<FieldLabel className="items-center">
 														<Eclipse /> Lens mask
+														<InfoIcon className="size-4" />
 													</FieldLabel>
 												</TooltipTrigger>
 												<TooltipContent className="max-w-xs">
