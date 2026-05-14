@@ -397,7 +397,7 @@ export default function Home() {
 								toast.error(`Failed to write pipeline trace: ${traceError}`);
 							}
 							const toastMessage = tracePath
-								? "Pipeline failed. Trace saved."
+								? "Pipeline failed. Trace saved. (Send this file to a maintainer)"
 								: "Pipeline failed. Trace could not be saved.";
 							toast.error(toastMessage, {
 								icon: <AlertTriangle className="size-4 text-red-500" />,

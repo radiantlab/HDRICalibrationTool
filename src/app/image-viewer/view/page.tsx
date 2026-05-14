@@ -22,6 +22,7 @@ import {
 	TransformWrapper,
 } from "react-zoom-pan-pinch";
 import {
+	CanvasTexture,
 	DataTexture,
 	FloatType,
 	LinearFilter,
@@ -57,7 +58,12 @@ import {
 } from "./falsecolor-luminance-webgpu";
 import { computeLuminanceSummary } from "./luminance-aggregates";
 import { useImageSelectionLayer } from "./use-image-selection-layer";
-import { buildHeatmapTexture, computeAutoScaleRange } from "./heatmap-texture";
+import {
+	buildHeatmapTexture,
+	computeAutoScaleRange,
+	FALSECOLOR_GRADIENT,
+	type HeatmapScaleRange,
+} from "./heatmap-texture";
 import { Button } from "@/components/ui/button";
 import { LocateFixed } from "lucide-react";
 import {
@@ -67,6 +73,9 @@ import {
 } from "./view-control-card";
 
 const DEFAULT_FALSECOLOR_MULTIPLIER = 179;
+const HEATMAP_LEGEND_WIDTH = 200;
+const HEATMAP_LEGEND_LABEL_COUNT = 7;
+const LUMINANCE_UNIT_LABEL = "cd/m2";
 
 type LoadedHdrData = {
 	texture: DataTexture;
@@ -81,6 +90,108 @@ type HdrMetadata = {
 
 const clamp = (value: number, min: number, max: number) =>
 	Math.max(min, Math.min(max, value));
+
+const formatLuminanceLegendValue = (value: number) => {
+	if (!Number.isFinite(value)) return `0 ${LUMINANCE_UNIT_LABEL}`;
+	if (value === 0) return `0 ${LUMINANCE_UNIT_LABEL}`;
+
+	const absoluteValue = Math.abs(value);
+	if (absoluteValue >= 10000 || absoluteValue < 0.01) {
+		const formattedValue = value
+			.toExponential(1)
+			.replace(".0e", "e")
+			.replace("e+", "e");
+		return `${formattedValue} ${LUMINANCE_UNIT_LABEL}`;
+	}
+
+	const fixedValue =
+		absoluteValue >= 100
+			? value.toFixed(0)
+			: absoluteValue >= 10
+				? value.toFixed(1)
+				: value.toFixed(2);
+
+	const formattedValue = fixedValue
+		.replace(/\.0+$/, "")
+		.replace(/(\.\d*?[1-9])0+$/, "$1");
+	return `${formattedValue} ${LUMINANCE_UNIT_LABEL}`;
+};
+
+function buildHeatmapLegendTexture(
+	scaleRange: HeatmapScaleRange,
+	height: number,
+	width = HEATMAP_LEGEND_WIDTH,
+) {
+	const canvas = document.createElement("canvas");
+	canvas.width = width;
+	canvas.height = Math.max(1, height);
+
+	const context = canvas.getContext("2d");
+	if (!context) return new CanvasTexture(canvas);
+
+	const legendHeight = canvas.height;
+	const verticalPadding = Math.min(24, Math.max(8, legendHeight * 0.08));
+	const barTop = verticalPadding;
+	const barBottom = Math.max(barTop + 1, legendHeight - verticalPadding);
+	const barHeight = barBottom - barTop;
+	const barX = 10;
+	const barWidth = 18;
+	const tickStartX = barX + barWidth + 3;
+	const tickEndX = tickStartX + 5;
+	const labelX = tickEndX + 4;
+
+	context.fillStyle = "rgba(2, 6, 23, 0.78)";
+	context.fillRect(0, 0, canvas.width, canvas.height);
+
+	const gradient = context.createLinearGradient(0, barTop, 0, barBottom);
+	for (const stop of FALSECOLOR_GRADIENT) {
+		const red = Math.round(stop.r * 255);
+		const green = Math.round(stop.g * 255);
+		const blue = Math.round(stop.b * 255);
+		gradient.addColorStop(1 - stop.position, `rgb(${red}, ${green}, ${blue})`);
+	}
+
+	context.fillStyle = gradient;
+	context.fillRect(barX, barTop, barWidth, barHeight);
+	context.strokeStyle = "rgba(255, 255, 255, 0.5)";
+	context.lineWidth = 1;
+	context.strokeRect(barX + 0.5, barTop + 0.5, barWidth - 1, barHeight - 1);
+
+	const logMin = Math.log10(Math.max(scaleRange.minimum, 1e-6));
+	const logMax = Math.log10(Math.max(scaleRange.maximum, 1e-6));
+	const logRange = logMax - logMin;
+
+	context.fillStyle = "rgba(255, 255, 255, 0.92)";
+	context.strokeStyle = "rgba(255, 255, 255, 0.65)";
+	context.font =
+		'16px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
+	context.textAlign = "left";
+	context.textBaseline = "middle";
+
+	for (let index = 0; index < HEATMAP_LEGEND_LABEL_COUNT; index += 1) {
+		const position = index / (HEATMAP_LEGEND_LABEL_COUNT - 1);
+		const normalized = 1 - position;
+		const y = barTop + position * barHeight;
+		const luminance =
+			logRange > 0
+				? Math.pow(10, logMin + normalized * logRange)
+				: scaleRange.minimum;
+
+		context.beginPath();
+		context.moveTo(tickStartX, y);
+		context.lineTo(tickEndX, y);
+		context.stroke();
+		context.fillText(formatLuminanceLegendValue(luminance), labelX, y);
+	}
+
+	const texture = new CanvasTexture(canvas);
+	texture.generateMipmaps = false;
+	texture.magFilter = LinearFilter;
+	texture.minFilter = LinearFilter;
+	texture.needsUpdate = true;
+
+	return texture;
+}
 
 const POSITION_EPSILON = 1;
 const SCALE_EPSILON = 1e-4;
@@ -366,6 +477,7 @@ function ImageViewerCanvasContent({
 }) {
 	const viewerData = use(viewerDataPromise);
 	const canvasRef = useRef<HTMLCanvasElement>(null);
+	const imageSurfaceRef = useRef<HTMLDivElement>(null);
 	const [hoverLuminanceSample, setHoverLuminanceSample] =
 		useState<HoverLuminanceSample | null>(null);
 	const [exposureEv, setExposureEv] = useState(EXPOSURE_DEFAULT);
@@ -382,7 +494,7 @@ function ImageViewerCanvasContent({
 		layerPointerHandlers,
 	} = useImageSelectionLayer({
 		imageDimensions: dimensions,
-		surfaceRef: canvasRef,
+		surfaceRef: imageSurfaceRef,
 	});
 	const isHoverLuminanceVisible = !selection && !isSelecting;
 	const luminanceSummary = useMemo(
@@ -390,27 +502,44 @@ function ImageViewerCanvasContent({
 		[selection, viewerData.luminanceMatrix],
 	);
 
-	const heatmapTexture = useMemo(() => {
+	const heatmapScaleRange = useMemo(() => {
 		if (!viewerData.luminanceMatrix) return null;
-		return buildHeatmapTexture(
-			viewerData.luminanceMatrix,
-			computeAutoScaleRange(viewerData.luminanceMatrix),
-		);
+		return computeAutoScaleRange(viewerData.luminanceMatrix);
 	}, [viewerData.luminanceMatrix]);
+	const heatmapTexture = useMemo(() => {
+		if (!viewerData.luminanceMatrix || !heatmapScaleRange) return null;
+		return buildHeatmapTexture(viewerData.luminanceMatrix, heatmapScaleRange);
+	}, [heatmapScaleRange, viewerData.luminanceMatrix]);
 	const isHeatmapAvailable = Boolean(heatmapTexture);
 	const activeViewLayers = useMemo(() => {
 		if (selectedViewType === "luminanceHeatmap" && heatmapTexture) {
 			return {
 				texture: heatmapTexture,
 				exposureScale: 1,
+				heatmapScaleRange,
 			};
 		}
 
 		return {
 			texture: viewerData.texture,
 			exposureScale: Math.pow(2.0, exposureEv),
+			heatmapScaleRange: null,
 		};
-	}, [exposureEv, heatmapTexture, selectedViewType, viewerData.texture]);
+	}, [
+		exposureEv,
+		heatmapScaleRange,
+		heatmapTexture,
+		selectedViewType,
+		viewerData.texture,
+	]);
+	const activeLegendWidth = activeViewLayers.heatmapScaleRange
+		? HEATMAP_LEGEND_WIDTH
+		: 0;
+	const canvasRenderWidth = viewerData.imageWidth + activeLegendWidth;
+	const imageAreaWidthPercent =
+		canvasRenderWidth > 0
+			? (viewerData.imageWidth / canvasRenderWidth) * 100
+			: 100;
 
 	const onCanvasPointerMove = useCallback(
 		(event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -425,17 +554,21 @@ function ImageViewerCanvasContent({
 			const rect = event.currentTarget.getBoundingClientRect();
 			if (rect.width <= 0 || rect.height <= 0) return;
 
-			const normalizedX = (event.clientX - rect.left) / rect.width;
-			const normalizedY = (event.clientY - rect.top) / rect.height;
+			const imageRectWidth =
+				rect.width * (imageWidth / Math.max(canvasRenderWidth, 1));
+			const relativeX = event.clientX - rect.left;
+			const relativeY = event.clientY - rect.top;
 			if (
-				normalizedX < 0 ||
-				normalizedX > 1 ||
-				normalizedY < 0 ||
-				normalizedY > 1
+				relativeX < 0 ||
+				relativeX > imageRectWidth ||
+				relativeY < 0 ||
+				relativeY > rect.height
 			) {
 				setHoverLuminanceSample(null);
 				return;
 			}
+			const normalizedX = relativeX / imageRectWidth;
+			const normalizedY = relativeY / rect.height;
 
 			const pixelX = clamp(
 				Math.floor(normalizedX * imageWidth),
@@ -472,6 +605,7 @@ function ImageViewerCanvasContent({
 			});
 		},
 		[
+			canvasRenderWidth,
 			dimensions,
 			isHoverLuminanceVisible,
 			viewerData.exposure,
@@ -499,9 +633,18 @@ function ImageViewerCanvasContent({
 		let renderer: WebGLRenderer | null = null;
 		let geometry: PlaneGeometry | null = null;
 		let material: MeshBasicMaterial | null = null;
+		let legendGeometry: PlaneGeometry | null = null;
+		let legendMaterial: MeshBasicMaterial | null = null;
+		let legendTexture: CanvasTexture | null = null;
 		const activeTexture = activeViewLayers.texture;
+		const legendScaleRange = activeViewLayers.heatmapScaleRange;
+		const legendWidth = legendScaleRange ? HEATMAP_LEGEND_WIDTH : 0;
+		const renderWidth = viewerData.imageWidth + legendWidth;
 
 		const dispose = () => {
+			legendTexture?.dispose();
+			legendMaterial?.dispose();
+			legendGeometry?.dispose();
 			material?.dispose();
 			geometry?.dispose();
 			renderer?.dispose();
@@ -514,11 +657,18 @@ function ImageViewerCanvasContent({
 		renderer = new WebGLRenderer({ canvas, antialias: false });
 		renderer.toneMapping = NoToneMapping;
 		renderer.setPixelRatio(1);
-		renderer.setSize(viewerData.imageWidth, viewerData.imageHeight, false);
+		renderer.setSize(renderWidth, viewerData.imageHeight, false);
 
 		const scene = new Scene();
-		const camera = new OrthographicCamera(-1, 1, 1, -1, 0, 1);
-		geometry = new PlaneGeometry(2, 2);
+		const camera = new OrthographicCamera(
+			0,
+			renderWidth,
+			viewerData.imageHeight,
+			0,
+			0,
+			1,
+		);
+		geometry = new PlaneGeometry(viewerData.imageWidth, viewerData.imageHeight);
 
 		material = new MeshBasicMaterial({
 			map: activeTexture,
@@ -526,7 +676,35 @@ function ImageViewerCanvasContent({
 		});
 		material.color.setScalar(activeViewLayers.exposureScale);
 
-		scene.add(new Mesh(geometry, material));
+		const imageMesh = new Mesh(geometry, material);
+		imageMesh.position.set(
+			viewerData.imageWidth / 2,
+			viewerData.imageHeight / 2,
+			0,
+		);
+		scene.add(imageMesh);
+
+		if (legendScaleRange) {
+			legendTexture = buildHeatmapLegendTexture(
+				legendScaleRange,
+				viewerData.imageHeight,
+				legendWidth,
+			);
+			legendGeometry = new PlaneGeometry(legendWidth, viewerData.imageHeight);
+			legendMaterial = new MeshBasicMaterial({
+				map: legendTexture,
+				toneMapped: false,
+				transparent: true,
+			});
+
+			const legendMesh = new Mesh(legendGeometry, legendMaterial);
+			legendMesh.position.set(
+				viewerData.imageWidth + legendWidth / 2,
+				viewerData.imageHeight / 2,
+				0,
+			);
+			scene.add(legendMesh);
+		}
 		renderer.render(scene, camera);
 
 		return dispose;
@@ -587,31 +765,37 @@ function ImageViewerCanvasContent({
 						onPointerLeave={onCanvasPointerLeave}
 						className="max-w-full max-h-full cursor-grab"
 					/>
-					{overlay && (
-						<div className="absolute inset-0 pointer-events-none">
-							<div
-								className={cn(
-									"absolute border-2 border-osu-beaver-orange",
-									overlay.showTint && "bg-osu-beaver-orange/20",
-								)}
-								style={{
-									left: `${overlay.leftPercent}%`,
-									top: `${overlay.topPercent}%`,
-									width: `${overlay.widthPercent}%`,
-									height: `${overlay.heightPercent}%`,
-								}}
-							/>
-						</div>
-					)}
 					<div
-						className={cn(
-							"absolute inset-0 touch-none",
-							canInteractWithSelection
-								? "pointer-events-auto cursor-crosshair"
-								: "pointer-events-none",
+						ref={imageSurfaceRef}
+						className="absolute inset-y-0 left-0 pointer-events-none"
+						style={{ width: `${imageAreaWidthPercent}%` }}
+					>
+						{overlay && (
+							<div className="absolute inset-0 pointer-events-none">
+								<div
+									className={cn(
+										"absolute border-2 border-osu-beaver-orange",
+										overlay.showTint && "bg-osu-beaver-orange/20",
+									)}
+									style={{
+										left: `${overlay.leftPercent}%`,
+										top: `${overlay.topPercent}%`,
+										width: `${overlay.widthPercent}%`,
+										height: `${overlay.heightPercent}%`,
+									}}
+								/>
+							</div>
 						)}
-						{...layerPointerHandlers}
-					/>
+						<div
+							className={cn(
+								"absolute inset-0 touch-none",
+								canInteractWithSelection
+									? "pointer-events-auto cursor-crosshair"
+									: "pointer-events-none",
+							)}
+							{...layerPointerHandlers}
+						/>
+					</div>
 				</TransformComponent>
 			</TransformWrapper>
 			<div className="absolute top-4 left-4 z-30 flex items-start gap-2">
