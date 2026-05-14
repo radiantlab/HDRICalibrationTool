@@ -178,6 +178,27 @@ export function ImageMatrixInput<
 								onRemove={() => {
 									field.onChange(value?.filter((_, i) => i !== index) ?? []);
 								}}
+								onRemoveIndex={(deleteIndex) => {
+									value[index] = {
+										...row,
+										files: row.files.filter((_, i) => i !== deleteIndex),
+									};
+									field.onChange([...value]);
+								}}
+								onAdd={async () => {
+									const newFiles = await open({
+										multiple: true,
+										directory: false,
+										filters: imageFilters,
+									});
+									if (!newFiles) return;
+
+									value[index] = {
+										...row,
+										files: [...row.files, ...newFiles],
+									};
+									field.onChange([...value]);
+								}}
 							/>
 							{issue && (
 								<div className="border-t border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
