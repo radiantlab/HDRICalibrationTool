@@ -130,7 +130,8 @@ function getKnownHdrgenIssue(error: unknown): ImageSetIssue | null {
 
 	const pipelineError = error as Partial<PipelineCommandError>;
 	if (pipelineError.kind !== "command") return null;
-	if (!pipelineError.error || typeof pipelineError.error !== "object") return null;
+	if (!pipelineError.error || typeof pipelineError.error !== "object")
+		return null;
 
 	const commandError = pipelineError.error as Partial<CommandNonZeroExitError>;
 	if (
@@ -140,11 +141,14 @@ function getKnownHdrgenIssue(error: unknown): ImageSetIssue | null {
 		return null;
 	}
 
-	if (getProgramBaseName(commandError.program).replace(/\.exe$/, "") !== "hdrgen") {
+	if (
+		getProgramBaseName(commandError.program).replace(/\.exe$/, "") !== "hdrgen"
+	) {
 		return null;
 	}
 
-	const stderr = typeof commandError.stderr === "string" ? commandError.stderr : "";
+	const stderr =
+		typeof commandError.stderr === "string" ? commandError.stderr : "";
 	const normalizedStderr = stderr.toLowerCase();
 	if (
 		!HDRGEN_FAILURE_PATTERNS.some((pattern) =>
@@ -179,7 +183,7 @@ function normalizePipelineError(error: unknown) {
 async function writePipelineTrace(
 	input: Record<string, unknown>,
 	error: unknown,
-	outputPath: string
+	outputPath: string,
 ) {
 	const createdAt = new Date().toISOString();
 	const baseDir =
@@ -189,7 +193,7 @@ async function writePipelineTrace(
 	const safeTimestamp = createdAt.replace(/[:.]/g, "-");
 	const tracePath = await join(
 		traceDir,
-		`pipeline-trace-${safeTimestamp}.json`
+		`pipeline-trace-${safeTimestamp}.json`,
 	);
 	const trace: PipelineTrace = {
 		createdAt,
@@ -248,22 +252,22 @@ export default function Home() {
 	const centerX = useMotionValueFormState(
 		initialLensMaskX,
 		setValue,
-		"lensMask.x"
+		"lensMask.x",
 	);
 	const centerY = useMotionValueFormState(
 		initialLensMaskY,
 		setValue,
-		"lensMask.y"
+		"lensMask.y",
 	);
 
 	const radiusAjusterCenterX = useMotionValue(
-		initialLensMaskX + initialLensMaskRadius
+		initialLensMaskX + initialLensMaskRadius,
 	);
 	const radiusAjusterCenterY = useMotionValue(initialLensMaskY);
 
 	const radius = useTransform<number, number>(
 		[centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
-		([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2)
+		([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2),
 	);
 	useEffect(() => {
 		const unsub = radius.on("change", (value) => {
@@ -380,7 +384,7 @@ export default function Home() {
 								tracePath = await writePipelineTrace(
 									params,
 									error,
-									settings.outputPath
+									settings.outputPath,
 								);
 							} catch (traceError) {
 								toast.error(`Failed to write pipeline trace: ${traceError}`);
@@ -399,14 +403,14 @@ export default function Home() {
 													success: "Revealed in folder",
 													error: "Failed to reveal in folder",
 												}),
-									  }
+										}
 									: undefined,
 							});
 						});
 					},
 					(errors) => {
 						console.log("form errors", errors);
-					}
+					},
 				)}
 			>
 				<ImageMatrixInput
@@ -420,8 +424,7 @@ export default function Home() {
 								return "At least one image set is required";
 
 							const i = v.findIndex((set) => set.files.length < 2);
-							if (i !== -1)
-								return `"${v[i]!.name}" needs at least 2 images`;
+							if (i !== -1) return `"${v[i]!.name}" needs at least 2 images`;
 
 							return true;
 						},
@@ -493,18 +496,6 @@ export default function Home() {
 										</TooltipContent>
 									</Tooltip>
 									<FileInput
-										// disabled={true}
-										disabled={inputSets?.every((set) =>
-											set.files.every((file) => {
-												const fileextension = file
-													.split(".")
-													.pop()
-													?.toLowerCase();
-												return (
-													fileextension !== "jpg" && fileextension !== "jpeg"
-												);
-											})
-										)}
 										control={control}
 										explicitOptional
 										name="cameraResponseLocation"
