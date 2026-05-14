@@ -70,7 +70,7 @@ export function CircularMaskSelection({
 				containerRef.current = r;
 				if (ref) ref.current = r;
 			}}
-			className={cn("relative group 12121", className)}
+			className={cn("relative group overflow-hidden", className)}
 		>
 			<motion.div
 				drag
