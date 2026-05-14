@@ -74,7 +74,7 @@ export default function Navigation() {
 							: "hover:bg-gray-200 cursor-pointer" // Inactive page styling
 					}`}
 				>
-					Image Configuration
+					Image Generator
 				</Link>
 
 				{/* Settings page link */}
