@@ -51,7 +51,7 @@ const clamp = (value: number, min: number, max: number) =>
 
 const buildRectFromPoints = (
 	startPoint: ImagePoint,
-	endPoint: ImagePoint
+	endPoint: ImagePoint,
 ): ImageRectSelection => {
 	const x = Math.min(startPoint.x, endPoint.x);
 	const y = Math.min(startPoint.y, endPoint.y);
@@ -68,9 +68,8 @@ export function useImageSelectionLayer({
 	const { selection, setSelection, clearSelection } = useImageSelection();
 	const [isShiftPressed, setIsShiftPressed] = useState(false);
 	const [isSelecting, setIsSelecting] = useState(false);
-	const [draftSelection, setDraftSelection] = useState<ImageRectSelection | null>(
-		null
-	);
+	const [draftSelection, setDraftSelection] =
+		useState<ImageRectSelection | null>(null);
 	const dragStateRef = useRef<DragState | null>(null);
 
 	useEffect(() => {
@@ -110,12 +109,12 @@ export function useImageSelectionLayer({
 			const normalizedX = clamp(
 				(clientX - surfaceRect.left) / surfaceRect.width,
 				0,
-				1
+				1,
 			);
 			const normalizedY = clamp(
 				(clientY - surfaceRect.top) / surfaceRect.height,
 				0,
-				1
+				1,
 			);
 
 			return {
@@ -123,7 +122,7 @@ export function useImageSelectionLayer({
 				y: normalizedY * imageHeight,
 			};
 		},
-		[imageDimensions, surfaceRef]
+		[imageDimensions, surfaceRef],
 	);
 
 	const onPointerDown = useCallback(
@@ -149,7 +148,7 @@ export function useImageSelectionLayer({
 				height: 0,
 			});
 		},
-		[imageDimensions, resolveImagePoint]
+		[imageDimensions, resolveImagePoint],
 	);
 
 	const onPointerMove = useCallback(
@@ -162,9 +161,11 @@ export function useImageSelectionLayer({
 
 			event.preventDefault();
 			event.stopPropagation();
-			setDraftSelection(buildRectFromPoints(dragState.startImage, currentImagePoint));
+			setDraftSelection(
+				buildRectFromPoints(dragState.startImage, currentImagePoint),
+			);
 		},
-		[resolveImagePoint]
+		[resolveImagePoint],
 	);
 
 	const clearDragState = useCallback(() => {
@@ -217,11 +218,11 @@ export function useImageSelectionLayer({
 				resolveImagePoint(event.clientX, event.clientY) ?? dragState.startImage;
 			const nextSelection = buildRectFromPoints(
 				dragState.startImage,
-				endImagePoint
+				endImagePoint,
 			);
 			const movedDistance = Math.hypot(
 				event.clientX - dragState.startClient.x,
-				event.clientY - dragState.startClient.y
+				event.clientY - dragState.startClient.y,
 			);
 			const didDrag = movedDistance >= dragThresholdPx;
 
@@ -242,7 +243,7 @@ export function useImageSelectionLayer({
 			dragThresholdPx,
 			resolveImagePoint,
 			setSelection,
-		]
+		],
 	);
 
 	const onPointerCancel = useCallback(
@@ -258,7 +259,7 @@ export function useImageSelectionLayer({
 			event.stopPropagation();
 			clearDragState();
 		},
-		[clearDragState]
+		[clearDragState],
 	);
 
 	const overlay = useMemo<ImageSelectionOverlay | null>(() => {
@@ -274,12 +275,12 @@ export function useImageSelectionLayer({
 		const widthPercent = clamp(
 			(activeSelection.width / imageWidth) * 100,
 			0,
-			100 - leftPercent
+			100 - leftPercent,
 		);
 		const heightPercent = clamp(
 			(activeSelection.height / imageHeight) * 100,
 			0,
-			100 - topPercent
+			100 - topPercent,
 		);
 
 		return {
@@ -298,7 +299,7 @@ export function useImageSelectionLayer({
 			onPointerUp,
 			onPointerCancel,
 		}),
-		[onPointerCancel, onPointerDown, onPointerMove, onPointerUp]
+		[onPointerCancel, onPointerDown, onPointerMove, onPointerUp],
 	);
 
 	return {
