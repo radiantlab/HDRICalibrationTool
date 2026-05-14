@@ -64,6 +64,11 @@ import { PipelineStatus } from "./pipeline-status";
 import { toast } from "sonner";
 
 import { create } from "zustand";
+import {
+	ResizableHandle,
+	ResizablePanel,
+	ResizablePanelGroup,
+} from "@/components/ui/resizable";
 
 const useGlobalPipelineConfig = create<
 	pipelineConfig & { set: (config: pipelineConfig) => void }
@@ -413,334 +418,360 @@ export default function Home() {
 					},
 				)}
 			>
-				<ImageMatrixInput
-					control={control}
-					name="inputSets"
-					className="flex-1 overflow-hidden"
-					issuesByIndex={imageSetIssues}
-					rules={{
-						validate: (v) => {
-							if (!Array.isArray(v) || v.length === 0)
-								return "At least one image set is required";
+				<ResizablePanelGroup orientation="horizontal">
+					<ResizablePanel defaultSize="70%">
+						<ImageMatrixInput
+							control={control}
+							name="inputSets"
+							className="flex-1 overflow-hidden"
+							issuesByIndex={imageSetIssues}
+							rules={{
+								validate: (v) => {
+									if (!Array.isArray(v) || v.length === 0)
+										return "At least one image set is required";
 
-							const i = v.findIndex((set) => set.files.length < 2);
-							if (i !== -1) return `"${v[i]!.name}" needs at least 2 images`;
+									const i = v.findIndex((set) => set.files.length < 2);
+									if (i !== -1)
+										return `"${v[i]!.name}" needs at least 2 images`;
 
-							return true;
-						},
-					}}
-				/>
-				<div className="bg-accent w-96 h-full flex flex-col min-h-0">
-					<Accordion
-						type="single"
-						collapsible
-						className="flex-1 min-h-0 overflow-y-auto"
-						// defaultValue="item-1"
-					>
-						<AccordionItem value="item-hdr-gen" className="px-4">
-							<FieldContainerAccordionTrigger
-								fields={[
-									"cameraResponseLocation",
-									"lensMask.radius",
-									"lensMask.x",
-									"lensMask.y",
-									"outputSettings.filterIrrelevantSrcImages",
-								]}
+									return true;
+								},
+							}}
+						/>
+					</ResizablePanel>
+					<ResizableHandle withHandle />
+					<ResizablePanel>
+						<div className="bg-accent h-full flex flex-col min-h-0">
+							<Accordion
+								type="single"
+								collapsible
+								className="flex-1 min-h-0 overflow-y-auto"
+								// defaultValue="item-1"
 							>
-								HDR Generation
-							</FieldContainerAccordionTrigger>
-							<AccordionContent
-								forceMount
-								className="flex flex-col gap-6 text-balance"
-							>
-								<Tooltip>
-									<TooltipTrigger asChild>
-										<div className="flex items-center gap-2">
-											<Controller
-												name="outputSettings.filterIrrelevantSrcImages"
-												control={control}
-												render={({ field }) => (
-													<Checkbox
-														checked={field.value ?? false}
-														onCheckedChange={(checked) =>
-															field.onChange(Boolean(checked))
-														}
-														onBlur={field.onBlur}
-														ref={field.ref}
+								<AccordionItem value="item-hdr-gen" className="px-4">
+									<FieldContainerAccordionTrigger
+										fields={[
+											"cameraResponseLocation",
+											"lensMask.radius",
+											"lensMask.x",
+											"lensMask.y",
+											"outputSettings.filterIrrelevantSrcImages",
+										]}
+									>
+										HDR Generation
+									</FieldContainerAccordionTrigger>
+									<AccordionContent
+										forceMount
+										className="flex flex-col gap-6 text-balance"
+									>
+										<Tooltip>
+											<TooltipTrigger asChild>
+												<div className="flex items-center gap-2">
+													<Controller
+														name="outputSettings.filterIrrelevantSrcImages"
+														control={control}
+														render={({ field }) => (
+															<Checkbox
+																checked={field.value ?? false}
+																onCheckedChange={(checked) =>
+																	field.onChange(Boolean(checked))
+																}
+																onBlur={field.onBlur}
+																ref={field.ref}
+															/>
+														)}
 													/>
-												)}
+													<Label>Filter irrelevant source images</Label>
+												</div>
+											</TooltipTrigger>
+											<TooltipContent className="max-w-xs">
+												Some LDR images do not provide value to the HDR image
+												generation process. Checking this box will filter out
+												those images before generating the HDR image. This
+												increases accuracy but also adds a minor increase in the
+												time it takes to finish the generation process.
+											</TooltipContent>
+										</Tooltip>
+										<div className="flex flex-col gap-2">
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<FieldLabel className="items-center">
+														<SwitchCamera /> Camera response
+													</FieldLabel>
+												</TooltipTrigger>
+												<TooltipContent className="max-w-xs">
+													A camera response function is the rule that tells your
+													camera how to turn the brightness of a scene into
+													digital pixel numbers. (Important for preprocessed
+													image formats like JPEG)
+												</TooltipContent>
+											</Tooltip>
+											<FileInput
+												control={control}
+												explicitOptional
+												name="cameraResponseLocation"
+												placeholder="Select or paste a .rsp file…"
+												filters={[
+													{
+														name: "Camera response files",
+														extensions: ["rsp"],
+													},
+												]}
+												rules={{ required: "Camera response file is required" }}
 											/>
-											<Label>Filter irrelevant source images</Label>
 										</div>
-									</TooltipTrigger>
-									<TooltipContent className="max-w-xs">
-										Some LDR images do not provide value to the HDR image
-										generation process. Checking this box will filter out those
-										images before generating the HDR image. This increases
-										accuracy but also adds a minor increase in the time it takes
-										to finish the generation process.
-									</TooltipContent>
-								</Tooltip>
-								<div className="flex flex-col gap-2">
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<FieldLabel className="items-center">
-												<SwitchCamera /> Camera response
-											</FieldLabel>
-										</TooltipTrigger>
-										<TooltipContent className="max-w-xs">
-											A camera response function is the rule that tells your
-											camera how to turn the brightness of a scene into digital
-											pixel numbers. (Important for preprocessed image formats
-											like JPEG)
-										</TooltipContent>
-									</Tooltip>
-									<FileInput
-										control={control}
-										explicitOptional
-										name="cameraResponseLocation"
-										placeholder="Select or paste a .rsp file…"
-										filters={[
-											{ name: "Camera response files", extensions: ["rsp"] },
+									</AccordionContent>
+								</AccordionItem>
+								<AccordionItem value="item-crop-resize" className="px-4">
+									<FieldContainerAccordionTrigger
+										fields={[
+											"cameraResponseLocation",
+											"lensMask.radius",
+											"lensMask.x",
+											"lensMask.y",
+											"outputSettings.targetRes",
+											"outputSettings.filterIrrelevantSrcImages",
 										]}
-										rules={{ required: "Camera response file is required" }}
-									/>
-								</div>
-							</AccordionContent>
-						</AccordionItem>
-						<AccordionItem value="item-crop-resize" className="px-4">
-							<FieldContainerAccordionTrigger
-								fields={[
-									"cameraResponseLocation",
-									"lensMask.radius",
-									"lensMask.x",
-									"lensMask.y",
-									"outputSettings.targetRes",
-									"outputSettings.filterIrrelevantSrcImages",
-								]}
-							>
-								Cropping and Resizing
-							</FieldContainerAccordionTrigger>
-							<AccordionContent
-								forceMount
-								className="flex flex-col gap-6 text-balance"
-							>
-								<Field>
-									<FieldLabel>
-										<ImageUpscale /> Target width/height
-									</FieldLabel>
-									<Input
-										type="number"
-										placeholder="Value in pixels"
-										defaultValue={1000}
-										{...register("outputSettings.targetRes", {
-											valueAsNumber: true,
-											min: {
-												value: 1,
-												message: "Target resolution must be greater than 0",
-											},
-										})}
-									/>
-									<FieldError
-										errors={[form.formState.errors.outputSettings?.targetRes]}
-									/>
-								</Field>
-								<div className="flex flex-col gap-2">
-									<Tooltip>
-										<TooltipTrigger asChild>
-											<FieldLabel className="items-center">
-												<Eclipse /> Lens mask
+									>
+										Cropping and Resizing
+									</FieldContainerAccordionTrigger>
+									<AccordionContent
+										forceMount
+										className="flex flex-col gap-6 text-balance"
+									>
+										<Field>
+											<FieldLabel>
+												<ImageUpscale /> Target width/height
 											</FieldLabel>
-										</TooltipTrigger>
-										<TooltipContent className="max-w-xs">
-											A circular mask applied to remove the parts of the image
-											that are obstructed by the lens.
-										</TooltipContent>
-									</Tooltip>
-									<LensMaskInput
-										maskPreviewImage={maskPreviewImage}
-										centerX={centerX}
-										centerY={centerY}
-										radiusAjusterCenterX={radiusAjusterCenterX}
-										radiusAjusterCenterY={radiusAjusterCenterY}
-										register={register}
-									/>
-								</div>
-							</AccordionContent>
-						</AccordionItem>
-						<AccordionItem value="item-correction-fisheye" className="px-4">
-							<FieldContainerAccordionTrigger
-								fields={["correctionFiles.fisheye"]}
-							>
-								Fisheye correction
-							</FieldContainerAccordionTrigger>
-							<AccordionContent
-								forceMount
-								className="flex flex-col gap-4 text-balance"
-							>
-								<FileInput
-									control={control}
-									explicitOptional
-									name="correctionFiles.fisheye"
-									placeholder="Select or paste a .cal file…"
-									filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
-									rules={{ required: "Fisheye correction file is required" }}
-								/>
-							</AccordionContent>
-						</AccordionItem>
-						<AccordionItem value="item-correction-vignetting" className="px-4">
-							<FieldContainerAccordionTrigger
-								fields={["correctionFiles.vignetting"]}
-							>
-								Vignetting correction
-							</FieldContainerAccordionTrigger>
-							<AccordionContent
-								forceMount
-								className="flex flex-col gap-4 text-balance"
-							>
-								<FileInput
-									control={control}
-									explicitOptional
-									name="correctionFiles.vignetting"
-									placeholder="Select or paste a .cal file…"
-									filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
-									rules={{ required: "Vignetting correction file is required" }}
-								/>
-							</AccordionContent>
-						</AccordionItem>
-						<AccordionItem
-							value="item-correction-neutral-density"
-							className="px-4"
-						>
-							<FieldContainerAccordionTrigger
-								fields={["correctionFiles.neutralDensity"]}
-							>
-								Neutral density correction
-							</FieldContainerAccordionTrigger>
-							<AccordionContent
-								forceMount
-								className="flex flex-col gap-4 text-balance"
-							>
-								<FileInput
-									control={control}
-									explicitOptional
-									name="correctionFiles.neutralDensity"
-									placeholder="Select or paste a .cal file…"
-									filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
-									rules={{
-										required: "Neutral density correction file is required",
-									}}
-								/>
-							</AccordionContent>
-						</AccordionItem>
-						<AccordionItem
-							value="item-correction-calibration-factor"
-							className="px-4"
-						>
-							<FieldContainerAccordionTrigger
-								fields={["correctionFiles.calibrationFactor"]}
-							>
-								Calibration factor correction
-							</FieldContainerAccordionTrigger>
-							<AccordionContent
-								forceMount
-								className="flex flex-col gap-4 text-balance"
-							>
-								<FileInput
-									control={control}
-									explicitOptional
-									name="correctionFiles.calibrationFactor"
-									placeholder="Select or paste a .cal file…"
-									filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
-									rules={{
-										required: "Calibration factor correction file is required",
-									}}
-								/>
-							</AccordionContent>
-						</AccordionItem>
-						<AccordionItem value="item-post" className="px-4">
-							<FieldContainerAccordionTrigger
-								fields={[
-									"outputSettings.targetRes",
-									"fisheyeView.verticalViewDegrees",
-									"fisheyeView.horizontalViewDegrees",
-								]}
-							>
-								Output Header Editing
-							</FieldContainerAccordionTrigger>
-							<AccordionContent
-								forceMount
-								className="flex flex-col gap-4 text-balance"
-							>
-								<Field>
-									<FieldLabel>
-										<Rotate3D /> Fisheye view angles
-									</FieldLabel>
-									<FieldContent className="flex-row gap-1">
-										<Input
-											icon={"°"}
-											type="number"
-											placeholder="Vertical view angle"
-											{...register("fisheyeView.verticalViewDegrees", {
-												required: "Vertical view angle is required",
-												valueAsNumber: true,
-												min: {
-													value: 1,
-													message: "Vertical view angle must be greater than 0",
-												},
-											})}
-											aria-invalid={
-												form.formState.errors.fisheyeView?.verticalViewDegrees
-													? "true"
-													: undefined
-											}
-											defaultValue={180}
+											<Input
+												type="number"
+												placeholder="Value in pixels"
+												defaultValue={1000}
+												{...register("outputSettings.targetRes", {
+													valueAsNumber: true,
+													min: {
+														value: 1,
+														message: "Target resolution must be greater than 0",
+													},
+												})}
+											/>
+											<FieldError
+												errors={[
+													form.formState.errors.outputSettings?.targetRes,
+												]}
+											/>
+										</Field>
+										<div className="flex flex-col gap-2">
+											<Tooltip>
+												<TooltipTrigger asChild>
+													<FieldLabel className="items-center">
+														<Eclipse /> Lens mask
+													</FieldLabel>
+												</TooltipTrigger>
+												<TooltipContent className="max-w-xs">
+													A circular mask applied to remove the parts of the
+													image that are obstructed by the lens.
+												</TooltipContent>
+											</Tooltip>
+											<LensMaskInput
+												maskPreviewImage={maskPreviewImage}
+												centerX={centerX}
+												centerY={centerY}
+												radiusAjusterCenterX={radiusAjusterCenterX}
+												radiusAjusterCenterY={radiusAjusterCenterY}
+												register={register}
+											/>
+										</div>
+									</AccordionContent>
+								</AccordionItem>
+								<AccordionItem value="item-correction-fisheye" className="px-4">
+									<FieldContainerAccordionTrigger
+										fields={["correctionFiles.fisheye"]}
+									>
+										Fisheye correction
+									</FieldContainerAccordionTrigger>
+									<AccordionContent
+										forceMount
+										className="flex flex-col gap-4 text-balance"
+									>
+										<FileInput
+											control={control}
+											explicitOptional
+											name="correctionFiles.fisheye"
+											placeholder="Select or paste a .cal file…"
+											filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
+											rules={{
+												required: "Fisheye correction file is required",
+											}}
 										/>
-										<Input
-											icon={"°"}
-											type="number"
-											// TODO: refactor this to be from the top, not the bottom.
-											// thats just more intuitive/standardized.
-											placeholder="Horizontal view angle"
-											{...register("fisheyeView.horizontalViewDegrees", {
-												required: "Horizontal view angle is required",
-												valueAsNumber: true,
-												min: {
-													value: 1,
-													message:
-														"Horizontal view angle must be greater than 0",
-												},
-											})}
-											aria-invalid={
-												form.formState.errors.fisheyeView?.horizontalViewDegrees
-													? "true"
-													: undefined
-											}
-											defaultValue={180}
+									</AccordionContent>
+								</AccordionItem>
+								<AccordionItem
+									value="item-correction-vignetting"
+									className="px-4"
+								>
+									<FieldContainerAccordionTrigger
+										fields={["correctionFiles.vignetting"]}
+									>
+										Vignetting correction
+									</FieldContainerAccordionTrigger>
+									<AccordionContent
+										forceMount
+										className="flex flex-col gap-4 text-balance"
+									>
+										<FileInput
+											control={control}
+											explicitOptional
+											name="correctionFiles.vignetting"
+											placeholder="Select or paste a .cal file…"
+											filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
+											rules={{
+												required: "Vignetting correction file is required",
+											}}
 										/>
-									</FieldContent>
-									<FieldError
-										errors={[
-											form.formState.errors.fisheyeView?.verticalViewDegrees,
-											form.formState.errors.fisheyeView?.horizontalViewDegrees,
+									</AccordionContent>
+								</AccordionItem>
+								<AccordionItem
+									value="item-correction-neutral-density"
+									className="px-4"
+								>
+									<FieldContainerAccordionTrigger
+										fields={["correctionFiles.neutralDensity"]}
+									>
+										Neutral density correction
+									</FieldContainerAccordionTrigger>
+									<AccordionContent
+										forceMount
+										className="flex flex-col gap-4 text-balance"
+									>
+										<FileInput
+											control={control}
+											explicitOptional
+											name="correctionFiles.neutralDensity"
+											placeholder="Select or paste a .cal file…"
+											filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
+											rules={{
+												required: "Neutral density correction file is required",
+											}}
+										/>
+									</AccordionContent>
+								</AccordionItem>
+								<AccordionItem
+									value="item-correction-calibration-factor"
+									className="px-4"
+								>
+									<FieldContainerAccordionTrigger
+										fields={["correctionFiles.calibrationFactor"]}
+									>
+										Calibration factor correction
+									</FieldContainerAccordionTrigger>
+									<AccordionContent
+										forceMount
+										className="flex flex-col gap-4 text-balance"
+									>
+										<FileInput
+											control={control}
+											explicitOptional
+											name="correctionFiles.calibrationFactor"
+											placeholder="Select or paste a .cal file…"
+											filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
+											rules={{
+												required:
+													"Calibration factor correction file is required",
+											}}
+										/>
+									</AccordionContent>
+								</AccordionItem>
+								<AccordionItem value="item-post" className="px-4">
+									<FieldContainerAccordionTrigger
+										fields={[
+											"outputSettings.targetRes",
+											"fisheyeView.verticalViewDegrees",
+											"fisheyeView.horizontalViewDegrees",
 										]}
+									>
+										Output Header Editing
+									</FieldContainerAccordionTrigger>
+									<AccordionContent
+										forceMount
+										className="flex flex-col gap-4 text-balance"
+									>
+										<Field>
+											<FieldLabel>
+												<Rotate3D /> Fisheye view angles
+											</FieldLabel>
+											<FieldContent className="flex-row gap-1">
+												<Input
+													icon={"°"}
+													type="number"
+													placeholder="Vertical view angle"
+													{...register("fisheyeView.verticalViewDegrees", {
+														required: "Vertical view angle is required",
+														valueAsNumber: true,
+														min: {
+															value: 1,
+															message:
+																"Vertical view angle must be greater than 0",
+														},
+													})}
+													aria-invalid={
+														form.formState.errors.fisheyeView
+															?.verticalViewDegrees
+															? "true"
+															: undefined
+													}
+													defaultValue={180}
+												/>
+												<Input
+													icon={"°"}
+													type="number"
+													// TODO: refactor this to be from the top, not the bottom.
+													// thats just more intuitive/standardized.
+													placeholder="Horizontal view angle"
+													{...register("fisheyeView.horizontalViewDegrees", {
+														required: "Horizontal view angle is required",
+														valueAsNumber: true,
+														min: {
+															value: 1,
+															message:
+																"Horizontal view angle must be greater than 0",
+														},
+													})}
+													aria-invalid={
+														form.formState.errors.fisheyeView
+															?.horizontalViewDegrees
+															? "true"
+															: undefined
+													}
+													defaultValue={180}
+												/>
+											</FieldContent>
+											<FieldError
+												errors={[
+													form.formState.errors.fisheyeView
+														?.verticalViewDegrees,
+													form.formState.errors.fisheyeView
+														?.horizontalViewDegrees,
+												]}
+											/>
+										</Field>
+									</AccordionContent>
+								</AccordionItem>
+							</Accordion>
+							<div className="bottom-0 border-t left-0 right-0 w-full p-4 mt-auto bg-background drop-shadow-lg">
+								{progressVisible ? (
+									<PipelineStatus
+										onFinishAcknowledgment={() => setProgressVisible(false)}
 									/>
-								</Field>
-							</AccordionContent>
-						</AccordionItem>
-					</Accordion>
-					<div className="bottom-0 border-t left-0 right-0 w-full p-4 mt-auto bg-background drop-shadow-lg">
-						{progressVisible ? (
-							<PipelineStatus
-								onFinishAcknowledgment={() => setProgressVisible(false)}
-							/>
-						) : (
-							<Button className="w-full bg-osu-beaver-orange">
-								Generate HDR Image
-							</Button>
-						)}
-					</div>
-				</div>
+								) : (
+									<Button className="w-full bg-osu-beaver-orange">
+										Generate HDR Image
+									</Button>
+								)}
+							</div>
+						</div>
+					</ResizablePanel>
+				</ResizablePanelGroup>
 			</form>
 		</PipelineConfigProvider>
 	);

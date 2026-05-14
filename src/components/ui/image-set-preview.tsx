@@ -7,6 +7,13 @@ import { GenericImage } from "./(image)/generic-image";
 import { Trash2 } from "lucide-react";
 import { Button } from "./button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
+import { PlusIcon } from "@heroicons/react/24/solid";
+import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuTrigger,
+} from "./context-menu";
 
 export type ImageSet = {
 	name: string;
@@ -17,7 +24,13 @@ export function ImageSetPreview({
 	name,
 	files,
 	onRemove,
-}: ImageSet & { onRemove: () => void }) {
+	onAdd,
+	onRemoveIndex,
+}: ImageSet & {
+	onRemove: () => void;
+	onAdd: () => void;
+	onRemoveIndex: (index: number) => void;
+}) {
 	const fileStats = useMemo(
 		() => Promise.all(files.map((f) => stat(f))),
 		[files],
@@ -29,7 +42,10 @@ export function ImageSetPreview({
 	);
 
 	return (
-		<div className="flex min-h-56 flex-col bg-accent" data-testid="image-set-preview">
+		<div
+			className="flex min-h-56 flex-col bg-accent"
+			data-testid="image-set-preview"
+		>
 			<div className="flex w-full">
 				<div className="flex-1 grid grid-flow-col divide-x border-b pl-2">
 					<div className="font-bold text-2xl flex items-center">{name}</div>
@@ -69,17 +85,33 @@ export function ImageSetPreview({
 				>
 					<Trash2 />
 				</Button>
+				<Button
+					variant="ghost"
+					className="w-16 h-full border-b border-l border-t-0 border-r-0 rounded-none grid place-items-center text-muted-foreground hover:text-foreground hover:cursor-pointer transition-colors"
+					onClick={onAdd}
+				>
+					<PlusIcon />
+				</Button>
 			</div>
 			<div
 				className="flex overflow-x-auto gap-4 grow overflow-y-hidden"
 				style={{ scrollbarWidth: "none" }}
 			>
-				{files.map((file) => (
+				{files.map((file, index) => (
 					<Tooltip key={file}>
 						<TooltipTrigger>
-							<div className="size-48 shrink-0 bg-accent generic-image-container">
-								<GenericImage fsSrc={file} />
-							</div>
+							<ContextMenu>
+								<ContextMenuTrigger asChild>
+									<div className="size-48 shrink-0 bg-accent generic-image-container">
+										<GenericImage fsSrc={file} />
+									</div>
+								</ContextMenuTrigger>
+								<ContextMenuContent>
+									<ContextMenuItem onClick={() => onRemoveIndex(index)}>
+										Remove image
+									</ContextMenuItem>
+								</ContextMenuContent>
+							</ContextMenu>
 						</TooltipTrigger>
 						<TooltipContent>
 							<p>{file}</p>
