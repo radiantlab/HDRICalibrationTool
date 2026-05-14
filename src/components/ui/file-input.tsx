@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/field";
 import { open, type DialogFilter } from "@tauri-apps/plugin-dialog";
 import { exists } from "@tauri-apps/plugin-fs";
+import { cn } from "@/lib/utils";
 
 type FilePathFieldName<T extends FieldValues> = FieldPathByValue<
 	T,
@@ -146,10 +147,12 @@ export function FileInput<
 				{explicitOptional && (
 					<Button
 						type="button"
+						className={cn({
+							"pointer-events-none": isNoneSelected,
+						})}
 						variant={isNoneSelected ? "default" : "ghost"}
 						onClick={() => {
-							if (isNoneSelected) field.onChange("");
-							else field.onChange(null);
+							field.onChange(null);
 							field.onBlur();
 						}}
 						aria-pressed={isNoneSelected}
