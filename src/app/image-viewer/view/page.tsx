@@ -65,7 +65,7 @@ import {
 	type HeatmapScaleRange,
 } from "./heatmap-texture";
 import { Button } from "@/components/ui/button";
-import { LocateFixed } from "lucide-react";
+import { LocateFixed, SquareX } from "lucide-react";
 import {
 	EXPOSURE_DEFAULT,
 	type ViewType,
@@ -482,7 +482,7 @@ function ImageViewerCanvasContent({
 		useState<HoverLuminanceSample | null>(null);
 	const [exposureEv, setExposureEv] = useState(EXPOSURE_DEFAULT);
 	const [selectedViewType, setSelectedViewType] = useState<ViewType>("natural");
-	const { selection } = useImageSelection();
+	const { selection, clearSelection } = useImageSelection();
 	const dimensions = useMemo<[number, number]>(
 		() => [viewerData.imageWidth, viewerData.imageHeight],
 		[viewerData.imageHeight, viewerData.imageWidth],
@@ -741,6 +741,10 @@ function ImageViewerCanvasContent({
 		panZoomControlsRef.current?.centerView(1, 200);
 	}, []);
 
+	const onResetSelection = useCallback(() => {
+		clearSelection();
+	}, [clearSelection]);
+
 	return (
 		<div className="size-full grid place-items-center relative">
 			<TransformWrapper
@@ -759,42 +763,41 @@ function ImageViewerCanvasContent({
 					wrapperStyle={{ width: "100%", height: "100%" }}
 					contentStyle={{ position: "relative" }}
 				>
-					<canvas
-						ref={canvasRef}
-						onPointerMove={onCanvasPointerMove}
-						onPointerLeave={onCanvasPointerLeave}
-						className="max-w-full max-h-full cursor-grab"
-					/>
-					<div
-						ref={imageSurfaceRef}
-						className="absolute inset-y-0 left-0 pointer-events-none"
-						style={{ width: `${imageAreaWidthPercent}%` }}
-					>
-						{overlay && (
-							<div className="absolute inset-0 pointer-events-none">
-								<div
-									className={cn(
-										"absolute border-2 border-osu-beaver-orange",
-										overlay.showTint && "bg-osu-beaver-orange/20",
-									)}
-									style={{
-										left: `${overlay.leftPercent}%`,
-										top: `${overlay.topPercent}%`,
-										width: `${overlay.widthPercent}%`,
-										height: `${overlay.heightPercent}%`,
-									}}
-								/>
-							</div>
-						)}
+					<div className="relative h-fit w-fit">
+						<canvas
+							ref={canvasRef}
+							onPointerMove={onCanvasPointerMove}
+							onPointerLeave={onCanvasPointerLeave}
+							className="block max-w-full max-h-full cursor-grab"
+						/>
 						<div
+							ref={imageSurfaceRef}
 							className={cn(
-								"absolute inset-0 touch-none",
+								"absolute inset-y-0 left-0 touch-none",
 								canInteractWithSelection
 									? "pointer-events-auto cursor-crosshair"
 									: "pointer-events-none",
 							)}
+							style={{ width: `${imageAreaWidthPercent}%` }}
 							{...layerPointerHandlers}
-						/>
+						>
+							{overlay && (
+								<div className="absolute inset-0 pointer-events-none">
+									<div
+										className={cn(
+											"absolute border-2 border-osu-beaver-orange",
+											overlay.showTint && "bg-osu-beaver-orange/20",
+										)}
+										style={{
+											left: `${overlay.leftPercent}%`,
+											top: `${overlay.topPercent}%`,
+											width: `${overlay.widthPercent}%`,
+											height: `${overlay.heightPercent}%`,
+										}}
+									/>
+								</div>
+							)}
+						</div>
 					</div>
 				</TransformComponent>
 			</TransformWrapper>
@@ -802,18 +805,32 @@ function ImageViewerCanvasContent({
 				<div className="pointer-events-none w-56">
 					<HdrMetadataDetails metadata={viewerData.hdrMetadata} />
 				</div>
-				<Button
-					type="button"
-					disabled={atDefaultZoomAndCenter}
-					size="icon"
-					variant="outline"
-					className="pointer-events-auto shrink-0 bg-background/80 shadow-sm backdrop-blur-sm"
-					onClick={onRecenterView}
-					aria-label="Recenter image"
-					title="Recenter image"
-				>
-					<LocateFixed />
-				</Button>
+				<div className="flex shrink-0 items-start gap-1 pointer-events-auto">
+					<Button
+						type="button"
+						disabled={atDefaultZoomAndCenter}
+						size="icon"
+						variant="outline"
+						className="bg-background/80 shadow-sm backdrop-blur-sm"
+						onClick={onRecenterView}
+						aria-label="Recenter image"
+						title="Recenter image"
+					>
+						<LocateFixed />
+					</Button>
+					<Button
+						type="button"
+						disabled={!selection}
+						size="icon"
+						variant="outline"
+						className="bg-background/80 shadow-sm backdrop-blur-sm"
+						onClick={onResetSelection}
+						aria-label="Clear selection"
+						title="Clear selection"
+					>
+						<SquareX />
+					</Button>
+				</div>
 			</div>
 			<div className="absolute top-4 right-4 z-20 w-56">
 				<SelectionDetails luminanceSummary={luminanceSummary} />

@@ -158,13 +158,16 @@ function SelectionHistogramChart({
 	);
 }
 
-export function SelectionDetails({
-	luminanceSummary,
-}: SelectionDetailsProps) {
+export function SelectionDetails({ luminanceSummary }: SelectionDetailsProps) {
 	const { selection } = useImageSelection();
 
 	const selectionDescription = useMemo(() => {
-		if (!selection) return <SquareDashed className="size-4" />;
+		if (!selection)
+			return (
+				<>
+					<SquareDashed className="size-4" /> shift+click to select
+				</>
+			);
 
 		const tlx = Math.round(selection.x);
 		const tly = Math.round(selection.y);
@@ -207,7 +210,7 @@ export function SelectionDetails({
 	const outlierText = useMemo(() => {
 		return formatOutlierText(
 			luminanceSummary.outlierCount,
-			luminanceSummary.sampleCount
+			luminanceSummary.sampleCount,
 		);
 	}, [luminanceSummary.outlierCount, luminanceSummary.sampleCount]);
 
@@ -223,7 +226,7 @@ export function SelectionDetails({
 						"text-[0.58rem] text-muted-foreground flex gap-3 items-center",
 						{
 							"opacity-70": !selection,
-						}
+						},
 					)}
 				>
 					{selectionDescription}
