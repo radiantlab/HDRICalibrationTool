@@ -26,11 +26,7 @@ import {
 import { DialogFilter, open } from "@tauri-apps/plugin-dialog";
 import { DirEntry, readDir, stat } from "@tauri-apps/plugin-fs";
 import { ImageSet, ImageSetPreview } from "./image-set-preview";
-import {
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "./hover-card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "./hover-card";
 
 export type ImageSetIssue = {
 	title: string;
@@ -102,7 +98,7 @@ export function ImageMatrixInput<
 
 			// group by top-level directory name (first segment of path)
 			const groups = new Map<string, ImageSet>();
-			for (const rawPath of files) {
+			for (const rawPath of files.toSorted((a, b) => a.localeCompare(b))) {
 				console.log("rawPath", rawPath);
 				const fileStats = await stat(rawPath);
 				const { isFile } = fileStats;
@@ -131,11 +127,19 @@ export function ImageMatrixInput<
 			}
 
 			const newRows = Array.from(groups.values());
-			// todo: sort these by total alpha value, so we can see the images sorted from most exposed to least exposed
 			field.onChange([...(value ?? []), ...newRows]);
 		},
 		[field, value],
 	);
+
+	const selectFiles = useCallback(async () => {
+		const selectedFiles = await open({
+			multiple: true,
+			directory: false,
+			filters: imageFilters,
+		});
+		if (selectedFiles) onDrop(selectedFiles);
+	}, [field, value]);
 
 	const selectOneDirectory = useCallback(async () => {
 		const selectedDirectory = await open({
@@ -169,7 +173,8 @@ export function ImageMatrixInput<
 							)}
 						>
 							<ImageSetPreview
-								{...row}
+								name={row.name}
+								files={row.files.toSorted((a, b) => a.localeCompare(b))}
 								onRemove={() => {
 									field.onChange(value?.filter((_, i) => i !== index) ?? []);
 								}}
@@ -190,7 +195,7 @@ export function ImageMatrixInput<
 										<HoverCardContent
 											align="start"
 											side="bottom"
-											className="w-[32rem] max-w-[calc(100vw-3rem)] space-y-2 p-3 text-xs"
+											className="w-lg max-w-[calc(100vw-3rem)] space-y-2 p-3 text-xs"
 										>
 											<p>
 												<span className="font-medium">Program:</span>{" "}
@@ -221,9 +226,8 @@ export function ImageMatrixInput<
 					<ContextMenuTrigger asChild>
 						<TauriDropzone
 							id="image-matrix-input"
-							multiple
 							onDrop={onDrop}
-							onClick={selectOneDirectory}
+							onClick={selectFiles}
 						>
 							{useCallback(
 								({ isDragActive }: DropzoneChildrenProps) => (
@@ -247,12 +251,8 @@ export function ImageMatrixInput<
 						</TauriDropzone>
 					</ContextMenuTrigger>
 					<ContextMenuContent className="w-52">
-						<ContextMenuItem onClick={selectOneDirectory}>
-							Create one...
-							{/* <ContextMenuShortcut>⌘[</ContextMenuShortcut> */}
-						</ContextMenuItem>
 						<ContextMenuItem onClick={selectMultipleDirectories}>
-							Create multiple...
+							Create from directories...
 							{/* <ContextMenuShortcut>⌘]</ContextMenuShortcut> */}
 						</ContextMenuItem>
 					</ContextMenuContent>
