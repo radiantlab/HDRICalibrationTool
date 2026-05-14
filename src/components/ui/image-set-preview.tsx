@@ -26,10 +26,12 @@ export function ImageSetPreview({
 	onRemove,
 	onAdd,
 	onRemoveIndex,
+	onClick,
 }: ImageSet & {
 	onRemove: () => void;
 	onAdd: () => void;
 	onRemoveIndex: (index: number) => void;
+	onClick: (image: string) => void;
 }) {
 	const fileStats = useMemo(
 		() => Promise.all(files.map((f) => stat(f))),
@@ -102,7 +104,10 @@ export function ImageSetPreview({
 						<TooltipTrigger>
 							<ContextMenu>
 								<ContextMenuTrigger asChild>
-									<div className="size-48 shrink-0 bg-accent generic-image-container">
+									<div
+										className="size-48 shrink-0 bg-accent generic-image-container"
+										onClick={() => onClick(file)}
+									>
 										<GenericImage fsSrc={file} />
 									</div>
 								</ContextMenuTrigger>
