@@ -36,7 +36,7 @@ export function LensMaskInput({
 				<LensMaskInputInner
 					maskPreviewImage={maskPreviewImage}
 					maskPreviewImageMetadataPromise={useGenericImageMetadata(
-						maskPreviewImage
+						maskPreviewImage,
 					)}
 					{...props}
 				/>
@@ -69,7 +69,7 @@ function LensMaskInputInner({
 					"size-full grid place-items-center text-center text-muted-foreground",
 					{
 						"border border-dashed": !maskPreviewImage,
-					}
+					},
 				)}
 				style={{
 					aspectRatio: `${maskPreviewImageMetadata.size[0]} / ${maskPreviewImageMetadata.size[1]}`,
