@@ -69,6 +69,10 @@ import {
 	ResizablePanel,
 	ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import {
+	SelectedImageProvider,
+	useSelectedImage,
+} from "./selected-image-context";
 
 const useGlobalPipelineConfig = create<
 	pipelineConfig & { set: (config: pipelineConfig) => void }
@@ -235,9 +239,7 @@ export default function Home() {
 	const inputSets = watch("inputSets");
 	const cameraResponseLocation = watch("cameraResponseLocation");
 
-	const maskPreviewImage = useMemo(() => {
-		return inputSets?.[0]?.files?.[0];
-	}, [inputSets]);
+	const { selectedImage } = useSelectedImage();
 	const inputSetIssueResetKey = useMemo(
 		() =>
 			JSON.stringify({
@@ -517,7 +519,9 @@ export default function Home() {
 														extensions: ["rsp"],
 													},
 												]}
-												rules={{ required: "Camera response file is required" }}
+												rules={{
+													required: "Camera response file is required",
+												}}
 											/>
 										</div>
 									</AccordionContent>
@@ -574,7 +578,7 @@ export default function Home() {
 												</TooltipContent>
 											</Tooltip>
 											<LensMaskInput
-												maskPreviewImage={maskPreviewImage}
+												maskPreviewImage={selectedImage}
 												centerX={centerX}
 												centerY={centerY}
 												radiusAjusterCenterX={radiusAjusterCenterX}

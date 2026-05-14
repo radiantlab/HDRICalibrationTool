@@ -27,6 +27,7 @@ import { DialogFilter, open } from "@tauri-apps/plugin-dialog";
 import { DirEntry, readDir, stat } from "@tauri-apps/plugin-fs";
 import { ImageSet, ImageSetPreview } from "./image-set-preview";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./hover-card";
+import { useSelectedImage } from "@/app/home-page/selected-image-context";
 
 export type ImageSetIssue = {
 	title: string;
@@ -141,15 +142,6 @@ export function ImageMatrixInput<
 		if (selectedFiles) onDrop(selectedFiles);
 	}, [field, value]);
 
-	const selectOneDirectory = useCallback(async () => {
-		const selectedDirectory = await open({
-			multiple: false,
-			directory: true,
-			filters: imageFilters,
-		});
-		if (selectedDirectory) onDrop([selectedDirectory]);
-	}, [onDrop]);
-
 	const selectMultipleDirectories = useCallback(async () => {
 		const selectedDirectories = await open({
 			multiple: true,
@@ -158,6 +150,9 @@ export function ImageMatrixInput<
 		});
 		if (selectedDirectories) onDrop(selectedDirectories);
 	}, [onDrop]);
+
+	const { setSelectedImage } = useSelectedImage();
+
 	return (
 		<Field className={className} data-invalid={fieldState.invalid}>
 			<FieldContent className="flex flex-col gap-0 divide-y overflow-y-auto">
@@ -199,6 +194,7 @@ export function ImageMatrixInput<
 									};
 									field.onChange([...value]);
 								}}
+								onClick={setSelectedImage}
 							/>
 							{issue && (
 								<div className="border-t border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
