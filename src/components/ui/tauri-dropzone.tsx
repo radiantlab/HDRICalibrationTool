@@ -22,13 +22,11 @@ export type DropzoneChildrenProps = {
 };
 
 type TauriDropzoneProps = {
-	multiple?: boolean;
 	onDrop?: (paths: string[]) => void;
 	children?: (opts: DropzoneChildrenProps) => React.ReactNode;
 } & Omit<React.ComponentProps<"button">, "onDrop" | "children">;
 
 export function TauriDropzone({
-	multiple,
 	disabled,
 	onDrop,
 	children,
@@ -43,7 +41,7 @@ export function TauriDropzone({
 			setIsDragActive(false);
 			onDrop?.(paths);
 		},
-		[onDrop]
+		[onDrop],
 	);
 
 	React.useEffect(() => {
@@ -79,13 +77,13 @@ export function TauriDropzone({
 				if (payload.type === "drop") {
 					handleDrop(payload.paths || []);
 				}
-			}
+			},
 		);
 
 		return () => {
 			unlistenPromise.then((unlisten) => unlisten());
 		};
-	}, [disabled, handleDrop, multiple]);
+	}, [disabled, handleDrop]);
 
 	React.useEffect(() => {
 		if (!props.id) return;
@@ -105,6 +103,7 @@ export function TauriDropzone({
 
 	return (
 		<button
+			type="button"
 			{...props}
 			ref={(val) => {
 				rootRef.current = val;
