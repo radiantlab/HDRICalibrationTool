@@ -5,7 +5,15 @@ import {
 	GenericImageMetadata,
 	useGenericImageMetadata,
 } from "@/lib/generic-image-metadata";
-import { memo, Suspense, use, useEffect, useRef, useState } from "react";
+import {
+	memo,
+	Suspense,
+	use,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from "react";
 import { ComponentProps } from "react";
 import { MotionValue, useMotionValue } from "framer-motion";
 import { Spinner } from "@/components/ui/spinner";
@@ -13,12 +21,14 @@ import { Spinner } from "@/components/ui/spinner";
 function useScaledMotionValues(
 	a: MotionValue<number>,
 	b: MotionValue<number>,
-	factor = 5
+	factor = 5,
 ) {
-	// prevent feedback loops
-	let isUpdating = false;
+	useLayoutEffect(() => {
+		let isUpdating = false;
 
-	useEffect(() => {
+		// set a initially to sync the factor
+		a.set(b.get() * factor);
+
 		const unsubA = a.on("change", (v) => {
 			if (isUpdating) return;
 			isUpdating = true;
@@ -60,7 +70,7 @@ export const ScaledCircularMaskSelection = memo(
 				/>
 			</Suspense>
 		);
-	}
+	},
 );
 
 function InnserScaledCircularMaskSelection({
@@ -153,12 +163,12 @@ function InnserScaledCircularMaskSelection({
 	useScaledMotionValues(
 		virtualRadiusAjusterCenterX,
 		radiusAjusterCenterX,
-		scalingFactor
+		scalingFactor,
 	);
 	useScaledMotionValues(
 		virtualRadiusAjusterCenterY,
 		radiusAjusterCenterY,
-		scalingFactor
+		scalingFactor,
 	);
 
 	return (
