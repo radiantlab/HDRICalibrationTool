@@ -26,7 +26,7 @@ type FilePathFieldName<T extends FieldValues> = FieldPathByValue<
 
 export type FileInputProps<
 	T extends FieldValues,
-	TName extends FilePathFieldName<T>
+	TName extends FilePathFieldName<T>,
 > = {
 	control: Control<T>;
 	name: TName;
@@ -58,7 +58,7 @@ export type FileInputProps<
 
 export function FileInput<
 	T extends FieldValues,
-	TName extends FilePathFieldName<T>
+	TName extends FilePathFieldName<T>,
 >({
 	control,
 	name,
@@ -127,16 +127,19 @@ export function FileInput<
 					ref={field.ref}
 					placeholder={placeholder}
 					value={currentValue}
-					onChange={(e) => field.onChange(e.target.value)}
+					onChange={(e) => {
+						if (e.target.value === "") field.onChange(null);
+						else field.onChange(e.target.value);
+					}}
 					onBlur={field.onBlur}
-					disabled={disabled || isNoneSelected}
+					disabled={disabled}
 					aria-invalid={fieldState.invalid || undefined}
 				/>
 				<Button
 					type="button"
 					variant="outline"
 					onClick={handleBrowse}
-					disabled={disabled || isNoneSelected}
+					disabled={disabled}
 				>
 					{buttonText}
 				</Button>
