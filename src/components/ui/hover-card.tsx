@@ -7,7 +7,18 @@ import { cn } from "@/lib/utils"
 
 const HoverCard = HoverCardPrimitive.Root
 
-const HoverCardTrigger = HoverCardPrimitive.Trigger
+const HoverCardTrigger = React.forwardRef<
+  React.ElementRef<typeof HoverCardPrimitive.Trigger>,
+  React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Trigger>
+>(({ type, asChild, ...props }, ref) => (
+  <HoverCardPrimitive.Trigger
+    ref={ref}
+    type={asChild ? undefined : type ?? "button"}
+    asChild={asChild}
+    {...props}
+  />
+))
+HoverCardTrigger.displayName = HoverCardPrimitive.Trigger.displayName
 
 const HoverCardContent = React.forwardRef<
   React.ElementRef<typeof HoverCardPrimitive.Content>,
