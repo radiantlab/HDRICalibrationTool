@@ -772,7 +772,7 @@ export default function Home() {
 										onFinishAcknowledgment={() => setProgressVisible(false)}
 									/>
 								) : (
-									<Button className="w-full bg-osu-beaver-orange">
+									<Button className="w-full bg-osu-beaver-orange" type="submit">
 										Generate HDR Image
 									</Button>
 								)}
