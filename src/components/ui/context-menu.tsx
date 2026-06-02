@@ -11,10 +11,9 @@ const ContextMenu = ContextMenuPrimitive.Root
 const ContextMenuTrigger = React.forwardRef<
   React.ElementRef<typeof ContextMenuPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Trigger>
->(({ type, asChild, ...props }, ref) => (
+>(({ asChild, ...props }, ref) => (
   <ContextMenuPrimitive.Trigger
     ref={ref}
-    type={asChild ? undefined : type ?? "button"}
     asChild={asChild}
     {...props}
   />
