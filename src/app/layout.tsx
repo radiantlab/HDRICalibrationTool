@@ -14,6 +14,7 @@ import { PipelineStatusProvider } from "./pipeline-status-context";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
 
 // Configure the Inter font from Google Fonts
 const inter = Inter({ subsets: ["latin"] });
@@ -40,18 +41,20 @@ export default function RootLayout({
 			<body
 				className={cn(
 					inter.className,
-					"h-screen w-screen overflow-hidden flex flex-col"
+					"h-screen w-screen overflow-hidden flex flex-col",
 				)}
 			>
-				<PipelineStatusProvider>
-					{/* Initialize the application settings */}
-					<Initialization />
-					{/* Render the navigation bar */}
-					<Navigation />
-					{/* Render the current page content */}
-					<Toaster position="bottom-left" />
-					<TooltipProvider>{children}</TooltipProvider>
-				</PipelineStatusProvider>
+				{/* Initialize the application settings */}
+				<Initialization />
+				{/* Render the navigation bar */}
+				<Navigation />
+				{/* Render the current page content */}
+				<Toaster position="bottom-left" />
+				<NuqsAdapter>
+					<PipelineStatusProvider>
+						<TooltipProvider>{children}</TooltipProvider>
+					</PipelineStatusProvider>
+				</NuqsAdapter>
 			</body>
 		</html>
 	);

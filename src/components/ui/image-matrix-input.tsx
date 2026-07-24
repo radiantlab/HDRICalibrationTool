@@ -26,6 +26,16 @@ import {
 import { DialogFilter, open } from "@tauri-apps/plugin-dialog";
 import { DirEntry, readDir, stat } from "@tauri-apps/plugin-fs";
 import { ImageSet, ImageSetPreview } from "./image-set-preview";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "./hover-card";
+import { useSelectedImage } from "@/app/home-page/selected-image-context";
+
+export type ImageSetIssue = {
+	title: string;
+	summary: string;
+	program: string;
+	statusCode: number | null;
+	stderr: string;
+};
 
 type FileMatrixFieldName<T extends FieldValues> = FieldPathByValue<
 	T,
@@ -33,11 +43,12 @@ type FileMatrixFieldName<T extends FieldValues> = FieldPathByValue<
 >;
 type FileMatrixInputProps<
 	T extends FieldValues,
-	TName extends FileMatrixFieldName<T>
+	TName extends FileMatrixFieldName<T>,
 > = {
 	control: Control<T>;
 	name: TName;
 	className?: string;
+	issuesByIndex?: Partial<Record<number, ImageSetIssue>>;
 	rules?: Omit<RegisterOptions<T, TName>, "validate"> & {
 		validate?: RegisterOptions<T, TName>["validate"];
 	};
@@ -53,8 +64,14 @@ type FullDirEntry = DirEntry & {
 
 export function ImageMatrixInput<
 	T extends FieldValues,
-	TName extends FileMatrixFieldName<T>
->({ control, name, className, rules }: FileMatrixInputProps<T, TName>) {
+	TName extends FileMatrixFieldName<T>,
+>({
+	control,
+	name,
+	className,
+	issuesByIndex,
+	rules,
+}: FileMatrixInputProps<T, TName>) {
 	// todo: properly handle field states
 	const { field, fieldState } = useController<T, TName>({
 		control,
@@ -73,7 +90,7 @@ export function ImageMatrixInput<
 
 				return accepted;
 			}),
-		[]
+		[],
 	);
 
 	const onDrop = useCallback(
@@ -82,7 +99,7 @@ export function ImageMatrixInput<
 
 			// group by top-level directory name (first segment of path)
 			const groups = new Map<string, ImageSet>();
-			for (const rawPath of files) {
+			for (const rawPath of files.toSorted((a, b) => a.localeCompare(b))) {
 				console.log("rawPath", rawPath);
 				const fileStats = await stat(rawPath);
 				const { isFile } = fileStats;
@@ -105,26 +122,25 @@ export function ImageMatrixInput<
 					}));
 				}
 				arr.files.push(
-					...filterForAcceptance(pendingEntries).map((e) => e.path)
+					...filterForAcceptance(pendingEntries).map((e) => e.path),
 				);
 				groups.set(groupingDir, arr);
 			}
 
 			const newRows = Array.from(groups.values());
-			// todo: sort these by total alpha value, so we can see the images sorted from most exposed to least exposed
 			field.onChange([...(value ?? []), ...newRows]);
 		},
-		[field, value]
+		[field, value],
 	);
 
-	const selectOneDirectory = useCallback(async () => {
-		const selectedDirectory = await open({
-			multiple: false,
-			directory: true,
+	const selectFiles = useCallback(async () => {
+		const selectedFiles = await open({
+			multiple: true,
+			directory: false,
 			filters: imageFilters,
 		});
-		if (selectedDirectory) onDrop([selectedDirectory]);
-	}, [onDrop]);
+		if (selectedFiles) onDrop(selectedFiles);
+	}, [field, value]);
 
 	const selectMultipleDirectories = useCallback(async () => {
 		const selectedDirectories = await open({
@@ -134,24 +150,101 @@ export function ImageMatrixInput<
 		});
 		if (selectedDirectories) onDrop(selectedDirectories);
 	}, [onDrop]);
+
+	const { setSelectedImage } = useSelectedImage();
+
 	return (
 		<Field className={className} data-invalid={fieldState.invalid}>
 			<FieldContent className="flex flex-col gap-0 divide-y overflow-y-auto">
-				{value?.map((row: ImageSet, index: number) => (
-					<ImageSetPreview
-						key={index}
-						{...row}
-						onRemove={() => {
-							field.onChange(value?.filter((_, i) => i !== index) ?? []);
-						}}
-					/>
-				))}
+				{value?.map((row: ImageSet, index: number) => {
+					const issue = issuesByIndex?.[index];
+
+					return (
+						<div
+							key={index}
+							className={cn(
+								"flex min-h-56 flex-col bg-accent",
+								issue && "border border-destructive/50 bg-destructive/5",
+							)}
+						>
+							<ImageSetPreview
+								name={row.name}
+								files={row.files.toSorted((a, b) => a.localeCompare(b))}
+								onRemove={() => {
+									field.onChange(value?.filter((_, i) => i !== index) ?? []);
+								}}
+								onRemoveIndex={(deleteIndex) => {
+									value[index] = {
+										...row,
+										files: row.files.filter((_, i) => i !== deleteIndex),
+									};
+									field.onChange([...value]);
+								}}
+								onAdd={async () => {
+									const newFiles = await open({
+										multiple: true,
+										directory: false,
+										filters: imageFilters,
+									});
+									if (!newFiles) return;
+
+									value[index] = {
+										...row,
+										files: [...row.files, ...newFiles],
+									};
+									field.onChange([...value]);
+								}}
+								onClick={setSelectedImage}
+							/>
+							{issue && (
+								<div className="border-t border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
+									<p className="font-medium text-destructive">{issue.title}</p>
+									<p className="mt-1 text-foreground/90">{issue.summary}</p>
+									<HoverCard openDelay={150} closeDelay={100}>
+										<HoverCardTrigger asChild>
+											<button
+												type="button"
+												className="mt-3 text-xs font-medium text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
+											>
+												Technical details
+											</button>
+										</HoverCardTrigger>
+										<HoverCardContent
+											align="start"
+											side="bottom"
+											className="w-lg max-w-[calc(100vw-3rem)] space-y-2 p-3 text-xs"
+										>
+											<p>
+												<span className="font-medium">Program:</span>{" "}
+												<span className="font-mono break-all">
+													{issue.program}
+												</span>
+											</p>
+											<p>
+												<span className="font-medium">Exit code:</span>{" "}
+												<span className="font-mono">
+													{issue.statusCode ?? "unknown"}
+												</span>
+											</p>
+											<div>
+												<p className="font-medium">stderr</p>
+												<pre className="mt-1 max-h-64 overflow-auto whitespace-pre-wrap break-all rounded-md bg-background p-2 font-mono">
+													{issue.stderr || "No stderr output captured."}
+												</pre>
+											</div>
+										</HoverCardContent>
+									</HoverCard>
+								</div>
+							)}
+						</div>
+					);
+				})}
 				<ContextMenu>
 					<ContextMenuTrigger asChild>
 						<TauriDropzone
-							multiple
+							id="image-matrix-input"
 							onDrop={onDrop}
-							onClick={selectOneDirectory}
+							onClick={selectFiles}
 						>
 							{useCallback(
 								({ isDragActive }: DropzoneChildrenProps) => (
@@ -161,7 +254,7 @@ export function ImageMatrixInput<
 											"hover:text-foreground hover:border-foreground",
 											// show invalid via group parent from Field as red
 											"group-data-[invalid=true]/field:text-destructive",
-											{ "text-foreground border-foreground": isDragActive }
+											{ "text-foreground border-foreground": isDragActive },
 										)}
 									>
 										<div className="grid place-items-center gap-2">
@@ -170,17 +263,13 @@ export function ImageMatrixInput<
 										</div>
 									</div>
 								),
-								[]
+								[],
 							)}
 						</TauriDropzone>
 					</ContextMenuTrigger>
 					<ContextMenuContent className="w-52">
-						<ContextMenuItem onClick={selectOneDirectory}>
-							Create one...
-							{/* <ContextMenuShortcut>⌘[</ContextMenuShortcut> */}
-						</ContextMenuItem>
 						<ContextMenuItem onClick={selectMultipleDirectories}>
-							Create multiple...
+							Create from directories...
 							{/* <ContextMenuShortcut>⌘]</ContextMenuShortcut> */}
 						</ContextMenuItem>
 					</ContextMenuContent>
