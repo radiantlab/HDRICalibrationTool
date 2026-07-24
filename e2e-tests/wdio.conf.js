@@ -1,6 +1,6 @@
+import { spawn, spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
-import { spawn, spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
@@ -41,46 +41,13 @@ function createBuildEnv() {
 }
 
 export const config = {
-  host: "127.0.0.1",
-  port: 4444,
-  specs: ["./test/specs/**/*.ts"],
-  maxInstances: 1,
-  capabilities: [
-    {
-      maxInstances: 1,
-      "tauri:options": {
-        application: applicationPath,
-      },
-    },
-  ],
-  reporters: ["spec"],
-  framework: "mocha",
-  mochaOpts: {
-    ui: "bdd",
-    timeout: 240000,
+  afterSession: () => {
+    closeTauriDriver();
   },
 
-  // Build the debug desktop binary before the webdriver session starts.
-  onPrepare: () => {
-    if (process.platform === "darwin") {
-      console.warn(
-        "Official Tauri WebDriver support currently only works on Windows and Linux."
-      );
-    }
-
-    const build = spawnSync(
-      "npm",
-      ["run", "tauri", "build", "--", "--debug", "--no-bundle"],
-      {
-        cwd: path.resolve(__dirname, ".."),
-        env: createBuildEnv(),
-        stdio: "inherit",
-        shell: true,
-      }
-    );
-
-    if (build.status !== 0) {
-      process.exit(build.status ?? 1);
+  afterTest: async () => {
+    if (watchPauseMs > 0) {
+      await browser.pause(watchPauseMs);
     }
   },
 
@@ -111,16 +78,48 @@ export const config = {
       await browser.pause(1000);
     }
   },
+  capabilities: [
+    {
+      maxInstances: 1,
+      "tauri:options": {
+        application: applicationPath,
+      },
+    },
+  ],
+  framework: "mocha",
+  host: "127.0.0.1",
+  maxInstances: 1,
+  mochaOpts: {
+    timeout: 240_000,
+    ui: "bdd",
+  },
 
-  afterTest: async () => {
-    if (watchPauseMs > 0) {
-      await browser.pause(watchPauseMs);
+  // Build the debug desktop binary before the webdriver session starts.
+  onPrepare: () => {
+    if (process.platform === "darwin") {
+      console.warn(
+        "Official Tauri WebDriver support currently only works on Windows and Linux."
+      );
+    }
+
+    const build = spawnSync(
+      "npm",
+      ["run", "tauri", "build", "--", "--debug", "--no-bundle"],
+      {
+        cwd: path.resolve(__dirname, ".."),
+        env: createBuildEnv(),
+        shell: true,
+        stdio: "inherit",
+      }
+    );
+
+    if (build.status !== 0) {
+      process.exit(build.status ?? 1);
     }
   },
-
-  afterSession: () => {
-    closeTauriDriver();
-  },
+  port: 4444,
+  reporters: ["spec"],
+  specs: ["./test/specs/**/*.ts"],
 };
 
 function closeTauriDriver() {

@@ -7,10 +7,11 @@
  */
 "use client";
 
-import React, { useEffect } from "react";
 import { documentDir, join } from "@tauri-apps/api/path";
 import { mkdir } from "@tauri-apps/plugin-fs";
 import { platform } from "@tauri-apps/plugin-os";
+import type React from "react";
+import { useEffect } from "react";
 import { useSettingsStore } from "./stores/settings-store";
 
 // Debug flag to enable console logging
@@ -21,74 +22,74 @@ const DEBUG = true;
  * It loads platform information and sets up default paths for the application
  */
 const Initialization: React.FC = () => {
-	const { settings, setSettings, hasHydrated } = useSettingsStore();
+  const { settings, setSettings, hasHydrated } = useSettingsStore();
 
-	useEffect(() => {
-		if (!hasHydrated) {
-			return;
-		}
+  useEffect(() => {
+    if (!hasHydrated) {
+      return;
+    }
 
-		let cancelled = false;
+    let cancelled = false;
 
-		const initialize = async () => {
-			try {
-				const osPlatform = platform();
+    const initialize = async () => {
+      try {
+        const osPlatform = platform();
 
-				if (DEBUG) {
-					console.log("OS platform successfully queried:", osPlatform);
-				}
+        if (DEBUG) {
+          console.log("OS platform successfully queried:", osPlatform);
+        }
 
-				const radianceDefaultPath =
-					osPlatform === "windows"
-						? "C:\\Radiance\\bin"
-						: "/usr/local/radiance/bin";
+        const radianceDefaultPath =
+          osPlatform === "windows"
+            ? "C:\\Radiance\\bin"
+            : "/usr/local/radiance/bin";
 
-				let outputDefaultPath = settings.outputPath;
-				if (!outputDefaultPath) {
-					try {
-						const docsDir = await documentDir();
-						const targetDir = await join(docsDir, "HDRICalibrationInterface");
-						await mkdir(targetDir, { recursive: true });
-						outputDefaultPath = targetDir;
-					} catch (error) {
-						console.error("Initialization: could not set output path:", error);
-						alert(
-							"There was a problem setting up the default output path, please enter a path in the settings before generating HDR images."
-						);
-					}
-				}
+        let outputDefaultPath = settings.outputPath;
+        if (!outputDefaultPath) {
+          try {
+            const docsDir = await documentDir();
+            const targetDir = await join(docsDir, "HDRICalibrationInterface");
+            await mkdir(targetDir, { recursive: true });
+            outputDefaultPath = targetDir;
+          } catch (error) {
+            console.error("Initialization: could not set output path:", error);
+            alert(
+              "There was a problem setting up the default output path, please enter a path in the settings before generating HDR images."
+            );
+          }
+        }
 
-				if (cancelled) {
-					return;
-				}
+        if (cancelled) {
+          return;
+        }
 
-				const nextSettings = {
-					...settings,
-					radiancePath: settings.radiancePath || radianceDefaultPath,
-					outputPath: outputDefaultPath || settings.outputPath,
-					osPlatform,
-				};
-				const needsUpdate =
-					nextSettings.radiancePath !== settings.radiancePath ||
-					nextSettings.outputPath !== settings.outputPath ||
-					nextSettings.osPlatform !== settings.osPlatform;
+        const nextSettings = {
+          ...settings,
+          osPlatform,
+          outputPath: outputDefaultPath || settings.outputPath,
+          radiancePath: settings.radiancePath || radianceDefaultPath,
+        };
+        const needsUpdate =
+          nextSettings.radiancePath !== settings.radiancePath ||
+          nextSettings.outputPath !== settings.outputPath ||
+          nextSettings.osPlatform !== settings.osPlatform;
 
-				if (needsUpdate) {
-					setSettings(nextSettings);
-				}
-			} catch (error) {
-				console.error(error);
-			}
-		};
+        if (needsUpdate) {
+          setSettings(nextSettings);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-		void initialize();
+    void initialize();
 
-		return () => {
-			cancelled = true;
-		};
-	}, [hasHydrated, setSettings, settings]);
-	// This component doesn't render anything visible, it only performs initialization
-	return null;
+    return () => {
+      cancelled = true;
+    };
+  }, [hasHydrated, setSettings, settings]);
+  // This component doesn't render anything visible, it only performs initialization
+  return null;
 };
 
 export default Initialization;

@@ -1,9 +1,9 @@
 import { SelectedImageProvider } from "./selected-image-context";
 
 export default function HomePageLayout({
-	children,
+  children,
 }: {
-	children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-	return <SelectedImageProvider>{children}</SelectedImageProvider>;
+  return <SelectedImageProvider>{children}</SelectedImageProvider>;
 }

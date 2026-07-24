@@ -3,44 +3,45 @@
 import { createContext, useContext, useMemo, useState } from "react";
 
 type SelectedImageContextValue = {
-	selectedImage: string | undefined;
-	setSelectedImage: (image: string) => void;
+  selectedImage: string | undefined;
+  setSelectedImage: (image: string) => void;
 };
 
 const selectedImageContext = createContext<
-	SelectedImageContextValue | undefined
+  SelectedImageContextValue | undefined
 >(undefined);
 
 export function SelectedImageProvider({
-	children,
+  children,
 }: {
-	children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-	const [selectedImage, setSelectedImage] = useState<string | undefined>(
-		undefined,
-	);
+  const [selectedImage, setSelectedImage] = useState<string | undefined>(
+    undefined
+  );
 
-	const value = useMemo(
-		() => ({
-			selectedImage,
-			setSelectedImage,
-		}),
-		[selectedImage],
-	);
+  const value = useMemo(
+    () => ({
+      selectedImage,
+      setSelectedImage,
+    }),
+    [selectedImage]
+  );
 
-	return (
-		<selectedImageContext.Provider value={value}>
-			{children}
-		</selectedImageContext.Provider>
-	);
+  return (
+    <selectedImageContext.Provider value={value}>
+      {children}
+    </selectedImageContext.Provider>
+  );
 }
 
 export function useSelectedImage() {
-	const context = useContext(selectedImageContext);
-	if (!context)
-		throw new Error(
-			"useSelectedImage must be used within a SelectedImageProvider",
-		);
+  const context = useContext(selectedImageContext);
+  if (!context) {
+    throw new Error(
+      "useSelectedImage must be used within a SelectedImageProvider"
+    );
+  }
 
-	return context;
+  return context;
 }

@@ -3,60 +3,62 @@
 import { createContext, useContext, useMemo, useState } from "react";
 
 export type ImageRectSelection = {
-	x: number;
-	y: number;
-	width: number;
-	height: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 };
 
 type ImageSelectionContextValue = {
-	selection: ImageRectSelection | null;
-	setSelection: (selection: ImageRectSelection) => void;
-	clearSelection: () => void;
+  selection: ImageRectSelection | null;
+  setSelection: (selection: ImageRectSelection) => void;
+  clearSelection: () => void;
 };
 
-const imageSelectionContext = createContext<ImageSelectionContextValue | undefined>(
-	undefined
-);
+const imageSelectionContext = createContext<
+  ImageSelectionContextValue | undefined
+>(undefined);
 
 export function ImageSelectionProvider({
-	children,
+  children,
 }: {
-	children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-	const [selection, setSelectionState] = useState<ImageRectSelection | null>(null);
+  const [selection, setSelectionState] = useState<ImageRectSelection | null>(
+    null
+  );
 
-	const setSelection = (nextSelection: ImageRectSelection) => {
-		setSelectionState(nextSelection);
-	};
+  const setSelection = (nextSelection: ImageRectSelection) => {
+    setSelectionState(nextSelection);
+  };
 
-	const clearSelection = () => {
-		setSelectionState(null);
-	};
+  const clearSelection = () => {
+    setSelectionState(null);
+  };
 
-	const value = useMemo(
-		() => ({
-			selection,
-			setSelection,
-			clearSelection,
-		}),
-		[selection]
-	);
+  const value = useMemo(
+    () => ({
+      clearSelection,
+      selection,
+      setSelection,
+    }),
+    [selection]
+  );
 
-	return (
-		<imageSelectionContext.Provider value={value}>
-			{children}
-		</imageSelectionContext.Provider>
-	);
+  return (
+    <imageSelectionContext.Provider value={value}>
+      {children}
+    </imageSelectionContext.Provider>
+  );
 }
 
 export function useImageSelection() {
-	const context = useContext(imageSelectionContext);
-	if (!context) {
-		throw new Error(
-			"useImageSelection must be used within an ImageSelectionProvider"
-		);
-	}
+  const context = useContext(imageSelectionContext);
+  if (!context) {
+    throw new Error(
+      "useImageSelection must be used within an ImageSelectionProvider"
+    );
+  }
 
-	return context;
+  return context;
 }
