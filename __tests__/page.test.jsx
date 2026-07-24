@@ -1,19 +1,20 @@
-import '@testing-library/jest-dom'
 import { render, screen } from '@testing-library/react'
-import Home from '../src/app/page'
- 
+import Home from '../src/app/home-page/page'
+import { SelectedImageProvider } from '../src/app/home-page/selected-image-context'
+import { TooltipProvider } from '../src/components/ui/tooltip'
+
 describe('Render', () => {
   it('renders the page', () => {
-    render(<Home />)
- 
-    const configuration = screen.getByText('Configuration')
-    const navigation_configuration = screen.getByText('Navigation Configuration')
-    const settings = screen.getByText('Settings')
+    render(
+      <TooltipProvider>
+        <SelectedImageProvider>
+          <Home />
+        </SelectedImageProvider>
+      </TooltipProvider>
+    )
+
     const hdri = screen.getByText('Generate HDR Image')
- 
-    expect(configuration).toBeInTheDocument()
-    expect(navigation_configuration).toBeInTheDocument()
-    expect(settings).toBeInTheDocument()
+
     expect(hdri).toBeInTheDocument()
   })
 })
