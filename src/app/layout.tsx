@@ -6,7 +6,6 @@
  * and the navigation bar that appears on all pages.
  */
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import Navigation from "./navigation";
 import Initialization from "./init";
@@ -15,9 +14,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-
-// Configure the Inter font from Google Fonts
-const inter = Inter({ subsets: ["latin"] });
 
 // Define metadata for the application
 export const metadata: Metadata = {
@@ -40,8 +36,7 @@ export default function RootLayout({
 		<html lang="en">
 			<body
 				className={cn(
-					inter.className,
-					"h-screen w-screen overflow-hidden flex flex-col",
+					"font-sans h-screen w-screen overflow-hidden flex flex-col",
 				)}
 			>
 				{/* Initialize the application settings */}
