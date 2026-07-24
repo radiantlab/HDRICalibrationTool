@@ -9,23 +9,23 @@ import {
 } from "react-hook-form";
 import { Button, type ButtonProps } from "@/components/ui/button";
 
-type TauriFileDialogFilter = {
-  name: string;
+interface TauriFileDialogFilter {
   extensions: string[];
-};
+  name: string;
+}
 
-export type TauriFileButtonInputProps<TFieldValues extends FieldValues> = {
+export interface TauriFileButtonInputProps<TFieldValues extends FieldValues> {
+  buttonProps?: Omit<ButtonProps, "onClick" | "type">;
+  buttonText?: React.ReactNode;
   control: Control<TFieldValues>;
-  name: Path<TFieldValues>;
-  label?: React.ReactNode;
   description?: React.ReactNode;
-  multiple?: boolean;
   directory?: boolean;
   disabled?: boolean;
   filters?: TauriFileDialogFilter[];
-  buttonText?: React.ReactNode;
-  buttonProps?: Omit<ButtonProps, "onClick" | "type">;
-};
+  label?: React.ReactNode;
+  multiple?: boolean;
+  name: Path<TFieldValues>;
+}
 
 export function TauriFileButtonInput<TFieldValues extends FieldValues>({
   control,
@@ -36,7 +36,7 @@ export function TauriFileButtonInput<TFieldValues extends FieldValues>({
   filters,
   buttonProps,
 }: TauriFileButtonInputProps<TFieldValues>) {
-  const { field, fieldState } = useController({ control, name });
+  const { field, fieldState: _fieldState } = useController({ control, name });
 
   async function handleOpen() {
     if (disabled) {
@@ -51,17 +51,18 @@ export function TauriFileButtonInput<TFieldValues extends FieldValues>({
     if (selection === null) {
       return;
     }
-    field.onChange(
-      directory ? [selection] : multiple ? [selection] : selection
-    );
+    field.onChange(directory || multiple ? [selection] : selection);
     field.onBlur();
   }
 
-  const valueList: string[] = Array.isArray(field.value)
-    ? field.value
-    : field.value
-      ? [String(field.value)]
-      : [];
+  let valueList: string[];
+  if (Array.isArray(field.value)) {
+    valueList = field.value;
+  } else if (field.value) {
+    valueList = [String(field.value)];
+  } else {
+    valueList = [];
+  }
 
   return (
     <Button

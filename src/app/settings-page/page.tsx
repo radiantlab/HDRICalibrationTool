@@ -16,6 +16,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { openPath } from "@tauri-apps/plugin-opener";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { useSettingsStore } from "../stores/settings-store";
 import SettingsButtonBar from "./settings-button-bar";
 
@@ -32,12 +33,12 @@ export default function SettingsPage() {
   const { settings, setSettings } = useSettingsStore();
   const [localSettings, setLocalSettings] = useState(settings);
   const [saveDisabled, setSaveDisabled] = useState(true);
-  const [experienceLevel, setExperienceLevel] = useState("standard");
-  const [consoleInput, setConsoleInput] = useState("");
+  const [_experienceLevel, _setExperienceLevel] = useState("standard");
+  const [_consoleInput, _setConsoleInput] = useState("");
 
-  const [appVersion, setAppVersion] = useState<string>("");
-  const [appName, setAppName] = useState<string>("");
-  const [tauriVersion, setTauriVersion] = useState<string>("");
+  const [_appVersion, setAppVersion] = useState<string>("");
+  const [_appName, setAppName] = useState<string>("");
+  const [_tauriVersion, setTauriVersion] = useState<string>("");
   useEffect(() => {
     /**
      * Retrieves app name, app version, and tauri version from Tauri API
@@ -92,7 +93,7 @@ export default function SettingsPage() {
     const selectedPath = await open({
       directory: isDirectory,
       multiple: false,
-      title: "Select" + label + "Path",
+      title: `Select${label}Path`,
     });
     if (selectedPath !== null) {
       handleUpdatePath(id, selectedPath as string);
@@ -108,7 +109,7 @@ export default function SettingsPage() {
   const savePaths = () => {
     setSettings(localSettings);
     setSaveDisabled(true);
-    alert("Changes saved.");
+    toast.success("Changes saved.");
   };
 
   return (
@@ -172,17 +173,19 @@ export default function SettingsPage() {
                     onClick={() =>
                       setLocalSettings({ ...localSettings, [id]: "" })
                     }
+                    type="button"
                   >
                     Clear
                   </button>
                   <button
                     className="rounded bg-gray-300 px-2 py-1 font-semibold text-gray-700 hover:bg-gray-400"
                     onClick={() => dialog(id, label, id === "outputPath")}
+                    type="button"
                   >
                     Select
                   </button>
                 </div>
-                {id == "dcrawEmuPath" && (
+                {id === "dcrawEmuPath" && (
                   <div className="mr-5 block h-full text-sm">
                     <span className="font-mono">dcraw_emu</span> is part of
                     LibRaw, which is licensed under{" "}
@@ -216,7 +219,7 @@ export default function SettingsPage() {
                     .
                   </div>
                 )}
-                {id == "hdrgenPath" && (
+                {id === "hdrgenPath" && (
                   <div className="mr-5 block h-full text-sm">
                     <span className="font-mono">hdrgen</span> is the work of
                     Gregory J. Ward and is licensed under{" "}

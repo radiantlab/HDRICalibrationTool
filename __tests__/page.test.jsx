@@ -1,3 +1,4 @@
+import { describe, expect, it } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import Home from "../src/app/home-page/page";
 import { SelectedImageProvider } from "../src/app/home-page/selected-image-context";

@@ -4,23 +4,23 @@ import type { ImageRectSelection } from "./image-selection-context";
 
 const HISTOGRAM_BIN_COUNT = 24;
 
-export type LuminanceHistogramBin = {
-  start: number;
-  end: number;
+export interface LuminanceHistogramBin {
   count: number;
-};
+  end: number;
+  start: number;
+}
 
-export type LuminanceSummary = {
-  sampleCount: number;
+export interface LuminanceSummary {
   average: number | null;
+  histogram: LuminanceHistogramBin[];
+  histogramMaximum: number | null;
+  histogramMinimum: number | null;
+  maximum: number | null;
   median: number | null;
   minimum: number | null;
-  maximum: number | null;
   outlierCount: number;
-  histogramMinimum: number | null;
-  histogramMaximum: number | null;
-  histogram: LuminanceHistogramBin[];
-};
+  sampleCount: number;
+}
 
 const EMPTY_SUMMARY: LuminanceSummary = {
   average: null,
@@ -37,19 +37,19 @@ const EMPTY_SUMMARY: LuminanceSummary = {
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
-type RegionBounds = {
-  startX: number;
-  startY: number;
+interface RegionBounds {
   endX: number;
   endY: number;
-};
+  startX: number;
+  startY: number;
+}
 
-type RegionLuminanceSamples = {
-  values: Float32Array;
-  sum: number;
-  minimum: number;
+interface RegionLuminanceSamples {
   maximum: number;
-};
+  minimum: number;
+  sum: number;
+  values: Float32Array;
+}
 
 function resolveRegionBounds(
   matrix: FalsecolorLuminanceMatrix,
@@ -147,8 +147,8 @@ function buildHistogram(
   const step = (maximum - minimum) / safeBinCount;
   const counts = Array.from({ length: safeBinCount }, () => 0);
 
-  for (let index = 0; index < values.length; index += 1) {
-    const value = values[index] ?? minimum;
+  for (const rawValue of Array.from(values)) {
+    const value = rawValue ?? minimum;
     const rawIndex = Math.floor((value - minimum) / step);
     const binIndex = clamp(rawIndex, 0, safeBinCount - 1);
     counts[binIndex] = (counts[binIndex] ?? 0) + 1;
@@ -198,7 +198,7 @@ function filterHistogramOutliers(sortedValues: Float32Array) {
   const inlierCount = endIndex - startIndex + 1;
   if (inlierCount <= 0 || inlierCount === sortedValues.length) {
     return {
-      maximum: sortedValues[sortedValues.length - 1] ?? null,
+      maximum: sortedValues.at(-1) ?? null,
       minimum: sortedValues[0] ?? null,
       outlierCount: 0,
       values: sortedValues,
@@ -207,7 +207,7 @@ function filterHistogramOutliers(sortedValues: Float32Array) {
 
   const values = sortedValues.slice(startIndex, endIndex + 1);
   return {
-    maximum: values[values.length - 1] ?? null,
+    maximum: values.at(-1) ?? null,
     minimum: values[0] ?? null,
     outlierCount: sortedValues.length - values.length,
     values,

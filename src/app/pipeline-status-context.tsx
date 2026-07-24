@@ -21,12 +21,12 @@ const pipelineOutputSchema = z.object({
 
 export type PipelineOutputPayload = z.infer<typeof pipelineOutputSchema>;
 
-type PipelineStatusContextValue = {
+interface PipelineStatusContextValue {
+  lastEmittedOutput: PipelineOutputPayload | null;
+  payload: PipelineStatusPayload | null;
   progress: number;
   statusText: string;
-  payload: PipelineStatusPayload | null;
-  lastEmittedOutput: PipelineOutputPayload | null;
-};
+}
 
 const PipelineStatusContext = createContext<
   PipelineStatusContextValue | undefined

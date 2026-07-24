@@ -49,7 +49,7 @@ export default function TiffImageInner({
         container.removeChild(canvas);
       }
     };
-  }, [tiff.buffer]);
+  }, [tiff.buffer, tiff]);
 
   return (
     <div className="grid size-full place-items-center" ref={containerRef} />

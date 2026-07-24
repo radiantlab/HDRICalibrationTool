@@ -7,7 +7,7 @@ import {
   RotateCcw,
   Thermometer,
 } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -27,25 +27,23 @@ import { cn } from "@/lib/utils";
 
 export type ViewType = "natural" | "luminanceHeatmap";
 
-type ViewControlCardProps = {
-  selectedViewType: ViewType;
-  onSelectedViewTypeChange: (viewType: ViewType) => void;
+interface ViewControlCardProps {
   exposureEv: number;
-  onExposureEvChange: (value: number) => void;
   isHeatmapAvailable: boolean;
-};
+  onExposureEvChange: (value: number) => void;
+  onSelectedViewTypeChange: (viewType: ViewType) => void;
+  selectedViewType: ViewType;
+}
 
 const EXPOSURE_MIN = -6;
 const EXPOSURE_MAX = 6;
 const EXPOSURE_STEP = 0.1;
 const EXPOSURE_DEFAULT = 0;
 
-const VIEW_TYPE_OPTIONS: Array<{
-  value: ViewType;
-  label: string;
-  description: string;
-  icon: typeof ImageIcon;
-}> = [
+// `as const` gives this a fixed-length tuple type, so indexing
+// `VIEW_TYPE_OPTIONS[0]` below is statically known to be defined (no
+// non-null assertion needed) under `noUncheckedIndexedAccess`.
+const VIEW_TYPE_OPTIONS = [
   {
     description: "Base HDR image with exposure adjustment.",
     icon: ImageIcon,
@@ -58,7 +56,12 @@ const VIEW_TYPE_OPTIONS: Array<{
     label: "Luminance Heatmap",
     value: "luminanceHeatmap",
   },
-];
+] as const satisfies ReadonlyArray<{
+  value: ViewType;
+  label: string;
+  description: string;
+  icon: typeof ImageIcon;
+}>;
 
 const formatExposureLabel = (ev: number) => {
   if (ev === 0) {
@@ -82,7 +85,7 @@ export function ViewControlCard({
   const selectedViewOption = useMemo(
     () =>
       VIEW_TYPE_OPTIONS.find((option) => option.value === selectedViewType) ??
-      VIEW_TYPE_OPTIONS[0]!,
+      VIEW_TYPE_OPTIONS[0],
     [selectedViewType]
   );
   const SelectedViewIcon = selectedViewOption.icon;
@@ -98,7 +101,7 @@ export function ViewControlCard({
     [onSelectedViewTypeChange]
   );
 
-  let viewControlContent = null;
+  let viewControlContent: ReactNode = null;
   switch (selectedViewType) {
     case "natural":
       viewControlContent = (
@@ -131,7 +134,7 @@ export function ViewControlCard({
             max={EXPOSURE_MAX}
             min={EXPOSURE_MIN}
             onValueChange={(value) => {
-              const nextValue = value[0];
+              const [nextValue] = value;
               if (typeof nextValue === "number") {
                 onExposureEvChange(nextValue);
               }
@@ -146,6 +149,8 @@ export function ViewControlCard({
         </div>
       );
       break;
+    default:
+      break;
   }
 
   return (
@@ -153,7 +158,7 @@ export function ViewControlCard({
       <Card className="max-h-full w-full overflow-hidden border-2 bg-background/90 shadow-md">
         <CardContent className="max-h-[calc(100vh-2rem)] space-y-2 overflow-y-auto px-3 py-2 font-mono text-[0.62rem]">
           {viewControlContent}
-          {viewControlContent && <Separator />}
+          {viewControlContent ? <Separator /> : null}
           <div className="space-y-1.5">
             <div className="text-[0.54rem] text-muted-foreground">
               View Type

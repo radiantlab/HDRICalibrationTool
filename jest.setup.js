@@ -1,10 +1,17 @@
+import { jest } from "@jest/globals";
 import "@testing-library/jest-dom";
 
 // jsdom doesn't implement ResizeObserver, which react-resizable-panels requires.
 class ResizeObserverMock {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe() {
+    // no-op: tests don't need real resize notifications
+  }
+  unobserve() {
+    // no-op: tests don't need real resize notifications
+  }
+  disconnect() {
+    // no-op: tests don't need real resize notifications
+  }
 }
 global.ResizeObserver = global.ResizeObserver || ResizeObserverMock;
 
@@ -12,6 +19,9 @@ global.ResizeObserver = global.ResizeObserver || ResizeObserverMock;
 // the Tauri IPC bridge need a stand-in.
 jest.mock("@tauri-apps/api/webviewWindow", () => ({
   getCurrentWebviewWindow: () => ({
-    onDragDropEvent: () => Promise.resolve(() => {}),
+    onDragDropEvent: () =>
+      Promise.resolve(() => {
+        // no-op unsubscribe stub
+      }),
   }),
 }));

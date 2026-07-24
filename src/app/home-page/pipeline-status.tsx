@@ -29,12 +29,12 @@ export function PipelineStatus({
 
   return (
     <div className="flex flex-col gap-2">
-      {statusText && (
+      {statusText ? (
         <div className="justify-left flex items-center gap-2 text-muted-foreground text-sm">
           {progress !== 100 && <Spinner className="size-4" />}
           {statusText}
         </div>
-      )}
+      ) : null}
       <div className="flex items-center gap-2">
         <div className="text-muted-foreground text-xs">{progress}%</div>
         <Progress value={progress} />
@@ -50,7 +50,11 @@ export function PipelineStatus({
           <DropdownMenuContent>
             <DropdownMenuItem
               disabled={!lastEmittedOutput}
-              onClick={() => revealItemInDir(lastEmittedOutput!.path)}
+              onClick={() => {
+                if (lastEmittedOutput) {
+                  revealItemInDir(lastEmittedOutput.path);
+                }
+              }}
             >
               <FolderOpenIcon />
               View file
@@ -60,7 +64,7 @@ export function PipelineStatus({
               onClick={() => {
                 router.push(
                   serializeViewerUrl("/image-viewer/view", {
-                    filePath: lastEmittedOutput!.path,
+                    filePath: lastEmittedOutput?.path,
                   })
                 );
               }}

@@ -76,17 +76,21 @@ const DEFAULT_FALSECOLOR_MULTIPLIER = 179;
 const HEATMAP_LEGEND_WIDTH = 200;
 const HEATMAP_LEGEND_LABEL_COUNT = 7;
 const LUMINANCE_UNIT_LABEL = "cd/m2";
+const TRAILING_ZEROS_REGEX = /\.0+$/;
+const TRAILING_ZEROS_AFTER_DIGIT_REGEX = /(\.\d*?[1-9])0+$/;
+const HDR_EXPOSURE_REGEX = /EXPOSURE\s*=\s*([\d.eE+-]+)/;
+const HDR_RESOLUTION_LINE_REGEX = /([+-][XY])\s+(\d+)\s+([+-][XY])\s+(\d+)/;
 
-type LoadedHdrData = {
-  texture: DataTexture;
-  rgbaData: Float32Array | null;
+interface LoadedHdrData {
   exposure: number;
-};
+  rgbaData: Float32Array | null;
+  texture: DataTexture;
+}
 
-type HdrMetadata = {
+interface HdrMetadata {
   FORMAT: string;
   [key: string]: string;
-};
+}
 
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
@@ -108,16 +112,18 @@ const formatLuminanceLegendValue = (value: number) => {
     return `${formattedValue} ${LUMINANCE_UNIT_LABEL}`;
   }
 
-  const fixedValue =
-    absoluteValue >= 100
-      ? value.toFixed(0)
-      : absoluteValue >= 10
-        ? value.toFixed(1)
-        : value.toFixed(2);
+  let fixedValue: string;
+  if (absoluteValue >= 100) {
+    fixedValue = value.toFixed(0);
+  } else if (absoluteValue >= 10) {
+    fixedValue = value.toFixed(1);
+  } else {
+    fixedValue = value.toFixed(2);
+  }
 
   const formattedValue = fixedValue
-    .replace(/\.0+$/, "")
-    .replace(/(\.\d*?[1-9])0+$/, "$1");
+    .replace(TRAILING_ZEROS_REGEX, "")
+    .replace(TRAILING_ZEROS_AFTER_DIGIT_REGEX, "$1");
   return `${formattedValue} ${LUMINANCE_UNIT_LABEL}`;
 };
 
@@ -202,11 +208,11 @@ function buildHeatmapLegendTexture(
 const POSITION_EPSILON = 1;
 const SCALE_EPSILON = 1e-4;
 
-type PanZoomTransformComparable = {
-  scale: number;
+interface PanZoomTransformComparable {
   positionX: number;
   positionY: number;
-};
+  scale: number;
+}
 
 function isTransformAwayFromBaseline(
   state: PanZoomTransformComparable,
@@ -232,7 +238,7 @@ async function loadHdrData(filePath: string): Promise<LoadedHdrData> {
 
   // Convert RGBE bytes to float32 RGBA
   const floatData = new Float32Array(width * height * 4);
-  for (let i = 0; i < width * height; i++) {
+  for (let i = 0; i < width * height; i += 1) {
     const r = rgbeData[i * 4] ?? 0;
     const g = rgbeData[i * 4 + 1] ?? 0;
     const b = rgbeData[i * 4 + 2] ?? 0;
@@ -263,7 +269,7 @@ async function loadHdrData(filePath: string): Promise<LoadedHdrData> {
 function parseRadianceHDR(data: Uint8Array) {
   // Find header end (empty line = two consecutive newlines)
   let headerEnd = -1;
-  for (let i = 0; i < Math.min(data.length, 65_536); i++) {
+  for (let i = 0; i < Math.min(data.length, 65_536); i += 1) {
     if (data[i] === 0x0a && data[i + 1] === 0x0a) {
       headerEnd = i;
       break;
@@ -275,21 +281,20 @@ function parseRadianceHDR(data: Uint8Array) {
 
   // Parse header for exposure
   const headerStr = new TextDecoder().decode(data.subarray(0, headerEnd));
-  const exposureMatch = headerStr.match(/EXPOSURE\s*=\s*([\d.eE+-]+)/);
-  const exposure =
-    exposureMatch && exposureMatch[1]
-      ? Number.parseFloat(exposureMatch[1])
-      : 1.0;
+  const exposureMatch = headerStr.match(HDR_EXPOSURE_REGEX);
+  const exposure = exposureMatch?.[1]
+    ? Number.parseFloat(exposureMatch[1])
+    : 1.0;
 
   // Parse resolution line (right after the empty line)
   const resStart = headerEnd + 2;
   let resEnd = resStart;
   while (resEnd < data.length && data[resEnd] !== 0x0a) {
-    resEnd++;
+    resEnd += 1;
   }
   const resLine = new TextDecoder().decode(data.subarray(resStart, resEnd));
-  const resMatch = resLine.match(/([+-][XY])\s+(\d+)\s+([+-][XY])\s+(\d+)/);
-  if (!(resMatch && resMatch[1] && resMatch[2] && resMatch[3] && resMatch[4])) {
+  const resMatch = resLine.match(HDR_RESOLUTION_LINE_REGEX);
+  if (!(resMatch?.[1] && resMatch[2] && resMatch[3] && resMatch[4])) {
     throw new Error(`Invalid HDR resolution line: "${resLine}"`);
   }
 
@@ -308,7 +313,7 @@ function parseRadianceHDR(data: Uint8Array) {
   const rgbeData = new Uint8Array(width * height * 4);
   let offset = 0;
 
-  for (let y = 0; y < height; y++) {
+  for (let y = 0; y < height; y += 1) {
     if (pos + 4 > data.length) {
       throw new Error(`Ran out of data at scanline ${y}`);
     }
@@ -325,44 +330,44 @@ function parseRadianceHDR(data: Uint8Array) {
 
     // Read 4 channels separately (R, G, B, E)
     const scanline = new Uint8Array(width * 4);
-    for (let ch = 0; ch < 4; ch++) {
+    for (let ch = 0; ch < 4; ch += 1) {
       let x = 0;
       while (x < width) {
         if (pos >= data.length) {
           throw new Error(`Ran out of data at scanline ${y}, channel ${ch}`);
         }
         const code = data[pos] ?? 0;
-        pos++;
+        pos += 1;
         if (code > 128) {
           // RLE run
           const count = code - 128;
           const val = data[pos] ?? 0;
-          pos++;
-          for (let i = 0; i < count; i++) {
+          pos += 1;
+          for (let i = 0; i < count; i += 1) {
             scanline[ch * width + x] = val;
-            x++;
+            x += 1;
           }
         } else {
           // Literal run
-          for (let i = 0; i < code; i++) {
+          for (let i = 0; i < code; i += 1) {
             scanline[ch * width + x] = data[pos] ?? 0;
-            pos++;
-            x++;
+            pos += 1;
+            x += 1;
           }
         }
       }
     }
 
     // Deinterleave into RGBE pixel format
-    for (let x = 0; x < width; x++) {
+    for (let x = 0; x < width; x += 1) {
       rgbeData[offset] = scanline[x] ?? 0;
-      offset++;
+      offset += 1;
       rgbeData[offset] = scanline[width + x] ?? 0;
-      offset++;
+      offset += 1;
       rgbeData[offset] = scanline[width * 2 + x] ?? 0;
-      offset++;
+      offset += 1;
       rgbeData[offset] = scanline[width * 3 + x] ?? 0;
-      offset++;
+      offset += 1;
     }
   }
 
@@ -473,11 +478,11 @@ function ImageViewerCanvas({ filePath }: { filePath: string }) {
   );
 }
 
-type transformState = {
-  scale: number;
+interface transformState {
   positionX: number;
   positionY: number;
-};
+  scale: number;
+}
 
 function ImageViewerCanvasContent({
   viewerDataPromise,
@@ -559,6 +564,7 @@ function ImageViewerCanvasContent({
       if (!(isHoverLuminanceVisible && dimensions)) {
         return;
       }
+      // biome-ignore lint/style/useDestructuring: destructuring viewerData here would make the closure capture the whole object, conflicting with the useCallback deps below tracking the narrower viewerData.rgbaData/viewerData.exposure.
       const rgbaData = viewerData.rgbaData;
       if (!rgbaData) {
         setHoverLuminanceSample(null);
@@ -806,7 +812,7 @@ function ImageViewerCanvasContent({
               style={{ width: `${imageAreaWidthPercent}%` }}
               {...layerPointerHandlers}
             >
-              {overlay && (
+              {overlay ? (
                 <div className="pointer-events-none absolute inset-0">
                   <div
                     className={cn(
@@ -821,7 +827,7 @@ function ImageViewerCanvasContent({
                     }}
                   />
                 </div>
-              )}
+              ) : null}
             </div>
           </div>
         </TransformComponent>

@@ -1,12 +1,12 @@
 import { DataTexture, FloatType, LinearFilter, RGBAFormat } from "three";
 import type { FalsecolorLuminanceMatrix } from "./falsecolor-luminance-webgpu";
 
-type FalsecolorStop = {
+interface FalsecolorStop {
+  b: number;
+  g: number;
   position: number;
   r: number;
-  g: number;
-  b: number;
-};
+}
 
 const FALSECOLOR_GRADIENT: FalsecolorStop[] = [
   { b: 0.2, g: 0.0, position: 0.0, r: 0.0 },
@@ -26,8 +26,11 @@ function interpolateGradient(
   const clamped = Math.max(0, Math.min(1, normalizedValue));
 
   for (let i = 0; i < FALSECOLOR_GRADIENT.length - 1; i += 1) {
-    const current = FALSECOLOR_GRADIENT[i]!;
-    const next = FALSECOLOR_GRADIENT[i + 1]!;
+    const current = FALSECOLOR_GRADIENT[i];
+    const next = FALSECOLOR_GRADIENT[i + 1];
+    if (!(current && next)) {
+      continue;
+    }
 
     if (clamped >= current.position && clamped <= next.position) {
       const range = next.position - current.position;
@@ -40,24 +43,24 @@ function interpolateGradient(
     }
   }
 
-  const last = FALSECOLOR_GRADIENT[FALSECOLOR_GRADIENT.length - 1]!;
-  return [last.r, last.g, last.b];
+  const last = FALSECOLOR_GRADIENT.at(-1);
+  return last ? [last.r, last.g, last.b] : [0, 0, 0];
 }
 
-export type HeatmapScaleRange = {
-  minimum: number;
+export interface HeatmapScaleRange {
   maximum: number;
-};
+  minimum: number;
+}
 
 export function computeAutoScaleRange(
   matrix: FalsecolorLuminanceMatrix
 ): HeatmapScaleRange {
-  const values = matrix.values;
+  const { values } = matrix;
   let minimum = Number.POSITIVE_INFINITY;
   let maximum = Number.NEGATIVE_INFINITY;
 
-  for (let i = 0; i < values.length; i += 1) {
-    const value = values[i] ?? 0;
+  for (const rawValue of Array.from(values)) {
+    const value = rawValue ?? 0;
     if (value > 0) {
       minimum = Math.min(minimum, value);
       maximum = Math.max(maximum, value);

@@ -2,29 +2,29 @@ import { createContext, useContext } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { ImageSet } from "@/components/ui/image-set-preview";
 
-export type pipelineConfig = {
-  inputSets: ImageSet[];
+export interface pipelineConfig {
   cameraResponseLocation: string | null;
-  lensMask: {
-    radius: number;
-    x: number;
-    y: number;
-  };
-  fisheyeView: {
-    horizontalViewDegrees: number | null;
-    verticalViewDegrees: number | null;
-  };
   correctionFiles: {
     fisheye: string | null;
     vignetting: string | null;
     neutralDensity: string | null;
     calibrationFactor: string | null;
   };
+  fisheyeView: {
+    horizontalViewDegrees: number | null;
+    verticalViewDegrees: number | null;
+  };
+  inputSets: ImageSet[];
+  lensMask: {
+    radius: number;
+    x: number;
+    y: number;
+  };
   outputSettings: {
     targetRes: number | null;
     filterIrrelevantSrcImages: boolean;
   };
-};
+}
 
 const pipelineConfigContext = createContext<
   UseFormReturn<pipelineConfig> | undefined

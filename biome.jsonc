@@ -4,5 +4,152 @@
     "ultracite/biome/core",
     "ultracite/biome/react",
     "ultracite/biome/next"
+  ],
+  "linter": {
+    "rules": {
+      "suspicious": {
+        // This is an HDRI (High Dynamic Range Imaging) tool: bitwise
+        // operators are the correct, idiomatic tool for WebGPU buffer-usage
+        // flag masks (falsecolor-luminance-webgpu.ts), Radiance RLE binary
+        // scanline decoding (image-viewer/view/page.tsx), and byte-size
+        // shift constants (generic-image-metadata.ts, tiff-worker.ts).
+        // Every current use is a real bitmask/binary-format operation, not
+        // a typo for a logical operator, so this rule is disabled globally
+        // rather than suppressed inline at ~9 call sites.
+        "noBitwiseOperators": "off"
+      },
+      "performance": {
+        // Surveyed all ~33 flagged sites: the large majority are inline
+        // handlers inside `.map()` list rendering (settings rows, image-set
+        // rows, mask-selection drag handlers) that close over per-item loop
+        // variables and can't be hoisted to a stable top-level useCallback
+        // without extracting a separate memoized list-item component per
+        // call site — a much larger structural change than a lint pass.
+        // This is a Tauri desktop app, not a render-heavy web app at scale,
+        // so the re-render cost this rule guards against is negligible
+        // here. Rather than force-fit useCallback in some places and leave
+        // it un-fixable in others (an inconsistent, partially-applied
+        // fix), the rule is disabled globally. Genuinely hot paths (e.g.
+        // drag handlers) were reviewed individually and are cheap,
+        // allocation-light closures.
+        "noJsxPropsBind": "off",
+        // This app builds with `output: "export"` (static export) for
+        // bundling into a Tauri desktop shell — there is no Next.js server
+        // to run the Image Optimization API at runtime. next/image would
+        // need `images.unoptimized: true` (losing its main benefit) to even
+        // load, and nothing in this codebase currently uses it, so plain
+        // <img> is the correct choice here rather than the two current
+        // call sites migrating to a component that doesn't fit the
+        // deployment model.
+        "noImgElement": "off"
+      }
+    }
+  },
+  "overrides": [
+    {
+      // Biome 2.5.3 panics internally ("processing panicked: index out of
+      // bounds", inside biome_module_graph::module_resolver) whenever it
+      // tries to process these two files, likely due to the parenthesized
+      // Next.js route-group directory segments in their paths ("(image)",
+      // "(tiff-image)"). This is a Biome bug, not a project preference —
+      // exclude them entirely so `ultracite check`/`fix` don't crash.
+      "includes": [
+        "src/app/home-page/fs-circular-mas-selection.tsx",
+        "src/components/ui/(image)/(tiff-image)/tiff-image.tsx"
+      ],
+      "linter": { "enabled": false },
+      "formatter": { "enabled": false },
+      "assist": { "enabled": false }
+    },
+    {
+      // These files wrap Radix UI primitives. `import * as XPrimitive from
+      // "@radix-ui/react-x"` is the pattern Radix's own docs and shadcn/ui
+      // use, since each package exports many subcomponents (Root, Trigger,
+      // Content, Item, ...) that are all referenced via the namespace.
+      // Named-importing every subcomponent individually would be far more
+      // verbose for no real benefit (Radix's exports are already
+      // tree-shakeable through the namespace object), so noNamespaceImport
+      // is disabled here rather than fought file-by-file.
+      "includes": [
+        "src/components/ui/accordion.tsx",
+        "src/components/ui/checkbox.tsx",
+        "src/components/ui/context-menu.tsx",
+        "src/components/ui/dropdown-menu.tsx",
+        "src/components/ui/hover-card.tsx",
+        "src/components/ui/label.tsx",
+        "src/components/ui/popover.tsx",
+        "src/components/ui/progress.tsx",
+        "src/components/ui/separator.tsx",
+        "src/components/ui/slider.tsx",
+        "src/components/ui/tooltip.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noNamespaceImport": "off"
+          }
+        }
+      }
+    },
+    {
+      // Vendored/hand-written ambient type declarations for the untyped
+      // "tiff.js" package, copied verbatim from
+      // https://github.com/seikichi/tiff.js/blob/master/tiff.d.ts (see the
+      // comment in tiff.d.ts) since tiff.js ships no types of its own.
+      // `any` and `namespace` are exactly how the upstream declaration
+      // models this legacy Emscripten-based library; rewriting them would
+      // just be re-deriving upstream's own (untyped) API shape rather than
+      // fixing anything in our code.
+      "includes": ["types/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          },
+          "style": {
+            "noNamespace": "off"
+          }
+        }
+      }
+    },
+    {
+      // Renders an arbitrary user-selected photo at whatever size its
+      // parent container happens to be (`size-full object-contain`); unlike
+      // navigation.tsx's logo, there is no fixed intrinsic size to declare
+      // up front, so a width/height attribute pair would just be wrong.
+      "includes": ["src/components/ui/(image)/generic-image.tsx"],
+      "linter": {
+        "rules": {
+          "correctness": {
+            "useImageSize": "off"
+          }
+        }
+      }
+    },
+    {
+      // These files run in the browser (webview) and need Node's `path`
+      // module polyfilled there via path-browserify, for tiff.js/file-path
+      // handling on user-selected files. next.config.js's webpack
+      // `resolve.fallback` (and the Turbopack `resolveAlias`) only rewrite
+      // the bare "path" specifier to that polyfill, not "node:path" — using
+      // the node: prefix here breaks `next build`, which failed with
+      // "UnhandledSchemeError: Reading from 'node:path' is not handled by
+      // plugins" when ultracite's unsafe fix rewrote these imports. Keep
+      // the bare specifier so the browser bundle keeps working.
+      "includes": [
+        "src/app/image-viewer/page.tsx",
+        "src/components/ui/image-matrix-input.tsx",
+        "src/components/ui/image-set-preview.tsx",
+        "src/components/ui/(image)/generic-image.tsx",
+        "src/lib/generic-image-metadata.ts"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "useNodejsImportProtocol": "off"
+          }
+        }
+      }
+    }
   ]
 }

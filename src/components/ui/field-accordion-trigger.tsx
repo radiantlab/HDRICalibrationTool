@@ -1,6 +1,6 @@
 "use client";
 
-import * as React from "react";
+import { type ComponentProps, useMemo } from "react";
 import { type FieldPath, useFormState } from "react-hook-form";
 import {
   type pipelineConfig,
@@ -10,10 +10,10 @@ import { AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 
 export type FieldContainerAccordionTriggerProps = Omit<
-  React.ComponentProps<typeof AccordionTrigger>,
+  ComponentProps<typeof AccordionTrigger>,
   "className"
 > & {
-  fields: ReadonlyArray<FieldPath<pipelineConfig>>;
+  fields: readonly FieldPath<pipelineConfig>[];
   className?: string;
 };
 
@@ -29,14 +29,17 @@ export function FieldContainerAccordionTrigger({
     name: fields, // narrow subscriptions to these fields
   });
 
-  const hasError = React.useMemo(() => {
-    function getNested(obj: unknown, path: string) {
-      return path.split(".").reduce<any>((acc, key) => {
-        if (!acc || typeof acc !== "object") {
-          return;
-        }
-        return (acc as any)[key];
-      }, obj as any);
+  const hasError = useMemo(() => {
+    function getNested(obj: unknown, path: string): unknown {
+      return path
+        .split(".")
+        .reduce<unknown>(
+          (acc, key) =>
+            acc && typeof acc === "object"
+              ? (acc as Record<string, unknown>)[key]
+              : undefined,
+          obj
+        );
     }
     return fields.some((name) => {
       const err = getNested(errors, name);
@@ -57,5 +60,3 @@ export function FieldContainerAccordionTrigger({
     </AccordionTrigger>
   );
 }
-
-export default FieldContainerAccordionTrigger;

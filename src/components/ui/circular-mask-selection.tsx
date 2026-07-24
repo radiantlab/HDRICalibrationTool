@@ -40,7 +40,11 @@ export function CircularMaskSelection({
 
   const radius = useTransform<number, number>(
     [centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
-    ([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2)
+    ([cx, cy, rx, ry]) =>
+      Math.sqrt(
+        ((cx as number) - (rx as number)) ** 2 +
+          ((cy as number) - (ry as number)) ** 2
+      )
   );
   const diameter = useTransform<number, number>(radius, (r) => r * 2);
 
@@ -79,7 +83,7 @@ export function CircularMaskSelection({
         drag
         dragConstraints={containerRef}
         dragMomentum={false}
-        onDrag={(e, info) => {
+        onDrag={(_e, info) => {
           centerX.set(centerX.get() + info.delta.x);
           centerY.set(centerY.get() + info.delta.y);
 
@@ -122,7 +126,7 @@ export function CircularMaskSelection({
         drag
         dragConstraints={containerRef}
         dragMomentum={false}
-        onDrag={(e, info) => {
+        onDrag={(_e, info) => {
           const containerRect = containerRef.current?.getBoundingClientRect();
           if (!containerRect) {
             return;

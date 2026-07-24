@@ -28,30 +28,30 @@ import { Field, FieldContent, FieldError } from "./field";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./hover-card";
 import { type ImageSet, ImageSetPreview } from "./image-set-preview";
 
-export type ImageSetIssue = {
-  title: string;
-  summary: string;
+export interface ImageSetIssue {
   program: string;
   statusCode: number | null;
   stderr: string;
-};
+  summary: string;
+  title: string;
+}
 
 type FileMatrixFieldName<T extends FieldValues> = FieldPathByValue<
   T,
   ImageSet[] | undefined
 >;
-type FileMatrixInputProps<
+interface FileMatrixInputProps<
   T extends FieldValues,
   TName extends FileMatrixFieldName<T>,
-> = {
-  control: Control<T>;
-  name: TName;
+> {
   className?: string;
+  control: Control<T>;
   issuesByIndex?: Partial<Record<number, ImageSetIssue>>;
+  name: TName;
   rules?: Omit<RegisterOptions<T, TName>, "validate"> & {
     validate?: RegisterOptions<T, TName>["validate"];
   };
-};
+}
 
 const imageFilters: DialogFilter[] = [
   { extensions: imageFileExtensions, name: "Images" },
@@ -132,7 +132,7 @@ export function ImageMatrixInput<
       const newRows = Array.from(groups.values());
       field.onChange([...(value ?? []), ...newRows]);
     },
-    [field, value]
+    [field, value, filterForAcceptance]
   );
 
   const selectFiles = useCallback(async () => {
@@ -144,7 +144,7 @@ export function ImageMatrixInput<
     if (selectedFiles) {
       onDrop(selectedFiles);
     }
-  }, [field, value]);
+  }, [onDrop]);
 
   const selectMultipleDirectories = useCallback(async () => {
     const selectedDirectories = await open({
@@ -171,7 +171,7 @@ export function ImageMatrixInput<
                 "flex min-h-56 flex-col bg-accent",
                 issue && "border border-destructive/50 bg-destructive/5"
               )}
-              key={index}
+              key={row.name}
             >
               <ImageSetPreview
                 files={row.files.toSorted((a, b) => a.localeCompare(b))}
@@ -194,7 +194,7 @@ export function ImageMatrixInput<
                 }}
                 onClick={setSelectedImage}
                 onRemove={() => {
-                  field.onChange(value?.filter((_, i) => i !== index) ?? []);
+                  field.onChange(value.filter((_, i) => i !== index));
                 }}
                 onRemoveIndex={(deleteIndex) => {
                   value[index] = {
@@ -204,7 +204,7 @@ export function ImageMatrixInput<
                   field.onChange([...value]);
                 }}
               />
-              {issue && (
+              {issue ? (
                 <div className="border-destructive/40 border-t bg-destructive/10 px-4 py-3 text-sm">
                   <p className="font-medium text-destructive">{issue.title}</p>
                   <p className="mt-1 text-foreground/90">{issue.summary}</p>
@@ -243,7 +243,7 @@ export function ImageMatrixInput<
                     </HoverCardContent>
                   </HoverCard>
                 </div>
-              )}
+              ) : null}
             </div>
           );
         })}
@@ -283,7 +283,7 @@ export function ImageMatrixInput<
           </ContextMenuContent>
         </ContextMenu>
       </FieldContent>
-      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+      {fieldState.invalid ? <FieldError errors={[fieldState.error]} /> : null}
     </Field>
   );
 }
