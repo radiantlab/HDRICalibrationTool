@@ -19,11 +19,11 @@ import { createJSONStorage, persist } from "zustand/middleware";
  * @property osPlatform - Operating system platform (windows, darwin, linux)
  */
 interface Settings {
-	radiancePath: string;
-	hdrgenPath: string;
-	dcrawEmuPath: string;
-	outputPath: string;
-	osPlatform: string;
+  dcrawEmuPath: string;
+  hdrgenPath: string;
+  osPlatform: string;
+  outputPath: string;
+  radiancePath: string;
 }
 
 /**
@@ -33,10 +33,10 @@ interface Settings {
  * @property setSettings - Function to update the settings
  */
 interface SettingsStore {
-	settings: Settings;
-	setSettings: (settings: Settings) => void;
-	hasHydrated: boolean;
-	setHasHydrated: (state: boolean) => void;
+  hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
+  setSettings: (settings: Settings) => void;
+  settings: Settings;
 }
 
 /**
@@ -48,28 +48,28 @@ interface SettingsStore {
  * ```
  */
 export const useSettingsStore = create<SettingsStore>()(
-	persist(
-		(set) => ({
-			// Initial default empty settings
-			settings: {
-				radiancePath: "",
-				hdrgenPath: "",
-				dcrawEmuPath: "",
-				outputPath: "",
-				osPlatform: "",
-			},
-			// Function to update the settings state
-			setSettings: (settings) => set({ settings }),
-			hasHydrated: false,
-			setHasHydrated: (state) => set({ hasHydrated: state }),
-		}),
-		{
-			name: "hdr-settings",
-			storage: createJSONStorage(() => localStorage),
-			partialize: (state) => ({ settings: state.settings }),
-			onRehydrateStorage: () => (state) => {
-				state?.setHasHydrated(true);
-			},
-		}
-	)
+  persist(
+    (set) => ({
+      hasHydrated: false,
+      setHasHydrated: (state) => set({ hasHydrated: state }),
+      // Function to update the settings state
+      setSettings: (settings) => set({ settings }),
+      // Initial default empty settings
+      settings: {
+        dcrawEmuPath: "",
+        hdrgenPath: "",
+        osPlatform: "",
+        outputPath: "",
+        radiancePath: "",
+      },
+    }),
+    {
+      name: "hdr-settings",
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
+      partialize: (state) => ({ settings: state.settings }),
+      storage: createJSONStorage(() => localStorage),
+    }
+  )
 );

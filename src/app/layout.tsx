@@ -7,18 +7,18 @@
  */
 import type { Metadata } from "next";
 import "./globals.css";
-import Navigation from "./navigation";
-import Initialization from "./init";
-import { PipelineStatusProvider } from "./pipeline-status-context";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/sonner";
-import { cn } from "@/lib/utils";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import Initialization from "./init";
+import Navigation from "./navigation";
+import { PipelineStatusProvider } from "./pipeline-status-context";
 
 // Define metadata for the application
 export const metadata: Metadata = {
-	title: "HDRI Calibration Tool",
-	description: "Tool for calibrating High Dynamic Range Images",
+  description: "Tool for calibrating High Dynamic Range Images",
+  title: "HDRI Calibration Tool",
 };
 
 /**
@@ -28,29 +28,29 @@ export const metadata: Metadata = {
  * @returns The complete HTML structure for the application
  */
 export default function RootLayout({
-	children,
+  children,
 }: {
-	children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-	return (
-		<html lang="en">
-			<body
-				className={cn(
-					"font-sans h-screen w-screen overflow-hidden flex flex-col",
-				)}
-			>
-				{/* Initialize the application settings */}
-				<Initialization />
-				{/* Render the navigation bar */}
-				<Navigation />
-				{/* Render the current page content */}
-				<Toaster position="bottom-left" />
-				<NuqsAdapter>
-					<PipelineStatusProvider>
-						<TooltipProvider>{children}</TooltipProvider>
-					</PipelineStatusProvider>
-				</NuqsAdapter>
-			</body>
-		</html>
-	);
+  return (
+    <html lang="en">
+      <body
+        className={cn(
+          "flex h-screen w-screen flex-col overflow-hidden font-sans"
+        )}
+      >
+        {/* Initialize the application settings */}
+        <Initialization />
+        {/* Render the navigation bar */}
+        <Navigation />
+        {/* Render the current page content */}
+        <Toaster position="bottom-left" />
+        <NuqsAdapter>
+          <PipelineStatusProvider>
+            <TooltipProvider>{children}</TooltipProvider>
+          </PipelineStatusProvider>
+        </NuqsAdapter>
+      </body>
+    </html>
+  );
 }

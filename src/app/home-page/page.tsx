@@ -13,205 +13,206 @@
  */
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-} from "@/components/ui/accordion";
-import {
-	Field,
-	FieldContent,
-	FieldError,
-	FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-	AlertTriangle,
-	Eclipse,
-	ImageUpscale,
-	InfoIcon,
-	Rotate3D,
-	SwitchCamera,
-} from "lucide-react";
-import {
-	pipelineConfig,
-	PipelineConfigProvider,
-} from "./(pipeline-configuration)/config-provider";
-import {
-	ImageMatrixInput,
-	type ImageSetIssue,
-} from "@/components/ui/image-matrix-input";
-import { FileInput } from "@/components/ui/file-input";
-import { useMotionValue, useTransform } from "framer-motion";
-import { useMotionValueFormState } from "@/lib/useMotionValueFormState";
-import { LensMaskInput } from "./lens-mask-input";
 import { invoke } from "@tauri-apps/api/core";
 import { documentDir, join } from "@tauri-apps/api/path";
 import { mkdir, writeTextFile } from "@tauri-apps/plugin-fs";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { useSettingsStore } from "../stores/settings-store";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { FieldContainerAccordionTrigger } from "@/components/ui/field-accordion-trigger";
-import { PipelineStatus } from "./pipeline-status";
+import { useMotionValue, useTransform } from "framer-motion";
+import {
+  AlertTriangle,
+  Eclipse,
+  ImageUpscale,
+  InfoIcon,
+  Rotate3D,
+  SwitchCamera,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-
 import { create } from "zustand";
 import {
-	ResizableHandle,
-	ResizablePanel,
-	ResizablePanelGroup,
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldLabel,
+} from "@/components/ui/field";
+import { FieldContainerAccordionTrigger } from "@/components/ui/field-accordion-trigger";
+import { FileInput } from "@/components/ui/file-input";
+import {
+  ImageMatrixInput,
+  type ImageSetIssue,
+} from "@/components/ui/image-matrix-input";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import {
-	SelectedImageProvider,
-	useSelectedImage,
-} from "./selected-image-context";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { useMotionValueFormState } from "@/lib/useMotionValueFormState";
+import { useSettingsStore } from "../stores/settings-store";
+import {
+  PipelineConfigProvider,
+  type pipelineConfig,
+} from "./(pipeline-configuration)/config-provider";
+import { LensMaskInput } from "./lens-mask-input";
+import { PipelineStatus } from "./pipeline-status";
+import { useSelectedImage } from "./selected-image-context";
 
 const useGlobalPipelineConfig = create<
-	pipelineConfig & { set: (config: pipelineConfig) => void }
+  pipelineConfig & { set: (config: pipelineConfig) => void }
 >((set) => ({
-	inputSets: [],
-	cameraResponseLocation: null,
-	lensMask: {
-		radius: 0,
-		x: 0,
-		y: 0,
-	},
-	fisheyeView: {
-		horizontalViewDegrees: 180,
-		verticalViewDegrees: 180,
-	},
-	correctionFiles: {
-		fisheye: null,
-		vignetting: null,
-		neutralDensity: null,
-		calibrationFactor: null,
-	},
-	outputSettings: {
-		targetRes: 1000,
-		filterIrrelevantSrcImages: false,
-	},
+  cameraResponseLocation: null,
+  correctionFiles: {
+    calibrationFactor: null,
+    fisheye: null,
+    neutralDensity: null,
+    vignetting: null,
+  },
+  fisheyeView: {
+    horizontalViewDegrees: 180,
+    verticalViewDegrees: 180,
+  },
+  inputSets: [],
+  lensMask: {
+    radius: 0,
+    x: 0,
+    y: 0,
+  },
+  outputSettings: {
+    filterIrrelevantSrcImages: false,
+    targetRes: 1000,
+  },
 
-	set,
+  set,
 }));
 
 type PipelineTrace = {
-	createdAt: string;
-	input: Record<string, unknown>;
-	error: unknown;
+  createdAt: string;
+  input: Record<string, unknown>;
+  error: unknown;
 };
 
 type CommandNonZeroExitError = {
-	kind: "non_zero_exit";
-	program: string;
-	status_code?: number | null;
-	stderr?: string;
+  kind: "non_zero_exit";
+  program: string;
+  status_code?: number | null;
+  stderr?: string;
 };
 
 type PipelineCommandError = {
-	kind: "command";
-	error: CommandNonZeroExitError;
+  kind: "command";
+  error: CommandNonZeroExitError;
 };
 
 const HDRGEN_FAILURE_PATTERNS = [
-	"cannot solve for response function",
-	"trouble finding hdr patches",
-	"needs exposure calibration",
-	"insufficient exposures to compute hdr image",
+  "cannot solve for response function",
+  "trouble finding hdr patches",
+  "needs exposure calibration",
+  "insufficient exposures to compute hdr image",
 ];
 
 const HDRGEN_MERGE_FAILURE_MESSAGE =
-	"HDRGen could not merge this image set. The selected exposures likely do not overlap enough, or HDRGen could not determine exposure calibration. Try adding more intermediate exposures or provide a camera response (.rsp) file.";
+  "HDRGen could not merge this image set. The selected exposures likely do not overlap enough, or HDRGen could not determine exposure calibration. Try adding more intermediate exposures or provide a camera response (.rsp) file.";
 
 function getProgramBaseName(program: string) {
-	return program.split(/[/\\]/).pop()?.toLowerCase() ?? "";
+  return program.split(/[/\\]/).pop()?.toLowerCase() ?? "";
 }
 
 function getKnownHdrgenIssue(error: unknown): ImageSetIssue | null {
-	if (!error || typeof error !== "object") return null;
+  if (!error || typeof error !== "object") {
+    return null;
+  }
 
-	const pipelineError = error as Partial<PipelineCommandError>;
-	if (pipelineError.kind !== "command") return null;
-	if (!pipelineError.error || typeof pipelineError.error !== "object")
-		return null;
+  const pipelineError = error as Partial<PipelineCommandError>;
+  if (pipelineError.kind !== "command") {
+    return null;
+  }
+  if (!pipelineError.error || typeof pipelineError.error !== "object") {
+    return null;
+  }
 
-	const commandError = pipelineError.error as Partial<CommandNonZeroExitError>;
-	if (
-		commandError.kind !== "non_zero_exit" ||
-		typeof commandError.program !== "string"
-	) {
-		return null;
-	}
+  const commandError = pipelineError.error as Partial<CommandNonZeroExitError>;
+  if (
+    commandError.kind !== "non_zero_exit" ||
+    typeof commandError.program !== "string"
+  ) {
+    return null;
+  }
 
-	if (
-		getProgramBaseName(commandError.program).replace(/\.exe$/, "") !== "hdrgen"
-	) {
-		return null;
-	}
+  if (
+    getProgramBaseName(commandError.program).replace(/\.exe$/, "") !== "hdrgen"
+  ) {
+    return null;
+  }
 
-	const stderr =
-		typeof commandError.stderr === "string" ? commandError.stderr : "";
-	const normalizedStderr = stderr.toLowerCase();
-	if (
-		!HDRGEN_FAILURE_PATTERNS.some((pattern) =>
-			normalizedStderr.includes(pattern),
-		)
-	) {
-		return null;
-	}
+  const stderr =
+    typeof commandError.stderr === "string" ? commandError.stderr : "";
+  const normalizedStderr = stderr.toLowerCase();
+  if (
+    !HDRGEN_FAILURE_PATTERNS.some((pattern) =>
+      normalizedStderr.includes(pattern)
+    )
+  ) {
+    return null;
+  }
 
-	return {
-		title: "HDRGen could not merge this image set.",
-		summary: HDRGEN_MERGE_FAILURE_MESSAGE,
-		program: commandError.program,
-		statusCode:
-			typeof commandError.status_code === "number"
-				? commandError.status_code
-				: null,
-		stderr,
-	};
+  return {
+    program: commandError.program,
+    statusCode:
+      typeof commandError.status_code === "number"
+        ? commandError.status_code
+        : null,
+    stderr,
+    summary: HDRGEN_MERGE_FAILURE_MESSAGE,
+    title: "HDRGen could not merge this image set.",
+  };
 }
 
 function normalizePipelineError(error: unknown) {
-	if (error instanceof Error) {
-		return { message: error.message, stack: error.stack };
-	}
-	if (typeof error === "string") {
-		return { message: error };
-	}
-	return error;
+  if (error instanceof Error) {
+    return { message: error.message, stack: error.stack };
+  }
+  if (typeof error === "string") {
+    return { message: error };
+  }
+  return error;
 }
 
 async function writePipelineTrace(
-	input: Record<string, unknown>,
-	error: unknown,
-	outputPath: string,
+  input: Record<string, unknown>,
+  error: unknown,
+  outputPath: string
 ) {
-	const createdAt = new Date().toISOString();
-	const baseDir =
-		outputPath || (await join(await documentDir(), "HDRICalibrationInterface"));
-	const traceDir = await join(baseDir, "pipeline-traces");
-	await mkdir(traceDir, { recursive: true });
-	const safeTimestamp = createdAt.replace(/[:.]/g, "-");
-	const tracePath = await join(
-		traceDir,
-		`pipeline-trace-${safeTimestamp}.json`,
-	);
-	const trace: PipelineTrace = {
-		createdAt,
-		input,
-		error: normalizePipelineError(error),
-	};
-	await writeTextFile(tracePath, JSON.stringify(trace, null, 2));
-	return tracePath;
+  const createdAt = new Date().toISOString();
+  const baseDir =
+    outputPath || (await join(await documentDir(), "HDRICalibrationInterface"));
+  const traceDir = await join(baseDir, "pipeline-traces");
+  await mkdir(traceDir, { recursive: true });
+  const safeTimestamp = createdAt.replace(/[:.]/g, "-");
+  const tracePath = await join(
+    traceDir,
+    `pipeline-trace-${safeTimestamp}.json`
+  );
+  const trace: PipelineTrace = {
+    createdAt,
+    error: normalizePipelineError(error),
+    input,
+  };
+  await writeTextFile(tracePath, JSON.stringify(trace, null, 2));
+  return tracePath;
 }
 
 /**
@@ -220,567 +221,573 @@ async function writePipelineTrace(
  * @returns React component with the main application interface
  */
 export default function Home() {
-	// since this is at the page level, it id safe to assume this is the only instance of the global pipeline config
-	const globalPipelineConfig = useGlobalPipelineConfig();
-	const form = useForm<pipelineConfig>({
-		defaultValues: globalPipelineConfig,
-	});
-	const { control, register, setValue, watch } = form;
-	const formValues = watch();
-	// keep the global pipeline config in sync with the form values
-	useEffect(() => {
-		globalPipelineConfig.set(formValues);
-	}, [
-		// avoid infinite re-renders by stringifying the form values (so we only compare the values, not the reference)
-		JSON.stringify(formValues),
-	]);
+  // since this is at the page level, it id safe to assume this is the only instance of the global pipeline config
+  const globalPipelineConfig = useGlobalPipelineConfig();
+  const form = useForm<pipelineConfig>({
+    defaultValues: globalPipelineConfig,
+  });
+  const { control, register, setValue, watch } = form;
+  const formValues = watch();
+  // keep the global pipeline config in sync with the form values
+  useEffect(() => {
+    globalPipelineConfig.set(formValues);
+  }, [
+    // avoid infinite re-renders by stringifying the form values (so we only compare the values, not the reference)
+    JSON.stringify(formValues),
+  ]);
 
-	const { settings } = useSettingsStore();
+  const { settings } = useSettingsStore();
 
-	const inputSets = watch("inputSets");
-	const cameraResponseLocation = watch("cameraResponseLocation");
+  const inputSets = watch("inputSets");
+  const cameraResponseLocation = watch("cameraResponseLocation");
 
-	const { selectedImage } = useSelectedImage();
-	const inputSetIssueResetKey = useMemo(
-		() =>
-			JSON.stringify({
-				inputSets: inputSets?.map((set) => ({
-					name: set.name,
-					files: set.files,
-				})),
-				cameraResponseLocation,
-			}),
-		[inputSets, cameraResponseLocation],
-	);
+  const { selectedImage } = useSelectedImage();
+  const inputSetIssueResetKey = useMemo(
+    () =>
+      JSON.stringify({
+        cameraResponseLocation,
+        inputSets: inputSets?.map((set) => ({
+          files: set.files,
+          name: set.name,
+        })),
+      }),
+    [inputSets, cameraResponseLocation]
+  );
 
-	const initialLensMaskX = form.getValues("lensMask.x");
-	const initialLensMaskY = form.getValues("lensMask.y");
-	const initialLensMaskRadius = form.getValues("lensMask.radius");
+  const initialLensMaskX = form.getValues("lensMask.x");
+  const initialLensMaskY = form.getValues("lensMask.y");
+  const initialLensMaskRadius = form.getValues("lensMask.radius");
 
-	const centerX = useMotionValueFormState(
-		initialLensMaskX,
-		setValue,
-		"lensMask.x",
-	);
-	const centerY = useMotionValueFormState(
-		initialLensMaskY,
-		setValue,
-		"lensMask.y",
-	);
+  const centerX = useMotionValueFormState(
+    initialLensMaskX,
+    setValue,
+    "lensMask.x"
+  );
+  const centerY = useMotionValueFormState(
+    initialLensMaskY,
+    setValue,
+    "lensMask.y"
+  );
 
-	const radiusAjusterCenterX = useMotionValue(
-		initialLensMaskX + initialLensMaskRadius,
-	);
-	const radiusAjusterCenterY = useMotionValue(initialLensMaskY);
+  const radiusAjusterCenterX = useMotionValue(
+    initialLensMaskX + initialLensMaskRadius
+  );
+  const radiusAjusterCenterY = useMotionValue(initialLensMaskY);
 
-	const radius = useTransform<number, number>(
-		[centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
-		([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2),
-	);
-	useEffect(() => {
-		const unsub = radius.on("change", (value) => {
-			if (!Number.isFinite(value)) return;
-			setValue("lensMask.radius", value, {
-				shouldValidate: true,
-				shouldDirty: true,
-			});
-		});
-		return () => unsub();
-	}, [radius, setValue]);
+  const radius = useTransform<number, number>(
+    [centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
+    ([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2)
+  );
+  useEffect(() => {
+    const unsub = radius.on("change", (value) => {
+      if (!Number.isFinite(value)) {
+        return;
+      }
+      setValue("lensMask.radius", value, {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    });
+    return () => unsub();
+  }, [radius, setValue]);
 
-	useEffect(() => {
-		const unsub = radius.on("change", (r) => {
-			setValue("lensMask.radius", r);
-		});
-		return () => unsub();
-	}, [radius, setValue]);
+  useEffect(() => {
+    const unsub = radius.on("change", (r) => {
+      setValue("lensMask.radius", r);
+    });
+    return () => unsub();
+  }, [radius, setValue]);
 
-	const [progressVisible, setProgressVisible] = useState(false);
-	const [imageSetIssues, setImageSetIssues] = useState<
-		Partial<Record<number, ImageSetIssue>>
-	>({});
+  const [progressVisible, setProgressVisible] = useState(false);
+  const [imageSetIssues, setImageSetIssues] = useState<
+    Partial<Record<number, ImageSetIssue>>
+  >({});
 
-	useEffect(() => {
-		setImageSetIssues((currentIssues) =>
-			Object.keys(currentIssues).length > 0 ? {} : currentIssues,
-		);
-	}, [inputSetIssueResetKey]);
+  useEffect(() => {
+    setImageSetIssues((currentIssues) =>
+      Object.keys(currentIssues).length > 0 ? {} : currentIssues
+    );
+  }, [inputSetIssueResetKey]);
 
-	return (
-		<PipelineConfigProvider form={form}>
-			<form
-				className="flex h-full w-full divide-x overflow-auto"
-				onSubmit={form.handleSubmit(
-					async (data) => {
-						console.log("configForm submitted", data);
+  return (
+    <PipelineConfigProvider form={form}>
+      <form
+        className="flex h-full w-full divide-x overflow-auto"
+        onSubmit={form.handleSubmit(
+          async (data) => {
+            console.log("configForm submitted", data);
 
-						const diameter = Math.round(data.lensMask.radius * 2);
-						const xleft = Math.round(data.lensMask.x - data.lensMask.radius);
-						const ydown = Math.round(data.lensMask.y - data.lensMask.radius);
+            const diameter = Math.round(data.lensMask.radius * 2);
+            const xleft = Math.round(data.lensMask.x - data.lensMask.radius);
+            const ydown = Math.round(data.lensMask.y - data.lensMask.radius);
 
-						if (!Number.isFinite(diameter) || diameter <= 0) {
-							toast.error("Lens mask radius must be greater than 0.");
-							return;
-						}
-						if (
-							!Number.isFinite(data.outputSettings.targetRes) ||
-							(data.outputSettings.targetRes != null &&
-								data.outputSettings.targetRes <= 0)
-						) {
-							toast.error("Target resolution must be greater than 0.");
-							return;
-						}
-						if (
-							!Number.isFinite(data.fisheyeView.verticalViewDegrees) ||
-							!Number.isFinite(data.fisheyeView.horizontalViewDegrees) ||
-							(data.fisheyeView.verticalViewDegrees != null &&
-								data.fisheyeView.verticalViewDegrees <= 0) ||
-							(data.fisheyeView.horizontalViewDegrees != null &&
-								data.fisheyeView.horizontalViewDegrees <= 0)
-						) {
-							toast.error("Fisheye view angles must be greater than 0.");
-							return;
-						}
+            if (!Number.isFinite(diameter) || diameter <= 0) {
+              toast.error("Lens mask radius must be greater than 0.");
+              return;
+            }
+            if (
+              !Number.isFinite(data.outputSettings.targetRes) ||
+              (data.outputSettings.targetRes != null &&
+                data.outputSettings.targetRes <= 0)
+            ) {
+              toast.error("Target resolution must be greater than 0.");
+              return;
+            }
+            if (
+              !(
+                Number.isFinite(data.fisheyeView.verticalViewDegrees) &&
+                Number.isFinite(data.fisheyeView.horizontalViewDegrees)
+              ) ||
+              (data.fisheyeView.verticalViewDegrees != null &&
+                data.fisheyeView.verticalViewDegrees <= 0) ||
+              (data.fisheyeView.horizontalViewDegrees != null &&
+                data.fisheyeView.horizontalViewDegrees <= 0)
+            ) {
+              toast.error("Fisheye view angles must be greater than 0.");
+              return;
+            }
 
-						setImageSetIssues({});
-						setProgressVisible(true);
-						const imageSet = data.inputSets[0]!; // TODO: implement batch processing
-						const params = {
-							// Paths to external tools
-							radiancePath: settings.radiancePath,
-							hdrgenPath: settings.hdrgenPath,
-							dcrawEmuPath: settings.dcrawEmuPath,
-							outputPath: settings.outputPath,
+            setImageSetIssues({});
+            setProgressVisible(true);
+            const imageSet = data.inputSets[0]!; // TODO: implement batch processing
+            const params = {
+              dcrawEmuPath: settings.dcrawEmuPath,
+              diameter,
+              filterImages: data.outputSettings.filterIrrelevantSrcImages,
+              fisheyeCorrectionCal: data.correctionFiles.fisheye ?? "",
+              hdrgenPath: settings.hdrgenPath,
+              horizontalAngle: data.fisheyeView.horizontalViewDegrees,
 
-							// Input images and correction files
-							inputImages: imageSet.files,
-							responseFunction: data.cameraResponseLocation ?? "",
-							fisheyeCorrectionCal: data.correctionFiles.fisheye ?? "",
-							vignettingCorrectionCal: data.correctionFiles.vignetting ?? "",
-							photometricAdjustmentCal:
-								data.correctionFiles.calibrationFactor ?? "",
-							neutralDensityCal: data.correctionFiles.neutralDensity ?? "",
-							diameter,
-							xleft,
-							ydown,
-							xdim: data.outputSettings.targetRes,
-							ydim: data.outputSettings.targetRes,
-							verticalAngle: data.fisheyeView.verticalViewDegrees,
-							horizontalAngle: data.fisheyeView.horizontalViewDegrees,
-							// todo: remove these from this form completely when we get to refactoring the backend. These should only be exposed on the image viewer, where they are relevant
-							scaleLimit: "",
-							scaleLabel: "",
-							scaleLevels: "",
-							legendDimensions: "",
-							filterImages: data.outputSettings.filterIrrelevantSrcImages,
-						};
-						console.log("pipeline params", params);
-						void invoke<string>("pipeline", params).catch(async (error) => {
-							setProgressVisible(false);
+              // Input images and correction files
+              inputImages: imageSet.files,
+              legendDimensions: "",
+              neutralDensityCal: data.correctionFiles.neutralDensity ?? "",
+              outputPath: settings.outputPath,
+              photometricAdjustmentCal:
+                data.correctionFiles.calibrationFactor ?? "",
+              // Paths to external tools
+              radiancePath: settings.radiancePath,
+              responseFunction: data.cameraResponseLocation ?? "",
+              scaleLabel: "",
+              scaleLevels: "",
+              // todo: remove these from this form completely when we get to refactoring the backend. These should only be exposed on the image viewer, where they are relevant
+              scaleLimit: "",
+              verticalAngle: data.fisheyeView.verticalViewDegrees,
+              vignettingCorrectionCal: data.correctionFiles.vignetting ?? "",
+              xdim: data.outputSettings.targetRes,
+              xleft,
+              ydim: data.outputSettings.targetRes,
+              ydown,
+            };
+            console.log("pipeline params", params);
+            void invoke<string>("pipeline", params).catch(async (error) => {
+              setProgressVisible(false);
 
-							const knownHdrgenIssue = getKnownHdrgenIssue(error);
-							if (knownHdrgenIssue) {
-								setImageSetIssues({ 0: knownHdrgenIssue });
-								toast.error("HDRGen could not merge the selected image set.", {
-									icon: <AlertTriangle className="size-4 text-red-500" />,
-								});
-								return;
-							}
+              const knownHdrgenIssue = getKnownHdrgenIssue(error);
+              if (knownHdrgenIssue) {
+                setImageSetIssues({ 0: knownHdrgenIssue });
+                toast.error("HDRGen could not merge the selected image set.", {
+                  icon: <AlertTriangle className="size-4 text-red-500" />,
+                });
+                return;
+              }
 
-							let tracePath: string | null = null;
-							try {
-								tracePath = await writePipelineTrace(
-									params,
-									error,
-									settings.outputPath,
-								);
-							} catch (traceError) {
-								toast.error(`Failed to write pipeline trace: ${traceError}`);
-							}
-							const toastMessage = tracePath
-								? "Pipeline failed. Trace saved. (Send this file to a maintainer)"
-								: "Pipeline failed. Trace could not be saved.";
-							toast.error(toastMessage, {
-								icon: <AlertTriangle className="size-4 text-red-500" />,
-								action: tracePath
-									? {
-											label: "Show in folder",
-											onClick: () =>
-												toast.promise(revealItemInDir(tracePath), {
-													loading: "Revealing in folder...",
-													success: "Revealed in folder",
-													error: "Failed to reveal in folder",
-												}),
-										}
-									: undefined,
-							});
-						});
-					},
-					(errors) => {
-						console.log("form errors", errors);
-					},
-				)}
-			>
-				<ResizablePanelGroup orientation="horizontal">
-					<ResizablePanel defaultSize="70%">
-						<ImageMatrixInput
-							control={control}
-							name="inputSets"
-							className="flex-1 overflow-hidden"
-							issuesByIndex={imageSetIssues}
-							rules={{
-								validate: (v) => {
-									if (!Array.isArray(v) || v.length === 0)
-										return "At least one image set is required";
+              let tracePath: string | null = null;
+              try {
+                tracePath = await writePipelineTrace(
+                  params,
+                  error,
+                  settings.outputPath
+                );
+              } catch (traceError) {
+                toast.error(`Failed to write pipeline trace: ${traceError}`);
+              }
+              const toastMessage = tracePath
+                ? "Pipeline failed. Trace saved. (Send this file to a maintainer)"
+                : "Pipeline failed. Trace could not be saved.";
+              toast.error(toastMessage, {
+                action: tracePath
+                  ? {
+                      label: "Show in folder",
+                      onClick: () =>
+                        toast.promise(revealItemInDir(tracePath), {
+                          error: "Failed to reveal in folder",
+                          loading: "Revealing in folder...",
+                          success: "Revealed in folder",
+                        }),
+                    }
+                  : undefined,
+                icon: <AlertTriangle className="size-4 text-red-500" />,
+              });
+            });
+          },
+          (errors) => {
+            console.log("form errors", errors);
+          }
+        )}
+      >
+        <ResizablePanelGroup orientation="horizontal">
+          <ResizablePanel defaultSize="70%">
+            <ImageMatrixInput
+              className="flex-1 overflow-hidden"
+              control={control}
+              issuesByIndex={imageSetIssues}
+              name="inputSets"
+              rules={{
+                validate: (v) => {
+                  if (!Array.isArray(v) || v.length === 0) {
+                    return "At least one image set is required";
+                  }
 
-									const i = v.findIndex((set) => set.files.length < 2);
-									if (i !== -1)
-										return `"${v[i]!.name}" needs at least 2 images`;
+                  const i = v.findIndex((set) => set.files.length < 2);
+                  if (i !== -1) {
+                    return `"${v[i]!.name}" needs at least 2 images`;
+                  }
 
-									return true;
-								},
-							}}
-						/>
-					</ResizablePanel>
-					<ResizableHandle withHandle />
-					<ResizablePanel>
-						<div className="bg-accent h-full flex flex-col min-h-0">
-							<Accordion
-								type="single"
-								collapsible
-								className="flex-1 min-h-0 overflow-y-auto"
-								// defaultValue="item-1"
-							>
-								<AccordionItem value="item-hdr-gen" className="px-4">
-									<FieldContainerAccordionTrigger
-										fields={[
-											"cameraResponseLocation",
-											"lensMask.radius",
-											"lensMask.x",
-											"lensMask.y",
-											"outputSettings.filterIrrelevantSrcImages",
-										]}
-									>
-										HDR Generation
-									</FieldContainerAccordionTrigger>
-									<AccordionContent
-										forceMount
-										className="flex flex-col gap-6 text-balance"
-									>
-										<Tooltip>
-											<TooltipTrigger asChild>
-												<div className="flex items-center gap-2">
-													<Controller
-														name="outputSettings.filterIrrelevantSrcImages"
-														control={control}
-														render={({ field }) => (
-															<Checkbox
-																checked={field.value ?? false}
-																onCheckedChange={(checked) =>
-																	field.onChange(Boolean(checked))
-																}
-																onBlur={field.onBlur}
-																ref={field.ref}
-															/>
-														)}
-													/>
-													<Label>Filter irrelevant source images</Label>
-													<InfoIcon className="size-4" />
-												</div>
-											</TooltipTrigger>
-											<TooltipContent className="max-w-xs">
-												Some LDR images do not provide value to the HDR image
-												generation process. Checking this box will filter out
-												those images before generating the HDR image. This
-												increases accuracy but also adds a minor increase in the
-												time it takes to finish the generation process.
-											</TooltipContent>
-										</Tooltip>
-										<div className="flex flex-col gap-2">
-											<Tooltip>
-												<TooltipTrigger asChild>
-													<FieldLabel className="items-center">
-														<SwitchCamera /> Camera response
-														<InfoIcon className="size-4" />
-													</FieldLabel>
-												</TooltipTrigger>
-												<TooltipContent className="max-w-xs">
-													A camera response function is the rule that tells your
-													camera how to turn the brightness of a scene into
-													digital pixel numbers. (Important for preprocessed
-													image formats like JPEG)
-												</TooltipContent>
-											</Tooltip>
-											<FileInput
-												control={control}
-												explicitOptional
-												name="cameraResponseLocation"
-												placeholder="Select or paste a .rsp file…"
-												filters={[
-													{
-														name: "Camera response files",
-														extensions: ["rsp"],
-													},
-												]}
-												rules={{
-													required: "Camera response file is required",
-												}}
-											/>
-										</div>
-									</AccordionContent>
-								</AccordionItem>
-								<AccordionItem value="item-crop-resize" className="px-4">
-									<FieldContainerAccordionTrigger
-										fields={[
-											"cameraResponseLocation",
-											"lensMask.radius",
-											"lensMask.x",
-											"lensMask.y",
-											"outputSettings.targetRes",
-											"outputSettings.filterIrrelevantSrcImages",
-										]}
-									>
-										Cropping and Resizing
-									</FieldContainerAccordionTrigger>
-									<AccordionContent
-										forceMount
-										className="flex flex-col gap-6 text-balance"
-									>
-										<Field>
-											<FieldLabel>
-												<ImageUpscale /> Target width/height
-											</FieldLabel>
-											<Input
-												type="number"
-												placeholder="Value in pixels"
-												defaultValue={1000}
-												{...register("outputSettings.targetRes", {
-													valueAsNumber: true,
-													min: {
-														value: 1,
-														message: "Target resolution must be greater than 0",
-													},
-												})}
-											/>
-											<FieldError
-												errors={[
-													form.formState.errors.outputSettings?.targetRes,
-												]}
-											/>
-										</Field>
-										<div className="flex flex-col gap-2">
-											<Tooltip>
-												<TooltipTrigger asChild>
-													<FieldLabel className="items-center">
-														<Eclipse /> Lens mask
-														<InfoIcon className="size-4" />
-													</FieldLabel>
-												</TooltipTrigger>
-												<TooltipContent className="max-w-xs">
-													A circular mask applied to remove the parts of the
-													image that are obstructed by the lens.
-												</TooltipContent>
-											</Tooltip>
-											<LensMaskInput
-												maskPreviewImage={selectedImage}
-												centerX={centerX}
-												centerY={centerY}
-												radiusAjusterCenterX={radiusAjusterCenterX}
-												radiusAjusterCenterY={radiusAjusterCenterY}
-												register={register}
-											/>
-										</div>
-									</AccordionContent>
-								</AccordionItem>
-								<AccordionItem value="item-correction-fisheye" className="px-4">
-									<FieldContainerAccordionTrigger
-										fields={["correctionFiles.fisheye"]}
-									>
-										Fisheye correction
-									</FieldContainerAccordionTrigger>
-									<AccordionContent
-										forceMount
-										className="flex flex-col gap-4 text-balance"
-									>
-										<FileInput
-											control={control}
-											explicitOptional
-											name="correctionFiles.fisheye"
-											placeholder="Select or paste a .cal file…"
-											filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
-											rules={{
-												required: "Fisheye correction file is required",
-											}}
-										/>
-									</AccordionContent>
-								</AccordionItem>
-								<AccordionItem
-									value="item-correction-vignetting"
-									className="px-4"
-								>
-									<FieldContainerAccordionTrigger
-										fields={["correctionFiles.vignetting"]}
-									>
-										Vignetting correction
-									</FieldContainerAccordionTrigger>
-									<AccordionContent
-										forceMount
-										className="flex flex-col gap-4 text-balance"
-									>
-										<FileInput
-											control={control}
-											explicitOptional
-											name="correctionFiles.vignetting"
-											placeholder="Select or paste a .cal file…"
-											filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
-											rules={{
-												required: "Vignetting correction file is required",
-											}}
-										/>
-									</AccordionContent>
-								</AccordionItem>
-								<AccordionItem
-									value="item-correction-neutral-density"
-									className="px-4"
-								>
-									<FieldContainerAccordionTrigger
-										fields={["correctionFiles.neutralDensity"]}
-									>
-										Neutral density correction
-									</FieldContainerAccordionTrigger>
-									<AccordionContent
-										forceMount
-										className="flex flex-col gap-4 text-balance"
-									>
-										<FileInput
-											control={control}
-											explicitOptional
-											name="correctionFiles.neutralDensity"
-											placeholder="Select or paste a .cal file…"
-											filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
-											rules={{
-												required: "Neutral density correction file is required",
-											}}
-										/>
-									</AccordionContent>
-								</AccordionItem>
-								<AccordionItem
-									value="item-correction-calibration-factor"
-									className="px-4"
-								>
-									<FieldContainerAccordionTrigger
-										fields={["correctionFiles.calibrationFactor"]}
-									>
-										Calibration factor correction
-									</FieldContainerAccordionTrigger>
-									<AccordionContent
-										forceMount
-										className="flex flex-col gap-4 text-balance"
-									>
-										<FileInput
-											control={control}
-											explicitOptional
-											name="correctionFiles.calibrationFactor"
-											placeholder="Select or paste a .cal file…"
-											filters={[{ name: "Radiance CAL", extensions: ["cal"] }]}
-											rules={{
-												required:
-													"Calibration factor correction file is required",
-											}}
-										/>
-									</AccordionContent>
-								</AccordionItem>
-								<AccordionItem value="item-post" className="px-4">
-									<FieldContainerAccordionTrigger
-										fields={[
-											"outputSettings.targetRes",
-											"fisheyeView.verticalViewDegrees",
-											"fisheyeView.horizontalViewDegrees",
-										]}
-									>
-										Output Header Editing
-									</FieldContainerAccordionTrigger>
-									<AccordionContent
-										forceMount
-										className="flex flex-col gap-4 text-balance"
-									>
-										<Field>
-											<FieldLabel>
-												<Rotate3D /> Fisheye view angles
-											</FieldLabel>
-											<FieldContent className="flex-row gap-1">
-												<Input
-													icon={"°"}
-													type="number"
-													placeholder="Vertical view angle"
-													{...register("fisheyeView.verticalViewDegrees", {
-														required: "Vertical view angle is required",
-														valueAsNumber: true,
-														min: {
-															value: 1,
-															message:
-																"Vertical view angle must be greater than 0",
-														},
-													})}
-													aria-invalid={
-														form.formState.errors.fisheyeView
-															?.verticalViewDegrees
-															? "true"
-															: undefined
-													}
-													defaultValue={180}
-												/>
-												<Input
-													icon={"°"}
-													type="number"
-													// TODO: refactor this to be from the top, not the bottom.
-													// thats just more intuitive/standardized.
-													placeholder="Horizontal view angle"
-													{...register("fisheyeView.horizontalViewDegrees", {
-														required: "Horizontal view angle is required",
-														valueAsNumber: true,
-														min: {
-															value: 1,
-															message:
-																"Horizontal view angle must be greater than 0",
-														},
-													})}
-													aria-invalid={
-														form.formState.errors.fisheyeView
-															?.horizontalViewDegrees
-															? "true"
-															: undefined
-													}
-													defaultValue={180}
-												/>
-											</FieldContent>
-											<FieldError
-												errors={[
-													form.formState.errors.fisheyeView
-														?.verticalViewDegrees,
-													form.formState.errors.fisheyeView
-														?.horizontalViewDegrees,
-												]}
-											/>
-										</Field>
-									</AccordionContent>
-								</AccordionItem>
-							</Accordion>
-							<div className="bottom-0 border-t left-0 right-0 w-full p-4 mt-auto bg-background drop-shadow-lg">
-								{progressVisible ? (
-									<PipelineStatus
-										onFinishAcknowledgment={() => setProgressVisible(false)}
-									/>
-								) : (
-									<Button className="w-full bg-osu-beaver-orange" type="submit">
-										Generate HDR Image
-									</Button>
-								)}
-							</div>
-						</div>
-					</ResizablePanel>
-				</ResizablePanelGroup>
-			</form>
-		</PipelineConfigProvider>
-	);
+                  return true;
+                },
+              }}
+            />
+          </ResizablePanel>
+          <ResizableHandle withHandle />
+          <ResizablePanel>
+            <div className="flex h-full min-h-0 flex-col bg-accent">
+              <Accordion
+                className="min-h-0 flex-1 overflow-y-auto"
+                collapsible
+                type="single"
+                // defaultValue="item-1"
+              >
+                <AccordionItem className="px-4" value="item-hdr-gen">
+                  <FieldContainerAccordionTrigger
+                    fields={[
+                      "cameraResponseLocation",
+                      "lensMask.radius",
+                      "lensMask.x",
+                      "lensMask.y",
+                      "outputSettings.filterIrrelevantSrcImages",
+                    ]}
+                  >
+                    HDR Generation
+                  </FieldContainerAccordionTrigger>
+                  <AccordionContent
+                    className="flex flex-col gap-6 text-balance"
+                    forceMount
+                  >
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="flex items-center gap-2">
+                          <Controller
+                            control={control}
+                            name="outputSettings.filterIrrelevantSrcImages"
+                            render={({ field }) => (
+                              <Checkbox
+                                checked={field.value ?? false}
+                                onBlur={field.onBlur}
+                                onCheckedChange={(checked) =>
+                                  field.onChange(Boolean(checked))
+                                }
+                                ref={field.ref}
+                              />
+                            )}
+                          />
+                          <Label>Filter irrelevant source images</Label>
+                          <InfoIcon className="size-4" />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        Some LDR images do not provide value to the HDR image
+                        generation process. Checking this box will filter out
+                        those images before generating the HDR image. This
+                        increases accuracy but also adds a minor increase in the
+                        time it takes to finish the generation process.
+                      </TooltipContent>
+                    </Tooltip>
+                    <div className="flex flex-col gap-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <FieldLabel className="items-center">
+                            <SwitchCamera /> Camera response
+                            <InfoIcon className="size-4" />
+                          </FieldLabel>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          A camera response function is the rule that tells your
+                          camera how to turn the brightness of a scene into
+                          digital pixel numbers. (Important for preprocessed
+                          image formats like JPEG)
+                        </TooltipContent>
+                      </Tooltip>
+                      <FileInput
+                        control={control}
+                        explicitOptional
+                        filters={[
+                          {
+                            extensions: ["rsp"],
+                            name: "Camera response files",
+                          },
+                        ]}
+                        name="cameraResponseLocation"
+                        placeholder="Select or paste a .rsp file…"
+                        rules={{
+                          required: "Camera response file is required",
+                        }}
+                      />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem className="px-4" value="item-crop-resize">
+                  <FieldContainerAccordionTrigger
+                    fields={[
+                      "cameraResponseLocation",
+                      "lensMask.radius",
+                      "lensMask.x",
+                      "lensMask.y",
+                      "outputSettings.targetRes",
+                      "outputSettings.filterIrrelevantSrcImages",
+                    ]}
+                  >
+                    Cropping and Resizing
+                  </FieldContainerAccordionTrigger>
+                  <AccordionContent
+                    className="flex flex-col gap-6 text-balance"
+                    forceMount
+                  >
+                    <Field>
+                      <FieldLabel>
+                        <ImageUpscale /> Target width/height
+                      </FieldLabel>
+                      <Input
+                        defaultValue={1000}
+                        placeholder="Value in pixels"
+                        type="number"
+                        {...register("outputSettings.targetRes", {
+                          min: {
+                            message: "Target resolution must be greater than 0",
+                            value: 1,
+                          },
+                          valueAsNumber: true,
+                        })}
+                      />
+                      <FieldError
+                        errors={[
+                          form.formState.errors.outputSettings?.targetRes,
+                        ]}
+                      />
+                    </Field>
+                    <div className="flex flex-col gap-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <FieldLabel className="items-center">
+                            <Eclipse /> Lens mask
+                            <InfoIcon className="size-4" />
+                          </FieldLabel>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          A circular mask applied to remove the parts of the
+                          image that are obstructed by the lens.
+                        </TooltipContent>
+                      </Tooltip>
+                      <LensMaskInput
+                        centerX={centerX}
+                        centerY={centerY}
+                        maskPreviewImage={selectedImage}
+                        radiusAjusterCenterX={radiusAjusterCenterX}
+                        radiusAjusterCenterY={radiusAjusterCenterY}
+                        register={register}
+                      />
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem className="px-4" value="item-correction-fisheye">
+                  <FieldContainerAccordionTrigger
+                    fields={["correctionFiles.fisheye"]}
+                  >
+                    Fisheye correction
+                  </FieldContainerAccordionTrigger>
+                  <AccordionContent
+                    className="flex flex-col gap-4 text-balance"
+                    forceMount
+                  >
+                    <FileInput
+                      control={control}
+                      explicitOptional
+                      filters={[{ extensions: ["cal"], name: "Radiance CAL" }]}
+                      name="correctionFiles.fisheye"
+                      placeholder="Select or paste a .cal file…"
+                      rules={{
+                        required: "Fisheye correction file is required",
+                      }}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem
+                  className="px-4"
+                  value="item-correction-vignetting"
+                >
+                  <FieldContainerAccordionTrigger
+                    fields={["correctionFiles.vignetting"]}
+                  >
+                    Vignetting correction
+                  </FieldContainerAccordionTrigger>
+                  <AccordionContent
+                    className="flex flex-col gap-4 text-balance"
+                    forceMount
+                  >
+                    <FileInput
+                      control={control}
+                      explicitOptional
+                      filters={[{ extensions: ["cal"], name: "Radiance CAL" }]}
+                      name="correctionFiles.vignetting"
+                      placeholder="Select or paste a .cal file…"
+                      rules={{
+                        required: "Vignetting correction file is required",
+                      }}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem
+                  className="px-4"
+                  value="item-correction-neutral-density"
+                >
+                  <FieldContainerAccordionTrigger
+                    fields={["correctionFiles.neutralDensity"]}
+                  >
+                    Neutral density correction
+                  </FieldContainerAccordionTrigger>
+                  <AccordionContent
+                    className="flex flex-col gap-4 text-balance"
+                    forceMount
+                  >
+                    <FileInput
+                      control={control}
+                      explicitOptional
+                      filters={[{ extensions: ["cal"], name: "Radiance CAL" }]}
+                      name="correctionFiles.neutralDensity"
+                      placeholder="Select or paste a .cal file…"
+                      rules={{
+                        required: "Neutral density correction file is required",
+                      }}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem
+                  className="px-4"
+                  value="item-correction-calibration-factor"
+                >
+                  <FieldContainerAccordionTrigger
+                    fields={["correctionFiles.calibrationFactor"]}
+                  >
+                    Calibration factor correction
+                  </FieldContainerAccordionTrigger>
+                  <AccordionContent
+                    className="flex flex-col gap-4 text-balance"
+                    forceMount
+                  >
+                    <FileInput
+                      control={control}
+                      explicitOptional
+                      filters={[{ extensions: ["cal"], name: "Radiance CAL" }]}
+                      name="correctionFiles.calibrationFactor"
+                      placeholder="Select or paste a .cal file…"
+                      rules={{
+                        required:
+                          "Calibration factor correction file is required",
+                      }}
+                    />
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem className="px-4" value="item-post">
+                  <FieldContainerAccordionTrigger
+                    fields={[
+                      "outputSettings.targetRes",
+                      "fisheyeView.verticalViewDegrees",
+                      "fisheyeView.horizontalViewDegrees",
+                    ]}
+                  >
+                    Output Header Editing
+                  </FieldContainerAccordionTrigger>
+                  <AccordionContent
+                    className="flex flex-col gap-4 text-balance"
+                    forceMount
+                  >
+                    <Field>
+                      <FieldLabel>
+                        <Rotate3D /> Fisheye view angles
+                      </FieldLabel>
+                      <FieldContent className="flex-row gap-1">
+                        <Input
+                          icon={"°"}
+                          placeholder="Vertical view angle"
+                          type="number"
+                          {...register("fisheyeView.verticalViewDegrees", {
+                            min: {
+                              message:
+                                "Vertical view angle must be greater than 0",
+                              value: 1,
+                            },
+                            required: "Vertical view angle is required",
+                            valueAsNumber: true,
+                          })}
+                          aria-invalid={
+                            form.formState.errors.fisheyeView
+                              ?.verticalViewDegrees
+                              ? "true"
+                              : undefined
+                          }
+                          defaultValue={180}
+                        />
+                        <Input
+                          icon={"°"}
+                          // TODO: refactor this to be from the top, not the bottom.
+                          // thats just more intuitive/standardized.
+                          placeholder="Horizontal view angle"
+                          type="number"
+                          {...register("fisheyeView.horizontalViewDegrees", {
+                            min: {
+                              message:
+                                "Horizontal view angle must be greater than 0",
+                              value: 1,
+                            },
+                            required: "Horizontal view angle is required",
+                            valueAsNumber: true,
+                          })}
+                          aria-invalid={
+                            form.formState.errors.fisheyeView
+                              ?.horizontalViewDegrees
+                              ? "true"
+                              : undefined
+                          }
+                          defaultValue={180}
+                        />
+                      </FieldContent>
+                      <FieldError
+                        errors={[
+                          form.formState.errors.fisheyeView
+                            ?.verticalViewDegrees,
+                          form.formState.errors.fisheyeView
+                            ?.horizontalViewDegrees,
+                        ]}
+                      />
+                    </Field>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+              <div className="right-0 bottom-0 left-0 mt-auto w-full border-t bg-background p-4 drop-shadow-lg">
+                {progressVisible ? (
+                  <PipelineStatus
+                    onFinishAcknowledgment={() => setProgressVisible(false)}
+                  />
+                ) : (
+                  <Button className="w-full bg-osu-beaver-orange" type="submit">
+                    Generate HDR Image
+                  </Button>
+                )}
+              </div>
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
+      </form>
+    </PipelineConfigProvider>
+  );
 }
