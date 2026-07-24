@@ -1,19 +1,25 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 
-export type ImageRectSelection = {
+export interface ImageRectSelection {
+  height: number;
+  width: number;
   x: number;
   y: number;
-  width: number;
-  height: number;
-};
+}
 
-type ImageSelectionContextValue = {
+interface ImageSelectionContextValue {
+  clearSelection: () => void;
   selection: ImageRectSelection | null;
   setSelection: (selection: ImageRectSelection) => void;
-  clearSelection: () => void;
-};
+}
 
 const imageSelectionContext = createContext<
   ImageSelectionContextValue | undefined
@@ -28,13 +34,13 @@ export function ImageSelectionProvider({
     null
   );
 
-  const setSelection = (nextSelection: ImageRectSelection) => {
+  const setSelection = useCallback((nextSelection: ImageRectSelection) => {
     setSelectionState(nextSelection);
-  };
+  }, []);
 
-  const clearSelection = () => {
+  const clearSelection = useCallback(() => {
     setSelectionState(null);
-  };
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -42,7 +48,7 @@ export function ImageSelectionProvider({
       selection,
       setSelection,
     }),
-    [selection]
+    [selection, setSelection, clearSelection]
   );
 
   return (

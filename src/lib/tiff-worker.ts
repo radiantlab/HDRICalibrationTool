@@ -11,12 +11,12 @@ import type {
 } from "./tiff-worker.types";
 
 // Back-compat: legacy decode messages without an "op" field
-type LegacyDecodeRequest = {
+interface LegacyDecodeRequest {
   buffer: ArrayBuffer;
-  memoryBytes?: number;
-  maxWidth?: number;
   maxHeight?: number;
-};
+  maxWidth?: number;
+  memoryBytes?: number;
+}
 
 type WorkerRequest = TiffWorkerRequest | LegacyDecodeRequest;
 
@@ -64,7 +64,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
       const wLimit = maxWidth ?? Number.POSITIVE_INFINITY;
       const hLimit = maxHeight ?? Number.POSITIVE_INFINITY;
       const scale = Math.min(wLimit / width, hLimit / height);
-      if (isFinite(scale) && scale > 0 && scale < 1) {
+      if (Number.isFinite(scale) && scale > 0 && scale < 1) {
         targetWidth = Math.max(1, Math.floor(width * scale));
         targetHeight = Math.max(1, Math.floor(height * scale));
       }
@@ -95,7 +95,7 @@ self.onmessage = (event: MessageEvent<WorkerRequest>) => {
       [copy.buffer]
     );
   } catch (e: unknown) {
-    const message = (e as { message?: string })?.message ?? String(e);
+    const message = (e as { message?: string }).message ?? String(e);
     self.postMessage({ error: message } satisfies TiffWorkerErrorResponse);
   }
 };
@@ -155,9 +155,9 @@ function downscale(
 
   // fallback to simple nearest-neighbor downscale
   const dst = new Uint8ClampedArray(dstW * dstH * 4);
-  for (let y = 0; y < dstH; y++) {
+  for (let y = 0; y < dstH; y += 1) {
     const sy = Math.floor((y * srcH) / dstH);
-    for (let x = 0; x < dstW; x++) {
+    for (let x = 0; x < dstW; x += 1) {
       const sx = Math.floor((x * srcW) / dstW);
       const sIdx = (sy * srcW + sx) * 4;
       const dIdx = (y * dstW + x) * 4;

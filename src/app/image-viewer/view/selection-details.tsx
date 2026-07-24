@@ -20,9 +20,9 @@ import type {
   LuminanceSummary,
 } from "./luminance-aggregates";
 
-type SelectionDetailsProps = {
+interface SelectionDetailsProps {
   luminanceSummary: LuminanceSummary;
-};
+}
 
 const formatLuminance = (value: number) => {
   if (!Number.isFinite(value)) {

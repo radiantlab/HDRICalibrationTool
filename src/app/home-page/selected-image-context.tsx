@@ -2,10 +2,10 @@
 
 import { createContext, useContext, useMemo, useState } from "react";
 
-type SelectedImageContextValue = {
+interface SelectedImageContextValue {
   selectedImage: string | undefined;
   setSelectedImage: (image: string) => void;
-};
+}
 
 const selectedImageContext = createContext<
   SelectedImageContextValue | undefined

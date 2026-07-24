@@ -14,37 +14,37 @@ import {
 
 const DEFAULT_DRAG_THRESHOLD_PX = 3;
 
-type ImagePoint = {
+interface ImagePoint {
   x: number;
   y: number;
-};
+}
 
-type DragState = {
+interface DragState {
   pointerId: number;
-  startImage: ImagePoint;
   startClient: ImagePoint;
-};
+  startImage: ImagePoint;
+}
 
-export type ImageSelectionOverlay = {
+export interface ImageSelectionOverlay {
+  heightPercent: number;
   leftPercent: number;
+  showTint: boolean;
   topPercent: number;
   widthPercent: number;
-  heightPercent: number;
-  showTint: boolean;
-};
+}
 
-type UseImageSelectionLayerParams = {
+interface UseImageSelectionLayerParams {
+  dragThresholdPx?: number;
   imageDimensions: [width: number, height: number] | null;
   surfaceRef: RefObject<Element | null>;
-  dragThresholdPx?: number;
-};
+}
 
-type LayerPointerHandlers = {
+interface LayerPointerHandlers {
+  onPointerCancel: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerUp: (event: ReactPointerEvent<HTMLDivElement>) => void;
-  onPointerCancel: (event: ReactPointerEvent<HTMLDivElement>) => void;
-};
+}
 
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));

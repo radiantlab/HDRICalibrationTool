@@ -38,11 +38,12 @@ export default function ImageViewer() {
         }
       }}
       onDrop={(paths) => {
-        if (paths.length !== 1) {
+        const [firstPath] = paths;
+        if (paths.length !== 1 || !firstPath) {
           toast.error("Only one image can be viewed at a time");
           return;
         }
-        attemptView(paths[0]!);
+        attemptView(firstPath);
       }}
     >
       {useCallback(

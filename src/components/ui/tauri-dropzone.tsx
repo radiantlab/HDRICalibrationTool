@@ -10,16 +10,16 @@ type DragDropEvent =
   | { type: "drop"; paths: string[]; position: { x: number; y: number } }
   | { type: "leave" };
 
-type E2EDropDetail = {
-  targetId: string;
+interface E2EDropDetail {
   paths: string[];
-};
+  targetId: string;
+}
 
 const E2E_DROP_EVENT = "__hdricalibrationtool_e2e_drop__";
 
-export type DropzoneChildrenProps = {
+export interface DropzoneChildrenProps {
   isDragActive: boolean;
-};
+}
 
 type TauriDropzoneProps = {
   onDrop?: (paths: string[]) => void;
@@ -79,7 +79,7 @@ export function TauriDropzone({
           return;
         }
         if (payload.type === "drop") {
-          handleDrop(payload.paths || []);
+          handleDrop(payload.paths);
         }
       }
     );
@@ -96,7 +96,7 @@ export function TauriDropzone({
 
     // Allow E2E tests to trigger the same drop path without OS-level drag automation.
     const onE2EDrop = (event: Event) => {
-      const detail = (event as CustomEvent<E2EDropDetail>).detail;
+      const { detail } = event as CustomEvent<E2EDropDetail>;
       if (!detail || detail.targetId !== props.id) {
         return;
       }

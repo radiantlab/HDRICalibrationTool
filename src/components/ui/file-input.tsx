@@ -24,37 +24,37 @@ type FilePathFieldName<T extends FieldValues> = FieldPathByValue<
   string | null
 >;
 
-export type FileInputProps<
+export interface FileInputProps<
   T extends FieldValues,
   TName extends FilePathFieldName<T>,
-> = {
-  control: Control<T>;
-  name: TName;
-  label?: React.ReactNode;
-  placeholder?: string;
-  className?: string;
+> {
   buttonText?: React.ReactNode;
+  className?: string;
+  control: Control<T>;
   /**
    * Allow selecting a directory instead of a file.
    */
   directory?: boolean;
   /**
-   * Tauri dialog filters.
-   */
-  filters?: DialogFilter[];
-  /**
    * Disable the input and button.
    */
   disabled?: boolean;
-  rules?: Omit<
-    RegisterOptions<T, TName>,
-    "validate" | "setValueAs" | "required"
-  > & { required?: string };
   /**
    * When true, renders a "None" button that explicitly sets the field to null.
    */
   explicitOptional?: boolean;
-};
+  /**
+   * Tauri dialog filters.
+   */
+  filters?: DialogFilter[];
+  label?: React.ReactNode;
+  name: TName;
+  placeholder?: string;
+  rules?: Omit<
+    RegisterOptions<T, TName>,
+    "validate" | "setValueAs" | "required"
+  > & { required?: string };
+}
 
 export function FileInput<
   T extends FieldValues,
@@ -122,7 +122,7 @@ export function FileInput<
 
   return (
     <Field className={className} data-invalid={fieldState.invalid}>
-      {label && <FieldLabel htmlFor={inputId}>{label}</FieldLabel>}
+      {label ? <FieldLabel htmlFor={inputId}>{label}</FieldLabel> : null}
       <FieldContent className="flex-row items-center gap-2">
         <Input
           aria-invalid={fieldState.invalid || undefined}
@@ -150,7 +150,7 @@ export function FileInput<
         >
           {buttonText}
         </Button>
-        {explicitOptional && (
+        {explicitOptional ? (
           <Button
             aria-pressed={isNoneSelected}
             className={cn({
@@ -166,11 +166,9 @@ export function FileInput<
           >
             {"None"}
           </Button>
-        )}
+        ) : null}
       </FieldContent>
-      {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+      {fieldState.invalid ? <FieldError errors={[fieldState.error]} /> : null}
     </Field>
   );
 }
-
-export default FileInput;

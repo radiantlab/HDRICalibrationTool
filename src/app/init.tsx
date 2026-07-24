@@ -12,10 +12,11 @@ import { mkdir } from "@tauri-apps/plugin-fs";
 import { platform } from "@tauri-apps/plugin-os";
 import type React from "react";
 import { useEffect } from "react";
+import { toast } from "sonner";
 import { useSettingsStore } from "./stores/settings-store";
 
 // Debug flag to enable console logging
-const DEBUG = true;
+const DEBUG: boolean = true;
 
 /**
  * Component that handles application initialization
@@ -53,7 +54,7 @@ const Initialization: React.FC = () => {
             outputDefaultPath = targetDir;
           } catch (error) {
             console.error("Initialization: could not set output path:", error);
-            alert(
+            toast.error(
               "There was a problem setting up the default output path, please enter a path in the settings before generating HDR images."
             );
           }
@@ -82,7 +83,7 @@ const Initialization: React.FC = () => {
       }
     };
 
-    void initialize();
+    initialize();
 
     return () => {
       cancelled = true;

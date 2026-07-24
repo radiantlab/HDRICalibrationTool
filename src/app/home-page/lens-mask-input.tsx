@@ -30,14 +30,15 @@ export function LensMaskInput({
 
   register: UseFormRegister<pipelineConfig>;
 }) {
+  const maskPreviewImageMetadataPromise =
+    useGenericImageMetadata(maskPreviewImage);
+
   return (
     <Suspense fallback={<Spinner />}>
-      {maskPreviewImage ? (
+      {maskPreviewImage && maskPreviewImageMetadataPromise ? (
         <LensMaskInputInner
           maskPreviewImage={maskPreviewImage}
-          maskPreviewImageMetadataPromise={useGenericImageMetadata(
-            maskPreviewImage
-          )}
+          maskPreviewImageMetadataPromise={maskPreviewImageMetadataPromise}
           {...props}
         />
       ) : (
@@ -102,7 +103,7 @@ function LensMaskInputInner({
                 },
                 onChange(e: React.ChangeEvent<HTMLInputElement>) {
                   const n = Number(e.target.value);
-                  if (isNaN(n)) {
+                  if (Number.isNaN(n)) {
                     return;
                   }
                   radiusAjusterCenterX.set(centerX.get() + n);
@@ -119,7 +120,7 @@ function LensMaskInputInner({
               {...register("lensMask.x", {
                 onChange(e: React.ChangeEvent<HTMLInputElement>) {
                   const n = Number(e.target.value);
-                  if (isNaN(n)) {
+                  if (Number.isNaN(n)) {
                     return;
                   }
                   const deltaX = n - centerX.get();
@@ -137,7 +138,7 @@ function LensMaskInputInner({
               {...register("lensMask.y", {
                 onChange(e: React.ChangeEvent<HTMLInputElement>) {
                   const n = Number(e.target.value);
-                  if (isNaN(n)) {
+                  if (Number.isNaN(n)) {
                     return;
                   }
                   const deltaY = n - centerY.get();

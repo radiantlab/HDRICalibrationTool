@@ -3,9 +3,9 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-type HdrMetadataDetailsProps = {
+interface HdrMetadataDetailsProps {
   metadata: Record<string, string> | null;
-};
+}
 
 const PRIORITY_KEYS = ["FORMAT", "PHOTOPIC_ILLUMINANCE", "VIEW"];
 

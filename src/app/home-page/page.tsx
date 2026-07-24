@@ -61,7 +61,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useMotionValueFormState } from "@/lib/useMotionValueFormState";
+import { useMotionValueFormState } from "@/lib/use-motion-value-form-state";
 import { useSettingsStore } from "../stores/settings-store";
 import {
   PipelineConfigProvider,
@@ -99,23 +99,23 @@ const useGlobalPipelineConfig = create<
   set,
 }));
 
-type PipelineTrace = {
+interface PipelineTrace {
   createdAt: string;
-  input: Record<string, unknown>;
   error: unknown;
-};
+  input: Record<string, unknown>;
+}
 
-type CommandNonZeroExitError = {
+interface CommandNonZeroExitError {
   kind: "non_zero_exit";
   program: string;
   status_code?: number | null;
   stderr?: string;
-};
+}
 
-type PipelineCommandError = {
-  kind: "command";
+interface PipelineCommandError {
   error: CommandNonZeroExitError;
-};
+  kind: "command";
+}
 
 const HDRGEN_FAILURE_PATTERNS = [
   "cannot solve for response function",
@@ -127,8 +127,11 @@ const HDRGEN_FAILURE_PATTERNS = [
 const HDRGEN_MERGE_FAILURE_MESSAGE =
   "HDRGen could not merge this image set. The selected exposures likely do not overlap enough, or HDRGen could not determine exposure calibration. Try adding more intermediate exposures or provide a camera response (.rsp) file.";
 
+const PATH_SEPARATOR_REGEX = /[/\\]/;
+const EXE_EXTENSION_REGEX = /\.exe$/;
+
 function getProgramBaseName(program: string) {
-  return program.split(/[/\\]/).pop()?.toLowerCase() ?? "";
+  return program.split(PATH_SEPARATOR_REGEX).pop()?.toLowerCase() ?? "";
 }
 
 function getKnownHdrgenIssue(error: unknown): ImageSetIssue | null {
@@ -153,7 +156,10 @@ function getKnownHdrgenIssue(error: unknown): ImageSetIssue | null {
   }
 
   if (
-    getProgramBaseName(commandError.program).replace(/\.exe$/, "") !== "hdrgen"
+    getProgramBaseName(commandError.program).replace(
+      EXE_EXTENSION_REGEX,
+      ""
+    ) !== "hdrgen"
   ) {
     return null;
   }
@@ -229,12 +235,10 @@ export default function Home() {
   const { control, register, setValue, watch } = form;
   const formValues = watch();
   // keep the global pipeline config in sync with the form values
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally depend on the stringified value rather than the object reference — react-hook-form's watch() returns a new object every render, so depending on formValues/globalPipelineConfig.set directly reruns this effect (and re-renders) every render, causing an infinite loop.
   useEffect(() => {
     globalPipelineConfig.set(formValues);
-  }, [
-    // avoid infinite re-renders by stringifying the form values (so we only compare the values, not the reference)
-    JSON.stringify(formValues),
-  ]);
+  }, [JSON.stringify(formValues)]);
 
   const { settings } = useSettingsStore();
 
@@ -276,7 +280,11 @@ export default function Home() {
 
   const radius = useTransform<number, number>(
     [centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
-    ([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2)
+    ([cx, cy, rx, ry]) =>
+      Math.sqrt(
+        ((cx as number) - (rx as number)) ** 2 +
+          ((cy as number) - (ry as number)) ** 2
+      )
   );
   useEffect(() => {
     const unsub = radius.on("change", (value) => {
@@ -303,6 +311,7 @@ export default function Home() {
     Partial<Record<number, ImageSetIssue>>
   >({});
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: inputSetIssueResetKey is a change-detection trigger (a stringified snapshot of the inputs that should reset validation issues), not a value read inside the effect body, so it can't be "added" by inlining its computation here.
   useEffect(() => {
     setImageSetIssues((currentIssues) =>
       Object.keys(currentIssues).length > 0 ? {} : currentIssues
@@ -327,7 +336,7 @@ export default function Home() {
             }
             if (
               !Number.isFinite(data.outputSettings.targetRes) ||
-              (data.outputSettings.targetRes != null &&
+              (data.outputSettings.targetRes !== null &&
                 data.outputSettings.targetRes <= 0)
             ) {
               toast.error("Target resolution must be greater than 0.");
@@ -338,18 +347,23 @@ export default function Home() {
                 Number.isFinite(data.fisheyeView.verticalViewDegrees) &&
                 Number.isFinite(data.fisheyeView.horizontalViewDegrees)
               ) ||
-              (data.fisheyeView.verticalViewDegrees != null &&
+              (data.fisheyeView.verticalViewDegrees !== null &&
                 data.fisheyeView.verticalViewDegrees <= 0) ||
-              (data.fisheyeView.horizontalViewDegrees != null &&
+              (data.fisheyeView.horizontalViewDegrees !== null &&
                 data.fisheyeView.horizontalViewDegrees <= 0)
             ) {
               toast.error("Fisheye view angles must be greater than 0.");
               return;
             }
 
+            // TODO: implement batch processing
+            const [imageSet] = data.inputSets;
+            if (!imageSet) {
+              return;
+            }
+
             setImageSetIssues({});
             setProgressVisible(true);
-            const imageSet = data.inputSets[0]!; // TODO: implement batch processing
             const params = {
               dcrawEmuPath: settings.dcrawEmuPath,
               diameter,
@@ -380,7 +394,7 @@ export default function Home() {
               ydown,
             };
             console.log("pipeline params", params);
-            void invoke<string>("pipeline", params).catch(async (error) => {
+            invoke<string>("pipeline", params).catch(async (error) => {
               setProgressVisible(false);
 
               const knownHdrgenIssue = getKnownHdrgenIssue(error);
@@ -441,7 +455,7 @@ export default function Home() {
 
                   const i = v.findIndex((set) => set.files.length < 2);
                   if (i !== -1) {
-                    return `"${v[i]!.name}" needs at least 2 images`;
+                    return `"${v[i]?.name}" needs at least 2 images`;
                   }
 
                   return true;

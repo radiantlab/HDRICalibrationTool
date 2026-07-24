@@ -4,7 +4,7 @@
 
 /// <reference path="emscripten.d.ts"/>
 
-declare var loadModule: (options: Tiff.InitializeOptions) => typeof Module;
+declare let loadModule: (options: Tiff.InitializeOptions) => typeof Module;
 declare class Tiff {
   private _filename;
   private _tiffPtr;
@@ -37,13 +37,13 @@ declare namespace Tiff {
     name: string;
     constructor(message: string);
   }
-  export var Tag: any;
+  export let Tag: any;
 }
-declare var process: any;
-declare var require: any;
-declare var module: any;
-declare var define: any;
-declare var self: any;
+declare let process: any;
+declare let require: any;
+declare let module: any;
+declare let define: any;
+declare let self: any;
 
 declare module "tiff.js" {
   export default Tiff;

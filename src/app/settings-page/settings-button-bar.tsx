@@ -5,7 +5,13 @@
  * @param savePaths - Function to call when the Apply Changes button is clicked
  * @returns React component with action buttons
  */
-export default function SettingsButtonBar({ saveDisabled, savePaths }: any) {
+export default function SettingsButtonBar({
+  saveDisabled,
+  savePaths,
+}: {
+  saveDisabled: boolean;
+  savePaths: () => void;
+}) {
   return (
     <div className="fixed bottom-0 left-0 w-full border-gray-400 bg-gray-300">
       <div className="mr-8 ml-8 flex justify-around border-gray-400 border-t py-4">

@@ -3,17 +3,17 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-export type HoverLuminanceSample = {
+export interface HoverLuminanceSample {
+  luminance: number;
   x: number;
   y: number;
-  luminance: number;
-};
+}
 
-type HoverLuminanceDetailsProps = {
-  sample: HoverLuminanceSample | null;
-  isVisible: boolean;
+interface HoverLuminanceDetailsProps {
   isLuminanceReady: boolean;
-};
+  isVisible: boolean;
+  sample: HoverLuminanceSample | null;
+}
 
 const formatLuminance = (value: number) => {
   if (!Number.isFinite(value)) {
@@ -27,6 +27,19 @@ const formatLuminance = (value: number) => {
   }
   return value.toFixed(3);
 };
+
+function formatLuminanceLabel(
+  isLuminanceReady: boolean,
+  sample: HoverLuminanceSample | null
+) {
+  if (!isLuminanceReady) {
+    return "computing...";
+  }
+  if (!sample) {
+    return "n/a";
+  }
+  return `${formatLuminance(sample.luminance)} cd/m2`;
+}
 
 export function HoverLuminanceDetails({
   sample,
@@ -54,13 +67,7 @@ export function HoverLuminanceDetails({
           </div>
           <div className="flex items-center justify-between gap-2">
             <span className="text-muted-foreground">Luminance</span>
-            <span>
-              {isLuminanceReady
-                ? sample
-                  ? `${formatLuminance(sample.luminance)} cd/m2`
-                  : "n/a"
-                : "computing..."}
-            </span>
+            <span>{formatLuminanceLabel(isLuminanceReady, sample)}</span>
           </div>
         </div>
       </CardContent>

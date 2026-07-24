@@ -25,17 +25,17 @@ function isFile(value: unknown): value is File {
   return typeof File !== "undefined" && value instanceof File;
 }
 
-export type DropzoneInputProps<TFieldValues extends FieldValues> = {
-  control: Control<TFieldValues>;
-  name: Path<TFieldValues>;
-  label?: React.ReactNode;
-  description?: React.ReactNode;
+export interface DropzoneInputProps<TFieldValues extends FieldValues> {
   accept?: Accept;
-  multiple?: boolean;
-  disabled?: boolean;
   className?: string;
+  control: Control<TFieldValues>;
+  description?: React.ReactNode;
+  disabled?: boolean;
+  label?: React.ReactNode;
+  multiple?: boolean;
+  name: Path<TFieldValues>;
   placeholder?: string;
-};
+}
 
 export function DropzoneInput<
   TFieldValues extends Pick<pipelineConfig, "inputSets">,
@@ -52,11 +52,14 @@ export function DropzoneInput<
 }: DropzoneInputProps<TFieldValues>) {
   const { field, fieldState } = useController({ control, name });
 
-  const values: unknown[] = Array.isArray(field.value)
-    ? field.value
-    : field.value == null
-      ? []
-      : [field.value];
+  let values: unknown[];
+  if (Array.isArray(field.value)) {
+    values = field.value;
+  } else if (field.value === null) {
+    values = [];
+  } else {
+    values = [field.value];
+  }
 
   const fileNames = values
     .map((value) => {
@@ -74,11 +77,11 @@ export function DropzoneInput<
       }
       return null;
     })
-    .filter((name): name is string => !!name);
+    .filter((fileName): fileName is string => !!fileName);
 
   return (
     <Field className={className} data-invalid={!!fieldState.error}>
-      {label && <FieldLabel>{label}</FieldLabel>}
+      {label ? <FieldLabel>{label}</FieldLabel> : null}
       <FieldContent>
         <Dropzone
           accept={accept}
@@ -115,12 +118,14 @@ export function DropzoneInput<
         </Dropzone>
         {fileNames.length > 0 && (
           <ul className="mt-2 text-sm">
-            {fileNames.map((name, i) => (
-              <li key={i}>{name}</li>
+            {fileNames.map((fileName) => (
+              <li key={fileName}>{fileName}</li>
             ))}
           </ul>
         )}
-        {description && <FieldDescription>{description}</FieldDescription>}
+        {description ? (
+          <FieldDescription>{description}</FieldDescription>
+        ) : null}
         <FieldError
           errors={
             fieldState.error

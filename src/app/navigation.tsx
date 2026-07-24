@@ -47,7 +47,9 @@ export default function Navigation() {
             <img
               alt="Logo"
               className="mr-3 h-10 object-contain"
+              height={452}
               src="SunApertureOrange.png"
+              width={452}
             />
             <h1 className="font-bold text-2xl">{appName}</h1>
           </div>

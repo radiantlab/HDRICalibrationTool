@@ -2,6 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { browser } from "@wdio/globals";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const tauriDriverPath = path.resolve(
@@ -34,8 +35,8 @@ function createBuildEnv() {
 
   // WDIO loads this config via tsx, which leaks Node loader hooks into child
   // npm processes and breaks Next.js font resolution during the Tauri build.
-  delete env.NODE_OPTIONS;
-  delete env.npm_config_node_options;
+  env.NODE_OPTIONS = undefined;
+  env.npm_config_node_options = undefined;
 
   return env;
 }

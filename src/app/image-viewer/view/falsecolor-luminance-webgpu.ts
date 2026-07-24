@@ -6,30 +6,30 @@ const RADIANCE_BRIGHTNESS_WEIGHTS = {
 } as const;
 const WORKGROUP_SIZE = 64;
 
-type ComputeInput = {
+interface ComputeInput {
+  exposure?: number;
+  height: number;
+  multiplier?: number;
+  preferWebGPU?: boolean;
   rgba: Float32Array;
   width: number;
-  height: number;
-  multiplier?: number;
-  exposure?: number;
-  preferWebGPU?: boolean;
-};
+}
 
-export type FalsecolorLuminanceMatrix = {
-  width: number;
-  height: number;
-  values: Float32Array;
-  multiplier: number;
+export interface FalsecolorLuminanceMatrix {
   exposure: number;
-};
+  height: number;
+  multiplier: number;
+  values: Float32Array;
+  width: number;
+}
 
-type FalsecolorPixelRgbInput = {
-  red: number;
-  green: number;
+interface FalsecolorPixelRgbInput {
   blue: number;
-  multiplier?: number;
   exposure?: number;
-};
+  green: number;
+  multiplier?: number;
+  red: number;
+}
 
 const resolveSafeExposure = (exposure: number) =>
   Number.isFinite(exposure) && exposure > 0 ? exposure : 1;
@@ -277,6 +277,7 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
     );
 
     device.queue.submit([commandEncoder.finish()]);
+    // biome-ignore lint/suspicious/noUnnecessaryConditions: gpuMapMode is typed as Record<string, number>; under noUncheckedIndexedAccess tsc correctly treats gpuMapMode.READ as number | undefined (Biome's type inference misses this), so the fallback is required for tsc to pass.
     await readbackBuffer.mapAsync(gpuMapMode.READ ?? 1);
     const mappedRange = readbackBuffer.getMappedRange();
     const result = new Float32Array(mappedRange.slice(0));

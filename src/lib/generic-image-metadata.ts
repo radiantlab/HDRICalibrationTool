@@ -6,16 +6,30 @@ import { useSettingsStore } from "@/app/stores/settings-store";
 import { getTiffPath } from "@/components/ui/(image)/(tiff-image)/useTiffPath";
 import { getTiffMetadata } from "./tiff-worker-client";
 
-export type GenericImageMetadata = {
+export interface GenericImageMetadata {
   size: [width: number, height: number];
-};
+}
 
+// Overloaded so callers with a definite `string` path keep a definite
+// `Promise` return type, while callers that may not have a path yet (e.g.
+// no image selected) can pass `string | undefined` and call the hook
+// unconditionally instead of skipping it based on a condition, which would
+// violate the rules of hooks.
 export function useGenericImageMetadata(
   fsPath: string
-): Promise<GenericImageMetadata> {
+): Promise<GenericImageMetadata>;
+export function useGenericImageMetadata(
+  fsPath: string | undefined
+): Promise<GenericImageMetadata> | undefined;
+export function useGenericImageMetadata(
+  fsPath: string | undefined
+): Promise<GenericImageMetadata> | undefined {
   const { settings } = useSettingsStore();
   return useMemo(() => {
-    const kind = path.extname(fsPath).toLowerCase();
+    if (!fsPath) {
+      return;
+    }
+    const kind: string = path.extname(fsPath).toLowerCase();
     switch (kind) {
       case ".jpg":
       case ".jpeg":
@@ -44,8 +58,8 @@ function getTiffImageMetadata(
   dcrawEmuPath: string
 ): Promise<GenericImageMetadata> {
   const tiffPath = getTiffPath(fsPath, dcrawEmuPath);
-  return tiffPath.then(async (path) => {
-    const u8 = await readFile(path);
+  return tiffPath.then(async (resolvedTiffPath) => {
+    const u8 = await readFile(resolvedTiffPath);
     const buffer = u8.buffer.slice(0);
     const { width, height } = await getTiffMetadata(buffer, {
       memoryBytes: Math.max(

@@ -1,16 +1,19 @@
-import * as React from "react";
+import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-const Input = React.forwardRef<
-  HTMLInputElement,
-  React.ComponentProps<"input"> & {
-    icon?: React.ReactNode;
-  }
->(({ className, type, icon, ...props }, ref) => {
+const Input = ({
+  className,
+  type,
+  icon,
+  ref,
+  ...props
+}: (React.ComponentProps<"input"> & {
+  icon?: React.ReactNode;
+}) & { ref?: React.Ref<HTMLInputElement> }) => {
   return (
     <div className="group relative inline">
-      {icon && (
+      {icon ? (
         <div
           className={cn(
             "absolute top-0 left-0 grid h-full w-6 place-items-center text-muted-foreground transition-colors group-focus-within:text-foreground",
@@ -19,7 +22,7 @@ const Input = React.forwardRef<
         >
           {icon}
         </div>
-      )}
+      ) : null}
       <input
         className={cn(
           "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-colors file:border-0 file:bg-transparent file:font-medium file:text-foreground file:text-sm placeholder:text-muted-foreground focus-visible:border-ring focus-visible:outline-hidden focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
@@ -35,7 +38,7 @@ const Input = React.forwardRef<
       />
     </div>
   );
-});
+};
 Input.displayName = "Input";
 
 export { Input };

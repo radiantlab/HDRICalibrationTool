@@ -191,14 +191,12 @@ function getPipelineFailureMessage(outputDir: string): string | null {
   const traceFiles = readdirSync(traceDir)
     .filter((name) => name.endsWith(".json"))
     .sort();
-  if (!traceFiles.length) {
+  const newestTraceFile = traceFiles.at(-1);
+  if (!newestTraceFile) {
     return null;
   }
 
-  const newestTracePath = path.join(
-    traceDir,
-    traceFiles[traceFiles.length - 1]!
-  );
+  const newestTracePath = path.join(traceDir, newestTraceFile);
   const traceContents = readFileSync(newestTracePath, "utf8");
   return `Pipeline trace detected at ${newestTracePath}\n${traceContents}`;
 }
@@ -289,7 +287,7 @@ describe("HDRI Calibration Tool", () => {
     });
 
     await browser.waitUntil(
-      async () => {
+      () => {
         const failureMessage = getPipelineFailureMessage(tempOutputDirectory);
         if (failureMessage) {
           throw new Error(failureMessage);

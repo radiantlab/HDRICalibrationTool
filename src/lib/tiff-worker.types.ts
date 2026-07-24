@@ -1,29 +1,31 @@
-export type TiffMetadataRequest = {
+export interface TiffMetadataRequest {
+  buffer: ArrayBuffer;
+  memoryBytes?: number;
   op: "metadata";
-  buffer: ArrayBuffer;
-  memoryBytes?: number;
-};
+}
 
-export type TiffDecodeRequest = {
-  op: "decode";
+export interface TiffDecodeRequest {
   buffer: ArrayBuffer;
-  memoryBytes?: number;
-  maxWidth?: number;
   maxHeight?: number;
-};
+  maxWidth?: number;
+  memoryBytes?: number;
+  op: "decode";
+}
 
 export type TiffWorkerRequest = TiffMetadataRequest | TiffDecodeRequest;
 
-export type TiffMetadataResponse = {
+export interface TiffMetadataResponse {
+  height: number;
   op: "metadata";
   width: number;
-  height: number;
-};
+}
 
-export type TiffDecodeResponse = {
-  width: number;
-  height: number;
+export interface TiffDecodeResponse {
   buffer: ArrayBuffer;
-};
+  height: number;
+  width: number;
+}
 
-export type TiffWorkerErrorResponse = { error: string };
+export interface TiffWorkerErrorResponse {
+  error: string;
+}

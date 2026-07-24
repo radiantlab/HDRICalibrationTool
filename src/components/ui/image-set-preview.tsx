@@ -15,10 +15,10 @@ import {
 import { SkeletonSuspended } from "./skeleton-suspended";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./tooltip";
 
-export type ImageSet = {
-  name: string;
+export interface ImageSet {
   files: string[];
-};
+  name: string;
+}
 
 export function ImageSetPreview({
   name,
@@ -59,7 +59,7 @@ export function ImageSetPreview({
                   fileTypes.join(", "),
                 "Average File Size": fileStats.then((stats) =>
                   prettyBytes(
-                    stats.reduce((acc, stat) => acc + stat.size, 0) /
+                    stats.reduce((acc, fileStat) => acc + fileStat.size, 0) /
                       stats.length
                   )
                 ),
@@ -104,9 +104,18 @@ export function ImageSetPreview({
             <TooltipTrigger>
               <ContextMenu>
                 <ContextMenuTrigger asChild>
+                  {/* biome-ignore lint/a11y/useSemanticElements: a real <button> can't be used here — this is already nested inside the <button> that Radix's TooltipTrigger renders by default, and a button-in-button is invalid HTML. */}
                   <div
                     className="generic-image-container size-48 shrink-0 bg-accent"
                     onClick={() => onClick(file)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onClick(file);
+                      }
+                    }}
+                    role="button"
+                    tabIndex={0}
                   >
                     <GenericImage fsSrc={file} />
                   </div>

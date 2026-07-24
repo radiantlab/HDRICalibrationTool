@@ -30,7 +30,9 @@ function onceMessage<T = unknown>(
       cleanup();
       try {
         worker.terminate();
-      } catch {}
+      } catch {
+        // ignore: worker may already be terminated
+      }
       reject(new DOMException("Aborted", "AbortError"));
     };
     const cleanup = () => {
