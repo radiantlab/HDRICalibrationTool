@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import {
 	motion,
 	MotionValue,
@@ -7,6 +7,11 @@ import {
 } from "framer-motion";
 import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const snapToDevicePixel = (value: number) => {
+	const dpr = typeof window === "undefined" ? 1 : window.devicePixelRatio || 1;
+	return Math.round(value * dpr) / dpr;
+};
 
 export function CircularMaskSelection({
 	children,
@@ -35,24 +40,29 @@ export function CircularMaskSelection({
 
 	const radius = useTransform<number, number>(
 		[centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
-		([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2)
+		([cx, cy, rx, ry]) => Math.sqrt((cx! - rx!) ** 2 + (cy! - ry!) ** 2),
 	);
 	const diameter = useTransform<number, number>(radius, (r) => r * 2);
 
-	// snap key motion values to whole pixels to avoid subpixel jitter
-	const snappedCenterX = useTransform(centerX, (v) => Math.round(v));
-	const snappedCenterY = useTransform(centerY, (v) => Math.round(v));
-	const snappedDiameter = useTransform(diameter, (v) => Math.round(v));
-	const halfDiameter = useTransform(snappedDiameter, (d) => Math.round(d / 2));
-	const snappedPosX = useTransform([snappedCenterX, halfDiameter], (vals) => {
+	const snappedDiameter = useTransform(diameter, snapToDevicePixel);
+	const snappedRadiusAjusterCenterX = useTransform(
+		radiusAjusterCenterX,
+		snapToDevicePixel,
+	);
+	const snappedRadiusAjusterCenterY = useTransform(
+		radiusAjusterCenterY,
+		snapToDevicePixel,
+	);
+
+	const snappedPosX = useTransform([centerX, snappedDiameter], (vals) => {
 		const cx = vals[0] as number;
-		const hd = vals[1] as number;
-		return Math.round(cx - hd);
+		const d = vals[1] as number;
+		return snapToDevicePixel(cx - d / 2);
 	});
-	const snappedPosY = useTransform([snappedCenterY, halfDiameter], (vals) => {
+	const snappedPosY = useTransform([centerY, snappedDiameter], (vals) => {
 		const cy = vals[0] as number;
-		const hd = vals[1] as number;
-		return Math.round(cy - hd);
+		const d = vals[1] as number;
+		return snapToDevicePixel(cy - d / 2);
 	});
 	return (
 		<div
@@ -60,7 +70,7 @@ export function CircularMaskSelection({
 				containerRef.current = r;
 				if (ref) ref.current = r;
 			}}
-			className={cn("relative group", className)}
+			className={cn("relative group overflow-hidden", className)}
 		>
 			<motion.div
 				drag
@@ -85,15 +95,15 @@ export function CircularMaskSelection({
 						clamp(
 							radiusAjusterCenterX.get() + info.delta.x,
 							0,
-							containerRect.width
-						)
+							containerRect.width,
+						),
 					);
 					radiusAjusterCenterY.set(
 						clamp(
 							radiusAjusterCenterY.get() + info.delta.y,
 							0,
-							containerRect.height
-						)
+							containerRect.height,
+						),
 					);
 				}}
 			>
@@ -106,7 +116,7 @@ export function CircularMaskSelection({
 			<motion.div
 				drag
 				style={{
-					transform: useMotionTemplate`translate3d(${radiusAjusterCenterX}px, ${radiusAjusterCenterY}px, 0) translate(-50%, -50%)`,
+					transform: useMotionTemplate`translate3d(${snappedRadiusAjusterCenterX}px, ${snappedRadiusAjusterCenterY}px, 0) translate(-50%, -50%)`,
 					width: selectorRadius * 2,
 					height: selectorRadius * 2,
 				}}
@@ -121,15 +131,15 @@ export function CircularMaskSelection({
 						clamp(
 							radiusAjusterCenterX.get() + info.delta.x,
 							0,
-							containerRect.width
-						)
+							containerRect.width,
+						),
 					);
 					radiusAjusterCenterY.set(
 						clamp(
 							radiusAjusterCenterY.get() + info.delta.y,
 							0,
-							containerRect.height
-						)
+							containerRect.height,
+						),
 					);
 				}}
 			/>
