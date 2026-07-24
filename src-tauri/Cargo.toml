@@ -28,9 +28,11 @@ tauri-plugin-os = "2"
 tauri-plugin-shell = "2"
 tauri-plugin-opener = "2"
 blake3 = "1.5"
+tauri-plugin-wdio-webdriver = { version = "1.2.0", optional = true }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.
 # If you use cargo directly instead of tauri's cli you can use this feature flag to switch between tauri's `dev` and `build` modes.
 # DO NOT REMOVE!!
 custom-protocol = [ "tauri/custom-protocol" ]
+e2e-driver = ["dep:tauri-plugin-wdio-webdriver"]
