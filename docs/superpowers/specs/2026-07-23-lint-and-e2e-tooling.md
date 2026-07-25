@@ -2,6 +2,8 @@
 
 **Status:** validated by user 2026-07-23. Decisions: (1) use Ultracite's 2-space default, full reformat authorized; (2) feature flag name `e2e-driver` confirmed; (3) do this work on a branch (`feat/ultracite-and-e2e-migration`), not directly on `main`; (4) separate commits per part — build fixes + PRD already committed and pushed straight to `main` (explicitly authorized, outside this branch's scope); (5) new e2e CI job runs non-blocking/informational until proven stable.
 
+**Amendment 2026-07-24 (mid-implementation, resolved with user):** Task 5 discovered that `tauri-plugin-wdio-webdriver` forces a `tauri` 2.9.1 → 2.11.5 bump for the *entire* project, not just the `e2e-driver` feature (Cargo.lock has no per-feature scoping, and the straightforward 2.10.x bump didn't even compile due to an upstream version-skew bug). User chose to accept this bump as part of the branch. See the plan's Task 5 deviation note for full detail. This means the "e2e migration is isolated from the production build path" assumption in the original Global Constraints no longer holds — flag this prominently in the final whole-branch review and in anything communicated back to the user as "done," since the Tauri version bump is compile-verified only, not runtime-verified (no display in this sandbox).
+
 ## Background
 
 Starting point for this work:
