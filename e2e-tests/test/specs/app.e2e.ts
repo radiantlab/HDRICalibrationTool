@@ -76,6 +76,18 @@ function readLensInformation(lensInfoPath: string) {
 
 const lensInformation = readLensInformation(lensInformationPath);
 
+async function selectFirstPreviewImage() {
+  await browser.execute(() => {
+    const container = document.querySelector<HTMLElement>(
+      '[data-testid="image-set-preview"] .generic-image-container'
+    );
+    if (!container) {
+      throw new Error("expected at least one preview image to select");
+    }
+    container.click();
+  });
+}
+
 async function dispatchDrop(targetId: string, paths: string[]) {
   await browser.execute(
     (eventName, detail) => {
@@ -238,6 +250,12 @@ describe("HDRI Calibration Tool", () => {
     await imageInput.waitForDisplayed({ timeout: 5000 });
     await dispatchDrop("image-matrix-input", [jpegInputDirectory]);
     await waitForPreviewImages();
+
+    // The lens mask radius/x/y inputs only render once an image is selected
+    // for the mask preview (LensMaskInput shows "No image selected"
+    // otherwise), so a preview image must be clicked before those fields
+    // exist in the DOM.
+    await selectFirstPreviewImage();
 
     await setTextInputValue(
       'input[name="cameraResponseLocation"]',
