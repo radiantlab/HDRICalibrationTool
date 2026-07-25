@@ -93,3 +93,44 @@ jobs:
         with:
           name: ${{ matrix.platform }}-build
           path: src-tauri/target/release/bundle/msi/*.msi
+
+  e2e-tests:
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: ['windows-latest', 'ubuntu-22.04']
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xvfb
+
+      - name: install frontend dependencies
+        run: npm install
+
+      - name: install e2e test dependencies
+        working-directory: e2e-tests
+        run: npm install
+
+      - name: run e2e tests (Linux, headless)
+        if: matrix.platform == 'ubuntu-22.04'
+        working-directory: e2e-tests
+        run: xvfb-run --auto-servernum npm test
+
+      - name: run e2e tests (Windows)
+        if: matrix.platform == 'windows-latest'
+        working-directory: e2e-tests
+        run: npm test
