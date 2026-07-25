@@ -8,7 +8,7 @@ The HDRI Calibration Tool is a cross-platform desktop application (Tauri 2 + Nex
 
 **Target users:** lighting/daylighting researchers and professionals studying the indoor visual environment, particularly discomfort glare, who need calibrated luminance data without hand-driving Radiance/hdrgen from the command line.
 
-**Supported platforms:** Windows, macOS (Intel + Apple Silicon, universal binary), Ubuntu. The in-app HDR Image Viewer additionally requires XQuartz on macOS 10.8+; it is not currently supported on Windows for that reason on older releases (see §6).
+**Supported platforms:** Windows, macOS (Intel + Apple Silicon, universal binary), Ubuntu. The in-app HDR Image Viewer additionally requires XQuartz on macOS 10.8+; it is not currently supported on Windows for that reason on older releases (see §9).
 
 ## 2. Application Structure
 
@@ -24,7 +24,7 @@ A three-tab desktop app (`src/app/navigation.tsx`):
 
 `src/app/home-page/page.tsx`
 
-- **Image set input** — drag-and-drop or file-picker selection of an LDR bracket (JPEG, TIFF, or camera raw). Multiple named image sets can be staged; each set is validated to contain at least 2 images. (Batch processing of more than one set per pipeline run is not yet implemented — see §6.)
+- **Image set input** — drag-and-drop or file-picker selection of an LDR bracket (JPEG, TIFF, or camera raw). Multiple named image sets can be staged; each set is validated to contain at least 2 images. (Batch processing of more than one set per pipeline run is not yet implemented — see §9.)
 - **Camera response function** — upload of a `.rsp` file describing the camera's tone response, required for JPEG-derived input.
 - **Cropping and resizing**
   - Interactive circular lens-mask editor (drag center + radius handles) to isolate the fisheye field of view within the source frame.
@@ -55,13 +55,14 @@ Exposed as a single async Tauri command (`pipeline`) that runs the following ste
 6. **Vignetting correction** (`vignetting_effect_correction.rs`) — *only if* a vignetting `.cal` file was supplied.
 7. **Neutral density correction** (`neutral_density.rs`) — *only if* a neutral density `.cal` file was supplied.
 8. **Photometric adjustment** (`photometric_adjustment.rs`) — applies the calibration factor, *only if* supplied.
-9. **Evalglare** (`evalglare.rs`) — always runs; computes a glare value via Radiance's `evalglare`, feeding into the next step.
-10. **Header editing** (`header_editing.rs`) — writes view-angle and the evalglare-derived value into the Radiance header. Always runs.
-11. **Falsecolor** (`falsecolor.rs`) — generates the final false-color luminance map via Radiance's `falsecolor`. Always runs; this is the pipeline's output.
+9. **Header editing (view angles)** (`header_editing.rs`) — writes the `VIEW= -vta -vv -vh` line into the Radiance header *before* evalglare runs, since evalglare reads its view geometry from the header rather than purely from its own CLI flags. Always runs. (Fixed 2026-07-24 — see §8; this used to run *after* evalglare, which produced incorrect glare values on every pipeline run.)
+10. **Evalglare** (`evalglare.rs`) — always runs; computes a glare value via Radiance's `evalglare`, now evaluating against a header with the correct view angles already written.
+11. **Header editing (glare value)** (`header_editing.rs`) — a second call to the same step, this time adding the evalglare-derived `PHOTOPIC_ILLUMINANCE` value into the header. Always runs. This is the file copied out as the pipeline's primary output.
+12. **Falsecolor** (`falsecolor.rs`) — generates the false-color luminance map via Radiance's `falsecolor`, from the fully-edited header. Always runs; this is the pipeline's secondary (`_fc.hdr`) output.
 
-Steps 4–8 are conditionally skipped when their corresponding calibration input is absent; only merge, nullify, crop, evalglare, header editing, and falsecolor are unconditional. Each step invokes the corresponding Radiance/`hdrgen` binary as a subprocess and propagates structured `CommandError`/`PipelineError` results back to the frontend (rather than raw process failures). Progress/status events are emitted per step for the frontend's progress bar.
+Steps 4–8 are conditionally skipped when their corresponding calibration input is absent; merge, nullify, crop, both header-editing passes, evalglare, and falsecolor are unconditional. Each step invokes the corresponding Radiance/`hdrgen` binary as a subprocess and propagates structured `CommandError`/`PipelineError` results back to the frontend (rather than raw process failures). Progress/status events are emitted per step for the frontend's progress bar.
 
-Directory (batch) input triggers the same per-set sequence once per directory, but the frontend currently only submits a single set per run (see §8).
+Directory (batch) input triggers the same per-set sequence once per directory, but the frontend currently only submits a single set per run (see §9).
 
 Two other backend commands support the rest of the app:
 
@@ -102,10 +103,13 @@ Known constraint carried over from the legacy viewer: full desktop support depen
 - **Image caching** — `src-tauri/src/image_cache/` caches derived TIFF previews and raw-to-TIFF conversions to avoid redundant subprocess work when the same source image is reused across the UI.
 - **Static export** — the Next.js frontend builds via `output: "export"` (no Node server at runtime; Tauri serves the static bundle).
 
-## 8. Known Limitations (as of this document)
+## 8. Recent Fixes
+
+- **2026-07-24 — Pipeline evalglare/header-editing order (major regression).** The pipeline was running `evalglare` *before* `header_editing` wrote the view angles into the HDR header. `evalglare` reads its view geometry from the header, so every pipeline run was computing glare against a header without the correct view angles yet applied, producing incorrect glare values. Fixed by splitting `header_editing` into two calls: one before `evalglare` (writes just the view angles) and one after (records the evalglare-derived value), matching the corrected order documented in §4. See `src-tauri/src/pipeline.rs` and `src-tauri/src/pipeline/header_editing.rs`.
+
+## 9. Known Limitations (as of this document)
 
 - Only one image set can be run through the pipeline per submission; the code has an explicit `TODO` for batch processing of multiple sets.
 - Falsecolor HDR rendering and multi-image memory cleanup were flagged as unresolved issues in earlier iterations of the image viewer (PR #218); verify these are resolved in the current (#223) implementation before relying on them for large viewing sessions.
-- The Image Viewer's WebDriver-based end-to-end test (`e2e-tests/`) only runs on Windows and Linux — Tauri does not officially support WebDriver on macOS desktop.
-- No automated end-to-end coverage is currently wired into CI (see the accompanying testing plan).
+- The Image Viewer's WebDriver-based end-to-end test (`e2e-tests/`) uses `@wdio/tauri-service`'s embedded driver, which supports Windows, Linux, and macOS. It runs in CI on Windows and Linux as a non-blocking job (not yet a required check).
 - Vendored, bundled Radiance/`hdrgen` binaries (eliminating the separate install step in the README) are in progress but not yet merged (PR #207).
