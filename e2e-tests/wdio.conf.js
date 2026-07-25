@@ -1,16 +1,9 @@
-import { spawn, spawnSync } from "node:child_process";
-import os from "node:os";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { browser } from "@wdio/globals";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
-const tauriDriverPath = path.resolve(
-  os.homedir(),
-  ".cargo",
-  "bin",
-  process.platform === "win32" ? "tauri-driver.exe" : "tauri-driver"
-);
 const applicationPath = path.resolve(
   __dirname,
   "..",
@@ -27,9 +20,6 @@ const watchPauseMs = Number.parseInt(
   10
 );
 
-let tauriDriver;
-let exit = false;
-
 function createBuildEnv() {
   const env = { ...process.env };
 
@@ -42,38 +32,11 @@ function createBuildEnv() {
 }
 
 export const config = {
-  afterSession: () => {
-    closeTauriDriver();
-  },
-
   afterTest: async () => {
     if (watchPauseMs > 0) {
       await browser.pause(watchPauseMs);
     }
   },
-
-  // Start tauri-driver so WebdriverIO can proxy webdriver requests to Tauri.
-  beforeSession: () => {
-    tauriDriver = spawn(tauriDriverPath, [], {
-      stdio: [null, process.stdout, process.stderr],
-    });
-
-    tauriDriver.on("error", (error) => {
-      console.error(
-        `tauri-driver failed to start from ${tauriDriverPath}. Install it with "cargo install tauri-driver --locked".`
-      );
-      console.error(error);
-      process.exit(1);
-    });
-
-    tauriDriver.on("exit", (code) => {
-      if (!exit && code !== 0) {
-        console.error("tauri-driver exited with code:", code);
-        process.exit(code ?? 1);
-      }
-    });
-  },
-
   beforeTest: async () => {
     if (watchMode) {
       await browser.pause(1000);
@@ -81,6 +44,7 @@ export const config = {
   },
   capabilities: [
     {
+      browserName: "tauri",
       maxInstances: 1,
       "tauri:options": {
         application: applicationPath,
@@ -88,24 +52,27 @@ export const config = {
     },
   ],
   framework: "mocha",
-  host: "127.0.0.1",
   maxInstances: 1,
   mochaOpts: {
     timeout: 240_000,
     ui: "bdd",
   },
 
-  // Build the debug desktop binary before the webdriver session starts.
+  // Build the debug desktop binary, with the embedded WebDriver plugin
+  // compiled in via the e2e-driver feature, before the session starts.
   onPrepare: () => {
-    if (process.platform === "darwin") {
-      console.warn(
-        "Official Tauri WebDriver support currently only works on Windows and Linux."
-      );
-    }
-
     const build = spawnSync(
       "npm",
-      ["run", "tauri", "build", "--", "--debug", "--no-bundle"],
+      [
+        "run",
+        "tauri",
+        "build",
+        "--",
+        "--debug",
+        "--no-bundle",
+        "--features",
+        "e2e-driver",
+      ],
       {
         cwd: path.resolve(__dirname, ".."),
         env: createBuildEnv(),
@@ -118,33 +85,19 @@ export const config = {
       process.exit(build.status ?? 1);
     }
   },
-  port: 4444,
   reporters: ["spec"],
+
+  // @wdio/tauri-service launches and drives the app; the embedded provider
+  // (the default) needs no external tauri-driver process, which is what
+  // makes this work on macOS as well as Windows/Linux.
+  services: [
+    [
+      "@wdio/tauri-service",
+      {
+        appBinaryPath: applicationPath,
+        driverProvider: "embedded",
+      },
+    ],
+  ],
   specs: ["./test/specs/**/*.ts"],
 };
-
-function closeTauriDriver() {
-  exit = true;
-  tauriDriver?.kill();
-}
-
-process.on("exit", closeTauriDriver);
-process.on("SIGINT", () => {
-  closeTauriDriver();
-  process.exit(130);
-});
-process.on("SIGTERM", () => {
-  closeTauriDriver();
-  process.exit(143);
-});
-process.on("SIGHUP", () => {
-  closeTauriDriver();
-  process.exit(129);
-});
-
-if (process.platform === "win32") {
-  process.on("SIGBREAK", () => {
-    closeTauriDriver();
-    process.exit(131);
-  });
-}
