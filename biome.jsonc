@@ -150,6 +150,21 @@
           }
         }
       }
+    },
+    {
+      // Renaming this file to use-tiff-path.tsx would require editing its
+      // only consumer's import statement, but that consumer
+      // (tiff-image.tsx) is excluded from all Biome processing above due
+      // to an internal Biome crash — editing an excluded file's imports is
+      // out of scope for a lint fix. Scoped to this exact file only.
+      "includes": ["src/components/ui/(image)/(tiff-image)/useTiffPath.tsx"],
+      "linter": {
+        "rules": {
+          "style": {
+            "useFilenamingConvention": "off"
+          }
+        }
+      }
     }
   ]
 }

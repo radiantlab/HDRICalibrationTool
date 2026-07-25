@@ -83,6 +83,7 @@ function Field({
   ...props
 }: React.ComponentProps<"div"> & VariantProps<typeof fieldVariants>) {
   return (
+    // biome-ignore lint/a11y/useSemanticElements: Field is used dozens of times across form components; swapping to a real <fieldset> could have layout/CSS cascade implications (different default browser styling) that can't be visually verified in this environment.
     <div
       className={cn(fieldVariants({ orientation }), className)}
       data-orientation={orientation}

@@ -266,6 +266,7 @@ async function loadHdrData(filePath: string): Promise<LoadedHdrData> {
   };
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: binary Radiance HDR RLE scanline decoder; restructuring to reduce branching risks subtly breaking decode logic for edge-case scanline encodings with no way to verify correctness against real HDR files in this environment.
 function parseRadianceHDR(data: Uint8Array) {
   // Find header end (empty line = two consecutive newlines)
   let headerEnd = -1;
