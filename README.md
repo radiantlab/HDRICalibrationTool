@@ -118,18 +118,18 @@ Contact: [alexander.ulbrich@oregonstate.edu](mailto:alexander.ulbrich@oregonstat
 
 ### Contributors
 
-#### 2022 - 2023 Development Team
+#### 2022-2023
 
 - Xiangyu “Joey” Li
 - Liam Zimmermann
 - Nathaniel Klump
 
-#### 2023 - 2024 Development Team
+#### 2023-2024
 
 - Jacob Springer
 - Shanti Morrell
 
-#### 2024 - 2025 Development Team
+#### 2024-2025
 
 - Emmitt Carter
 - Samuel Croll
@@ -137,3 +137,8 @@ Contact: [alexander.ulbrich@oregonstate.edu](mailto:alexander.ulbrich@oregonstat
 - Artin Lahni
 - Madison Thompson
 - Lou Pfluke
+
+#### 2025-2026
+
+- Thomas Eaton
+- Joel Fief
