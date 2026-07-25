@@ -779,6 +779,38 @@ pub fn process_image_set(
         PipelineStatusPayload {
             kind: PipelineStatusKind::Step,
             progress: None,
+            step: Some("header_editing".to_string()),
+            message: Some("Writing view angles to HDR header".to_string()),
+        },
+    )?;
+
+    // evalglare reads its view geometry from the header, so the view angles
+    // must be written before evalglare runs, not after.
+    header_editing(
+        &config_settings,
+        config_settings
+            .temp_path
+            .join(next_path)
+            .display()
+            .to_string(),
+        config_settings
+            .temp_path
+            .join("header_editing_view.hdr")
+            .display()
+            .to_string(),
+        vertical_angle,
+        horizontal_angle,
+        None,
+    )?;
+
+    current_step += 1;
+    emit_progress(app, current_step, total_steps)?;
+
+    emit_status(
+        app,
+        PipelineStatusPayload {
+            kind: PipelineStatusKind::Step,
+            progress: None,
             step: Some("evalglare".to_string()),
             message: Some("Evaluating glare".to_string()),
         },
@@ -788,11 +820,11 @@ pub fn process_image_set(
         &config_settings,
         config_settings
             .temp_path
-            .join(next_path)
+            .join("header_editing_view.hdr")
             .display()
             .to_string(),
-        vertical_angle.clone(),
-        horizontal_angle.clone(),
+        vertical_angle,
+        horizontal_angle,
     )?;
     if let Some(message) = evalglare_result.warning {
         emit_status(
@@ -816,7 +848,7 @@ pub fn process_image_set(
             kind: PipelineStatusKind::Step,
             progress: None,
             step: Some("header_editing".to_string()),
-            message: Some("Updating HDR header".to_string()),
+            message: Some("Recording glare value in HDR header".to_string()),
         },
     )?;
 
@@ -824,7 +856,7 @@ pub fn process_image_set(
         &config_settings,
         config_settings
             .temp_path
-            .join(next_path)
+            .join("header_editing_view.hdr")
             .display()
             .to_string(),
         config_settings
@@ -834,7 +866,7 @@ pub fn process_image_set(
             .to_string(),
         vertical_angle,
         horizontal_angle,
-        evalglare_value,
+        Some(evalglare_value),
     )?;
 
     current_step += 1;
