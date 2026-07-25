@@ -32,6 +32,7 @@ const Initialization: React.FC = () => {
 
     let cancelled = false;
 
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: app-startup sequencing logic; restructuring risks behavior changes that can't be verified without exercising the actual Tauri startup path.
     const initialize = async () => {
       try {
         const osPlatform = platform();

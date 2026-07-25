@@ -69,7 +69,7 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "ultracite check",
     "tauri": "tauri",
     "test": "jest",
     "test:e2e": "npm --prefix e2e-tests test",
