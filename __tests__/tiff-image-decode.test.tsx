@@ -12,9 +12,13 @@ const decodeCalls: DecodeCall[] = [];
 jest.mock("@/lib/tiff-worker-client", () => ({
   decodeTiff: (_buffer: ArrayBuffer, options: DecodeCall) => {
     decodeCalls.push(options);
-    return new Promise(() => {
-      // Never settles: this test is about what the decode is asked for, not
-      // about what comes back.
+    // Resolves with a 1x1 image. The assertions are about what the decode was
+    // asked for, but a promise that never settles would leave a suspended
+    // React tree behind after every test.
+    return Promise.resolve({
+      buffer: new ArrayBuffer(4),
+      height: 1,
+      width: 1,
     });
   },
 }));
@@ -41,30 +45,32 @@ let clientHeight = 0;
 const resizeCallbacks: (() => void)[] = [];
 
 const realResizeObserver = globalThis.ResizeObserver;
-const widthDescriptor = Object.getOwnPropertyDescriptor(
-  HTMLElement.prototype,
-  "clientWidth"
-);
-const heightDescriptor = Object.getOwnPropertyDescriptor(
-  HTMLElement.prototype,
-  "clientHeight"
-);
 
-Object.defineProperty(HTMLElement.prototype, "clientWidth", {
-  configurable: true,
-  get: () => clientWidth,
-});
-Object.defineProperty(HTMLElement.prototype, "clientHeight", {
-  configurable: true,
-  get: () => clientHeight,
-});
+/**
+ * Gives one element a size, rather than patching HTMLElement.prototype.
+ *
+ * The prototype form reached every element in the environment, including
+ * React's and testing-library's own, and made the suite segfault a worker
+ * roughly one run in five under parallel load.
+ */
+function giveSize(element: Element) {
+  Object.defineProperty(element, "clientWidth", {
+    configurable: true,
+    get: () => clientWidth,
+  });
+  Object.defineProperty(element, "clientHeight", {
+    configurable: true,
+    get: () => clientHeight,
+  });
+}
 
 class RecordingResizeObserver {
   callback: () => void;
   constructor(callback: () => void) {
     this.callback = callback;
   }
-  observe() {
+  observe(target: Element) {
+    giveSize(target);
     resizeCallbacks.push(this.callback);
   }
   unobserve() {
@@ -79,20 +85,6 @@ globalThis.ResizeObserver =
 
 afterAll(() => {
   globalThis.ResizeObserver = realResizeObserver;
-  if (widthDescriptor) {
-    Object.defineProperty(
-      HTMLElement.prototype,
-      "clientWidth",
-      widthDescriptor
-    );
-  }
-  if (heightDescriptor) {
-    Object.defineProperty(
-      HTMLElement.prototype,
-      "clientHeight",
-      heightDescriptor
-    );
-  }
 });
 
 beforeEach(() => {
