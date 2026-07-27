@@ -66,7 +66,7 @@ fn header_editing_spec(
     // evalglare prints its value with a trailing newline. getinfo happens to
     // normalise that, but the entry is built here so it does not have to.
     if let Some(value) = evalglare_value {
-        spec = spec.arg(format!("PHOTOPIC_ILLUMINANCE={}", value.trim()));
+        spec = spec.arg(format!("COMPUTED_VERTICAL_ILLUMINANCE={}", value.trim()));
     }
 
     if let Some(value) = measured_illuminance {
@@ -108,7 +108,7 @@ mod tests {
             Some("297.230100\n"),
             None,
         );
-        assert_eq!(spec.args, vec!["-a", "PHOTOPIC_ILLUMINANCE=297.230100"]);
+        assert_eq!(spec.args, vec!["-a", "COMPUTED_VERTICAL_ILLUMINANCE=297.230100"]);
         assert!(!spec.args.iter().any(|arg| arg == "-c"));
         assert!(!spec.args.iter().any(|arg| arg.contains("VIEW=")));
     }
@@ -127,7 +127,7 @@ mod tests {
             spec.args,
             vec![
                 "-a",
-                "PHOTOPIC_ILLUMINANCE=297.23",
+                "COMPUTED_VERTICAL_ILLUMINANCE=297.23",
                 "MEASURED_VERTICAL_ILLUMINANCE=1240",
             ]
         );

@@ -63,7 +63,10 @@ import {
   ImageSelectionProvider,
   useImageSelection,
 } from "./image-selection-context";
-import { computeLuminanceSummary } from "./luminance-aggregates";
+import {
+  computeLuminanceSummary,
+  inferFisheyeMask,
+} from "./luminance-aggregates";
 import { SelectionDetails } from "./selection-details";
 import { useImageSelectionLayer } from "./use-image-selection-layer";
 import {
@@ -512,9 +515,21 @@ function ImageViewerCanvasContent({
     surfaceRef: imageSurfaceRef,
   });
   const isHoverLuminanceVisible = !(selection || isSelecting);
+  // A fisheye picture is cropped square around the lens circle, so roughly a
+  // fifth of the frame is corner that never saw the scene. The header's VIEW=
+  // line is the only thing here that says whether that is the case.
+  const fisheyeMask = useMemo(
+    () => inferFisheyeMask(viewerData.luminanceMatrix, viewerData.hdrMetadata),
+    [viewerData.hdrMetadata, viewerData.luminanceMatrix]
+  );
   const luminanceSummary = useMemo(
-    () => computeLuminanceSummary(viewerData.luminanceMatrix, selection),
-    [selection, viewerData.luminanceMatrix]
+    () =>
+      computeLuminanceSummary(
+        viewerData.luminanceMatrix,
+        selection,
+        fisheyeMask
+      ),
+    [fisheyeMask, selection, viewerData.luminanceMatrix]
   );
 
   const heatmapScaleRange = useMemo(() => {
@@ -874,7 +889,9 @@ function ImageViewerCanvasContent({
           sample={hoverLuminanceSample}
         />
       </div>
-      <div className="absolute bottom-4 left-4 z-20 w-64">
+      {/* w-56 matches the HDR metadata card diagonally opposite it, so the
+          four overlay cards share one width. */}
+      <div className="absolute bottom-4 left-4 z-20 w-56">
         <ViewControlCard
           exposureEv={exposureEv}
           isHeatmapAvailable={isHeatmapAvailable}

@@ -15,6 +15,7 @@ export interface LuminanceSummary {
   histogram: LuminanceHistogramBin[];
   histogramMaximum: number | null;
   histogramMinimum: number | null;
+  maskApplied: boolean;
   maximum: number | null;
   median: number | null;
   minimum: number | null;
@@ -22,17 +23,66 @@ export interface LuminanceSummary {
   sampleCount: number;
 }
 
+/** The lens circle a fisheye picture was cropped around, in pixel space. */
+export interface CircularMask {
+  centerX: number;
+  centerY: number;
+  radius: number;
+}
+
 const EMPTY_SUMMARY: LuminanceSummary = {
   average: null,
   histogram: [],
   histogramMaximum: null,
   histogramMinimum: null,
+  maskApplied: false,
   maximum: null,
   median: null,
   minimum: null,
   outlierCount: 0,
   sampleCount: 0,
 };
+
+// Radiance view types: -vta (angular fisheye) and -vth (hemispherical fisheye)
+// are the two the pipeline crops a lens circle out of. -vtv and friends fill
+// the frame, so their corners are real image data, not mask.
+const ANGULAR_FISHEYE_VIEW_REGEX = /(?:^|\s)-vt[ah](?:\s|$)/;
+
+/**
+ * Recovers the lens circle from the picture's own header.
+ *
+ * The viewer opens whatever HDR file is dropped on it and has no access to the
+ * mask geometry the run was configured with. It does not need it: `crop`
+ * produces a square circumscribing the lens circle, so the circle is the one
+ * inscribed in that square. The `VIEW=` line written by `header_editing` says
+ * whether there is a circle to look for at all.
+ *
+ * Squareness is required, not assumed. Two pictures reach this viewer that
+ * carry a fisheye VIEW= but are not the plain crop: a falsecolor `_fc.hdr`,
+ * which is wider than tall because of its legend strip, and a run whose
+ * resize target was not square, which stretches the circle into an ellipse.
+ * Inventing a circle for either would exclude valid pixels, so they get no
+ * mask and the readings stay as they were.
+ */
+export function inferFisheyeMask(
+  matrix: FalsecolorLuminanceMatrix | null,
+  metadata: Record<string, string> | null
+): CircularMask | null {
+  if (!matrix || matrix.width !== matrix.height || matrix.width <= 0) {
+    return null;
+  }
+
+  const view = metadata?.VIEW;
+  if (!(view && ANGULAR_FISHEYE_VIEW_REGEX.test(view))) {
+    return null;
+  }
+
+  return {
+    centerX: matrix.width / 2,
+    centerY: matrix.height / 2,
+    radius: matrix.width / 2,
+  };
+}
 
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
@@ -78,7 +128,8 @@ function resolveRegionBounds(
 
 function collectRegionLuminanceSamples(
   matrix: FalsecolorLuminanceMatrix | null,
-  selection: ImageRectSelection | null
+  selection: ImageRectSelection | null,
+  mask: CircularMask | null
 ): RegionLuminanceSamples | null {
   if (!matrix) {
     return null;
@@ -94,6 +145,7 @@ function collectRegionLuminanceSamples(
 
   const expectedSamples = regionWidth * regionHeight;
   const values = new Float32Array(expectedSamples);
+  const squaredRadius = mask ? mask.radius * mask.radius : 0;
   let sampleIndex = 0;
   let sum = 0;
   let minimum = Number.POSITIVE_INFINITY;
@@ -101,7 +153,15 @@ function collectRegionLuminanceSamples(
 
   for (let y = bounds.startY; y < bounds.endY; y += 1) {
     const rowOffset = y * matrix.width;
+    // Pixel centres, so a pixel counts as inside only when its middle is.
+    const offsetY = mask ? y + 0.5 - mask.centerY : 0;
     for (let x = bounds.startX; x < bounds.endX; x += 1) {
+      if (mask) {
+        const offsetX = x + 0.5 - mask.centerX;
+        if (offsetX * offsetX + offsetY * offsetY > squaredRadius) {
+          continue;
+        }
+      }
       const luminance = matrix.values[rowOffset + x] ?? 0;
       values[sampleIndex] = luminance;
       sum += luminance;
@@ -119,7 +179,8 @@ function collectRegionLuminanceSamples(
     maximum,
     minimum,
     sum,
-    values,
+    // The buffer was sized for the whole rect; only the kept pixels are real.
+    values: values.subarray(0, sampleIndex),
   };
 }
 
@@ -216,11 +277,15 @@ function filterHistogramOutliers(sortedValues: Float32Array) {
 
 export function computeLuminanceSummary(
   matrix: FalsecolorLuminanceMatrix | null,
-  selection: ImageRectSelection | null
+  selection: ImageRectSelection | null,
+  mask: CircularMask | null = null
 ): LuminanceSummary {
-  const samples = collectRegionLuminanceSamples(matrix, selection);
+  const samples = collectRegionLuminanceSamples(matrix, selection, mask);
   if (!samples) {
-    return EMPTY_SUMMARY;
+    // A selection entirely outside the lens circle lands here, and that is the
+    // reading most in need of the explanation, so the flag outlives the
+    // statistics rather than being reset with them.
+    return { ...EMPTY_SUMMARY, maskApplied: mask !== null };
   }
 
   const { values, sum, minimum, maximum } = samples;
@@ -246,6 +311,7 @@ export function computeLuminanceSummary(
     histogram,
     histogramMaximum: filteredHistogram.maximum,
     histogramMinimum: filteredHistogram.minimum,
+    maskApplied: mask !== null,
     maximum,
     median,
     minimum,

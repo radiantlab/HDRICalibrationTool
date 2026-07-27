@@ -21,7 +21,7 @@ Install [Radiance](https://www.radiance-online.org/) and [hdrgen](http://www.any
 
 Note that the binaries are unsigned and might be flagged as untrusted by your operating system. On macOS, you need to right click on the application and select Open to have the option to run it.
 
-In order to use the **HDR Image viewer** provided by the application, those with macOS 10.8 or later may need to install [XQuartz](https://www.xquartz.org). This feature is not currently supported on Windows.
+The **HDR image viewer** is built into the application and runs on every supported platform with no additional software. Earlier versions opened images through Radiance's X11-based `ximage`, which is why XQuartz used to be required on macOS and why the viewer was unavailable on Windows; neither applies now.
 
 ## Use
 
@@ -44,6 +44,14 @@ Click on the settings tab in the left hand navigation sidebar and you should see
 ### Generate Images
 
 Once settings are entered, you can close the settings and click the Generate HDR Image button in the navigation sidebar. A message will let you know about the process or give you an error if something is wrong.
+
+### Viewing HDR Images
+
+Open the image viewer from the left hand navigation sidebar and drop an `.hdr` file on it. Any Radiance picture works, whether or not this application produced it.
+
+The viewer renders the picture itself or a false-color luminance map, and reads the header for the values the pipeline recorded, including `COMPUTED_VERTICAL_ILLUMINANCE` (the vertical illuminance `evalglare` derived) and `MEASURED_VERTICAL_ILLUMINANCE` (the reference value you supplied, if any).
+
+Hovering reports the luminance under the cursor. Shift+click and drag selects a region and reports its average, median, minimum, maximum and distribution. On a fisheye picture (one whose header records a `-vta` or `-vth` view), the corners of the square crop fall outside the lens circle and never saw the scene, so they are excluded from those statistics; the panel says so when it applies. Non-fisheye pictures fill their frame, so every pixel is counted.
 
 ## Additional Resources
 
