@@ -1,8 +1,8 @@
 use image::{GenericImageView, Pixel};
 use rayon::prelude::*;
-use std::env;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::{env, fs};
 use tauri_plugin_shell::ShellExt;
 
 use crate::command::{run_with_io, CommandSpec, SystemCommandRunner};
@@ -130,22 +130,22 @@ pub fn merge_exposures(
 
     let (program, working_dir) = resolve_program(app, &config_settings.hdrgen_path, "hdrgen")?;
 
-    let mut spec = CommandSpec::new(program).inherit_stdout();
-    if let Some(dir) = working_dir {
-        spec = spec.working_dir(dir);
-    }
+    // Given no response function at all, hdrgen derives one from the exposures.
+    // RAW input is already linear, so the square response below is the better
+    // assumption than whatever hdrgen recovers from a linear bracket.
+    let response_function = if convert_to_tiff && response_function.is_empty() {
+        write_square_response(&config_settings.temp_path)?
+    } else {
+        response_function
+    };
 
-    for input_image in &input_images {
-        spec = spec.arg(input_image.as_str());
-    }
-
-    spec = spec.arg("-o").arg(output_path.as_str());
-
-    if !response_function.is_empty() {
-        spec = spec.arg("-r").arg(response_function.as_str());
-    }
-
-    spec = spec.args(["-a", "-e", "-f", "-g", "-F"]);
+    let spec = hdrgen_spec(
+        program,
+        working_dir,
+        &input_images,
+        &response_function,
+        &output_path,
+    );
 
     if DEBUG {
         println!("About to execute hdrgen...");
@@ -154,6 +154,65 @@ pub fn merge_exposures(
     run_with_io(&spec, &runner)?;
 
     Ok(PathBuf::from(output_path))
+}
+
+/// A simple square response: a polynomial of order 2 with a coefficient of 1
+/// for x^2, one line per channel.
+const SQUARE_RESPONSE: &str = "2 1 0 0\n2 1 0 0\n2 1 0 0\n";
+
+/// Writes the square response function and returns its path.
+fn write_square_response(temp_path: &Path) -> Result<String, PipelineError> {
+    let path = temp_path.join("sqr.rsp");
+
+    fs::write(&path, SQUARE_RESPONSE).map_err(|error| PipelineError::Processing {
+        message: format!(
+            "merge_exposures: failed to write the default response function to {}: {error}",
+            path.display()
+        ),
+    })?;
+
+    Ok(path.display().to_string())
+}
+
+/// Builds the hdrgen invocation.
+///
+/// Separated from `merge_exposures` so the argument list can be asserted on
+/// without an AppHandle or a real hdrgen binary.
+fn hdrgen_spec(
+    program: PathBuf,
+    working_dir: Option<PathBuf>,
+    input_images: &[String],
+    response_function: &str,
+    output_path: &str,
+) -> CommandSpec {
+    let mut spec = CommandSpec::new(program).inherit_stdout();
+
+    if let Some(dir) = working_dir {
+        spec = spec.working_dir(dir);
+    }
+
+    // `-m` is the cache size in megabytes. hdrgen's online man page documents a
+    // default of 100 and the man page bundled with the binaries documents 1000,
+    // so the value in force depends on which build happens to be installed.
+    // Stating it makes a run reproducible across installations; raw2hdr uses
+    // 400, so 1000 is comfortably safe.
+    //
+    // Ahead of the filenames, unlike the output flags below. A cache size has
+    // to be known before the first input is read to have any effect, and it is
+    // not worth depending on hdrgen buffering its whole argument list first.
+    spec = spec.args(["-m", "1000"]);
+
+    for input_image in input_images {
+        spec = spec.arg(input_image.as_str());
+    }
+
+    spec = spec.arg("-o").arg(output_path);
+
+    if !response_function.is_empty() {
+        spec = spec.arg("-r").arg(response_function);
+    }
+
+    spec.args(["-a", "-e", "-f", "-g", "-F"])
 }
 
 fn resolve_program(
@@ -437,5 +496,108 @@ mod tests {
     #[test]
     fn empty_input_selects_nothing() {
         assert_eq!(select_exposure_range(&[]), None);
+    }
+
+    fn spec_with_response(response_function: &str) -> CommandSpec {
+        hdrgen_spec(
+            PathBuf::from("/tools/hdrgen"),
+            None,
+            &["a.tiff".to_string(), "b.tiff".to_string()],
+            response_function,
+            "out.hdr",
+        )
+    }
+
+    #[test]
+    fn states_the_cache_size_rather_than_inheriting_it() {
+        let spec = spec_with_response("");
+        let position = spec
+            .args
+            .iter()
+            .position(|arg| arg == "-m")
+            .expect("expected an explicit cache size");
+
+        assert_eq!(
+            spec.args.get(position + 1).map(String::as_str),
+            Some("1000")
+        );
+    }
+
+    // A cache size read after the inputs would be a cache size that never
+    // applied to them, so its position is part of the fix, not incidental.
+    #[test]
+    fn states_the_cache_size_before_the_first_input() {
+        let spec = spec_with_response("");
+        let cache = spec.args.iter().position(|arg| arg == "-m").unwrap();
+        let first_input = spec.args.iter().position(|arg| arg == "a.tiff").unwrap();
+
+        assert!(cache < first_input, "args were {:?}", spec.args);
+    }
+
+    #[test]
+    fn passes_the_inputs_then_the_output_then_the_flags() {
+        assert_eq!(
+            spec_with_response("").args,
+            vec!["-m", "1000", "a.tiff", "b.tiff", "-o", "out.hdr", "-a", "-e", "-f", "-g", "-F"],
+        );
+    }
+
+    #[test]
+    fn omits_the_response_flag_when_none_is_supplied() {
+        assert!(!spec_with_response("").args.iter().any(|arg| arg == "-r"));
+    }
+
+    #[test]
+    fn points_at_the_response_function_when_one_is_supplied() {
+        let spec = spec_with_response("/calib/camera.rsp");
+        let position = spec
+            .args
+            .iter()
+            .position(|arg| arg == "-r")
+            .expect("expected a response function flag");
+
+        assert_eq!(
+            spec.args.get(position + 1).map(String::as_str),
+            Some("/calib/camera.rsp")
+        );
+    }
+
+    fn unique_temp_dir(label: &str) -> PathBuf {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = env::temp_dir().join(format!("hdricalibrationtool-{label}-{nanos}"));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn writes_a_square_response_hdrgen_can_read() {
+        let dir = unique_temp_dir("square-response");
+        let path =
+            write_square_response(&dir).expect("expected the response function to be written");
+
+        assert_eq!(path, dir.join("sqr.rsp").display().to_string());
+        // One line per channel, each a polynomial of order 2 with a coefficient
+        // of 1 for x^2.
+        assert_eq!(
+            fs::read_to_string(&path).unwrap(),
+            "2 1 0 0\n2 1 0 0\n2 1 0 0\n"
+        );
+
+        fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn reports_where_the_square_response_could_not_be_written() {
+        let missing = env::temp_dir().join("hdricalibrationtool-no-such-dir-for-sqr-rsp");
+        fs::remove_dir_all(&missing).ok();
+
+        let error = write_square_response(&missing).expect_err("expected a write failure");
+        let PipelineError::Processing { message } = error else {
+            panic!("expected a processing error");
+        };
+        assert!(message.contains("sqr.rsp"), "message was {message}");
     }
 }
