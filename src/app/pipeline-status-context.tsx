@@ -8,6 +8,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 import { toast } from "sonner";
@@ -84,6 +85,8 @@ function toLogEntry(payload: PipelineStatusPayload): LogEntry | null {
 
 interface PipelineStatusContextValue {
   clearLog: () => void;
+  /** Reads the outputs synchronously, without waiting for a React commit. */
+  getOutputs: () => string[];
   lastEmittedOutput: PipelineOutputPayload | null;
   log: LogEntry[];
   /**
@@ -114,6 +117,11 @@ export function PipelineStatusProvider({
     useState<PipelineOutputPayload | null>(null);
   const [log, setLog] = useState<LogEntry[]>([]);
   const [outputs, setOutputs] = useState<string[]>([]);
+  // Also kept in a ref, updated synchronously in the listener below. A run
+  // record is written the moment the pipeline command resolves, which can be
+  // before React has committed the state update, so reading state there can
+  // miss the very paths the run just produced.
+  const outputsRef = useRef<string[]>([]);
   const [setIndex, setSetIndex] = useState<number | null>(null);
   const [setTotal, setSetTotal] = useState<number | null>(null);
 
@@ -158,9 +166,10 @@ export function PipelineStatusProvider({
       (event: { payload: unknown }) => {
         const output = pipelineOutputSchema.parse(event.payload);
         setLastEmittedOutput(output);
-        setOutputs((paths) =>
-          paths.includes(output.path) ? paths : [...paths, output.path]
-        );
+        if (!outputsRef.current.includes(output.path)) {
+          outputsRef.current = [...outputsRef.current, output.path];
+        }
+        setOutputs(outputsRef.current);
       }
     );
 
@@ -171,8 +180,11 @@ export function PipelineStatusProvider({
     };
   }, []);
 
+  const getOutputs = useCallback(() => outputsRef.current, []);
+
   const clearLog = useCallback(() => {
     setLog([]);
+    outputsRef.current = [];
     setOutputs([]);
     setSetIndex(null);
     setSetTotal(null);
@@ -181,6 +193,7 @@ export function PipelineStatusProvider({
   const value = useMemo(
     () => ({
       clearLog,
+      getOutputs,
       lastEmittedOutput,
       log,
       outputs,
@@ -192,6 +205,7 @@ export function PipelineStatusProvider({
     }),
     [
       clearLog,
+      getOutputs,
       lastEmittedOutput,
       log,
       outputs,

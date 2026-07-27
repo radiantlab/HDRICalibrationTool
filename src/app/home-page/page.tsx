@@ -269,19 +269,14 @@ export default function Home() {
 
   const [progressVisible, setProgressVisible] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
-  const { clearLog, log, outputs } = usePipelineStatus();
+  const { clearLog, getOutputs, log } = usePipelineStatus();
   // The record is written when a run ends, by which time the log has grown.
   // Capturing `log` in the submit closure would persist an empty transcript.
   const logRef = useRef(log);
   useEffect(() => {
     logRef.current = log;
   }, [log]);
-  // The pipeline command resolves to the output directory, so the real file
-  // paths come from the pipeline-output events the provider collects.
-  const outputsRef = useRef(outputs);
-  useEffect(() => {
-    outputsRef.current = outputs;
-  }, [outputs]);
+
   const [imageSetIssues, setImageSetIssues] = useState<
     Partial<Record<number, ImageSetIssue>>
   >({});
@@ -392,14 +387,10 @@ export default function Home() {
             console.log("pipeline params", params);
             invoke<string>("pipeline", params)
               .then(() => {
-                recordAttempt(null, outputsRef.current, imageSet.files);
+                recordAttempt(null, getOutputs(), imageSet.files);
               })
               .catch(async (error) => {
-                recordAttempt(
-                  String(error),
-                  outputsRef.current,
-                  imageSet.files
-                );
+                recordAttempt(String(error), getOutputs(), imageSet.files);
                 setProgressVisible(false);
 
                 const knownHdrgenIssue = getKnownHdrgenIssue(error);

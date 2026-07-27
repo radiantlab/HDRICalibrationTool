@@ -37,6 +37,7 @@ import type { buildPipelineParams } from "../home-page/build-pipeline-params";
 import { useGlobalPipelineConfig } from "../home-page/pipeline-config-store";
 import { serializeViewerUrl } from "../image-viewer/viewer-url";
 import { groupRunsByDay } from "./group-runs";
+import { openableOutputs } from "./openable-outputs";
 
 type OutcomeFilter = "all" | RunOutcome;
 
@@ -193,14 +194,17 @@ export default function RunsPage() {
                         Open folder
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        disabled={record.outputs.length === 0}
-                        onClick={() =>
-                          router.push(
-                            serializeViewerUrl("/image-viewer/view", {
-                              filePath: record.outputs[0],
-                            })
-                          )
-                        }
+                        disabled={openableOutputs(record).length === 0}
+                        onClick={() => {
+                          const [image] = openableOutputs(record);
+                          if (image) {
+                            router.push(
+                              serializeViewerUrl("/image-viewer/view", {
+                                filePath: image,
+                              })
+                            );
+                          }
+                        }}
                       >
                         Open image
                       </DropdownMenuItem>
