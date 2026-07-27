@@ -46,8 +46,7 @@ describe("lens mask default placement", () => {
     // Unplaced mask, exactly as the form defaults it.
     const centerX = motionValue(0);
     const centerY = motionValue(0);
-    const radiusAjusterCenterX = motionValue(0);
-    const radiusAjusterCenterY = motionValue(0);
+    const radius = motionValue(0);
 
     try {
       // The component suspends on image metadata; without act the resolved
@@ -58,8 +57,7 @@ describe("lens mask default placement", () => {
             centerX={centerX}
             centerY={centerY}
             imagePath="/fake/image.jpg"
-            radiusAjusterCenterX={radiusAjusterCenterX}
-            radiusAjusterCenterY={radiusAjusterCenterY}
+            radius={radius}
           >
             <div />
           </ScaledCircularMaskSelection>
@@ -71,12 +69,7 @@ describe("lens mask default placement", () => {
       expect(centerX.get()).toBe(IMAGE_WIDTH / 2);
       expect(centerY.get()).toBe(IMAGE_HEIGHT / 2);
 
-      // The radius is the distance from the centre to the adjuster handle.
-      const radius = Math.hypot(
-        radiusAjusterCenterX.get() - centerX.get(),
-        radiusAjusterCenterY.get() - centerY.get()
-      );
-      expect(radius).toBe(IMAGE_HEIGHT / 4);
+      expect(radius.get()).toBe(IMAGE_HEIGHT / 4);
     } finally {
       HTMLElement.prototype.getBoundingClientRect = originalRect;
     }

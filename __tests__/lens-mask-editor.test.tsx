@@ -19,8 +19,7 @@ describe("LensMaskEditor", () => {
   it("edits the same motion values as the inline preview", async () => {
     const centerX = motionValue(2808);
     const centerY = motionValue(1872);
-    const radiusAjusterCenterX = motionValue(2808 + 936);
-    const radiusAjusterCenterY = motionValue(1872);
+    const radius = motionValue(936);
 
     await act(() => {
       render(
@@ -30,8 +29,7 @@ describe("LensMaskEditor", () => {
           imagePath="/fake/image.jpg"
           onOpenChange={() => undefined}
           open
-          radiusAjusterCenterX={radiusAjusterCenterX}
-          radiusAjusterCenterY={radiusAjusterCenterY}
+          radius={radius}
         />
       );
       return Promise.resolve();
@@ -55,8 +53,7 @@ describe("LensMaskEditor", () => {
           imagePath="/fake/image.jpg"
           onOpenChange={() => undefined}
           open
-          radiusAjusterCenterX={motionValue(3744)}
-          radiusAjusterCenterY={motionValue(1872)}
+          radius={motionValue(936)}
         />
       );
       return Promise.resolve();
@@ -81,8 +78,7 @@ describe("LensMaskEditor", () => {
           imagePath="/fake/image.jpg"
           onOpenChange={() => undefined}
           open={false}
-          radiusAjusterCenterX={motionValue(0)}
-          radiusAjusterCenterY={motionValue(0)}
+          radius={motionValue(0)}
         />
       );
       return Promise.resolve();

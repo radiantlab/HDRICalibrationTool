@@ -26,8 +26,7 @@ export function LensMaskInput({
 }: {
   centerX: MotionValue<number>;
   centerY: MotionValue<number>;
-  radiusAjusterCenterX: MotionValue<number>;
-  radiusAjusterCenterY: MotionValue<number>;
+  radius: MotionValue<number>;
   maskPreviewImage?: string;
 
   register: UseFormRegister<pipelineConfig>;
@@ -57,8 +56,7 @@ function LensMaskInputInner({
   maskPreviewImageMetadataPromise,
   centerX,
   centerY,
-  radiusAjusterCenterX,
-  radiusAjusterCenterY,
+  radius,
   register,
 }: ComponentProps<typeof LensMaskInput> & {
   maskPreviewImage: string;
@@ -86,8 +84,7 @@ function LensMaskInputInner({
             centerY={centerY}
             className="size-full"
             imagePath={maskPreviewImage}
-            radiusAjusterCenterX={radiusAjusterCenterX}
-            radiusAjusterCenterY={radiusAjusterCenterY}
+            radius={radius}
           >
             <GenericImage fsSrc={maskPreviewImage} />
           </ScaledCircularMaskSelection>
@@ -108,8 +105,7 @@ function LensMaskInputInner({
         imagePath={maskPreviewImage}
         onOpenChange={setEditorOpen}
         open={editorOpen}
-        radiusAjusterCenterX={radiusAjusterCenterX}
-        radiusAjusterCenterY={radiusAjusterCenterY}
+        radius={radius}
       />
       <Tooltip>
         <TooltipTrigger asChild>
@@ -128,8 +124,7 @@ function LensMaskInputInner({
                   if (Number.isNaN(n)) {
                     return;
                   }
-                  radiusAjusterCenterX.set(centerX.get() + n);
-                  radiusAjusterCenterY.set(centerY.get());
+                  radius.set(n);
                 },
                 valueAsNumber: true,
               })}
@@ -145,9 +140,7 @@ function LensMaskInputInner({
                   if (Number.isNaN(n)) {
                     return;
                   }
-                  const deltaX = n - centerX.get();
                   centerX.set(n);
-                  radiusAjusterCenterX.set(radiusAjusterCenterX.get() + deltaX);
                 },
                 valueAsNumber: true,
               })}
@@ -163,9 +156,7 @@ function LensMaskInputInner({
                   if (Number.isNaN(n)) {
                     return;
                   }
-                  const deltaY = n - centerY.get();
                   centerY.set(n);
-                  radiusAjusterCenterY.set(radiusAjusterCenterY.get() + deltaY);
                 },
                 valueAsNumber: true,
               })}
