@@ -78,12 +78,15 @@ import {
   type pipelineConfig,
 } from "./(pipeline-configuration)/config-provider";
 import { buildPipelineParams } from "./build-pipeline-params";
+import { CalibrationConfirmDialog } from "./calibration-confirm-dialog";
+import { unsuppliedCalibrationFiles } from "./calibration-files";
 import { LensMaskInput } from "./lens-mask-input";
 import { useGlobalPipelineConfig } from "./pipeline-config-store";
 import { PipelineStatus } from "./pipeline-status";
 import { PresetBar } from "./preset-bar";
 import { RunConsole } from "./run-console";
 import { useSelectedImage } from "./selected-image-context";
+import { usePendingConfirmation } from "./use-pending-confirmation";
 
 interface PipelineTrace {
   createdAt: string;
@@ -281,6 +284,13 @@ export default function Home() {
     Partial<Record<number, ImageSetIssue>>
   >({});
 
+  // The submit handler stops here and waits for the user to answer.
+  const {
+    ask: confirmIncompleteCalibration,
+    decide: decideCalibration,
+    subject: unsuppliedCalibration,
+  } = usePendingConfirmation<string[]>();
+
   // biome-ignore lint/correctness/useExhaustiveDependencies: inputSetIssueResetKey is a change-detection trigger (a stringified snapshot of the inputs that should reset validation issues), not a value read inside the effect body, so it can't be "added" by inlining its computation here.
   useEffect(() => {
     setImageSetIssues((currentIssues) =>
@@ -364,6 +374,23 @@ export default function Home() {
               const message = "Fisheye view angles must be greater than 0.";
               toast.error(message);
               recordAttempt(message, [], []);
+              return;
+            }
+
+            // Last of the checks, and the only one that asks rather than
+            // refuses: skipping a calibration file is a legitimate choice, so
+            // this confirms intent instead of blocking. Everything above is a
+            // value the pipeline cannot run with at all.
+            const unsupplied = unsuppliedCalibrationFiles(data);
+            if (
+              unsupplied.length > 0 &&
+              !(await confirmIncompleteCalibration(unsupplied))
+            ) {
+              recordAttempt(
+                `Cancelled: ${unsupplied.join(", ")} not uploaded.`,
+                [],
+                []
+              );
               return;
             }
 
@@ -546,9 +573,6 @@ export default function Home() {
                         ]}
                         name="cameraResponseLocation"
                         placeholder="Select or paste a .rsp file…"
-                        rules={{
-                          required: "Camera response file is required",
-                        }}
                       />
                     </div>
                   </AccordionContent>
@@ -631,9 +655,6 @@ export default function Home() {
                       filters={[{ extensions: ["cal"], name: "Radiance CAL" }]}
                       name="correctionFiles.fisheye"
                       placeholder="Select or paste a .cal file…"
-                      rules={{
-                        required: "Fisheye correction file is required",
-                      }}
                     />
                   </AccordionContent>
                 </AccordionItem>
@@ -656,9 +677,6 @@ export default function Home() {
                       filters={[{ extensions: ["cal"], name: "Radiance CAL" }]}
                       name="correctionFiles.vignetting"
                       placeholder="Select or paste a .cal file…"
-                      rules={{
-                        required: "Vignetting correction file is required",
-                      }}
                     />
                   </AccordionContent>
                 </AccordionItem>
@@ -681,9 +699,6 @@ export default function Home() {
                       filters={[{ extensions: ["cal"], name: "Radiance CAL" }]}
                       name="correctionFiles.neutralDensity"
                       placeholder="Select or paste a .cal file…"
-                      rules={{
-                        required: "Neutral density correction file is required",
-                      }}
                     />
                   </AccordionContent>
                 </AccordionItem>
@@ -706,10 +721,6 @@ export default function Home() {
                       filters={[{ extensions: ["cal"], name: "Radiance CAL" }]}
                       name="correctionFiles.calibrationFactor"
                       placeholder="Select or paste a .cal file…"
-                      rules={{
-                        required:
-                          "Calibration factor correction file is required",
-                      }}
                     />
                   </AccordionContent>
                 </AccordionItem>
@@ -902,6 +913,10 @@ export default function Home() {
                     open={consoleOpen}
                   />
                 ) : null}
+                <CalibrationConfirmDialog
+                  onDecision={decideCalibration}
+                  unsupplied={unsuppliedCalibration}
+                />
               </div>
             </div>
           </ResizablePanel>
