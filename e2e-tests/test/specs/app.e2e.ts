@@ -53,6 +53,8 @@ assert.deepEqual(
   `expected fresh temp output directory to start empty: ${tempOutputDirectory}`
 );
 
+const ORIGIN_REGEX = /origin <- (bottom-left|top-left)/;
+
 function readLensInformation(lensInfoPath: string) {
   const raw = readFileSync(lensInfoPath, "utf8");
   const parseRequiredNumber = (label: string) => {
@@ -61,12 +63,12 @@ function readLensInformation(lensInfoPath: string) {
     return Number.parseInt(match[1], 10);
   };
 
-  const originMatch = raw.match(/origin <- (bottom-left|top-left)/);
+  const originMatch = raw.match(ORIGIN_REGEX);
   assert.ok(
-    originMatch?.[1],
+    originMatch,
     `expected "origin <- bottom-left" or "origin <- top-left" in ${lensInfoPath}`
   );
-  const origin = originMatch[1];
+  const [, origin] = originMatch;
 
   const diameter = parseRequiredNumber("diameter");
   const xleft = parseRequiredNumber("xleft");
