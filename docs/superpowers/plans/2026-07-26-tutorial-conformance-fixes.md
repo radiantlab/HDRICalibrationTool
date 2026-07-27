@@ -606,7 +606,7 @@ origin <- bottom-left
 ```
 
 The CR2 dimensions were measured by running the pipeline's own dcraw_emu invocation on `capt01.CR2`:
-`dcraw_emu -T -o 1 -W -j -q 3 -g 2 0 -t 0 -b 1.1 -Z out.tiff capt01.CR2` yields 5796x3870, which differs from the JPEG's 5616x3744 for the same scene.
+`dcraw_emu -T -o 1 -W -j -q 3 -g 2 0 -t 0 -b 1.1 -Z out.tiff capt01.CR2` yields 5796x3870. Note the CR2 and JPEG fixtures are unrelated image sets from different sources, not one scene in two formats, so their dimensions are not comparable and neither set's numbers say anything about the other's.
 
 - [ ] **Step 2: Write the failing test**
 
