@@ -99,69 +99,65 @@ function InnserScaledCircularMaskSelection({
 		const element = containerRef.current;
 		if (!element) return;
 
+		// clientWidth is the untransformed layout width. getBoundingClientRect
+		// returns the *transformed* rect, so while the dialog plays its zoom-in
+		// animation it reports a scaled width and the factor comes out wrong.
+		const measure = () =>
+			element.clientWidth || element.getBoundingClientRect().width;
+
+		// Placing the mask lives here rather than in the effect body so that every
+		// measurement can attempt it. Gating placement on the first measurement
+		// alone means a container that was not yet laid out consumes the only
+		// attempt, leaving the mask at the origin with a zero-diameter circle:
+		// invisible, while the fixed-size handle still renders.
 		const updateScale = () => {
-			const rect = element.getBoundingClientRect();
-			const scalingFactor = rect.width / size[0];
+			const width = measure();
+			const scalingFactor = width / size[0];
 			setScalingFactor(scalingFactor);
+
+			const canPlace =
+				Number.isFinite(scalingFactor) &&
+				scalingFactor > 0 &&
+				size[0] > 0 &&
+				size[1] > 0;
+
+			if (canPlace && !initialSet.current) {
+				initialSet.current = true;
+
+				// Only place the mask if it has never been placed. A user who has
+				// already dragged it keeps their values.
+				if (centerX.get() === 0 && centerY.get() === 0) {
+					const imageCenterX = size[0] / 2;
+					const imageCenterY = size[1] / 2;
+
+					centerX.set(imageCenterX);
+					centerY.set(imageCenterY);
+
+					// The radius is the distance from the centre to this handle, so
+					// putting it one quarter-height to the right of the centre makes
+					// the starting radius exactly height / 4.
+					radiusAjusterCenterX.set(imageCenterX + size[1] / 4);
+					radiusAjusterCenterY.set(imageCenterY);
+				}
+			}
+
 			return scalingFactor;
 		};
 
-		// initialize on mount and when original image size changes
-		const scalingFactor = updateScale();
+		updateScale();
 
-		// Latching before the container has been laid out (width 0, so
-		// scalingFactor 0) would collapse every position to 0 and strand the
-		// mask in the top-left corner, with no second chance to place it.
-		const canPlace =
-			Number.isFinite(scalingFactor) &&
-			scalingFactor > 0 &&
-			size[0] > 0 &&
-			size[1] > 0;
-
-		if (canPlace && !initialSet.current) {
-			initialSet.current = true;
-
-			// Only place the mask if it has never been placed. A user who has
-			// already dragged it keeps their values.
-			if (centerX.get() === 0 && centerY.get() === 0) {
-				const imageCenterX = size[0] / 2;
-				const imageCenterY = size[1] / 2;
-
-				centerX.set(imageCenterX);
-				centerY.set(imageCenterY);
-
-				// The radius is the distance from the centre to this handle, so
-				// putting it one quarter-height to the right of the centre makes
-				// the starting radius exactly height / 4. A circular fisheye
-				// circle is bounded by the short edge, so that is a sane guess.
-				radiusAjusterCenterX.set(imageCenterX + size[1] / 4);
-				radiusAjusterCenterY.set(imageCenterY);
-			}
-
-			// The virtual (screen-space) values are deliberately NOT set here.
-			// useScaledMotionValues holds a two-way subscription captured with
-			// the scaling factor from the *previous* render, which is still the
-			// initial 1 on first run. Writing a virtual value now would fire its
-			// change handler and divide by that stale 1, overwriting the real
-			// image-space value with a screen-space one and stranding the mask
-			// near the origin. Instead, setScalingFactor below re-runs the
-			// layout effect with the correct factor, which derives the virtual
-			// values from the real ones in the right direction.
-		}
-
-		// The editor opens inside a dialog that animates in, so this first
-		// measurement can be taken while the element is still transformed and
-		// getBoundingClientRect reports a scaled or zero width. The border box
-		// never changes afterwards, so the ResizeObserver below stays silent and
-		// would leave the scale wrong: the mask circle collapses to nothing while
-		// the fixed-size handle still renders. Re-measure once the frame settles.
+		// The dialog animates in over 200ms, so a single frame is not enough for
+		// the layout to settle. Re-measure across the animation; each call is a
+		// cheap layout read and stops mattering once the factor stops changing.
 		const frame = requestAnimationFrame(() => updateScale());
+		const settle = window.setTimeout(() => updateScale(), 250);
 
 		const resizeObserver = new ResizeObserver(() => updateScale());
 		resizeObserver.observe(element);
 
 		return () => {
 			cancelAnimationFrame(frame);
+			window.clearTimeout(settle);
 			resizeObserver.disconnect();
 		};
 	}, [size]);

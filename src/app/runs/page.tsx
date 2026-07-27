@@ -170,7 +170,11 @@ export default function RunsPage() {
                       </p>
                     ) : null}
                   </div>
-                  <DropdownMenu>
+                  {/* modal={false} keeps the menu from locking pointer events
+                      on the body. With the default, opening a dialog from a menu
+                      item can leave that lock in place after the dialog closes,
+                      which makes the whole page unclickable. */}
+                  <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
                       <Button size="sm" type="button" variant="outline">
                         Actions
@@ -228,7 +232,14 @@ export default function RunsPage() {
         </Button>
       </div>
 
-      <Dialog onOpenChange={() => setLogRecord(null)} open={logRecord !== null}>
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setLogRecord(null);
+          }
+        }}
+        open={logRecord !== null}
+      >
         <DialogContent className="flex max-h-[80vh] w-[42rem] max-w-none flex-col">
           <DialogHeader>
             <DialogTitle>Run log</DialogTitle>

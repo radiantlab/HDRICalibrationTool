@@ -123,6 +123,48 @@ describe("lens mask ring in the editor", () => {
     expect(ringDiameter(root)).toBeGreaterThan(1);
   });
 
+  it("places an unplaced mask even when the first measurement fails", async () => {
+    installMeasurementStubs();
+    observers.length = 0;
+    containerWidth = 1000;
+    firstMeasurementIsZero = true;
+
+    // Never placed: exactly the state the form seeds before any image work.
+    const centerX = motionValue(0);
+    const centerY = motionValue(0);
+    const radiusAjusterCenterX = motionValue(0);
+    const radiusAjusterCenterY = motionValue(0);
+
+    let root!: HTMLElement;
+    await act(() => {
+      const { container } = render(
+        <LensMaskEditor
+          centerX={centerX}
+          centerY={centerY}
+          imagePath="/fake/image.jpg"
+          onOpenChange={() => undefined}
+          open
+          radiusAjusterCenterX={radiusAjusterCenterX}
+          radiusAjusterCenterY={radiusAjusterCenterY}
+        />
+      );
+      root = container;
+      return Promise.resolve();
+    });
+
+    await act(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        })
+    );
+
+    // The placement attempt is gated on a usable measurement, so a first
+    // measurement taken mid-animation must not consume the only attempt.
+    expect(centerX.get()).toBe(2808);
+    expect(ringDiameter(root)).toBeGreaterThan(1);
+  });
+
   it("re-measures itself after mount without waiting for a resize", async () => {
     installMeasurementStubs();
     observers.length = 0;

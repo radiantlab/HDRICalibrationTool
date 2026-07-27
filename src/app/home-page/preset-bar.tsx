@@ -179,19 +179,25 @@ export function PresetBar({
             <SelectValue placeholder="No preset selected" />
           </SelectTrigger>
           <SelectContent>
-            {presets.map((preset) => (
-              <SelectItem key={preset.id} value={preset.id}>
-                {preset.name}
-              </SelectItem>
-            ))}
+            {presets.length === 0 ? (
+              <p className="px-2 py-1.5 text-muted-foreground text-sm">
+                No presets saved yet
+              </p>
+            ) : (
+              presets.map((preset) => (
+                <SelectItem key={preset.id} value={preset.id}>
+                  {preset.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
         <Button
+          className="h-9"
           onClick={() => {
             setName(selected?.name ?? "");
             setSaveOpen(true);
           }}
-          size="sm"
           type="button"
           variant="outline"
         >
