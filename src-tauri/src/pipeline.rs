@@ -1,3 +1,4 @@
+mod cal_check;
 mod crop;
 mod evalglare;
 mod header_editing;
@@ -22,6 +23,7 @@ use std::{
 
 use crate::command::CommandError;
 use chrono::prelude::*;
+use cal_check::{cal_warning, resolution_dependent_constants};
 use crop::crop;
 use evalglare::evalglare;
 use falsecolor::falsecolor;
@@ -97,6 +99,46 @@ fn emit_status(
         .map_err(|e| PipelineError::Event {
             message: format!("Failed to emit status event: {}", e),
         })
+}
+
+/// Warns when a geometry-dependent .cal file cannot adapt to the resolution it
+/// is about to be applied at. Advisory only: a hardcoded file may well match.
+fn warn_if_resolution_dependent(
+    app: &tauri::AppHandle,
+    label: &str,
+    cal_path: &str,
+    width: u32,
+    height: u32,
+) -> Result<(), PipelineError> {
+    let text = match fs::read_to_string(cal_path) {
+        Ok(text) => text,
+        Err(error) => {
+            return emit_status(
+                app,
+                PipelineStatusPayload {
+                    kind: PipelineStatusKind::Warning,
+                    progress: None,
+                    step: Some("cal_check".to_string()),
+                    message: Some(format!(
+                        "Could not read the {label} calibration file {cal_path}: {error}"
+                    )),
+                },
+            )
+        }
+    };
+
+    match resolution_dependent_constants(&text) {
+        None => Ok(()),
+        Some(constants) => emit_status(
+            app,
+            PipelineStatusPayload {
+                kind: PipelineStatusKind::Warning,
+                progress: None,
+                step: Some("cal_check".to_string()),
+                message: Some(cal_warning(label, cal_path, width, height, &constants)),
+            },
+        ),
+    }
 }
 
 // Helper functon to emit progress events
@@ -646,6 +688,9 @@ pub fn process_image_set(
     )?;
 
     let mut next_path = "crop.hdr";
+    // Resolution the .cal files will be applied at, updated if the resize runs.
+    let mut working_width = diameter as u32;
+    let mut working_height = diameter as u32;
 
     current_step += 1;
     emit_progress(app, current_step, total_steps)?;
@@ -678,6 +723,8 @@ pub fn process_image_set(
         )?;
 
         next_path = "resize.hdr";
+        working_width = xdim as u32;
+        working_height = ydim as u32;
     }
 
     if !fisheye_correction_cal.is_empty() {
@@ -689,6 +736,14 @@ pub fn process_image_set(
                 step: Some("projection_adjustment".to_string()),
                 message: Some("Applying fisheye correction".to_string()),
             },
+        )?;
+
+        warn_if_resolution_dependent(
+            app,
+            "fisheye",
+            &fisheye_correction_cal,
+            working_width,
+            working_height,
         )?;
 
         projection_adjustment(
@@ -718,6 +773,14 @@ pub fn process_image_set(
                 step: Some("vignetting_correction".to_string()),
                 message: Some("Applying vignetting correction".to_string()),
             },
+        )?;
+
+        warn_if_resolution_dependent(
+            app,
+            "vignetting",
+            &vignetting_correction_cal,
+            working_width,
+            working_height,
         )?;
 
         vignetting_effect_correction(
