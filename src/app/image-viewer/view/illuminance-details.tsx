@@ -7,7 +7,7 @@ interface HdrMetadataDetailsProps {
   metadata: Record<string, string> | null;
 }
 
-const PRIORITY_KEYS = ["FORMAT", "PHOTOPIC_ILLUMINANCE", "VIEW"];
+const PRIORITY_KEYS = ["FORMAT", "COMPUTED_VERTICAL_ILLUMINANCE", "VIEW"];
 
 export function HdrMetadataDetails({ metadata }: HdrMetadataDetailsProps) {
   const entries = Object.entries(metadata ?? {}).sort(
@@ -39,10 +39,17 @@ export function HdrMetadataDetails({ metadata }: HdrMetadataDetailsProps) {
         <div className="text-[0.58rem] text-muted-foreground">HDR Metadata</div>
         <div className="max-h-48 space-y-1 overflow-y-auto border-t pt-2 pr-1">
           {entries.length > 0 ? (
+            // Keys are stacked above their values rather than set beside
+            // them: this card is 14rem wide and a key like
+            // COMPUTED_VERTICAL_ILLUMINANCE fills that on its own, leaving a
+            // side-by-side value nowhere to go. break-all because header keys
+            // and paths are single unbroken tokens with no wrap opportunity.
             entries.map(([key, value]) => (
-              <div className="flex items-start justify-between gap-2" key={key}>
-                <span className="shrink-0 text-muted-foreground">{key}</span>
-                <span className="wrap-break-word text-right">{value}</span>
+              <div key={key}>
+                <div className="break-all text-[0.56rem] text-muted-foreground">
+                  {key}
+                </div>
+                <div className="break-all">{value}</div>
               </div>
             ))
           ) : (

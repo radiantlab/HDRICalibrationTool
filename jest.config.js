@@ -18,5 +18,30 @@ const config = {
   testEnvironment: "jsdom",
 };
 
+// next/jest builds its own `transformIgnorePatterns` from the ESM-only
+// packages it finds in package.json and discards whatever the caller passes.
+// It spots `d3` (a direct dependency) but not the `d3-*` packages d3 itself
+// pulls in, so importing any d3 entry point still blows up on `export`. These
+// are spliced into next's own allow-list rather than added as extra patterns:
+// a path is ignored when *any* pattern matches, so a new pattern would not
+// undo an existing match.
+const EXTRA_ESM_PACKAGES = [
+  "d3-[^/]+",
+  "internmap",
+  "delaunator",
+  "robust-predicates",
+].join("|");
+
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async
-module.exports = createJestConfig(config);
+module.exports = async () => {
+  const nextConfig = await createJestConfig(config)();
+  return {
+    ...nextConfig,
+    transformIgnorePatterns: (nextConfig.transformIgnorePatterns ?? []).map(
+      (pattern) =>
+        pattern.includes("/node_modules/")
+          ? pattern.replace("(?!(", `(?!(${EXTRA_ESM_PACKAGES}|`)
+          : pattern
+    ),
+  };
+};

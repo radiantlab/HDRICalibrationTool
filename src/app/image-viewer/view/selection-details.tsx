@@ -60,13 +60,21 @@ function formatLegendValue(value: number | null) {
   return formatLuminance(value);
 }
 
-function formatOutlierText(outlierCount: number, sampleCount: number) {
-  if (sampleCount === 0) {
-    return "n/a";
+/**
+ * The chart trims values beyond Tukey's 1.5xIQR fence so a handful of bright
+ * sources cannot stretch the x-axis far enough to squash every real bar into
+ * the first bin. Only the chart does this; every statistic above it is
+ * computed from the whole sample set, which is what this note has to say.
+ */
+function formatHistogramExclusionNote(
+  outlierCount: number,
+  sampleCount: number
+) {
+  if (sampleCount === 0 || outlierCount === 0) {
+    return null;
   }
-  return `${outlierCount} removed (${(
-    (outlierCount / sampleCount) * 100
-  ).toFixed(1)}%)`;
+  const share = ((outlierCount / sampleCount) * 100).toFixed(1);
+  return `Chart only: ${outlierCount} extreme values (${share}%) beyond 1.5×IQR are hidden. Statistics above include them.`;
 }
 
 function SelectionHistogramChart({
@@ -225,9 +233,9 @@ export function SelectionDetails({ luminanceSummary }: SelectionDetailsProps) {
     [luminanceSummary.maximum]
   );
 
-  const outlierText = useMemo(
+  const histogramExclusionNote = useMemo(
     () =>
-      formatOutlierText(
+      formatHistogramExclusionNote(
         luminanceSummary.outlierCount,
         luminanceSummary.sampleCount
       ),
@@ -272,6 +280,14 @@ export function SelectionDetails({ luminanceSummary }: SelectionDetailsProps) {
             <span className="text-muted-foreground">Samples</span>
             <span>{luminanceSummary.sampleCount}</span>
           </div>
+          {/* Sits directly under the numbers it qualifies: every statistic
+              above and the distribution below are computed from the masked
+              sample set, not the whole rectangle. */}
+          {luminanceSummary.maskApplied ? (
+            <div className="text-[0.54rem] text-muted-foreground leading-snug">
+              Pixels outside the lens circle are excluded.
+            </div>
+          ) : null}
           <div className="space-y-1 pt-1">
             <div className="text-[0.58rem] text-muted-foreground">
               Distribution
@@ -281,10 +297,14 @@ export function SelectionDetails({ luminanceSummary }: SelectionDetailsProps) {
               histogramMaximum={luminanceSummary.histogramMaximum}
               histogramMinimum={luminanceSummary.histogramMinimum}
             />
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-muted-foreground">Outliers</span>
-            <span>{outlierText}</span>
+            {/* Under the chart it qualifies rather than in the statistics
+                list, where "Outliers: N removed" read as though the numbers
+                above had been trimmed too. */}
+            {histogramExclusionNote ? (
+              <div className="text-[0.54rem] text-muted-foreground leading-snug">
+                {histogramExclusionNote}
+              </div>
+            ) : null}
           </div>
         </div>
       </CardContent>
