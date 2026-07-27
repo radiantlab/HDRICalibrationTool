@@ -25,6 +25,7 @@ import {
   ImageUpscale,
   InfoIcon,
   Rotate3D,
+  Sun,
   SwitchCamera,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -102,6 +103,9 @@ const useGlobalPipelineConfig = create<
   },
 
   set,
+  validityCheck: {
+    measuredVerticalIlluminanceLux: null,
+  },
 }));
 
 interface PipelineTrace {
@@ -791,6 +795,64 @@ export default function Home() {
                             ?.verticalViewDegrees,
                           form.formState.errors.fisheyeView
                             ?.horizontalViewDegrees,
+                        ]}
+                      />
+                    </Field>
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem className="px-4" value="item-validity">
+                  <FieldContainerAccordionTrigger
+                    fields={["validityCheck.measuredVerticalIlluminanceLux"]}
+                  >
+                    Validity Check
+                  </FieldContainerAccordionTrigger>
+                  <AccordionContent
+                    className="flex flex-col gap-4 text-balance"
+                    forceMount
+                  >
+                    <Field>
+                      <FieldLabel>
+                        <Sun /> Measured vertical illuminance
+                      </FieldLabel>
+                      <FieldContent>
+                        <Input
+                          aria-invalid={
+                            form.formState.errors.validityCheck
+                              ?.measuredVerticalIlluminanceLux
+                              ? "true"
+                              : undefined
+                          }
+                          icon={"lx"}
+                          placeholder="Optional"
+                          type="number"
+                          {...register(
+                            "validityCheck.measuredVerticalIlluminanceLux",
+                            {
+                              min: {
+                                message:
+                                  "Measured illuminance must be greater than 0",
+                                value: 1,
+                              },
+                              setValueAs: (value) =>
+                                value === "" || value === null
+                                  ? null
+                                  : Number(value),
+                            }
+                          )}
+                        />
+                      </FieldContent>
+                      <FieldDescription>
+                        Compared against the illuminance evalglare derives from
+                        the finished image. Under 10% error is expected; over
+                        25% the tutorial recommends rejecting the image. With a
+                        non-fisheye projection the value is recorded in the
+                        header but not compared, because evalglare requires an
+                        angular fisheye view.
+                      </FieldDescription>
+                      <FieldError
+                        errors={[
+                          form.formState.errors.validityCheck
+                            ?.measuredVerticalIlluminanceLux,
                         ]}
                       />
                     </Field>

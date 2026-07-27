@@ -25,6 +25,7 @@ const config: pipelineConfig = {
   inputSets: [],
   lensMask: { radius: 100, x: 300, y: 164 },
   outputSettings: { filterIrrelevantSrcImages: false, targetRes: 1000 },
+  validityCheck: { measuredVerticalIlluminanceLux: null },
 };
 
 describe("buildPipelineParams", () => {
@@ -44,6 +45,22 @@ describe("buildPipelineParams", () => {
     );
 
     expect(params.projection).toBe("vth");
+  });
+
+  it("forwards a measured vertical illuminance", () => {
+    const params = buildPipelineParams(
+      { ...config, validityCheck: { measuredVerticalIlluminanceLux: 1240 } },
+      settings,
+      ["a.jpg"]
+    );
+
+    expect(params.measuredVerticalIlluminance).toBe(1240);
+  });
+
+  it("sends null when no measurement was entered", () => {
+    const params = buildPipelineParams(config, settings, ["a.jpg"]);
+
+    expect(params.measuredVerticalIlluminance).toBeNull();
   });
 
   it("no longer sends a ydown key", () => {

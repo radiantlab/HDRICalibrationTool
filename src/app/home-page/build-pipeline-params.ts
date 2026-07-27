@@ -36,6 +36,8 @@ export function buildPipelineParams(
     horizontalAngle: data.fisheyeView.horizontalViewDegrees,
     inputImages,
     legendDimensions: "",
+    measuredVerticalIlluminance:
+      data.validityCheck.measuredVerticalIlluminanceLux,
     neutralDensityCal: data.correctionFiles.neutralDensity ?? "",
     outputPath: settings.outputPath,
     photometricAdjustmentCal: data.correctionFiles.calibrationFactor ?? "",
