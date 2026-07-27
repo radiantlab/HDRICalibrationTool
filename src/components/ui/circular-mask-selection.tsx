@@ -1,4 +1,9 @@
-import { type MotionValue, motion, useTransform } from "framer-motion";
+import {
+  type MotionValue,
+  motion,
+  useMotionValue,
+  useTransform,
+} from "framer-motion";
 import { Plus } from "lucide-react";
 import { useRef } from "react";
 import { cn } from "@/lib/utils";
@@ -53,6 +58,13 @@ export function CircularMaskSelection({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Sinks for framer's drag gesture. Without them the gesture also translates
+  // the element, on top of the left/top below that already follow the pointer,
+  // so it travels at double speed and the two handles drift apart. Passing
+  // external drag values keeps the gesture and leaves positioning to us.
+  const dragSinkX = useMotionValue(0);
+  const dragSinkY = useMotionValue(0);
+
   // Everything is expressed as a percentage of the container, which the browser
   // resolves at layout time. Nothing here depends on JavaScript having measured
   // the container first, so the mask cannot collapse to the origin because a
@@ -82,7 +94,7 @@ export function CircularMaskSelection({
 
   return (
     <div
-      className={cn("group relative overflow-hidden", className)}
+      className={cn("group relative select-none overflow-hidden", className)}
       ref={(element) => {
         containerRef.current = element;
         if (typeof ref === "function") {
@@ -93,6 +105,8 @@ export function CircularMaskSelection({
       }}
     >
       <motion.div
+        _dragX={dragSinkX}
+        _dragY={dragSinkY}
         className={cn(
           "absolute z-10 grid place-items-center rounded-full border-red-500 hover:cursor-grab active:cursor-grabbing",
           thinEdge ? "border" : "border-3"
@@ -119,6 +133,8 @@ export function CircularMaskSelection({
         />
       </motion.div>
       <motion.div
+        _dragX={dragSinkX}
+        _dragY={dragSinkY}
         className="absolute z-10 rounded-full bg-blue-500 opacity-0 transition-opacity hover:cursor-grab active:cursor-grabbing group-hover:opacity-100"
         drag
         dragMomentum={false}
