@@ -67,6 +67,7 @@ import {
   PipelineConfigProvider,
   type pipelineConfig,
 } from "./(pipeline-configuration)/config-provider";
+import { buildPipelineParams } from "./build-pipeline-params";
 import { LensMaskInput } from "./lens-mask-input";
 import { PipelineStatus } from "./pipeline-status";
 import { useSelectedImage } from "./selected-image-context";
@@ -327,8 +328,6 @@ export default function Home() {
             console.log("configForm submitted", data);
 
             const diameter = Math.round(data.lensMask.radius * 2);
-            const xleft = Math.round(data.lensMask.x - data.lensMask.radius);
-            const ydown = Math.round(data.lensMask.y - data.lensMask.radius);
 
             if (!Number.isFinite(diameter) || diameter <= 0) {
               toast.error("Lens mask radius must be greater than 0.");
@@ -364,35 +363,16 @@ export default function Home() {
 
             setImageSetIssues({});
             setProgressVisible(true);
-            const params = {
-              dcrawEmuPath: settings.dcrawEmuPath,
-              diameter,
-              filterImages: data.outputSettings.filterIrrelevantSrcImages,
-              fisheyeCorrectionCal: data.correctionFiles.fisheye ?? "",
-              hdrgenPath: settings.hdrgenPath,
-              horizontalAngle: data.fisheyeView.horizontalViewDegrees,
-
-              // Input images and correction files
-              inputImages: imageSet.files,
-              legendDimensions: "",
-              neutralDensityCal: data.correctionFiles.neutralDensity ?? "",
-              outputPath: settings.outputPath,
-              photometricAdjustmentCal:
-                data.correctionFiles.calibrationFactor ?? "",
-              // Paths to external tools
-              radiancePath: settings.radiancePath,
-              responseFunction: data.cameraResponseLocation ?? "",
-              scaleLabel: "",
-              scaleLevels: "",
-              // todo: remove these from this form completely when we get to refactoring the backend. These should only be exposed on the image viewer, where they are relevant
-              scaleLimit: "",
-              verticalAngle: data.fisheyeView.verticalViewDegrees,
-              vignettingCorrectionCal: data.correctionFiles.vignetting ?? "",
-              xdim: data.outputSettings.targetRes,
-              xleft,
-              ydim: data.outputSettings.targetRes,
-              ydown,
-            };
+            const params = buildPipelineParams(
+              data,
+              {
+                dcrawEmuPath: settings.dcrawEmuPath,
+                hdrgenPath: settings.hdrgenPath,
+                outputPath: settings.outputPath,
+                radiancePath: settings.radiancePath,
+              },
+              imageSet.files
+            );
             console.log("pipeline params", params);
             invoke<string>("pipeline", params).catch(async (error) => {
               setProgressVisible(false);
