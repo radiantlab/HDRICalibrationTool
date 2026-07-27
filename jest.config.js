@@ -9,6 +9,11 @@ const createJestConfig = nextJest({
 // Add any custom config to be passed to Jest
 const config = {
   coverageProvider: "babel",
+  // Mirrors the "@/*" -> "./src/*" alias in tsconfig.json so tests can mock
+  // modules by the same specifier the source imports them with.
+  moduleNameMapper: {
+    "^@/(.*)$": "<rootDir>/src/$1",
+  },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   testEnvironment: "jsdom",
 };

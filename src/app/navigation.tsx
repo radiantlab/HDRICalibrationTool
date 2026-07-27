@@ -9,7 +9,6 @@
 
 import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
-import { BookOpen } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -62,18 +61,19 @@ export default function Navigation() {
             {/* The pipeline follows this tutorial step by step, and several
                 fields cite its sections, so the open-access original has to be
                 reachable from inside the app for those citations to be useful. */}
-            <button
-              className="mt-1 inline-flex items-center gap-1 underline hover:text-gray-900"
-              onClick={() =>
-                openUrl(
-                  "https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319"
-                )
-              }
-              type="button"
-            >
-              <BookOpen className="size-3.5" />
-              Luminance Maps tutorial
-            </button>
+            <div>
+              <button
+                className="underline hover:text-gray-900"
+                onClick={() =>
+                  openUrl(
+                    "https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319"
+                  )
+                }
+                type="button"
+              >
+                Luminance Maps tutorial
+              </button>
+            </div>
           </div>
         </div>
       </div>

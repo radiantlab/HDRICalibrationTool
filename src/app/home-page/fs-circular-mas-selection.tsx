@@ -121,47 +121,32 @@ function InnserScaledCircularMaskSelection({
 		if (canPlace && !initialSet.current) {
 			initialSet.current = true;
 
-			let initialCenterX = centerX.get() * scalingFactor;
-			let initialCenterY = centerY.get() * scalingFactor;
-			let initialRadiusAjusterCenterX =
-				radiusAjusterCenterX.get() * scalingFactor;
-			let initialRadiusAjusterCenterY =
-				radiusAjusterCenterY.get() * scalingFactor;
-
-			const applyDefaultValues = initialCenterX === 0 && initialCenterY === 0;
-			// dont check these, since it wont be zero because of the clamp constraint
-			// initialRadiusAjusterCenterX === 0 &&
-			// initialRadiusAjusterCenterY === 0;
-			if (applyDefaultValues) {
+			// Only place the mask if it has never been placed. A user who has
+			// already dragged it keeps their values.
+			if (centerX.get() === 0 && centerY.get() === 0) {
 				const imageCenterX = size[0] / 2;
 				const imageCenterY = size[1] / 2;
-				const defaultCenterX = imageCenterX;
-				centerX.set(defaultCenterX);
-				initialCenterX = defaultCenterX * scalingFactor;
 
-				const defaultCenterY = imageCenterY;
-				centerY.set(defaultCenterY);
-				initialCenterY = defaultCenterY * scalingFactor;
+				centerX.set(imageCenterX);
+				centerY.set(imageCenterY);
 
 				// The radius is the distance from the centre to this handle, so
 				// putting it one quarter-height to the right of the centre makes
 				// the starting radius exactly height / 4. A circular fisheye
 				// circle is bounded by the short edge, so that is a sane guess.
-				const defaultRadiusAjusterCenterX = imageCenterX + size[1] / 4;
-				radiusAjusterCenterX.set(defaultRadiusAjusterCenterX);
-				initialRadiusAjusterCenterX =
-					defaultRadiusAjusterCenterX * scalingFactor;
-
-				const defaultRadiusAjusterCenterY = imageCenterY;
-				radiusAjusterCenterY.set(defaultRadiusAjusterCenterY);
-				initialRadiusAjusterCenterY =
-					defaultRadiusAjusterCenterY * scalingFactor;
+				radiusAjusterCenterX.set(imageCenterX + size[1] / 4);
+				radiusAjusterCenterY.set(imageCenterY);
 			}
 
-			virtualCenterX.set(initialCenterX);
-			virtualCenterY.set(initialCenterY);
-			virtualRadiusAjusterCenterX.set(initialRadiusAjusterCenterX);
-			virtualRadiusAjusterCenterY.set(initialRadiusAjusterCenterY);
+			// The virtual (screen-space) values are deliberately NOT set here.
+			// useScaledMotionValues holds a two-way subscription captured with
+			// the scaling factor from the *previous* render, which is still the
+			// initial 1 on first run. Writing a virtual value now would fire its
+			// change handler and divide by that stale 1, overwriting the real
+			// image-space value with a screen-space one and stranding the mask
+			// near the origin. Instead, setScalingFactor below re-runs the
+			// layout effect with the correct factor, which derives the virtual
+			// values from the real ones in the right direction.
 		}
 
 		const resizeObserver = new ResizeObserver(() => updateScale());
