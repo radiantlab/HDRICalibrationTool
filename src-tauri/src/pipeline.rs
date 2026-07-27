@@ -6,6 +6,7 @@ mod merge_exposures;
 mod neutral_density;
 mod nullify_exposure_value;
 mod photometric_adjustment;
+mod progress;
 mod picture;
 mod projection_adjustment;
 mod resize;
@@ -32,6 +33,7 @@ use merge_exposures::merge_exposures;
 use neutral_density::neutral_density;
 use nullify_exposure_value::nullify_exposure_value;
 use photometric_adjustment::photometric_adjustment;
+use progress::StepProgress;
 use projection_adjustment::projection_adjustment;
 use resize::resize;
 use validity::{evaluate_validity, validity_message, ValidityOutcome};
@@ -39,6 +41,11 @@ use vignetting_effect_correction::vignetting_effect_correction;
 
 // Used to print out debug information
 pub const DEBUG: bool = true;
+
+/// Stages that report progress: merge, nullify, crop, header (view), evalglare,
+/// header (results), falsecolor. Conditional stages (resize and the four
+/// corrections) do not report, so the bar advances unevenly but lands on 100.
+const PIPELINE_STAGES: usize = 7;
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
@@ -142,12 +149,7 @@ fn warn_if_resolution_dependent(
 }
 
 // Helper functon to emit progress events
-fn emit_progress(
-    app: &tauri::AppHandle,
-    current_step: usize,
-    total_steps: usize,
-) -> Result<(), PipelineError> {
-    let progress = ((current_step as f64 / total_steps as f64) * 100.0) as i32;
+fn emit_progress(app: &tauri::AppHandle, progress: i32) -> Result<(), PipelineError> {
     app.emit("pipeline-progress", progress)
         .map_err(|e| PipelineError::Event {
             message: format!("Failed to emit progress event: {}", e),
@@ -336,11 +338,8 @@ pub async fn pipeline(
         });
     }
 
-    //Define total steps for progress bar (adjust this count as needed)
-    let total_steps: usize = if is_directory { 5 } else { 5 };
-
-    let current_step: usize = 0;
-    emit_progress(&app, current_step, total_steps)?; // Initial progress (0%)
+    let mut progress = StepProgress::new(PIPELINE_STAGES);
+    emit_progress(&app, progress.percent())?; // Initial progress (0%)
 
     let mut return_path: PathBuf = PathBuf::new();
     if is_directory {
@@ -390,8 +389,7 @@ pub async fn pipeline(
                 horizontal_angle.clone(),
                 projection.clone(),
                 measured_vertical_illuminance,
-                current_step,
-                total_steps,
+                &mut progress,
                 filter_images,
             );
             if let Err(error) = result {
@@ -482,8 +480,7 @@ pub async fn pipeline(
             horizontal_angle.clone(),
             projection.clone(),
             measured_vertical_illuminance,
-            current_step,
-            total_steps,
+            &mut progress,
             filter_images,
         );
         if let Err(error) = result {
@@ -601,10 +598,13 @@ pub fn process_image_set(
     horizontal_angle: f64,
     projection: String,
     measured_vertical_illuminance: Option<f64>,
-    mut current_step: usize,
-    total_steps: usize,
+    progress: &mut StepProgress,
     filter_images: bool,
 ) -> Result<String, PipelineError> {
+    // Each set runs the same stages, so the bar restarts per set. Progress
+    // through a batch is reported by the set index instead.
+    *progress = StepProgress::new(PIPELINE_STAGES);
+
     emit_status(
         app,
         PipelineStatusPayload {
@@ -633,8 +633,7 @@ pub fn process_image_set(
         filter_images,
     )?;
 
-    current_step += 1;
-    emit_progress(app, current_step, total_steps)?;
+    emit_progress(app, progress.advance())?;
 
     emit_status(
         app,
@@ -660,8 +659,7 @@ pub fn process_image_set(
             .to_string(),
     )?;
 
-    current_step += 1;
-    emit_progress(app, current_step, total_steps)?;
+    emit_progress(app, progress.advance())?;
 
     emit_status(
         app,
@@ -695,8 +693,7 @@ pub fn process_image_set(
     let mut working_width = diameter as u32;
     let mut working_height = diameter as u32;
 
-    current_step += 1;
-    emit_progress(app, current_step, total_steps)?;
+    emit_progress(app, progress.advance())?;
 
     if diameter > 1000.0 {
         emit_status(
@@ -895,8 +892,7 @@ pub fn process_image_set(
         None,
     )?;
 
-    current_step += 1;
-    emit_progress(app, current_step, total_steps)?;
+    emit_progress(app, progress.advance())?;
 
     emit_status(
         app,
@@ -951,8 +947,7 @@ pub fn process_image_set(
         Some(evalglare_result.value)
     };
 
-    current_step += 1;
-    emit_progress(app, current_step, total_steps)?;
+    emit_progress(app, progress.advance())?;
 
     emit_status(
         app,
@@ -1047,8 +1042,7 @@ pub fn process_image_set(
         })?;
     }
 
-    current_step += 1;
-    emit_progress(app, current_step, total_steps)?;
+    emit_progress(app, progress.advance())?;
 
     emit_status(
         app,
@@ -1074,6 +1068,8 @@ pub fn process_image_set(
             .to_string(),
         luminance_args,
     )?;
+
+    emit_progress(app, progress.advance())?;
 
     Ok("Image set processed.".to_string())
 }
