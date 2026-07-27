@@ -191,12 +191,22 @@ silently mis-placed crop.
 `PipelineError::InvalidInput` for field `ytop`: the mask extends past the
 image edge and no crop is meaningful.
 
-The height must come from the picture, not from frontend metadata, because it
-varies by input format for the same scene. Measured on the e2e fixtures: the
-JPEG is 5616×3744 (`sips`), while the same scene's CR2 through the app's own
-`dcraw_emu` invocation (`-T -o 1 -W -j -q 3 -g 2 0 -t 0 -b 1.1 -Z`) is
-**5796×3870**. A height cached or plumbed from anywhere but the image being
-cropped will be wrong for one of the two paths.
+The height must come from the picture being cropped, not from frontend metadata.
+The decoded dimensions depend on the input format and on the decode settings, so
+the only value guaranteed to describe the file `pcompos` is about to read is the
+one in that file's own resolution line. It is free to obtain and cannot drift.
+
+For raw input this is not hypothetical: the frontend previews a TIFF produced by
+`getTiffMetadata`, while the pipeline crops an HDR merged from TIFFs that
+`merge_exposures` produced with its own `dcraw_emu` invocation
+(`-T -o 1 -W -j -q 3 -g 2 0 -t 0 -b 1.1 -Z`). Nothing enforces that those two
+decode paths stay in step, and a mismatch would place the crop window wrongly
+with no error.
+
+(An earlier draft justified this by comparing the two e2e fixtures, claiming they
+were one scene in two formats. They are unrelated image sets from different
+sources, so that comparison proved nothing. The design decision stands on the
+reasoning above.)
 
 #### The rename crosses the Tauri IPC boundary
 
