@@ -1,8 +1,9 @@
 import type { MotionValue } from "framer-motion";
-import { MoveHorizontal, MoveVertical, Radius } from "lucide-react";
-import { type ComponentProps, Suspense, use } from "react";
+import { Maximize2, MoveHorizontal, MoveVertical, Radius } from "lucide-react";
+import { type ComponentProps, Suspense, use, useState } from "react";
 import type { UseFormRegister } from "react-hook-form";
 import { GenericImage } from "@/components/ui/(image)/generic-image";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -17,6 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { pipelineConfig } from "./(pipeline-configuration)/config-provider";
 import { ScaledCircularMaskSelection } from "./fs-circular-mas-selection";
+import { LensMaskEditor } from "./lens-mask-editor";
 
 export function LensMaskInput({
   maskPreviewImage,
@@ -63,6 +65,8 @@ function LensMaskInputInner({
   maskPreviewImageMetadataPromise: Promise<GenericImageMetadata>;
 }) {
   const maskPreviewImageMetadata = use(maskPreviewImageMetadataPromise);
+  const [editorOpen, setEditorOpen] = useState(false);
+
   return (
     <div className="space-y-1">
       <div
@@ -89,6 +93,24 @@ function LensMaskInputInner({
           </ScaledCircularMaskSelection>
         </Suspense>
       </div>
+      <Button
+        className="w-full"
+        onClick={() => setEditorOpen(true)}
+        size="sm"
+        type="button"
+        variant="outline"
+      >
+        <Maximize2 /> Edit mask at full size
+      </Button>
+      <LensMaskEditor
+        centerX={centerX}
+        centerY={centerY}
+        imagePath={maskPreviewImage}
+        onOpenChange={setEditorOpen}
+        open={editorOpen}
+        radiusAjusterCenterX={radiusAjusterCenterX}
+        radiusAjusterCenterY={radiusAjusterCenterY}
+      />
       <Tooltip>
         <TooltipTrigger asChild>
           <div className="flex gap-1">
