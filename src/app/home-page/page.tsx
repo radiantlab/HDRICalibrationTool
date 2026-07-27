@@ -17,7 +17,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { documentDir, join } from "@tauri-apps/api/path";
 import { mkdir, writeTextFile } from "@tauri-apps/plugin-fs";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
-import { useMotionValue, useTransform } from "framer-motion";
 import {
   AlertTriangle,
   Aperture,
@@ -249,6 +248,9 @@ export default function Home() {
   const initialLensMaskY = form.getValues("lensMask.y");
   const initialLensMaskRadius = form.getValues("lensMask.radius");
 
+  // The mask is three numbers: a centre and a radius. It used to be four, with
+  // a separate handle position the radius was derived from, which let the two
+  // drift apart between the inline preview and the full-size editor.
   const centerX = useMotionValueFormState(
     initialLensMaskX,
     setValue,
@@ -259,49 +261,27 @@ export default function Home() {
     setValue,
     "lensMask.y"
   );
-
-  const radiusAjusterCenterX = useMotionValue(
-    initialLensMaskX + initialLensMaskRadius
+  const radius = useMotionValueFormState(
+    initialLensMaskRadius,
+    setValue,
+    "lensMask.radius"
   );
-  const radiusAjusterCenterY = useMotionValue(initialLensMaskY);
-
-  const radius = useTransform<number, number>(
-    [centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
-    ([cx, cy, rx, ry]) =>
-      Math.sqrt(
-        ((cx as number) - (rx as number)) ** 2 +
-          ((cy as number) - (ry as number)) ** 2
-      )
-  );
-  useEffect(() => {
-    const unsub = radius.on("change", (value) => {
-      if (!Number.isFinite(value)) {
-        return;
-      }
-      setValue("lensMask.radius", value, {
-        shouldDirty: true,
-        shouldValidate: true,
-      });
-    });
-    return () => unsub();
-  }, [radius, setValue]);
-
-  useEffect(() => {
-    const unsub = radius.on("change", (r) => {
-      setValue("lensMask.radius", r);
-    });
-    return () => unsub();
-  }, [radius, setValue]);
 
   const [progressVisible, setProgressVisible] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
-  const { clearLog, log } = usePipelineStatus();
+  const { clearLog, log, outputs } = usePipelineStatus();
   // The record is written when a run ends, by which time the log has grown.
   // Capturing `log` in the submit closure would persist an empty transcript.
   const logRef = useRef(log);
   useEffect(() => {
     logRef.current = log;
   }, [log]);
+  // The pipeline command resolves to the output directory, so the real file
+  // paths come from the pipeline-output events the provider collects.
+  const outputsRef = useRef(outputs);
+  useEffect(() => {
+    outputsRef.current = outputs;
+  }, [outputs]);
   const [imageSetIssues, setImageSetIssues] = useState<
     Partial<Record<number, ImageSetIssue>>
   >({});
@@ -336,7 +316,7 @@ export default function Home() {
             // so history can never break a run.
             const recordAttempt = (
               failure: string | null,
-              outputs: string[],
+              outputPaths: string[],
               files: string[]
             ) =>
               appendRun({
@@ -349,7 +329,7 @@ export default function Home() {
                 ) as unknown as Record<string, unknown>,
                 log: logRef.current,
                 outcome: classifyOutcome(logRef.current, failure),
-                outputs,
+                outputs: outputPaths,
                 presetName: null,
                 reason: failure,
                 startedAt,
@@ -411,11 +391,15 @@ export default function Home() {
             );
             console.log("pipeline params", params);
             invoke<string>("pipeline", params)
-              .then((outputDirectory) => {
-                recordAttempt(null, [outputDirectory], imageSet.files);
+              .then(() => {
+                recordAttempt(null, outputsRef.current, imageSet.files);
               })
               .catch(async (error) => {
-                recordAttempt(String(error), [], imageSet.files);
+                recordAttempt(
+                  String(error),
+                  outputsRef.current,
+                  imageSet.files
+                );
                 setProgressVisible(false);
 
                 const knownHdrgenIssue = getKnownHdrgenIssue(error);
@@ -634,8 +618,7 @@ export default function Home() {
                         centerX={centerX}
                         centerY={centerY}
                         maskPreviewImage={selectedImage}
-                        radiusAjusterCenterX={radiusAjusterCenterX}
-                        radiusAjusterCenterY={radiusAjusterCenterY}
+                        radius={radius}
                         register={register}
                       />
                     </div>

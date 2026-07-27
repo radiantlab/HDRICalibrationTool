@@ -19,8 +19,7 @@ import { ScaledCircularMaskSelection } from "./fs-circular-mas-selection";
 interface MaskValues {
   centerX: MotionValue<number>;
   centerY: MotionValue<number>;
-  radiusAjusterCenterX: MotionValue<number>;
-  radiusAjusterCenterY: MotionValue<number>;
+  radius: MotionValue<number>;
 }
 
 /**
@@ -54,8 +53,7 @@ function MaskViewport({
         centerY={values.centerY}
         className="size-full"
         imagePath={imagePath}
-        radiusAjusterCenterX={values.radiusAjusterCenterX}
-        radiusAjusterCenterY={values.radiusAjusterCenterY}
+        radius={values.radius}
         thinEdge={thinEdge}
       >
         <GenericImage fsSrc={imagePath} />
@@ -78,8 +76,7 @@ export function LensMaskEditor({
   imagePath,
   onOpenChange,
   open,
-  radiusAjusterCenterX,
-  radiusAjusterCenterY,
+  radius,
 }: MaskValues & {
   imagePath: string;
   onOpenChange: (open: boolean) => void;
@@ -107,12 +104,7 @@ export function LensMaskEditor({
             <MaskViewport
               imagePath={imagePath}
               thinEdge={thinEdge}
-              values={{
-                centerX,
-                centerY,
-                radiusAjusterCenterX,
-                radiusAjusterCenterY,
-              }}
+              values={{ centerX, centerY, radius }}
             />
           </Suspense>
         </div>

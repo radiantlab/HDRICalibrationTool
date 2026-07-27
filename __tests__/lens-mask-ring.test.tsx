@@ -81,8 +81,7 @@ describe("lens mask ring in the editor", () => {
 
     const centerX = motionValue(2808);
     const centerY = motionValue(1872);
-    const radiusAjusterCenterX = motionValue(2808 + 936);
-    const radiusAjusterCenterY = motionValue(1872);
+    const radius = motionValue(936);
 
     let root!: HTMLElement;
     await act(() => {
@@ -93,8 +92,7 @@ describe("lens mask ring in the editor", () => {
           imagePath="/fake/image.jpg"
           onOpenChange={() => undefined}
           open
-          radiusAjusterCenterX={radiusAjusterCenterX}
-          radiusAjusterCenterY={radiusAjusterCenterY}
+          radius={radius}
         />
       );
       root = container;
@@ -132,8 +130,7 @@ describe("lens mask ring in the editor", () => {
     // Never placed: exactly the state the form seeds before any image work.
     const centerX = motionValue(0);
     const centerY = motionValue(0);
-    const radiusAjusterCenterX = motionValue(0);
-    const radiusAjusterCenterY = motionValue(0);
+    const radius = motionValue(0);
 
     let root!: HTMLElement;
     await act(() => {
@@ -144,8 +141,7 @@ describe("lens mask ring in the editor", () => {
           imagePath="/fake/image.jpg"
           onOpenChange={() => undefined}
           open
-          radiusAjusterCenterX={radiusAjusterCenterX}
-          radiusAjusterCenterY={radiusAjusterCenterY}
+          radius={radius}
         />
       );
       root = container;
@@ -183,8 +179,7 @@ describe("lens mask ring in the editor", () => {
           imagePath="/fake/image.jpg"
           onOpenChange={() => undefined}
           open
-          radiusAjusterCenterX={motionValue(2808 + 936)}
-          radiusAjusterCenterY={motionValue(1872)}
+          radius={motionValue(936)}
         />
       );
       root = container;

@@ -13,77 +13,71 @@ const snapToDevicePixel = (value: number) => {
   return Math.round(value * dpr) / dpr;
 };
 
+const HANDLE_RADIUS = 12;
+
+/**
+ * A draggable circle over an image.
+ *
+ * The mask is a centre and a radius: three numbers. An earlier version also
+ * stored the handle position and derived the radius from the distance between
+ * two points, which is four numbers for three degrees of freedom. The two could
+ * drift apart, and every centre move had to drag the handle along in lockstep.
+ * The handle position is now derived, so it cannot disagree with the radius.
+ *
+ * All values here are in display (CSS pixel) space. The component never writes
+ * to them; it reports drags and the owner converts to image space.
+ */
 export function CircularMaskSelection({
   children,
   centerX,
   centerY,
-  radiusAjusterCenterX,
-  radiusAjusterCenterY,
+  radius,
+  onMoveCenter,
+  onResize,
   ref,
   className,
   thinEdge,
-  onMoveCenter,
-  onMoveAdjuster,
 }: {
   children: React.ReactNode;
   centerX: MotionValue<number>;
   centerY: MotionValue<number>;
-  radiusAjusterCenterX: MotionValue<number>;
-  radiusAjusterCenterY: MotionValue<number>;
+  radius: MotionValue<number>;
+  /** Drag deltas in CSS pixels. */
+  onMoveCenter: (deltaX: number, deltaY: number) => void;
+  /** The new radius in CSS pixels, derived from the handle drag. */
+  onResize: (displayRadius: number) => void;
   ref?: React.RefObject<HTMLDivElement | null>;
   className?: string;
   /**
    * Draw the circle as a single pixel ring. At preview scale a 3px border
-   * covers roughly 18 image pixels, which is wider than the fisheye edge the
-   * user is aligning against.
+   * covers roughly 18 image pixels, which is wider than the fisheye edge being
+   * aligned against.
    */
   thinEdge?: boolean;
-  /** Screen-space drag deltas. The caller owns the underlying values. */
-  onMoveCenter: (deltaX: number, deltaY: number) => void;
-  onMoveAdjuster: (deltaX: number, deltaY: number) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const maskRef = useRef<HTMLDivElement>(null);
 
-  const selectorRadius = 12;
-
-  const radius = useTransform<number, number>(
-    [centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
-    ([cx, cy, rx, ry]) =>
-      Math.sqrt(
-        ((cx as number) - (rx as number)) ** 2 +
-          ((cy as number) - (ry as number)) ** 2
-      )
+  const diameter = useTransform(radius, (r) => snapToDevicePixel(r * 2));
+  const left = useTransform([centerX, radius], ([cx, r]) =>
+    snapToDevicePixel((cx as number) - (r as number))
   );
-  const diameter = useTransform<number, number>(radius, (r) => r * 2);
-
-  const snappedDiameter = useTransform(diameter, snapToDevicePixel);
-  const snappedRadiusAjusterCenterX = useTransform(
-    radiusAjusterCenterX,
-    snapToDevicePixel
-  );
-  const snappedRadiusAjusterCenterY = useTransform(
-    radiusAjusterCenterY,
-    snapToDevicePixel
+  const top = useTransform([centerY, radius], ([cy, r]) =>
+    snapToDevicePixel((cy as number) - (r as number))
   );
 
-  const snappedPosX = useTransform([centerX, snappedDiameter], (vals) => {
-    const cx = vals[0] as number;
-    const d = vals[1] as number;
-    return snapToDevicePixel(cx - d / 2);
-  });
-  const snappedPosY = useTransform([centerY, snappedDiameter], (vals) => {
-    const cy = vals[0] as number;
-    const d = vals[1] as number;
-    return snapToDevicePixel(cy - d / 2);
-  });
+  // The handle sits on the circle, to the right of the centre.
+  const handleX = useTransform([centerX, radius], ([cx, r]) =>
+    snapToDevicePixel((cx as number) + (r as number))
+  );
+  const handleY = useTransform(centerY, snapToDevicePixel);
+
   return (
     <div
       className={cn("group relative overflow-hidden", className)}
-      ref={(r) => {
-        containerRef.current = r;
+      ref={(element) => {
+        containerRef.current = element;
         if (ref) {
-          ref.current = r;
+          ref.current = element;
         }
       }}
     >
@@ -93,14 +87,12 @@ export function CircularMaskSelection({
           thinEdge ? "border" : "border-3"
         )}
         drag
-        dragConstraints={containerRef}
         dragMomentum={false}
-        onDrag={(_e, info) => onMoveCenter(info.delta.x, info.delta.y)}
-        ref={maskRef}
+        onDrag={(_event, info) => onMoveCenter(info.delta.x, info.delta.y)}
         style={{
-          height: snappedDiameter,
-          transform: useMotionTemplate`translate3d(${snappedPosX}px, ${snappedPosY}px, 0)`,
-          width: snappedDiameter,
+          height: diameter,
+          transform: useMotionTemplate`translate3d(${left}px, ${top}px, 0)`,
+          width: diameter,
           willChange: "transform, width, height",
         }}
       >
@@ -113,13 +105,17 @@ export function CircularMaskSelection({
       <motion.div
         className="absolute z-10 rounded-full bg-blue-500 opacity-0 transition-opacity hover:cursor-grab active:cursor-grabbing group-hover:opacity-100"
         drag
-        dragConstraints={containerRef}
         dragMomentum={false}
-        onDrag={(_e, info) => onMoveAdjuster(info.delta.x, info.delta.y)}
+        onDrag={(_event, info) => {
+          // The handle sits at (cx + r, cy). After the drag it is that far
+          // again plus the delta, so the new radius is the distance from the
+          // centre to the moved handle.
+          onResize(Math.hypot(radius.get() + info.delta.x, info.delta.y));
+        }}
         style={{
-          height: selectorRadius * 2,
-          transform: useMotionTemplate`translate3d(${snappedRadiusAjusterCenterX}px, ${snappedRadiusAjusterCenterY}px, 0) translate(-50%, -50%)`,
-          width: selectorRadius * 2,
+          height: HANDLE_RADIUS * 2,
+          transform: useMotionTemplate`translate3d(${handleX}px, ${handleY}px, 0) translate(-50%, -50%)`,
+          width: HANDLE_RADIUS * 2,
         }}
       />
       {children}

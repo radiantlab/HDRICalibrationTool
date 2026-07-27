@@ -86,6 +86,11 @@ interface PipelineStatusContextValue {
   clearLog: () => void;
   lastEmittedOutput: PipelineOutputPayload | null;
   log: LogEntry[];
+  /**
+   * Every file the run wrote. The pipeline command itself resolves to the
+   * output *directory*, so these events are the only source of real file paths.
+   */
+  outputs: string[];
   payload: PipelineStatusPayload | null;
   progress: number;
   setIndex: number | null;
@@ -108,6 +113,7 @@ export function PipelineStatusProvider({
   const [lastEmittedOutput, setLastEmittedOutput] =
     useState<PipelineOutputPayload | null>(null);
   const [log, setLog] = useState<LogEntry[]>([]);
+  const [outputs, setOutputs] = useState<string[]>([]);
   const [setIndex, setSetIndex] = useState<number | null>(null);
   const [setTotal, setSetTotal] = useState<number | null>(null);
 
@@ -150,7 +156,11 @@ export function PipelineStatusProvider({
     const unlistenOutputPromise = listen(
       "pipeline-output",
       (event: { payload: unknown }) => {
-        setLastEmittedOutput(pipelineOutputSchema.parse(event.payload));
+        const output = pipelineOutputSchema.parse(event.payload);
+        setLastEmittedOutput(output);
+        setOutputs((paths) =>
+          paths.includes(output.path) ? paths : [...paths, output.path]
+        );
       }
     );
 
@@ -163,6 +173,7 @@ export function PipelineStatusProvider({
 
   const clearLog = useCallback(() => {
     setLog([]);
+    setOutputs([]);
     setSetIndex(null);
     setSetTotal(null);
   }, []);
@@ -172,6 +183,7 @@ export function PipelineStatusProvider({
       clearLog,
       lastEmittedOutput,
       log,
+      outputs,
       payload,
       progress,
       setIndex,
@@ -182,6 +194,7 @@ export function PipelineStatusProvider({
       clearLog,
       lastEmittedOutput,
       log,
+      outputs,
       payload,
       progress,
       setIndex,
