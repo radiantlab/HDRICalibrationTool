@@ -69,6 +69,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useGenericImageMetadata } from "@/lib/generic-image-metadata";
 import { appendRun, classifyOutcome } from "@/lib/run-history";
 import { useMotionValueFormState } from "@/lib/use-motion-value-form-state";
 import { usePipelineStatus } from "../pipeline-status-context";
@@ -83,6 +84,7 @@ import { unsuppliedCalibrationFiles } from "./calibration-files";
 import { LensMaskInput } from "./lens-mask-input";
 import { useGlobalPipelineConfig } from "./pipeline-config-store";
 import { PipelineStatus } from "./pipeline-status";
+import { describeRunBlocker } from "./preflight";
 import { PresetBar } from "./preset-bar";
 import { RunConsole } from "./run-console";
 import { useSelectedImage } from "./selected-image-context";
@@ -235,6 +237,10 @@ export default function Home() {
   const cameraResponseLocation = watch("cameraResponseLocation");
 
   const { selectedImage } = useSelectedImage();
+  // The mask is expressed in the pixels of this image, so its dimensions are
+  // what the mask has to fit inside. Awaited in the submit handler rather than
+  // read with use(), so the page never suspends on it.
+  const maskPreviewMetadata = useGenericImageMetadata(selectedImage);
   const inputSetIssueResetKey = useMemo(
     () =>
       JSON.stringify({
@@ -306,7 +312,6 @@ export default function Home() {
           async (data) => {
             console.log("configForm submitted", data);
 
-            const diameter = Math.round(data.lensMask.radius * 2);
             const startedAt = new Date().toISOString();
             const toolSettings = {
               dcrawEmuPath: settings.dcrawEmuPath,
@@ -345,39 +350,17 @@ export default function Home() {
                 },
               }).catch(() => undefined);
 
-            if (!Number.isFinite(diameter) || diameter <= 0) {
-              const message = "Lens mask radius must be greater than 0.";
-              toast.error(message);
-              recordAttempt(message, [], []);
-              return;
-            }
-            if (
-              !Number.isFinite(data.outputSettings.targetRes) ||
-              (data.outputSettings.targetRes !== null &&
-                data.outputSettings.targetRes <= 0)
-            ) {
-              const message = "Target resolution must be greater than 0.";
-              toast.error(message);
-              recordAttempt(message, [], []);
-              return;
-            }
-            if (
-              !(
-                Number.isFinite(data.fisheyeView.verticalViewDegrees) &&
-                Number.isFinite(data.fisheyeView.horizontalViewDegrees)
-              ) ||
-              (data.fisheyeView.verticalViewDegrees !== null &&
-                data.fisheyeView.verticalViewDegrees <= 0) ||
-              (data.fisheyeView.horizontalViewDegrees !== null &&
-                data.fisheyeView.horizontalViewDegrees <= 0)
-            ) {
-              const message = "Fisheye view angles must be greater than 0.";
-              toast.error(message);
-              recordAttempt(message, [], []);
+            // Undefined until an image is selected, in which case there are no
+            // dimensions to check the mask against yet.
+            const maskSize = (await maskPreviewMetadata)?.size ?? null;
+            const blocker = describeRunBlocker(data, maskSize);
+            if (blocker) {
+              toast.error(blocker);
+              recordAttempt(blocker, [], []);
               return;
             }
 
-            // Last of the checks, and the only one that asks rather than
+            // The only check that asks rather than
             // refuses: skipping a calibration file is a legitimate choice, so
             // this confirms intent instead of blocking. Everything above is a
             // value the pipeline cannot run with at all.
