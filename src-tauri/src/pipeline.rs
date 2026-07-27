@@ -5,6 +5,7 @@ mod merge_exposures;
 mod neutral_density;
 mod nullify_exposure_value;
 mod photometric_adjustment;
+mod picture;
 mod projection_adjustment;
 mod resize;
 mod vignetting_effect_correction;
