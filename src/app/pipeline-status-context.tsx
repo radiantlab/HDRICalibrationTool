@@ -2,7 +2,14 @@
 
 import { listen } from "@tauri-apps/api/event";
 import type React from "react";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { toast } from "sonner";
 import z from "zod";
 
@@ -23,10 +30,66 @@ const pipelineOutputSchema = z.object({
 
 export type PipelineOutputPayload = z.infer<typeof pipelineOutputSchema>;
 
+/**
+ * One line of a run's transcript.
+ *
+ * Shaped to be the record run history will persist, so that feature stores
+ * these entries directly rather than reshaping them.
+ */
+export interface LogEntry {
+  at: string;
+  kind: "step" | "progress" | "warning" | "error" | "done";
+  message: string;
+  step: string | null;
+}
+
+const UNDERSCORE = /_/g;
+
+function humanise(step: string) {
+  return step.replace(UNDERSCORE, " ");
+}
+
+function statusTextFor(payload: PipelineStatusPayload): string | null {
+  return payload.message ?? (payload.step ? humanise(payload.step) : null);
+}
+
+function warningTextFor(payload: PipelineStatusPayload): string {
+  return (
+    payload.message ??
+    (payload.step
+      ? `Pipeline warning: ${humanise(payload.step)}`
+      : "Pipeline warning")
+  );
+}
+
+/**
+ * Progress-only events carry no text and would flood the log with percentages,
+ * so only messages and named steps become entries.
+ */
+function toLogEntry(payload: PipelineStatusPayload): LogEntry | null {
+  if (payload.kind === "progress") {
+    return null;
+  }
+  const message = statusTextFor(payload);
+  if (!message) {
+    return null;
+  }
+  return {
+    at: new Date().toISOString(),
+    kind: payload.kind,
+    message,
+    step: payload.step ?? null,
+  };
+}
+
 interface PipelineStatusContextValue {
+  clearLog: () => void;
   lastEmittedOutput: PipelineOutputPayload | null;
+  log: LogEntry[];
   payload: PipelineStatusPayload | null;
   progress: number;
+  setIndex: number | null;
+  setTotal: number | null;
   statusText: string;
 }
 
@@ -44,6 +107,9 @@ export function PipelineStatusProvider({
   const [payload, setPayload] = useState<PipelineStatusPayload | null>(null);
   const [lastEmittedOutput, setLastEmittedOutput] =
     useState<PipelineOutputPayload | null>(null);
+  const [log, setLog] = useState<LogEntry[]>([]);
+  const [setIndex, setSetIndex] = useState<number | null>(null);
+  const [setTotal, setSetTotal] = useState<number | null>(null);
 
   useEffect(() => {
     const unlistenProgressPromise = listen(
@@ -57,21 +123,27 @@ export function PipelineStatusProvider({
       (event: { payload: unknown }) => {
         const nextPayload = pipelineStatusSchema.parse(event.payload);
         setPayload(nextPayload);
+
+        const text = statusTextFor(nextPayload);
+        const entry = toLogEntry(nextPayload);
+
         if (typeof nextPayload.progress === "number") {
           setProgress(nextPayload.progress);
         }
-        if (nextPayload.message) {
-          setStatusText(nextPayload.message);
-        } else if (nextPayload.step) {
-          setStatusText(nextPayload.step.replace(/_/g, " "));
+        if (text) {
+          setStatusText(text);
+        }
+        if (typeof nextPayload.set_index === "number") {
+          setSetIndex(nextPayload.set_index);
+        }
+        if (typeof nextPayload.set_total === "number") {
+          setSetTotal(nextPayload.set_total);
+        }
+        if (entry) {
+          setLog((entries) => [...entries, entry]);
         }
         if (nextPayload.kind === "warning") {
-          const warningMessage =
-            nextPayload.message ??
-            (nextPayload.step
-              ? `Pipeline warning: ${nextPayload.step.replace(/_/g, " ")}`
-              : "Pipeline warning");
-          toast.warning(warningMessage);
+          toast.warning(warningTextFor(nextPayload));
         }
       }
     );
@@ -89,9 +161,33 @@ export function PipelineStatusProvider({
     };
   }, []);
 
+  const clearLog = useCallback(() => {
+    setLog([]);
+    setSetIndex(null);
+    setSetTotal(null);
+  }, []);
+
   const value = useMemo(
-    () => ({ lastEmittedOutput, payload, progress, statusText }),
-    [progress, statusText, payload, lastEmittedOutput]
+    () => ({
+      clearLog,
+      lastEmittedOutput,
+      log,
+      payload,
+      progress,
+      setIndex,
+      setTotal,
+      statusText,
+    }),
+    [
+      clearLog,
+      lastEmittedOutput,
+      log,
+      payload,
+      progress,
+      setIndex,
+      setTotal,
+      statusText,
+    ]
   );
 
   return (
