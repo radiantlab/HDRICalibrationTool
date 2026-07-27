@@ -28,10 +28,9 @@ import {
   Sun,
   SwitchCamera,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { create } from "zustand";
 import {
   Accordion,
   AccordionContent,
@@ -71,6 +70,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { appendRun, classifyOutcome } from "@/lib/run-history";
 import { useMotionValueFormState } from "@/lib/use-motion-value-form-state";
 import { usePipelineStatus } from "../pipeline-status-context";
 import { useSettingsStore } from "../stores/settings-store";
@@ -80,41 +80,10 @@ import {
 } from "./(pipeline-configuration)/config-provider";
 import { buildPipelineParams } from "./build-pipeline-params";
 import { LensMaskInput } from "./lens-mask-input";
+import { useGlobalPipelineConfig } from "./pipeline-config-store";
 import { PipelineStatus } from "./pipeline-status";
 import { RunConsole } from "./run-console";
 import { useSelectedImage } from "./selected-image-context";
-
-const useGlobalPipelineConfig = create<
-  pipelineConfig & { set: (config: pipelineConfig) => void }
->((set) => ({
-  cameraResponseLocation: null,
-  correctionFiles: {
-    calibrationFactor: null,
-    fisheye: null,
-    neutralDensity: null,
-    vignetting: null,
-  },
-  fisheyeView: {
-    horizontalViewDegrees: 180,
-    projection: "vta",
-    verticalViewDegrees: 180,
-  },
-  inputSets: [],
-  lensMask: {
-    radius: 0,
-    x: 0,
-    y: 0,
-  },
-  outputSettings: {
-    filterIrrelevantSrcImages: true,
-    targetRes: 1000,
-  },
-
-  set,
-  validityCheck: {
-    measuredVerticalIlluminanceLux: null,
-  },
-}));
 
 interface PipelineTrace {
   createdAt: string;
@@ -325,7 +294,13 @@ export default function Home() {
 
   const [progressVisible, setProgressVisible] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
-  const { clearLog } = usePipelineStatus();
+  const { clearLog, log } = usePipelineStatus();
+  // The record is written when a run ends, by which time the log has grown.
+  // Capturing `log` in the submit closure would persist an empty transcript.
+  const logRef = useRef(log);
+  useEffect(() => {
+    logRef.current = log;
+  }, [log]);
   const [imageSetIssues, setImageSetIssues] = useState<
     Partial<Record<number, ImageSetIssue>>
   >({});
@@ -346,9 +321,48 @@ export default function Home() {
             console.log("configForm submitted", data);
 
             const diameter = Math.round(data.lensMask.radius * 2);
+            const startedAt = new Date().toISOString();
+            const toolSettings = {
+              dcrawEmuPath: settings.dcrawEmuPath,
+              hdrgenPath: settings.hdrgenPath,
+              outputPath: settings.outputPath,
+              radiancePath: settings.radiancePath,
+            };
+
+            // Every attempt is recorded, including ones turned away before the
+            // backend ran: those are the ones worth looking back at when an
+            // evening's work produced nothing. Storage failures are swallowed
+            // so history can never break a run.
+            const recordAttempt = (
+              failure: string | null,
+              outputs: string[],
+              files: string[]
+            ) =>
+              appendRun({
+                finishedAt: new Date().toISOString(),
+                id: startedAt,
+                inputs: buildPipelineParams(
+                  data,
+                  toolSettings,
+                  files
+                ) as unknown as Record<string, unknown>,
+                log: logRef.current,
+                outcome: classifyOutcome(logRef.current, failure),
+                outputs,
+                presetName: null,
+                reason: failure,
+                startedAt,
+                toolPaths: {
+                  dcrawEmu: settings.dcrawEmuPath,
+                  hdrgen: settings.hdrgenPath,
+                  radiance: settings.radiancePath,
+                },
+              }).catch(() => undefined);
 
             if (!Number.isFinite(diameter) || diameter <= 0) {
-              toast.error("Lens mask radius must be greater than 0.");
+              const message = "Lens mask radius must be greater than 0.";
+              toast.error(message);
+              recordAttempt(message, [], []);
               return;
             }
             if (
@@ -356,7 +370,9 @@ export default function Home() {
               (data.outputSettings.targetRes !== null &&
                 data.outputSettings.targetRes <= 0)
             ) {
-              toast.error("Target resolution must be greater than 0.");
+              const message = "Target resolution must be greater than 0.";
+              toast.error(message);
+              recordAttempt(message, [], []);
               return;
             }
             if (
@@ -369,13 +385,16 @@ export default function Home() {
               (data.fisheyeView.horizontalViewDegrees !== null &&
                 data.fisheyeView.horizontalViewDegrees <= 0)
             ) {
-              toast.error("Fisheye view angles must be greater than 0.");
+              const message = "Fisheye view angles must be greater than 0.";
+              toast.error(message);
+              recordAttempt(message, [], []);
               return;
             }
 
             // TODO: implement batch processing
             const [imageSet] = data.inputSets;
             if (!imageSet) {
+              recordAttempt("No image set selected.", [], []);
               return;
             }
 
@@ -386,55 +405,58 @@ export default function Home() {
             setConsoleOpen(true);
             const params = buildPipelineParams(
               data,
-              {
-                dcrawEmuPath: settings.dcrawEmuPath,
-                hdrgenPath: settings.hdrgenPath,
-                outputPath: settings.outputPath,
-                radiancePath: settings.radiancePath,
-              },
+              toolSettings,
               imageSet.files
             );
             console.log("pipeline params", params);
-            invoke<string>("pipeline", params).catch(async (error) => {
-              setProgressVisible(false);
+            invoke<string>("pipeline", params)
+              .then((outputDirectory) => {
+                recordAttempt(null, [outputDirectory], imageSet.files);
+              })
+              .catch(async (error) => {
+                recordAttempt(String(error), [], imageSet.files);
+                setProgressVisible(false);
 
-              const knownHdrgenIssue = getKnownHdrgenIssue(error);
-              if (knownHdrgenIssue) {
-                setImageSetIssues({ 0: knownHdrgenIssue });
-                toast.error("HDRGen could not merge the selected image set.", {
+                const knownHdrgenIssue = getKnownHdrgenIssue(error);
+                if (knownHdrgenIssue) {
+                  setImageSetIssues({ 0: knownHdrgenIssue });
+                  toast.error(
+                    "HDRGen could not merge the selected image set.",
+                    {
+                      icon: <AlertTriangle className="size-4 text-red-500" />,
+                    }
+                  );
+                  return;
+                }
+
+                let tracePath: string | null = null;
+                try {
+                  tracePath = await writePipelineTrace(
+                    params,
+                    error,
+                    settings.outputPath
+                  );
+                } catch (traceError) {
+                  toast.error(`Failed to write pipeline trace: ${traceError}`);
+                }
+                const toastMessage = tracePath
+                  ? "Pipeline failed. Trace saved. (Send this file to a maintainer)"
+                  : "Pipeline failed. Trace could not be saved.";
+                toast.error(toastMessage, {
+                  action: tracePath
+                    ? {
+                        label: "Show in folder",
+                        onClick: () =>
+                          toast.promise(revealItemInDir(tracePath), {
+                            error: "Failed to reveal in folder",
+                            loading: "Revealing in folder...",
+                            success: "Revealed in folder",
+                          }),
+                      }
+                    : undefined,
                   icon: <AlertTriangle className="size-4 text-red-500" />,
                 });
-                return;
-              }
-
-              let tracePath: string | null = null;
-              try {
-                tracePath = await writePipelineTrace(
-                  params,
-                  error,
-                  settings.outputPath
-                );
-              } catch (traceError) {
-                toast.error(`Failed to write pipeline trace: ${traceError}`);
-              }
-              const toastMessage = tracePath
-                ? "Pipeline failed. Trace saved. (Send this file to a maintainer)"
-                : "Pipeline failed. Trace could not be saved.";
-              toast.error(toastMessage, {
-                action: tracePath
-                  ? {
-                      label: "Show in folder",
-                      onClick: () =>
-                        toast.promise(revealItemInDir(tracePath), {
-                          error: "Failed to reveal in folder",
-                          loading: "Revealing in folder...",
-                          success: "Revealed in folder",
-                        }),
-                    }
-                  : undefined,
-                icon: <AlertTriangle className="size-4 text-red-500" />,
               });
-            });
           },
           (errors) => {
             console.log("form errors", errors);

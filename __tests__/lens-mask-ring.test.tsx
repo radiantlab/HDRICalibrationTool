@@ -14,6 +14,9 @@ import { LensMaskEditor } from "../src/app/home-page/lens-mask-editor";
 // Width the mask container reports. Starts at 0, as it does while a dialog is
 // still being laid out, then becomes the fitted width.
 let containerWidth = 0;
+// When set, the very first measurement reports zero, modelling a element read
+// while the dialog is still animating in. Later reads see the real width.
+let firstMeasurementIsZero = false;
 const observers: (() => void)[] = [];
 
 const realGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
@@ -26,14 +29,16 @@ afterAll(() => {
 
 function installMeasurementStubs() {
   HTMLElement.prototype.getBoundingClientRect = function mockRect() {
+    const width = firstMeasurementIsZero ? 0 : containerWidth;
+    firstMeasurementIsZero = false;
     return {
       bottom: 0,
-      height: containerWidth * (3744 / 5616),
+      height: width * (3744 / 5616),
       left: 0,
-      right: containerWidth,
+      right: width,
       toJSON: () => ({}),
       top: 0,
-      width: containerWidth,
+      width,
       x: 0,
       y: 0,
     } as DOMRect;
@@ -70,6 +75,8 @@ function ringDiameter(container: HTMLElement): number {
 describe("lens mask ring in the editor", () => {
   it("draws the ring once the container has been measured", async () => {
     installMeasurementStubs();
+    observers.length = 0;
+    firstMeasurementIsZero = false;
     containerWidth = 0;
 
     const centerX = motionValue(2808);
@@ -119,7 +126,11 @@ describe("lens mask ring in the editor", () => {
   it("re-measures itself after mount without waiting for a resize", async () => {
     installMeasurementStubs();
     observers.length = 0;
-    containerWidth = 0;
+    // The container has its real size from the start; only the first read,
+    // taken mid-animation, reports zero. Nothing resizes afterwards, so the
+    // ResizeObserver stays silent and the component must correct itself.
+    containerWidth = 1000;
+    firstMeasurementIsZero = true;
 
     let root!: HTMLElement;
     await act(() => {
@@ -138,11 +149,6 @@ describe("lens mask ring in the editor", () => {
       return Promise.resolve();
     });
 
-    // The dialog animates in, so the first measurement can be taken while the
-    // element is still transformed or unlaid-out. Nothing resizes afterwards:
-    // the border box never changes, so the ResizeObserver stays silent and the
-    // component must correct itself.
-    containerWidth = 1000;
     await act(
       () =>
         new Promise<void>((resolve) => {
