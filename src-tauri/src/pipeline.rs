@@ -8,6 +8,7 @@ mod photometric_adjustment;
 mod picture;
 mod projection_adjustment;
 mod resize;
+mod validity;
 mod vignetting_effect_correction;
 
 use serde::Serialize;
@@ -31,6 +32,7 @@ use nullify_exposure_value::nullify_exposure_value;
 use photometric_adjustment::photometric_adjustment;
 use projection_adjustment::projection_adjustment;
 use resize::resize;
+use validity::{evaluate_validity, validity_message, ValidityOutcome};
 use vignetting_effect_correction::vignetting_effect_correction;
 
 // Used to print out debug information
@@ -197,6 +199,7 @@ pub async fn pipeline(
     vertical_angle: f64,
     horizontal_angle: f64,
     projection: String,
+    measured_vertical_illuminance: Option<f64>,
     scale_limit: String,
     scale_label: String,
     scale_levels: String,
@@ -341,6 +344,7 @@ pub async fn pipeline(
                 vertical_angle.clone(),
                 horizontal_angle.clone(),
                 projection.clone(),
+                measured_vertical_illuminance,
                 current_step,
                 total_steps,
                 filter_images,
@@ -432,6 +436,7 @@ pub async fn pipeline(
             vertical_angle.clone(),
             horizontal_angle.clone(),
             projection.clone(),
+            measured_vertical_illuminance,
             current_step,
             total_steps,
             filter_images,
@@ -550,6 +555,7 @@ pub fn process_image_set(
     vertical_angle: f64,
     horizontal_angle: f64,
     projection: String,
+    measured_vertical_illuminance: Option<f64>,
     mut current_step: usize,
     total_steps: usize,
     filter_images: bool,
@@ -892,10 +898,61 @@ pub fn process_image_set(
         },
     )?;
 
+    let measured_text = measured_vertical_illuminance.map(|value| value.to_string());
+
+    if let (Some(raw), Some(measured)) = (&evalglare_value, measured_vertical_illuminance) {
+        match raw.trim().parse::<f64>() {
+            Ok(ev_hdr) => {
+                if let Some(outcome) = evaluate_validity(ev_hdr, measured) {
+                    let kind = match outcome {
+                        ValidityOutcome::Pass { .. } => PipelineStatusKind::Step,
+                        _ => PipelineStatusKind::Warning,
+                    };
+                    emit_status(
+                        app,
+                        PipelineStatusPayload {
+                            kind,
+                            progress: None,
+                            step: Some("validity_check".to_string()),
+                            message: Some(validity_message(&outcome, ev_hdr, measured)),
+                        },
+                    )?;
+                }
+            }
+            Err(_) => emit_status(
+                app,
+                PipelineStatusPayload {
+                    kind: PipelineStatusKind::Warning,
+                    progress: None,
+                    step: Some("validity_check".to_string()),
+                    message: Some(format!(
+                        "Could not read a vertical illuminance from evalglare output {:?}; \
+                         the validity check was skipped.",
+                        raw.trim()
+                    )),
+                },
+            )?,
+        }
+    } else if measured_text.is_some() && evalglare_value.is_none() {
+        emit_status(
+            app,
+            PipelineStatusPayload {
+                kind: PipelineStatusKind::Step,
+                progress: None,
+                step: Some("validity_check".to_string()),
+                message: Some(
+                    "Validity check skipped: evalglare requires an angular fisheye view. \
+                     The measured value was recorded in the header but not compared."
+                        .to_string(),
+                ),
+            },
+        )?;
+    }
+
     // The rest of the pipeline reads header_editing.hdr, so when there is
     // nothing to record the view-only picture is carried forward under that
     // name rather than special-casing every later step.
-    if evalglare_value.is_some() {
+    if evalglare_value.is_some() || measured_text.is_some() {
         header_editing(
             &config_settings,
             config_settings
@@ -912,7 +969,7 @@ pub fn process_image_set(
             // it here would leave two VIEW entries in the finished picture.
             None,
             evalglare_value,
-            None,
+            measured_text,
         )?;
     } else {
         copy(
