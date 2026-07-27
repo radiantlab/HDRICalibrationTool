@@ -149,10 +149,19 @@ function InnserScaledCircularMaskSelection({
 			// values from the real ones in the right direction.
 		}
 
+		// The editor opens inside a dialog that animates in, so this first
+		// measurement can be taken while the element is still transformed and
+		// getBoundingClientRect reports a scaled or zero width. The border box
+		// never changes afterwards, so the ResizeObserver below stays silent and
+		// would leave the scale wrong: the mask circle collapses to nothing while
+		// the fixed-size handle still renders. Re-measure once the frame settles.
+		const frame = requestAnimationFrame(() => updateScale());
+
 		const resizeObserver = new ResizeObserver(() => updateScale());
 		resizeObserver.observe(element);
 
 		return () => {
+			cancelAnimationFrame(frame);
 			resizeObserver.disconnect();
 		};
 	}, [size]);
