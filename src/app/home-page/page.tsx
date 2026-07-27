@@ -59,7 +59,13 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
-import { SelectInput } from "@/components/ui/select-input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Tooltip,
   TooltipContent,
@@ -722,16 +728,31 @@ export default function Home() {
                         <Aperture /> Projection type
                       </FieldLabel>
                       <FieldContent>
-                        <SelectInput
-                          {...register("fisheyeView.projection", {
-                            required: "Projection type is required",
-                          })}
-                          defaultValue="vta"
-                        >
-                          <option value="vta">Equidistant (-vta)</option>
-                          <option value="vth">Orthographic (-vth)</option>
-                          <option value="vtv">Non-fisheye (-vtv)</option>
-                        </SelectInput>
+                        <Controller
+                          control={control}
+                          name="fisheyeView.projection"
+                          render={({ field }) => (
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value}
+                            >
+                              <SelectTrigger className="w-full">
+                                <SelectValue placeholder="Projection type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="vta">
+                                  Equidistant (-vta)
+                                </SelectItem>
+                                <SelectItem value="vth">
+                                  Orthographic (-vth)
+                                </SelectItem>
+                                <SelectItem value="vtv">
+                                  Non-fisheye (-vtv)
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
                       </FieldContent>
                       <FieldDescription>
                         Written to the picture header as the view type. A
