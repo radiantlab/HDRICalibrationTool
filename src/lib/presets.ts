@@ -1,0 +1,170 @@
+import { join } from "@tauri-apps/api/path";
+import { copyFile, exists, mkdir, readFile } from "@tauri-apps/plugin-fs";
+import type { pipelineConfig } from "@/app/home-page/(pipeline-configuration)/config-provider";
+import { readJson, storagePath, writeJson } from "./app-storage";
+
+export type PresetFileSlot =
+  | "calibrationFactor"
+  | "fisheye"
+  | "neutralDensity"
+  | "response"
+  | "vignetting";
+
+export interface PresetFile {
+  fileName: string;
+  sha256: string;
+  sourcePath: string;
+}
+
+export interface Preset {
+  files: Partial<Record<PresetFileSlot, PresetFile>>;
+  fisheyeView: pipelineConfig["fisheyeView"];
+  id: string;
+  lensMask: pipelineConfig["lensMask"] | null;
+  /** The image dimensions the mask was drawn against, so it can be checked. */
+  lensMaskImageSize: [number, number] | null;
+  name: string;
+  outputSettings: pipelineConfig["outputSettings"];
+}
+
+const PRESETS_FILE = "presets/presets.json";
+
+const SLOT_FILENAMES: Record<PresetFileSlot, string> = {
+  calibrationFactor: "calibration.cal",
+  fisheye: "fisheye.cal",
+  neutralDensity: "nd.cal",
+  response: "response.rsp",
+  vignetting: "vignetting.cal",
+};
+
+export async function sha256Hex(bytes: Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", bytes as BufferSource);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * The equipment half of the configuration.
+ *
+ * A preset holds the tutorial's one-time setup material (response function,
+ * calibration files, view angles, projection, target resolution, lens mask) and
+ * never the per-capture material (the image set and the measured illuminance),
+ * which changes every time.
+ */
+export function presetFields(config: pipelineConfig) {
+  return {
+    fisheyeView: config.fisheyeView,
+    lensMask: config.lensMask,
+    outputSettings: config.outputSettings,
+  };
+}
+
+export async function readPresets(): Promise<Preset[]> {
+  const stored = await readJson<{ presets: Preset[] }>(PRESETS_FILE, {
+    presets: [],
+  });
+  return stored.presets ?? [];
+}
+
+function sourcePaths(
+  config: pipelineConfig
+): Record<PresetFileSlot, string | null> {
+  return {
+    calibrationFactor: config.correctionFiles.calibrationFactor,
+    fisheye: config.correctionFiles.fisheye,
+    neutralDensity: config.correctionFiles.neutralDensity,
+    response: config.cameraResponseLocation,
+    vignetting: config.correctionFiles.vignetting,
+  };
+}
+
+/**
+ * Copies every supplied calibration file into presets/<id>/ so the preset
+ * survives the originals being moved or deleted, recording each source path and
+ * content hash so a re-derived calibration can be detected later.
+ */
+export async function savePreset(
+  id: string,
+  name: string,
+  config: pipelineConfig,
+  lensMaskImageSize: [number, number] | null
+): Promise<Preset> {
+  const dir = await storagePath("presets", id);
+  await mkdir(dir, { recursive: true });
+
+  const slots = (
+    Object.entries(sourcePaths(config)) as [PresetFileSlot, string | null][]
+  ).filter((entry): entry is [PresetFileSlot, string] => entry[1] !== null);
+
+  const copied = await Promise.all(
+    slots.map(async ([slot, sourcePath]) => {
+      const fileName = SLOT_FILENAMES[slot];
+      await copyFile(sourcePath, await join(dir, fileName));
+      const file: PresetFile = {
+        fileName,
+        sha256: await sha256Hex(await readFile(sourcePath)),
+        sourcePath,
+      };
+      return [slot, file] as const;
+    })
+  );
+
+  const files: Partial<Record<PresetFileSlot, PresetFile>> = {};
+  for (const [slot, file] of copied) {
+    files[slot] = file;
+  }
+
+  const preset: Preset = {
+    files,
+    id,
+    lensMaskImageSize,
+    name,
+    ...presetFields(config),
+  };
+  const presets = await readPresets();
+  await writeJson(PRESETS_FILE, {
+    presets: [...presets.filter((entry) => entry.id !== id), preset],
+  });
+  return preset;
+}
+
+/**
+ * Slots whose source file still exists but no longer matches the copy taken
+ * when the preset was saved, meaning that calibration has been re-derived.
+ *
+ * A source that has been moved or deleted is not reported: surviving that is
+ * why presets copy their files in the first place.
+ */
+export async function changedSources(
+  preset: Preset
+): Promise<PresetFileSlot[]> {
+  const entries = Object.entries(preset.files) as [
+    PresetFileSlot,
+    PresetFile,
+  ][];
+
+  const results = await Promise.all(
+    entries.map(async ([slot, file]) => {
+      if (!(await exists(file.sourcePath))) {
+        return null;
+      }
+      const current = await sha256Hex(await readFile(file.sourcePath));
+      return current === file.sha256 ? null : slot;
+    })
+  );
+
+  return results.filter((slot): slot is PresetFileSlot => slot !== null);
+}
+
+/** Absolute path of a preset's stored copy, used when applying it. */
+export async function presetFilePath(
+  preset: Preset,
+  slot: PresetFileSlot
+): Promise<string | null> {
+  const file = preset.files[slot];
+  if (!file) {
+    return null;
+  }
+  return await storagePath("presets", preset.id, file.fileName);
+}
