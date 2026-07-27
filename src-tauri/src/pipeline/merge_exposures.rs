@@ -121,6 +121,8 @@ pub fn merge_exposures(
                         "Selected {} of {before} useful exposures",
                         input_images.len()
                     )),
+                    set_index: None,
+                    set_total: None,
                 },
             )?;
         }

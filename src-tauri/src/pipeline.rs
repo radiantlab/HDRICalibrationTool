@@ -91,6 +91,11 @@ pub struct PipelineStatusPayload {
     pub step: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub message: Option<String>,
+    /// One-based index of the image set being processed, for batch runs.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub set_index: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub set_total: Option<usize>,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -129,6 +134,8 @@ fn warn_if_resolution_dependent(
                     message: Some(format!(
                         "Could not read the {label} calibration file {cal_path}: {error}"
                     )),
+                    set_index: None,
+                    set_total: None,
                 },
             )
         }
@@ -143,6 +150,8 @@ fn warn_if_resolution_dependent(
                 progress: None,
                 step: Some("cal_check".to_string()),
                 message: Some(cal_warning(label, cal_path, width, height, &constants)),
+                set_index: None,
+                set_total: None,
             },
         ),
     }
@@ -161,6 +170,8 @@ fn emit_progress(app: &tauri::AppHandle, progress: i32) -> Result<(), PipelineEr
             progress: Some(progress),
             step: None,
             message: None,
+            set_index: None,
+            set_total: None,
         },
     )
 }
@@ -346,7 +357,28 @@ pub async fn pipeline(
         // Directories were selected (batch processing)
 
         // Run pipeline for each directory selected
-        for input_dir in &input_images {
+        let set_total = input_images.len();
+        for (set_position, input_dir) in input_images.iter().enumerate() {
+            let set_index = set_position + 1;
+            let set_name = Path::new(input_dir)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+            emit_status(
+                &app,
+                PipelineStatusPayload {
+                    kind: PipelineStatusKind::Step,
+                    progress: None,
+                    step: Some("image_set".to_string()),
+                    message: Some(format!(
+                        "Processing set {set_index} of {set_total}: {set_name}"
+                    )),
+                    set_index: Some(set_index),
+                    set_total: Some(set_total),
+                },
+            )?;
+
             // Create a subdirectory inside tmp for this directory with input images (same name as input dir)
             config_settings.temp_path = Path::new(&config_settings.output_path)
                 .join("tmp")
@@ -400,6 +432,8 @@ pub async fn pipeline(
                         progress: None,
                         step: None,
                         message: Some(format!("{:?}", error)),
+                        set_index: None,
+                        set_total: None,
                     },
                 )?;
                 return Err(error);
@@ -491,6 +525,8 @@ pub async fn pipeline(
                     progress: None,
                     step: None,
                     message: Some(format!("{:?}", error)),
+                    set_index: None,
+                    set_total: None,
                 },
             )?;
             return Err(error);
@@ -536,6 +572,8 @@ pub async fn pipeline(
             progress: Some(100),
             step: None,
             message: Some("Pipeline complete.".to_string()),
+            set_index: None,
+            set_total: None,
         },
     )?;
 
@@ -612,6 +650,8 @@ pub fn process_image_set(
             progress: None,
             step: Some("merge_exposures".to_string()),
             message: Some("Merging exposures".to_string()),
+            set_index: None,
+            set_total: None,
         },
     )?;
 
@@ -642,6 +682,8 @@ pub fn process_image_set(
             progress: None,
             step: Some("nullify_exposure".to_string()),
             message: Some("Normalizing exposure".to_string()),
+            set_index: None,
+            set_total: None,
         },
     )?;
 
@@ -668,6 +710,8 @@ pub fn process_image_set(
             progress: None,
             step: Some("crop".to_string()),
             message: Some("Cropping HDR image".to_string()),
+            set_index: None,
+            set_total: None,
         },
     )?;
 
@@ -703,6 +747,8 @@ pub fn process_image_set(
                 progress: None,
                 step: Some("resize".to_string()),
                 message: Some("Resizing HDR image".to_string()),
+                set_index: None,
+                set_total: None,
             },
         )?;
 
@@ -735,6 +781,8 @@ pub fn process_image_set(
                 progress: None,
                 step: Some("projection_adjustment".to_string()),
                 message: Some("Applying fisheye correction".to_string()),
+                set_index: None,
+                set_total: None,
             },
         )?;
 
@@ -772,6 +820,8 @@ pub fn process_image_set(
                 progress: None,
                 step: Some("vignetting_correction".to_string()),
                 message: Some("Applying vignetting correction".to_string()),
+                set_index: None,
+                set_total: None,
             },
         )?;
 
@@ -809,6 +859,8 @@ pub fn process_image_set(
                 progress: None,
                 step: Some("neutral_density".to_string()),
                 message: Some("Applying neutral density correction".to_string()),
+                set_index: None,
+                set_total: None,
             },
         )?;
 
@@ -838,6 +890,8 @@ pub fn process_image_set(
                 progress: None,
                 step: Some("photometric_adjustment".to_string()),
                 message: Some("Applying photometric adjustment".to_string()),
+                set_index: None,
+                set_total: None,
             },
         )?;
 
@@ -866,6 +920,8 @@ pub fn process_image_set(
             progress: None,
             step: Some("header_editing".to_string()),
             message: Some("Writing view angles to HDR header".to_string()),
+            set_index: None,
+            set_total: None,
         },
     )?;
 
@@ -901,6 +957,8 @@ pub fn process_image_set(
             progress: None,
             step: Some("evalglare".to_string()),
             message: Some("Evaluating glare".to_string()),
+            set_index: None,
+            set_total: None,
         },
     )?;
 
@@ -918,6 +976,8 @@ pub fn process_image_set(
                      (-vta or -vth); the selected projection is -vtv."
                         .to_string(),
                 ),
+                set_index: None,
+                set_total: None,
             },
         )?;
         None
@@ -941,6 +1001,8 @@ pub fn process_image_set(
                     progress: None,
                     step: Some("evalglare".to_string()),
                     message: Some(message),
+                    set_index: None,
+                    set_total: None,
                 },
             )?;
         }
@@ -956,6 +1018,8 @@ pub fn process_image_set(
             progress: None,
             step: Some("header_editing".to_string()),
             message: Some("Recording glare value in HDR header".to_string()),
+            set_index: None,
+            set_total: None,
         },
     )?;
 
@@ -976,6 +1040,8 @@ pub fn process_image_set(
                             progress: None,
                             step: Some("validity_check".to_string()),
                             message: Some(validity_message(&outcome, ev_hdr, measured)),
+                            set_index: None,
+                            set_total: None,
                         },
                     )?;
                 }
@@ -991,6 +1057,8 @@ pub fn process_image_set(
                          the validity check was skipped.",
                         raw.trim()
                     )),
+                    set_index: None,
+                    set_total: None,
                 },
             )?,
         }
@@ -1006,6 +1074,8 @@ pub fn process_image_set(
                      The measured value was recorded in the header but not compared."
                         .to_string(),
                 ),
+                set_index: None,
+                set_total: None,
             },
         )?;
     }
@@ -1051,6 +1121,8 @@ pub fn process_image_set(
             progress: None,
             step: Some("falsecolor".to_string()),
             message: Some("Generating luminance map".to_string()),
+            set_index: None,
+            set_total: None,
         },
     )?;
 
