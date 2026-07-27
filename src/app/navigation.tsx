@@ -107,6 +107,18 @@ export default function Navigation() {
           Settings
         </Link>
 
+        {/* Runs page link */}
+        <Link
+          className={`flex h-full w-full items-center justify-center border-gray-400 border-r p-2 font-bold ${
+            pathname.startsWith("/runs")
+              ? "cursor-default bg-white"
+              : "cursor-pointer hover:bg-gray-200"
+          }`}
+          href="/runs"
+        >
+          Runs
+        </Link>
+
         {/* Image Viewer page link */}
         <Link
           className={`flex h-full w-full items-center justify-center p-2 font-bold ${
