@@ -55,14 +55,18 @@ control cannot offer: magnification and a visible fit signal.
 └────────────────────────────────────────────────────────────┘
 ```
 
-Five parts, in priority order. The first two carry most of the value:
+Five parts, in priority order. With numeric entry already built, the value is
+concentrated in parts 1 and 3:
 
 1. **Size.** The modal is 90vw/90vh, so the same image renders three to four times
    larger and one screen pixel maps to roughly one and a half image pixels.
-2. **Numeric fields for centre and radius**, bound to the same form values as the
-   drag handles and updating live in both directions. Typing `1806` is exact in a
-   way no drag can be, and users transcribing values from a previous calibration
-   have somewhere to put them. This alone would resolve most of the complaint.
+2. ~~**Numeric fields for centre and radius.**~~ **Correction (2026-07-27): these
+   already exist.** `lens-mask-input.tsx:95-151` renders Radius, X and Y number
+   inputs registered to `lensMask.*`, each writing back to the motion values, so
+   exact entry is already available and updates the circle live. My original
+   claim that this was the highest-value missing piece was wrong; it was not
+   missing. What remains genuinely absent is magnification and a fit signal,
+   which is what the modal is actually for.
 3. **A 1 px edge-check mode.** Swaps the 3 px border for a 1 px ring and removes
    the fill, so the circle edge can be compared against the fisheye edge directly.
 4. **Zoom and pan** for inspecting the edge at 100% or more.
@@ -73,7 +77,7 @@ Five parts, in priority order. The first two carry most of the value:
 
 ### Cost and risk
 
-Parts 1 to 3 are a day or so and reuse `CircularMaskSelection` unchanged inside a
+Parts 1 and 3 are about a day and reuse `CircularMaskSelection` unchanged inside a
 dialog; the component already takes `MotionValue`s, so the modal and the inline
 preview can drive the same ones and stay in sync. Part 4 needs a transform layer
 around the existing scaling. Part 5 is the only one with real algorithmic risk:
@@ -81,7 +85,11 @@ my own attempt to locate the circle in `IMG_6962.JPG` during this work gave abou
 20 px of uncertainty because the fisheye edge is soft, so it must be presented as
 an estimate.
 
-**Recommendation:** build 1 to 3 first and see whether 4 and 5 are still wanted.
+**Recommendation:** build 1 and 3 first and see whether 4 and 5 are still wanted.
+
+There is also no dialog primitive in the project and no Radix dialog dependency,
+so the modal itself has to be built. Both this and the run console need it, which
+makes it a shared prerequisite rather than part of either feature.
 
 **Open question:** should the inline preview stay as-is once the modal exists, or
 be reduced to a read-only thumbnail with an "Edit mask" button? I lean towards
