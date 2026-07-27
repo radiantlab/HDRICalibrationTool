@@ -196,6 +196,7 @@ pub async fn pipeline(
     ydim: f64,
     vertical_angle: f64,
     horizontal_angle: f64,
+    projection: String,
     scale_limit: String,
     scale_label: String,
     scale_levels: String,
@@ -207,6 +208,15 @@ pub async fn pipeline(
         return Err(PipelineError::InvalidInput {
             field: "inputImages".to_string(),
             value: "empty".to_string(),
+        });
+    }
+
+    // -vta equidistant, -vth orthographic, -vtv non-fisheye (tutorial 2.5.7).
+    const SUPPORTED_PROJECTIONS: [&str; 3] = ["vta", "vth", "vtv"];
+    if !SUPPORTED_PROJECTIONS.contains(&projection.as_str()) {
+        return Err(PipelineError::InvalidInput {
+            field: "projection".to_string(),
+            value: projection,
         });
     }
 
@@ -330,6 +340,7 @@ pub async fn pipeline(
                 ydim.clone(),
                 vertical_angle.clone(),
                 horizontal_angle.clone(),
+                projection.clone(),
                 current_step,
                 total_steps,
                 filter_images,
@@ -420,6 +431,7 @@ pub async fn pipeline(
             ydim.clone(),
             vertical_angle.clone(),
             horizontal_angle.clone(),
+            projection.clone(),
             current_step,
             total_steps,
             filter_images,
@@ -537,6 +549,7 @@ pub fn process_image_set(
     ydim: f64,
     vertical_angle: f64,
     horizontal_angle: f64,
+    projection: String,
     mut current_step: usize,
     total_steps: usize,
     filter_images: bool,
@@ -802,7 +815,7 @@ pub fn process_image_set(
             .display()
             .to_string(),
         Some(ViewArgs {
-            projection: "vta".to_string(),
+            projection: projection.clone(),
             vertical_angle,
             horizontal_angle,
         }),
@@ -823,28 +836,48 @@ pub fn process_image_set(
         },
     )?;
 
-    let evalglare_result = evalglare(
-        &config_settings,
-        config_settings
-            .temp_path
-            .join("header_editing_view.hdr")
-            .display()
-            .to_string(),
-        vertical_angle,
-        horizontal_angle,
-    )?;
-    if let Some(message) = evalglare_result.warning {
+    // evalglare only accepts an angular fisheye view, so a non-fisheye
+    // projection has no vertical illuminance to derive and the check is skipped.
+    let evalglare_value = if projection == "vtv" {
         emit_status(
             app,
             PipelineStatusPayload {
-                kind: PipelineStatusKind::Warning,
+                kind: PipelineStatusKind::Step,
                 progress: None,
                 step: Some("evalglare".to_string()),
-                message: Some(message),
+                message: Some(
+                    "Validity check skipped: evalglare requires an angular fisheye view \
+                     (-vta or -vth); the selected projection is -vtv."
+                        .to_string(),
+                ),
             },
         )?;
-    }
-    let evalglare_value = evalglare_result.value;
+        None
+    } else {
+        let evalglare_result = evalglare(
+            &config_settings,
+            config_settings
+                .temp_path
+                .join("header_editing_view.hdr")
+                .display()
+                .to_string(),
+            &projection,
+            vertical_angle,
+            horizontal_angle,
+        )?;
+        if let Some(message) = evalglare_result.warning {
+            emit_status(
+                app,
+                PipelineStatusPayload {
+                    kind: PipelineStatusKind::Warning,
+                    progress: None,
+                    step: Some("evalglare".to_string()),
+                    message: Some(message),
+                },
+            )?;
+        }
+        Some(evalglare_result.value)
+    };
 
     current_step += 1;
     emit_progress(app, current_step, total_steps)?;
@@ -859,24 +892,37 @@ pub fn process_image_set(
         },
     )?;
 
-    header_editing(
-        &config_settings,
-        config_settings
-            .temp_path
-            .join("header_editing_view.hdr")
-            .display()
-            .to_string(),
-        config_settings
-            .temp_path
-            .join("header_editing.hdr")
-            .display()
-            .to_string(),
-        // The view line was already written by the call above; re-emitting it
-        // here would leave two VIEW entries in the finished picture.
-        None,
-        Some(evalglare_value),
-        None,
-    )?;
+    // The rest of the pipeline reads header_editing.hdr, so when there is
+    // nothing to record the view-only picture is carried forward under that
+    // name rather than special-casing every later step.
+    if evalglare_value.is_some() {
+        header_editing(
+            &config_settings,
+            config_settings
+                .temp_path
+                .join("header_editing_view.hdr")
+                .display()
+                .to_string(),
+            config_settings
+                .temp_path
+                .join("header_editing.hdr")
+                .display()
+                .to_string(),
+            // The view line was already written by the call above; re-emitting
+            // it here would leave two VIEW entries in the finished picture.
+            None,
+            evalglare_value,
+            None,
+        )?;
+    } else {
+        copy(
+            config_settings.temp_path.join("header_editing_view.hdr"),
+            config_settings.temp_path.join("header_editing.hdr"),
+        )
+        .map_err(|error| PipelineError::Processing {
+            message: format!("Error finalizing HDR image without a validity check: {error}"),
+        })?;
+    }
 
     current_step += 1;
     emit_progress(app, current_step, total_steps)?;
