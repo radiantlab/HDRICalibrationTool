@@ -4,6 +4,7 @@ yres <- 3744
 diameter <- 3612
 xleft <- 1019
 ydown <- 74
+origin <- bottom-left
 
 Lens view angle information
 -vv 186

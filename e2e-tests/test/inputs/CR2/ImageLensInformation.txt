@@ -1,7 +1,10 @@
 Mask and cropping information (8mm Canon 5D)
+xres <- 5796
+yres <- 3870
 diameter <- 3728
 xleft <- 1024
 ydown <- 88
+origin <- bottom-left
 
 Lens view angle information
 -vv 180

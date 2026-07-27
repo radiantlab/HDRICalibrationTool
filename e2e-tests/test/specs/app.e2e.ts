@@ -61,20 +61,47 @@ function readLensInformation(lensInfoPath: string) {
     return Number.parseInt(match[1], 10);
   };
 
+  const originMatch = raw.match(/origin <- (bottom-left|top-left)/);
+  assert.ok(
+    originMatch?.[1],
+    `expected "origin <- bottom-left" or "origin <- top-left" in ${lensInfoPath}`
+  );
+  const origin = originMatch[1];
+
   const diameter = parseRequiredNumber("diameter");
   const xleft = parseRequiredNumber("xleft");
   const ydown = parseRequiredNumber("ydown");
+  const yres = parseRequiredNumber("yres");
   const radius = diameter / 2;
+
+  // The lens-mask overlay works from the top-left of the image. Fixtures
+  // written in Radiance's bottom-left convention are flipped here.
+  const y = origin === "bottom-left" ? yres - (ydown + radius) : ydown + radius;
 
   return {
     diameter,
     radius,
     x: xleft + radius,
-    y: ydown + radius,
+    y,
   };
 }
 
 const lensInformation = readLensInformation(lensInformationPath);
+
+// The fixture records ydown in Radiance's bottom-left origin; the lens-mask
+// overlay works from the top-left. Restating the conversion independently here
+// pins that readLensInformation honours the declared origin rather than passing
+// the number through. For the JPEG fixture: 3744 - (74 + 1806) = 1864.
+{
+  const fixture = readFileSync(lensInformationPath, "utf8");
+  const value = (label: string) =>
+    Number(fixture.match(new RegExp(`${label} <- (\\d+)`))?.[1]);
+  assert.equal(
+    lensInformation.y,
+    value("yres") - (value("ydown") + value("diameter") / 2),
+    "expected the mask centre to be converted from the fixture's declared origin"
+  );
+}
 
 async function selectFirstPreviewImage() {
   await browser.execute(() => {
