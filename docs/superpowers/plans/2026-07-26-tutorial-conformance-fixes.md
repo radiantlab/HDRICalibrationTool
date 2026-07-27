@@ -575,7 +575,15 @@ git commit -m "refactor: rename ydown to ytop across the pipeline IPC boundary"
 
 The fixtures say `ydown <- 74` with no statement of which edge that is measured from, and `readLensInformation` currently assumes top-left. Combined with the old `crop.rs`, the round trip cancelled out, so the golden encodes whichever convention the fixture uses without recording it. Measuring the circle in `IMG_6962.JPG` does not settle it: the threshold sweep gives about 20 px of uncertainty on each gap against a 16 px difference between the hypotheses.
 
-**This task does not decide the answer.** It makes the fixture state one, so that the manual verification has somewhere to record its finding. Set `bottom-left` as the starting value, because that is the tutorial's definition of fisheye view coordinates and the convention the old `pipeline.rs` doc comment claimed. Expect e2e to be red until the manual verification confirms or corrects it and the golden is regenerated.
+**This task does not decide the answer.** It makes the fixture state one, so that the manual verification has somewhere to record its finding. Set `bottom-left` as the starting value, because that is the tutorial's definition of fisheye view coordinates and the convention the old `pipeline.rs` doc comment claimed.
+
+**Correction, found while executing Task 1: there is no golden to regenerate.** Earlier drafts of this plan and of the spec assumed `e2e-tests/test/inputs/CR2/output.hdr` was a reference output. It is not referenced anywhere in `app.e2e.ts`; the spec only reads from `inputs/JPEG` (lines 11 and 35). The suite's strongest assertion is `at least 2 HDR output files` exist in the temp output directory (`app.e2e.ts:335-340`), plus preview counts and that one file opens in the viewer. **No pixel data is ever compared.** Consequences:
+
+- The e2e suite will pass whether or not the origin is declared correctly, so it cannot confirm or refute the choice. Only the manual verification can.
+- Changing `readLensInformation` carries no risk of a golden mismatch, because there is no golden.
+- `inputs/CR2/output.hdr` is a 69 MB orphan at full frame resolution (5796x3870, verified with `getinfo -d`), which is not even a cropped pipeline output. It should be deleted or wired into an actual assertion, tracked separately from this plan.
+
+This makes Task 4 lower risk and lower value than first written: its only purpose is to make the fixture self-documenting so the manual verification has a place to record the answer.
 
 - [ ] **Step 1: Add the declarations to the fixtures**
 
@@ -654,7 +662,7 @@ function readLensInformation(lensInfoPath: string) {
 - [ ] **Step 5: Run it and record the outcome**
 
 Run: `npm run test:e2e`
-Expected: the suite runs to completion. The golden comparison may fail. **Do not regenerate the golden to make it pass.** Record which fixtures matched and which did not; that record is an input to the manual verification, which decides whether `bottom-left` was the right declaration.
+Expected: the suite runs to completion and passes. That is not evidence the origin was declared correctly; the suite only checks that HDR files were produced. Record the run for completeness and move on. The origin is settled by the manual verification, not here.
 
 - [ ] **Step 6: Commit**
 
@@ -2182,4 +2190,4 @@ Then confirm by hand, per spec section 10:
 2. An off-centre lens mask now crops the circle rather than its mirror. This is the one intended output change and belongs in the release notes.
 3. `getinfo <output>.hdr` shows exactly one `VIEW=` line, no line starting with `-`, and the illuminance entries.
 
-The e2e suite is deliberately excluded from this list. It becomes a gate only after the fixtures are verified by hand and the goldens regenerated, per Task 4.
+The e2e suite is deliberately excluded from this list. As Task 4 records, it asserts only that HDR files were produced and never compares pixel data, so a green run is not evidence that any of these fixes is correct. It becomes a meaningful gate only once the fixtures are verified by hand and it gains an assertion about output content.
