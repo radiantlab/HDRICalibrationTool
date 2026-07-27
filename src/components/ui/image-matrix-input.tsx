@@ -269,6 +269,13 @@ export function ImageMatrixInput<
                     <div className="grid place-items-center gap-2">
                       <ArrowDownOnSquareStackIcon className="size-16" />
                       <p>Drag and drop images here</p>
+                      {/* Both formats are accepted and neither is rejected, so
+                          the preference has to be stated where the choice is
+                          actually made rather than left to the documentation. */}
+                      <p className="max-w-md text-balance text-center text-xs">
+                        RAW files (CR2, NEF, DNG and similar) give more accurate
+                        results than JPEG, and need no camera response function.
+                      </p>
                     </div>
                   </div>
                 ),
