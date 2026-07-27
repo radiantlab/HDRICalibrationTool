@@ -1,5 +1,5 @@
 import { jest } from "@jest/globals";
-import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/jest-globals";
 
 // jsdom doesn't implement ResizeObserver, which react-resizable-panels requires.
 class ResizeObserverMock {
