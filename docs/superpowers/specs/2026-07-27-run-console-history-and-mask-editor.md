@@ -244,13 +244,72 @@ accordion, so it frames the inputs rather than hiding inside one section.
 Selecting a preset fills the equipment fields and leaves the per-capture ones
 alone. The selector shows a modified indicator when current values diverge.
 
+### C3. Decisions (settled 2026-07-27)
+
+**Calibration files are copied into a preset store, not referenced.** Saving a
+preset copies the `.rsp` and the four `.cal` files into
+`<app-config>/presets/<preset-id>/`. A preset is then self-contained and survives
+the originals being moved, renamed or deleted. The files are a few kilobytes each,
+so the disk cost is negligible.
+
+This has one consequence that must be designed for, not left implicit: **a
+re-derived calibration no longer propagates.** If you redo the vignetting curves
+and overwrite `vignetting.cal`, a preset saved earlier keeps the old copy and
+nothing says so. Mitigation, and it should ship with the feature rather than
+after it:
+
+- Record the source path and a content hash alongside each copied file.
+- On preset load, stat the source path. If it still resolves and its hash differs
+  from the stored copy, show a "calibration file has changed since this preset was
+  saved" indicator with **Keep preset copy** and **Update from source** actions.
+- If the source path no longer resolves, say so but keep working from the copy.
+  That is the whole point of copying.
+
+**History keeps everything; pruning is manual.** No automatic deletion by age or
+count. The Runs page gets a **Clear history** action, and, because nothing is ever
+dropped automatically, it must also show what the history is costing: an entry
+count and an on-disk size next to that action. Without that the growth is
+invisible until it is a problem.
+
+**History records every attempt, including ones rejected before the backend was
+called.** Bad tool paths, no images selected, and form validation failures all
+produce a record with the reason. Since these will be the noisiest entries and
+retention is unbounded, the Runs page needs grouping and filtering by outcome from
+the start. That is a presentation concern, not a storage one, so it does not
+change the record format: group by day, and offer an outcome filter
+(all / succeeded / warnings / failed).
+
+**Presets are local only for now.** No export or import in the first version.
+
+Worth noting that this combination leaves the door open cheaply: because presets
+already copy their calibration files into a per-preset directory, a future
+"export preset" is close to zipping that directory and its JSON. The expensive
+version of sharing was the one that required a bundling step to be invented; that
+work is now done as a side effect of the storage choice.
+
+**Not decided, and deliberately so:** whether run records should also snapshot the
+`.cal` contents that were actually applied. Presets copy, history references. That
+makes history a weaker reproducibility record than it could be, since a run's
+`.cal` file may have changed since. Revisit once C1 is in use; it is an additive
+change to the record format.
+
 ### Storage
 
 Presets and history are user data that must survive reinstalls, so neither
 belongs in `localStorage` (where `hdr-settings` currently lives, via the zustand
-persist store). Proposal: JSON in the Tauri app-config directory, one file for
-presets and one append-only file or directory for run history, with a schema
-version field from day one.
+persist store). Both live in the Tauri app-config directory, with a schema
+version field from day one:
+
+```
+<app-config>/
+  presets/
+    presets.json                     index: id, name, values, file hashes
+    <preset-id>/
+      response.rsp                   copies, per C3
+      fisheye.cal  vignetting.cal  nd.cal  calibration.cal
+  history/
+    runs.json                        append-only, never auto-pruned
+```
 
 Rough shape, deliberately close to the existing trace format:
 
@@ -274,27 +333,17 @@ Storing `inputs` as the verbatim IPC payload is what makes "reuse inputs" a
 one-liner, and it means the history stays correct automatically as the payload
 gains fields.
 
-**Open questions, all of which need your answer before this is specified properly:**
-
-1. **Retention.** Unbounded history will grow without limit. Cap at N runs, cap by
-   age, or leave it to the user to prune? I suggest keeping metadata forever and
-   trimming only the log bodies beyond the most recent 100 runs.
-2. **Do presets reference `.cal` files by path, or copy them?** Paths are simpler
-   and stay in sync if you re-derive a calibration. Copies survive the files being
-   moved or deleted. I lean towards paths plus a "file missing" indicator, since
-   your calibration files live alongside the project.
-3. **Should presets be shareable?** Export and import as a single file would let a
-   lab distribute one calibration to several machines. Cheap if the format is a
-   plain JSON file with relative paths, expensive if it has to bundle the `.cal`
-   contents. Worth deciding now because it constrains question 2.
-4. **Does history record runs that failed to start** (bad tool paths, no images)?
-   I would say yes, since those are exactly the ones you want to look back at.
+All four open questions on this section were settled on 2026-07-27; see C3
+above for the decisions and their consequences.
 
 ### Cost and sequencing
 
 C1 is two to three days and delivers most of the value, since "reuse inputs"
-covers the common case. C2 is another two to three days on top and is worth doing
-only once C1's storage layer exists. Neither should start before B, whose log
+covers the common case, plus about half a day for the outcome filter and the
+history size indicator that unbounded retention requires. C2 is another three to
+four days on top (the extra over the original estimate is the file-copy store and
+the changed-source detection) and is worth doing only once C1's storage layer
+exists. Neither should start before B, whose log
 accumulation feeds C1's records.
 
 ---
