@@ -18,14 +18,34 @@ export interface PipelineToolSettings {
  * must be renamed in the `#[tauri::command]` signature in the same change.
  * Nothing catches a mismatch at compile time.
  */
+/** The circumscribed square the crop stage cuts out, in image pixels. */
+export interface MaskBox {
+  diameter: number;
+  xleft: number;
+  ytop: number;
+}
+
+/**
+ * Converts the mask from a centre and a radius to the box `crop` expects.
+ *
+ * Exported so the pre-flight check can validate the same rounded integers the
+ * pipeline is handed. Rounding separately in two places would let a mask pass
+ * validation at one boundary and fail in Rust at the other.
+ */
+export function maskBox(data: pipelineConfig): MaskBox {
+  return {
+    diameter: Math.round(data.lensMask.radius * 2),
+    xleft: Math.round(data.lensMask.x - data.lensMask.radius),
+    ytop: Math.round(data.lensMask.y - data.lensMask.radius),
+  };
+}
+
 export function buildPipelineParams(
   data: pipelineConfig,
   settings: PipelineToolSettings,
   inputImages: string[]
 ) {
-  const diameter = Math.round(data.lensMask.radius * 2);
-  const xleft = Math.round(data.lensMask.x - data.lensMask.radius);
-  const ytop = Math.round(data.lensMask.y - data.lensMask.radius);
+  const { diameter, xleft, ytop } = maskBox(data);
 
   return {
     dcrawEmuPath: settings.dcrawEmuPath,

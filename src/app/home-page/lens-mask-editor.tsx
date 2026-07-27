@@ -13,7 +13,10 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { useGenericImageMetadata } from "@/lib/generic-image-metadata";
+import {
+  type GenericImageMetadata,
+  useGenericImageMetadata,
+} from "@/lib/generic-image-metadata";
 import { ScaledCircularMaskSelection } from "./fs-circular-mas-selection";
 
 interface MaskValues {
@@ -41,7 +44,36 @@ function MaskViewport({
   thinEdge: boolean;
   values: MaskValues;
 }) {
-  const { size } = use(useGenericImageMetadata(imagePath));
+  // Resolved by the child rather than here. A component that both builds a
+  // promise and suspends on it has no committed state to remember the promise
+  // by, so each retry can start again from a new one. LensMaskInput and
+  // ScaledCircularMaskSelection both split it this way.
+  const metadata = useGenericImageMetadata(imagePath);
+
+  return (
+    <Suspense fallback={<Spinner />}>
+      <MaskViewportImage
+        imagePath={imagePath}
+        metadata={metadata}
+        thinEdge={thinEdge}
+        values={values}
+      />
+    </Suspense>
+  );
+}
+
+function MaskViewportImage({
+  imagePath,
+  metadata,
+  thinEdge,
+  values,
+}: {
+  imagePath: string;
+  metadata: Promise<GenericImageMetadata>;
+  thinEdge: boolean;
+  values: MaskValues;
+}) {
+  const { size } = use(metadata);
 
   return (
     <div

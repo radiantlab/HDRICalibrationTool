@@ -22,27 +22,48 @@ export const TiffImage = memo(function TiffImage({ src }: { src: string }) {
 		if (!container) return;
 
 		const controller = new AbortController();
+		let decoded = false;
 
-		const dpr = Math.max(1, window.devicePixelRatio || 1);
-		const maxWidth =
-			Math.floor((container.clientWidth || 0) * dpr) || undefined;
-		const maxHeight =
-			Math.floor((container.clientHeight || 0) * dpr) || undefined;
-		console.log("maxWidth", maxWidth, "maxHeight", maxHeight, container);
+		// The decode size comes from the container, so it waits for the container
+		// to have one. Inside a dialog that animates in, the first measurement can
+		// be zero, and a zero cap does not mean "do not decode" — it means "no
+		// limit", which decodes the full picture. Once is enough: the result is
+		// scaled to fit afterwards, so a later resize needs no second decode.
+		const startDecode = () => {
+			const width = container.clientWidth;
+			const height = container.clientHeight;
+			if (decoded || width === 0 || height === 0) return;
+			decoded = true;
+			observer.disconnect();
 
-		const newPromise = tiffPath.then(readFile).then((f) =>
-			decodeTiff(f.buffer, {
-				memoryBytes: f.buffer.byteLength * 2,
-				maxWidth,
-				maxHeight,
-				signal: controller.signal,
-			})
-		);
-		setTiffPromise(newPromise);
+			const dpr = Math.max(1, window.devicePixelRatio || 1);
+			const newPromise = tiffPath.then(readFile).then((f) =>
+				decodeTiff(f.buffer, {
+					memoryBytes: f.buffer.byteLength * 2,
+					maxWidth: Math.floor(width * dpr),
+					maxHeight: Math.floor(height * dpr),
+					signal: controller.signal,
+				})
+			);
+			// The abort below is this effect's own cleanup, so the rejection it
+			// causes is expected. Without a handler it surfaces as an unhandled
+			// rejection for every remount.
+			newPromise.catch(() => undefined);
+			setTiffPromise(newPromise);
+		};
+
+		const observer = new ResizeObserver(startDecode);
+		observer.observe(container);
+		startDecode();
+
 		return () => {
+			observer.disconnect();
 			controller.abort();
 		};
-	}, [tiffPath, containerRef.current]);
+		// containerRef.current is deliberately absent: a ref is not reactive, so
+		// listing it only made the effect re-run once the ref went from null to
+		// the element, cancelling the decode it had just started.
+	}, [tiffPath]);
 
 	return (
 		<div ref={containerRef} className="size-full">
