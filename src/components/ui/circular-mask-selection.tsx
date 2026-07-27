@@ -21,6 +21,7 @@ export function CircularMaskSelection({
   radiusAjusterCenterY,
   ref,
   className,
+  thinEdge,
 }: {
   children: React.ReactNode;
   centerX: MotionValue<number>;
@@ -29,6 +30,12 @@ export function CircularMaskSelection({
   radiusAjusterCenterY: MotionValue<number>;
   ref?: React.RefObject<HTMLDivElement | null>;
   className?: string;
+  /**
+   * Draw the circle as a single pixel ring. At preview scale a 3px border
+   * covers roughly 18 image pixels, which is wider than the fisheye edge the
+   * user is aligning against.
+   */
+  thinEdge?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const maskRef = useRef<HTMLDivElement>(null);
@@ -79,7 +86,10 @@ export function CircularMaskSelection({
       }}
     >
       <motion.div
-        className="absolute z-10 grid place-items-center rounded-full border-3 border-red-500 hover:cursor-grab active:cursor-grabbing"
+        className={cn(
+          "absolute z-10 grid place-items-center rounded-full border-red-500 hover:cursor-grab active:cursor-grabbing",
+          thinEdge ? "border" : "border-3"
+        )}
         drag
         dragConstraints={containerRef}
         dragMomentum={false}
