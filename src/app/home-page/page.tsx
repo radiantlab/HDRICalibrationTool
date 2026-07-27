@@ -485,7 +485,10 @@ export default function Home() {
                               />
                             )}
                           />
-                          <Label>Filter irrelevant source images</Label>
+                          <Label>
+                            Select useful exposures (tutorial §2.4.2,
+                            recommended)
+                          </Label>
                           <InfoIcon className="size-4" />
                         </div>
                       </TooltipTrigger>
