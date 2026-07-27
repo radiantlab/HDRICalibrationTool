@@ -10,6 +10,8 @@ const pipelineStatusSchema = z.object({
   kind: z.enum(["step", "progress", "warning", "error", "done"]),
   message: z.string().optional().nullable(),
   progress: z.number().optional().nullable(),
+  set_index: z.number().optional().nullable(),
+  set_total: z.number().optional().nullable(),
   step: z.string().optional().nullable(),
 });
 

@@ -56,6 +56,35 @@ mod tests {
     }
 
     #[test]
+    fn set_fields_are_omitted_when_absent() {
+        let payload = crate::pipeline::PipelineStatusPayload {
+            kind: crate::pipeline::PipelineStatusKind::Step,
+            progress: None,
+            step: Some("merge_exposures".to_string()),
+            message: None,
+            set_index: None,
+            set_total: None,
+        };
+        let json = serde_json::to_string(&payload).expect("serialises");
+        assert!(!json.contains("set_index"));
+    }
+
+    #[test]
+    fn set_fields_are_present_when_supplied() {
+        let payload = crate::pipeline::PipelineStatusPayload {
+            kind: crate::pipeline::PipelineStatusKind::Step,
+            progress: None,
+            step: None,
+            message: Some("Processing set 2 of 3".to_string()),
+            set_index: Some(2),
+            set_total: Some(3),
+        };
+        let json = serde_json::to_string(&payload).expect("serialises");
+        assert!(json.contains("\"set_index\":2"));
+        assert!(json.contains("\"set_total\":3"));
+    }
+
+    #[test]
     fn a_zero_total_does_not_divide_by_zero() {
         let mut progress = StepProgress::new(0);
         assert_eq!(progress.advance(), 100);
