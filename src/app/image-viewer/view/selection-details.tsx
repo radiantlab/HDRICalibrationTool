@@ -233,6 +233,11 @@ export function SelectionDetails({ luminanceSummary }: SelectionDetailsProps) {
     [luminanceSummary.maximum]
   );
 
+  const standardDeviationText = useMemo(
+    () => formatLuminanceText(luminanceSummary.standardDeviation),
+    [luminanceSummary.standardDeviation]
+  );
+
   const histogramExclusionNote = useMemo(
     () =>
       formatHistogramExclusionNote(
@@ -267,6 +272,12 @@ export function SelectionDetails({ luminanceSummary }: SelectionDetailsProps) {
           <div className="flex items-center justify-between gap-2">
             <span className="text-muted-foreground">Median</span>
             <span>{medianText}</span>
+          </div>
+          {/* Next to the two centres it qualifies, rather than down with the
+              range: it says how far the samples sit from the average. */}
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-muted-foreground">Std dev</span>
+            <span>{standardDeviationText}</span>
           </div>
           <div className="flex items-center justify-between gap-2">
             <span className="text-muted-foreground">Min</span>

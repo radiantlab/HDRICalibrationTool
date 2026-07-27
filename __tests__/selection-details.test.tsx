@@ -23,6 +23,7 @@ function makeSummary(overrides: Partial<LuminanceSummary> = {}) {
     minimum: 10,
     outlierCount: 0,
     sampleCount: 4,
+    standardDeviation: 3.5,
     ...overrides,
   } satisfies LuminanceSummary;
 }
