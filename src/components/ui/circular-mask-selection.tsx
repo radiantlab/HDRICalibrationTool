@@ -22,8 +22,6 @@ export function CircularMaskSelection({
   ref,
   className,
   thinEdge,
-  onMoveCenter,
-  onMoveAdjuster,
 }: {
   children: React.ReactNode;
   centerX: MotionValue<number>;
@@ -38,14 +36,14 @@ export function CircularMaskSelection({
    * user is aligning against.
    */
   thinEdge?: boolean;
-  /** Screen-space drag deltas. The caller owns the underlying values. */
-  onMoveCenter: (deltaX: number, deltaY: number) => void;
-  onMoveAdjuster: (deltaX: number, deltaY: number) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const maskRef = useRef<HTMLDivElement>(null);
 
   const selectorRadius = 12;
+
+  const clamp = (value: number, min: number, max: number) =>
+    Math.max(min, Math.min(max, value));
 
   const radius = useTransform<number, number>(
     [centerX, centerY, radiusAjusterCenterX, radiusAjusterCenterY],
@@ -95,7 +93,30 @@ export function CircularMaskSelection({
         drag
         dragConstraints={containerRef}
         dragMomentum={false}
-        onDrag={(_e, info) => onMoveCenter(info.delta.x, info.delta.y)}
+        onDrag={(_e, info) => {
+          centerX.set(centerX.get() + info.delta.x);
+          centerY.set(centerY.get() + info.delta.y);
+
+          const containerRect = containerRef.current?.getBoundingClientRect();
+          if (!containerRect) {
+            return;
+          }
+
+          radiusAjusterCenterX.set(
+            clamp(
+              radiusAjusterCenterX.get() + info.delta.x,
+              0,
+              containerRect.width
+            )
+          );
+          radiusAjusterCenterY.set(
+            clamp(
+              radiusAjusterCenterY.get() + info.delta.y,
+              0,
+              containerRect.height
+            )
+          );
+        }}
         ref={maskRef}
         style={{
           height: snappedDiameter,
@@ -115,7 +136,27 @@ export function CircularMaskSelection({
         drag
         dragConstraints={containerRef}
         dragMomentum={false}
-        onDrag={(_e, info) => onMoveAdjuster(info.delta.x, info.delta.y)}
+        onDrag={(_e, info) => {
+          const containerRect = containerRef.current?.getBoundingClientRect();
+          if (!containerRect) {
+            return;
+          }
+
+          radiusAjusterCenterX.set(
+            clamp(
+              radiusAjusterCenterX.get() + info.delta.x,
+              0,
+              containerRect.width
+            )
+          );
+          radiusAjusterCenterY.set(
+            clamp(
+              radiusAjusterCenterY.get() + info.delta.y,
+              0,
+              containerRect.height
+            )
+          );
+        }}
         style={{
           height: selectorRadius * 2,
           transform: useMotionTemplate`translate3d(${snappedRadiusAjusterCenterX}px, ${snappedRadiusAjusterCenterY}px, 0) translate(-50%, -50%)`,
