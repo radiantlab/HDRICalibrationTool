@@ -10,7 +10,8 @@ export function GenericImage({ fsSrc }: { fsSrc: string }) {
       return (
         <img
           alt={path.basename(fsSrc)}
-          className="size-full object-contain"
+          className="size-full select-none object-contain"
+          draggable={false}
           src={convertFileSrc(fsSrc)}
         />
       );
