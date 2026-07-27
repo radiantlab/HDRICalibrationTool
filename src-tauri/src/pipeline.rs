@@ -167,9 +167,11 @@ pub struct LuminanceArgs {
 // xleft:
 //      The x-coordinate of the bottom left corner of the circumscribed square
 //      of the fisheye view (in pixels)
-// ydown:
-//      The y-coordinate of the bottom left corner of the circumscribed square
-//      of the fisheye view (in pixels)
+// ytop:
+//      The y-coordinate of the top left corner of the circumscribed square of
+//      the fisheye view (in pixels), measured from the top of the image to
+//      match the lens-mask overlay. crop.rs converts this to the bottom-left
+//      origin that pcompos expects.
 // xdim:
 //      The x-dimensional resolution to resize the HDR image to (in pixels)
 // ydim:
@@ -189,7 +191,7 @@ pub async fn pipeline(
     neutral_density_cal: String,
     diameter: f64,
     xleft: f64,
-    ydown: f64,
+    ytop: f64,
     xdim: f64,
     ydim: f64,
     vertical_angle: f64,
@@ -240,7 +242,7 @@ pub async fn pipeline(
         println!("\tneutral density cal: {neutral_density_cal}");
         println!("\tdiameter: {diameter}");
         println!("\txleft: {xleft}");
-        println!("\tydown: {ydown}");
+        println!("\tytop: {ytop}");
         println!("\txdim: {xdim}");
         println!("\tydim: {ydim}");
 
@@ -323,7 +325,7 @@ pub async fn pipeline(
                 neutral_density_cal.clone(),
                 diameter.clone(),
                 xleft.clone(),
-                ydown.clone(),
+                ytop.clone(),
                 xdim.clone(),
                 ydim.clone(),
                 vertical_angle.clone(),
@@ -413,7 +415,7 @@ pub async fn pipeline(
             neutral_density_cal.clone(),
             diameter.clone(),
             xleft.clone(),
-            ydown.clone(),
+            ytop.clone(),
             xdim.clone(),
             ydim.clone(),
             vertical_angle.clone(),
@@ -530,7 +532,7 @@ pub fn process_image_set(
     neutral_density_cal: String,
     diameter: f64,
     xleft: f64,
-    ydown: f64,
+    ytop: f64,
     xdim: f64,
     ydim: f64,
     vertical_angle: f64,
@@ -561,7 +563,7 @@ pub fn process_image_set(
             .to_string(),
         diameter.clone(),
         xleft.clone(),
-        ydown.clone(),
+        ytop.clone(),
         xdim.clone(),
         ydim.clone(),
         filter_images,
@@ -621,7 +623,7 @@ pub fn process_image_set(
             .to_string(),
         diameter.clone(),
         xleft,
-        ydown,
+        ytop,
     )?;
 
     let mut next_path = "crop.hdr";

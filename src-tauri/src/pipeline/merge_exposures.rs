@@ -17,7 +17,7 @@ pub fn merge_exposures(
     output_path: String,
     diameter: f64,
     xleft: f64,
-    ydown: f64,
+    ytop: f64,
     xdim: f64,
     ydim: f64,
     filter_images_flag: bool,
@@ -104,7 +104,7 @@ pub fn merge_exposures(
                 input_images,
                 diameter as f32,
                 xleft as f32,
-                ydown as f32,
+                ytop as f32,
                 xdim as f32,
                 ydim as f32,
             )?;
@@ -187,7 +187,7 @@ fn filter_images(
     input_images: Vec<String>,
     diameter: f32,
     xleft: f32,
-    ydown: f32,
+    ytop: f32,
     _xdim: f32,
     _ydim: f32,
 ) -> Result<Vec<String>, PipelineError> {
@@ -197,7 +197,7 @@ fn filter_images(
 
     let radius = diameter / 2.0;
     let xcenter = xleft + radius;
-    let ycenter = ydown + radius;
+    let ycenter = ytop + radius;
     let mut filtered_images = Vec::new();
 
     if !is_jpeg(&input_images[0]) {
