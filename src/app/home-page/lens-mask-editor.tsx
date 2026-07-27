@@ -1,7 +1,7 @@
 "use client";
 
 import type { MotionValue } from "framer-motion";
-import { Suspense, useId, useState } from "react";
+import { Suspense, use, useId, useState } from "react";
 import { GenericImage } from "@/components/ui/(image)/generic-image";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -13,7 +13,56 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { useGenericImageMetadata } from "@/lib/generic-image-metadata";
 import { ScaledCircularMaskSelection } from "./fs-circular-mas-selection";
+
+interface MaskValues {
+  centerX: MotionValue<number>;
+  centerY: MotionValue<number>;
+  radiusAjusterCenterX: MotionValue<number>;
+  radiusAjusterCenterY: MotionValue<number>;
+}
+
+/**
+ * The image and its mask overlay, sized to fit the dialog.
+ *
+ * GenericImage renders at size-full with object-contain, so the parent decides
+ * the box. If the parent does not carry the image's aspect ratio, the mask
+ * container is a different shape from the pixels drawn inside it: the circle
+ * lands in the wrong place and, at natural image size, off screen entirely.
+ * Binding on height suits a landscape frame in a wide dialog, with max-w-full
+ * as the guard for the portrait case.
+ */
+function MaskViewport({
+  imagePath,
+  thinEdge,
+  values,
+}: {
+  imagePath: string;
+  thinEdge: boolean;
+  values: MaskValues;
+}) {
+  const { size } = use(useGenericImageMetadata(imagePath));
+
+  return (
+    <div
+      className="h-full max-w-full"
+      style={{ aspectRatio: `${size[0]} / ${size[1]}` }}
+    >
+      <ScaledCircularMaskSelection
+        centerX={values.centerX}
+        centerY={values.centerY}
+        className="size-full"
+        imagePath={imagePath}
+        radiusAjusterCenterX={values.radiusAjusterCenterX}
+        radiusAjusterCenterY={values.radiusAjusterCenterY}
+        thinEdge={thinEdge}
+      >
+        <GenericImage fsSrc={imagePath} />
+      </ScaledCircularMaskSelection>
+    </div>
+  );
+}
 
 /**
  * The lens mask at full window size.
@@ -31,14 +80,10 @@ export function LensMaskEditor({
   open,
   radiusAjusterCenterX,
   radiusAjusterCenterY,
-}: {
-  centerX: MotionValue<number>;
-  centerY: MotionValue<number>;
+}: MaskValues & {
   imagePath: string;
   onOpenChange: (open: boolean) => void;
   open: boolean;
-  radiusAjusterCenterX: MotionValue<number>;
-  radiusAjusterCenterY: MotionValue<number>;
 }) {
   const [thinEdge, setThinEdge] = useState(false);
   const edgeCheckId = useId();
@@ -54,19 +99,21 @@ export function LensMaskEditor({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex min-h-0 flex-1 items-center justify-center">
+        <div
+          className="flex min-h-0 flex-1 items-center justify-center overflow-hidden"
+          data-testid="mask-viewport"
+        >
           <Suspense fallback={<Spinner />}>
-            <ScaledCircularMaskSelection
-              centerX={centerX}
-              centerY={centerY}
-              className="max-h-full max-w-full"
+            <MaskViewport
               imagePath={imagePath}
-              radiusAjusterCenterX={radiusAjusterCenterX}
-              radiusAjusterCenterY={radiusAjusterCenterY}
               thinEdge={thinEdge}
-            >
-              <GenericImage fsSrc={imagePath} />
-            </ScaledCircularMaskSelection>
+              values={{
+                centerX,
+                centerY,
+                radiusAjusterCenterX,
+                radiusAjusterCenterY,
+              }}
+            />
           </Suspense>
         </div>
 

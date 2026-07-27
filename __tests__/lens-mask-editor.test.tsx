@@ -46,6 +46,32 @@ describe("LensMaskEditor", () => {
     expect(centerY.get()).toBe(1872);
   });
 
+  it("sizes the mask box to the image aspect ratio so it fits the dialog", async () => {
+    await act(() => {
+      render(
+        <LensMaskEditor
+          centerX={motionValue(2808)}
+          centerY={motionValue(1872)}
+          imagePath="/fake/image.jpg"
+          onOpenChange={() => undefined}
+          open
+          radiusAjusterCenterX={motionValue(3744)}
+          radiusAjusterCenterY={motionValue(1872)}
+        />
+      );
+      return Promise.resolve();
+    });
+
+    // GenericImage is size-full with object-contain, so the parent decides the
+    // box. Without the ratio the mask container takes the natural image size:
+    // the image overflows and the circle is drawn off screen.
+    const viewport = screen.getByTestId("mask-viewport");
+    const box = viewport.firstElementChild as HTMLElement;
+
+    expect(box.style.aspectRatio).toBe("5616 / 3744");
+    expect(viewport.className).toContain("overflow-hidden");
+  });
+
   it("renders nothing while closed", async () => {
     await act(() => {
       render(
