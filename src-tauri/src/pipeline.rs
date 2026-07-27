@@ -24,7 +24,7 @@ use chrono::prelude::*;
 use crop::crop;
 use evalglare::evalglare;
 use falsecolor::falsecolor;
-use header_editing::header_editing;
+use header_editing::{header_editing, ViewArgs};
 use merge_exposures::merge_exposures;
 use neutral_density::neutral_density;
 use nullify_exposure_value::nullify_exposure_value;
@@ -801,8 +801,12 @@ pub fn process_image_set(
             .join("header_editing_view.hdr")
             .display()
             .to_string(),
-        vertical_angle,
-        horizontal_angle,
+        Some(ViewArgs {
+            projection: "vta".to_string(),
+            vertical_angle,
+            horizontal_angle,
+        }),
+        None,
         None,
     )?;
 
@@ -867,9 +871,11 @@ pub fn process_image_set(
             .join("header_editing.hdr")
             .display()
             .to_string(),
-        vertical_angle,
-        horizontal_angle,
+        // The view line was already written by the call above; re-emitting it
+        // here would leave two VIEW entries in the finished picture.
+        None,
         Some(evalglare_value),
+        None,
     )?;
 
     current_step += 1;
