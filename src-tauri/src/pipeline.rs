@@ -181,7 +181,8 @@ pub struct LuminanceArgs {
     scale_limit: String,
     scale_label: String,
     scale_levels: String,
-    legend_dimensions: String,
+    legend_width: String,
+    legend_height: String,
 }
 
 // Runs the radiance and hdrgen pipeline.
@@ -245,7 +246,8 @@ pub async fn pipeline(
     scale_limit: String,
     scale_label: String,
     scale_levels: String,
-    legend_dimensions: String,
+    legend_width: String,
+    legend_height: String,
     filter_images: bool,
 ) -> Result<String, PipelineError> {
     // Return error if pipeline was called with no input images
@@ -323,7 +325,8 @@ pub async fn pipeline(
         scale_limit: scale_limit,
         scale_label: scale_label,
         scale_levels: scale_levels,
-        legend_dimensions: legend_dimensions,
+        legend_width: legend_width,
+        legend_height: legend_height,
     };
 
     // Creates output directory with /tmp subdirectory

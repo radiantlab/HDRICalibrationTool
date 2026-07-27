@@ -35,7 +35,8 @@ export function buildPipelineParams(
     hdrgenPath: settings.hdrgenPath,
     horizontalAngle: data.fisheyeView.horizontalViewDegrees,
     inputImages,
-    legendDimensions: "",
+    legendHeight: "",
+    legendWidth: "",
     measuredVerticalIlluminance:
       data.validityCheck.measuredVerticalIlluminanceLux,
     neutralDensityCal: data.correctionFiles.neutralDensity ?? "",
