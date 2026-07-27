@@ -17,7 +17,11 @@ const config: pipelineConfig = {
     neutralDensity: null,
     vignetting: null,
   },
-  fisheyeView: { horizontalViewDegrees: 180, verticalViewDegrees: 180 },
+  fisheyeView: {
+    horizontalViewDegrees: 180,
+    projection: "vta",
+    verticalViewDegrees: 180,
+  },
   inputSets: [],
   lensMask: { radius: 100, x: 300, y: 164 },
   outputSettings: { filterIrrelevantSrcImages: false, targetRes: 1000 },
@@ -30,6 +34,16 @@ describe("buildPipelineParams", () => {
     expect(params.ytop).toBe(64);
     expect(params.xleft).toBe(200);
     expect(params.diameter).toBe(200);
+  });
+
+  it("forwards the selected projection", () => {
+    const params = buildPipelineParams(
+      { ...config, fisheyeView: { ...config.fisheyeView, projection: "vth" } },
+      settings,
+      ["a.jpg"]
+    );
+
+    expect(params.projection).toBe("vth");
   });
 
   it("no longer sends a ydown key", () => {

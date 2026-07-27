@@ -39,6 +39,7 @@ export function buildPipelineParams(
     neutralDensityCal: data.correctionFiles.neutralDensity ?? "",
     outputPath: settings.outputPath,
     photometricAdjustmentCal: data.correctionFiles.calibrationFactor ?? "",
+    projection: data.fisheyeView.projection,
     radiancePath: settings.radiancePath,
     responseFunction: data.cameraResponseLocation ?? "",
     scaleLabel: "",

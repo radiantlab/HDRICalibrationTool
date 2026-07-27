@@ -2,6 +2,8 @@ import { createContext, useContext } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import type { ImageSet } from "@/components/ui/image-set-preview";
 
+export type FisheyeProjection = "vta" | "vth" | "vtv";
+
 export interface pipelineConfig {
   cameraResponseLocation: string | null;
   correctionFiles: {
@@ -12,6 +14,7 @@ export interface pipelineConfig {
   };
   fisheyeView: {
     horizontalViewDegrees: number | null;
+    projection: FisheyeProjection;
     verticalViewDegrees: number | null;
   };
   inputSets: ImageSet[];

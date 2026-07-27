@@ -20,6 +20,7 @@ import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useMotionValue, useTransform } from "framer-motion";
 import {
   AlertTriangle,
+  Aperture,
   Eclipse,
   ImageUpscale,
   InfoIcon,
@@ -40,6 +41,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
   FieldContent,
+  FieldDescription,
   FieldError,
   FieldLabel,
 } from "@/components/ui/field";
@@ -56,6 +58,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
+import { SelectInput } from "@/components/ui/select-input";
 import {
   Tooltip,
   TooltipContent,
@@ -84,6 +87,7 @@ const useGlobalPipelineConfig = create<
   },
   fisheyeView: {
     horizontalViewDegrees: 180,
+    projection: "vta",
     verticalViewDegrees: 180,
   },
   inputSets: [],
@@ -698,6 +702,7 @@ export default function Home() {
                   <FieldContainerAccordionTrigger
                     fields={[
                       "outputSettings.targetRes",
+                      "fisheyeView.projection",
                       "fisheyeView.verticalViewDegrees",
                       "fisheyeView.horizontalViewDegrees",
                     ]}
@@ -708,6 +713,28 @@ export default function Home() {
                     className="flex flex-col gap-4 text-balance"
                     forceMount
                   >
+                    <Field>
+                      <FieldLabel>
+                        <Aperture /> Projection type
+                      </FieldLabel>
+                      <FieldContent>
+                        <SelectInput
+                          {...register("fisheyeView.projection", {
+                            required: "Projection type is required",
+                          })}
+                          defaultValue="vta"
+                        >
+                          <option value="vta">Equidistant (-vta)</option>
+                          <option value="vth">Orthographic (-vth)</option>
+                          <option value="vtv">Non-fisheye (-vtv)</option>
+                        </SelectInput>
+                      </FieldContent>
+                      <FieldDescription>
+                        Written to the picture header as the view type. A
+                        non-fisheye view skips the validity check, because
+                        evalglare requires an angular fisheye view.
+                      </FieldDescription>
+                    </Field>
                     <Field>
                       <FieldLabel>
                         <Rotate3D /> Fisheye view angles
