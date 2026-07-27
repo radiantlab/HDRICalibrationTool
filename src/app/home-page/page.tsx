@@ -98,7 +98,7 @@ const useGlobalPipelineConfig = create<
     y: 0,
   },
   outputSettings: {
-    filterIrrelevantSrcImages: false,
+    filterIrrelevantSrcImages: true,
     targetRes: 1000,
   },
 
@@ -493,10 +493,7 @@ export default function Home() {
                               />
                             )}
                           />
-                          <Label>
-                            Select useful exposures (tutorial §2.4.2,
-                            recommended)
-                          </Label>
+                          <Label>Keep only useful exposures</Label>
                           <InfoIcon className="size-4" />
                         </div>
                       </TooltipTrigger>
@@ -505,7 +502,10 @@ export default function Home() {
                         generation process. Checking this box will filter out
                         those images before generating the HDR image. This
                         increases accuracy but also adds a minor increase in the
-                        time it takes to finish the generation process.
+                        time it takes to finish the generation process. Keeps
+                        the range from the darkest frame with no black pixels
+                        through the lightest frame with no white pixels
+                        (tutorial §2.4.2).
                       </TooltipContent>
                     </Tooltip>
                     <div className="flex flex-col gap-2">

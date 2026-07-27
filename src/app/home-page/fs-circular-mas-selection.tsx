@@ -108,7 +108,17 @@ function InnserScaledCircularMaskSelection({
 
 		// initialize on mount and when original image size changes
 		const scalingFactor = updateScale();
-		if (!initialSet.current) {
+
+		// Latching before the container has been laid out (width 0, so
+		// scalingFactor 0) would collapse every position to 0 and strand the
+		// mask in the top-left corner, with no second chance to place it.
+		const canPlace =
+			Number.isFinite(scalingFactor) &&
+			scalingFactor > 0 &&
+			size[0] > 0 &&
+			size[1] > 0;
+
+		if (canPlace && !initialSet.current) {
 			initialSet.current = true;
 
 			let initialCenterX = centerX.get() * scalingFactor;
@@ -133,12 +143,16 @@ function InnserScaledCircularMaskSelection({
 				centerY.set(defaultCenterY);
 				initialCenterY = defaultCenterY * scalingFactor;
 
-				const defaultRadiusAjusterCenterX = imageCenterX + size[0] * 0.25;
+				// The radius is the distance from the centre to this handle, so
+				// putting it one quarter-height to the right of the centre makes
+				// the starting radius exactly height / 4. A circular fisheye
+				// circle is bounded by the short edge, so that is a sane guess.
+				const defaultRadiusAjusterCenterX = imageCenterX + size[1] / 4;
 				radiusAjusterCenterX.set(defaultRadiusAjusterCenterX);
 				initialRadiusAjusterCenterX =
 					defaultRadiusAjusterCenterX * scalingFactor;
 
-				const defaultRadiusAjusterCenterY = imageCenterY + size[1] * 0.25;
+				const defaultRadiusAjusterCenterY = imageCenterY;
 				radiusAjusterCenterY.set(defaultRadiusAjusterCenterY);
 				initialRadiusAjusterCenterY =
 					defaultRadiusAjusterCenterY * scalingFactor;
