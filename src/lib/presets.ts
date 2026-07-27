@@ -1,5 +1,11 @@
 import { join } from "@tauri-apps/api/path";
-import { copyFile, exists, mkdir, readFile } from "@tauri-apps/plugin-fs";
+import {
+  copyFile,
+  exists,
+  mkdir,
+  readFile,
+  remove,
+} from "@tauri-apps/plugin-fs";
 import type { pipelineConfig } from "@/app/home-page/(pipeline-configuration)/config-provider";
 import { readJson, storagePath, writeJson } from "./app-storage";
 
@@ -36,6 +42,25 @@ const SLOT_FILENAMES: Record<PresetFileSlot, string> = {
   response: "response.rsp",
   vignetting: "vignetting.cal",
 };
+
+const NON_SLUG = /[^a-z0-9]+/g;
+const EDGE_DASHES = /^-+|-+$/g;
+
+/**
+ * Turns a preset name into a directory name.
+ *
+ * Strictly alphanumeric-and-hyphen: the id becomes a directory under the
+ * presets folder, so anything that could act as a path separator or a parent
+ * reference has to be stripped rather than escaped.
+ */
+export function presetId(name: string): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(NON_SLUG, "-")
+    .replace(EDGE_DASHES, "");
+  return slug || "preset";
+}
 
 export async function sha256Hex(bytes: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", bytes as BufferSource);
@@ -124,7 +149,12 @@ export async function savePreset(
   };
   const presets = await readPresets();
   await writeJson(PRESETS_FILE, {
-    presets: [...presets.filter((entry) => entry.id !== id), preset],
+    presets: [
+      // Drop by name as well as id: an id produced by an older slug rule would
+      // otherwise leave a second entry with the same name behind.
+      ...presets.filter((entry) => entry.id !== id && entry.name !== name),
+      preset,
+    ],
   });
   return preset;
 }
@@ -155,6 +185,34 @@ export async function changedSources(
   );
 
   return results.filter((slot): slot is PresetFileSlot => slot !== null);
+}
+
+/** Removes a preset and the calibration files copied into it. */
+export async function deletePreset(id: string): Promise<void> {
+  const presets = await readPresets();
+  await writeJson(PRESETS_FILE, {
+    presets: presets.filter((entry) => entry.id !== id),
+  });
+
+  const dir = await storagePath("presets", id);
+  if (await exists(dir)) {
+    await remove(dir, { recursive: true });
+  }
+}
+
+/**
+ * Renames a preset in place.
+ *
+ * The directory keeps its original id, so the copied calibration files do not
+ * have to move and nothing can be lost partway through.
+ */
+export async function renamePreset(id: string, name: string): Promise<void> {
+  const presets = await readPresets();
+  await writeJson(PRESETS_FILE, {
+    presets: presets.map((entry) =>
+      entry.id === id ? { ...entry, name } : entry
+    ),
+  });
 }
 
 /** Absolute path of a preset's stored copy, used when applying it. */

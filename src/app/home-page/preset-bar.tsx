@@ -1,5 +1,6 @@
 "use client";
 
+import { MoreHorizontal } from "lucide-react";
 import { useCallback, useEffect, useId, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
 import { toast } from "sonner";
@@ -12,6 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -27,10 +34,13 @@ import {
 } from "@/lib/generic-image-metadata";
 import {
   changedSources,
+  deletePreset,
   type Preset,
   type PresetFileSlot,
   presetFilePath,
+  presetId,
   readPresets,
+  renamePreset,
   savePreset,
 } from "@/lib/presets";
 import type { pipelineConfig } from "./(pipeline-configuration)/config-provider";
@@ -74,6 +84,8 @@ export function PresetBar({
   const [selectedId, setSelectedId] = useState<string>("");
   const [changed, setChanged] = useState<PresetFileSlot[]>([]);
   const [saveOpen, setSaveOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [name, setName] = useState("");
   const nameId = useId();
   const [maskImageSize, setMaskImageSize] = useState<[number, number] | null>(
@@ -146,18 +158,49 @@ export function PresetBar({
   };
 
   const save = async () => {
-    const id = name.trim().toLowerCase().replace(/\s+/g, "-");
-    if (!id) {
+    const trimmed = name.trim();
+    if (!trimmed) {
       return;
     }
+    const id = presetId(trimmed);
     try {
-      await savePreset(id, name.trim(), form.getValues(), maskImageSize);
+      await savePreset(id, trimmed, form.getValues(), maskImageSize);
       await load();
       setSelectedId(id);
       setSaveOpen(false);
-      toast.success(`Saved preset "${name.trim()}"`);
+      toast.success(`Saved preset "${trimmed}"`);
     } catch (error) {
       toast.error(`Could not save the preset: ${error}`);
+    }
+  };
+
+  const rename = async () => {
+    const trimmed = name.trim();
+    if (!(selected && trimmed)) {
+      return;
+    }
+    try {
+      await renamePreset(selected.id, trimmed);
+      await load();
+      setRenameOpen(false);
+      toast.success(`Renamed to "${trimmed}"`);
+    } catch (error) {
+      toast.error(`Could not rename the preset: ${error}`);
+    }
+  };
+
+  const remove = async () => {
+    if (!selected) {
+      return;
+    }
+    try {
+      await deletePreset(selected.id);
+      await load();
+      setSelectedId("");
+      setConfirmDelete(false);
+      toast.success(`Deleted preset "${selected.name}"`);
+    } catch (error) {
+      toast.error(`Could not delete the preset: ${error}`);
     }
   };
 
@@ -203,6 +246,32 @@ export function PresetBar({
         >
           Save
         </Button>
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              aria-label="Preset actions"
+              className="h-9"
+              disabled={!selected}
+              type="button"
+              variant="outline"
+            >
+              <MoreHorizontal />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent>
+            <DropdownMenuItem
+              onClick={() => {
+                setName(selected?.name ?? "");
+                setRenameOpen(true);
+              }}
+            >
+              Rename
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setConfirmDelete(true)}>
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {changed.length > 0 ? (
@@ -243,6 +312,57 @@ export function PresetBar({
             </Button>
             <Button disabled={!name.trim()} onClick={save} type="button">
               Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog onOpenChange={setRenameOpen} open={renameOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename preset</DialogTitle>
+            <DialogDescription>
+              The stored calibration files are untouched; only the name changes.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            onChange={(event) => setName(event.target.value)}
+            value={name}
+          />
+          <DialogFooter>
+            <Button
+              onClick={() => setRenameOpen(false)}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button disabled={!name.trim()} onClick={rename} type="button">
+              Rename
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog onOpenChange={setConfirmDelete} open={confirmDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete "{selected?.name}"?</DialogTitle>
+            <DialogDescription>
+              This removes the preset and the copies of its calibration files.
+              Your original .rsp and .cal files are not touched, and no run
+              history is affected.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setConfirmDelete(false)}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button onClick={remove} type="button">
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
