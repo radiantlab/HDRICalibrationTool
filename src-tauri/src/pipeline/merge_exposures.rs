@@ -118,7 +118,7 @@ pub fn merge_exposures(
                     progress: None,
                     step: Some("select_exposures".to_string()),
                     message: Some(format!(
-                        "Selected {} of {before} exposures (tutorial section 2.4.2)",
+                        "Selected {} of {before} useful exposures",
                         input_images.len()
                     )),
                 },

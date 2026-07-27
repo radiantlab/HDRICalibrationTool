@@ -30,8 +30,8 @@ pub fn validity_message(outcome: &ValidityOutcome, ev_hdr: f64, ev_measured: f64
     match outcome {
         ValidityOutcome::Failed { error_pct } => format!(
             "Validity check FAILED: HDR-derived vertical illuminance {ev_hdr:.1} lux vs measured \
-             {ev_measured:.1} lux ({error_pct:.1}% error). The tutorial recommends rejecting HDR \
-             images with more than 25% error (Pierson et al. 2019, section 3.1)."
+             {ev_measured:.1} lux ({error_pct:.1}% error). Images with more than 25% error are \
+             normally rejected."
         ),
         ValidityOutcome::AboveExpected { error_pct } => format!(
             "Validity check: HDR-derived vertical illuminance {ev_hdr:.1} lux vs measured \

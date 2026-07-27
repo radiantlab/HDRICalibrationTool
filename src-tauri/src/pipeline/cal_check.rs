@@ -54,7 +54,7 @@ pub fn cal_warning(label: &str, path: &str, width: u32, height: u32, constants: 
         "The {label} calibration file {path} does not reference xres/yres, so it cannot adapt to \
          the working resolution. The image is {width}x{height} at this step and {listed}. If those \
          are pixel coordinates calibrated for a different resolution, the correction will be \
-         applied about the wrong centre. See Pierson et al. 2019, section 2.5.2."
+         applied about the wrong centre."
     )
 }
 
