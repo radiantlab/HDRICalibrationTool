@@ -27,6 +27,9 @@ export interface pipelineConfig {
     targetRes: number | null;
     filterIrrelevantSrcImages: boolean;
   };
+  validityCheck: {
+    measuredVerticalIlluminanceLux: number | null;
+  };
 }
 
 const pipelineConfigContext = createContext<
