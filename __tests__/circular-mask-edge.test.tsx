@@ -8,6 +8,8 @@ function renderMask(thinEdge: boolean) {
     <CircularMaskSelection
       centerX={motionValue(100)}
       centerY={motionValue(100)}
+      imageHeight={200}
+      imageWidth={300}
       onMoveCenter={() => undefined}
       onResize={() => undefined}
       radius={motionValue(50)}
