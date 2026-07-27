@@ -15,6 +15,15 @@ class ResizeObserverMock {
 }
 global.ResizeObserver = global.ResizeObserver || ResizeObserverMock;
 
+// jsdom exposes crypto but not crypto.subtle, which preset hashing uses.
+const { webcrypto } = require("node:crypto");
+if (!globalThis.crypto?.subtle) {
+  Object.defineProperty(globalThis, "crypto", {
+    configurable: true,
+    value: webcrypto,
+  });
+}
+
 // Tauri injects __TAURI_INTERNALS__ into the webview. jsdom has no such global,
 // so anything reaching the IPC bridge (convertFileSrc, invoke) throws on a read
 // of undefined rather than failing in a way the test can interpret.

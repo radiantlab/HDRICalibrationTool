@@ -82,6 +82,7 @@ import { buildPipelineParams } from "./build-pipeline-params";
 import { LensMaskInput } from "./lens-mask-input";
 import { useGlobalPipelineConfig } from "./pipeline-config-store";
 import { PipelineStatus } from "./pipeline-status";
+import { PresetBar } from "./preset-bar";
 import { RunConsole } from "./run-console";
 import { useSelectedImage } from "./selected-image-context";
 
@@ -489,6 +490,7 @@ export default function Home() {
           <ResizableHandle withHandle />
           <ResizablePanel>
             <div className="flex h-full min-h-0 flex-col bg-accent">
+              <PresetBar form={form} maskImagePath={selectedImage} />
               <Accordion
                 className="min-h-0 flex-1 overflow-y-auto"
                 collapsible
