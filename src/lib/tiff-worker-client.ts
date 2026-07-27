@@ -54,19 +54,33 @@ function onceMessage<T = unknown>(
   });
 }
 
-// limit the number of concurrent tiff workers to 4 so memory usage doesnt spike
+/**
+ * Caps how many tiff workers exist at once, so memory usage does not spike.
+ *
+ * Each worker loads the tiff.js emscripten bundle and asks for a heap twice
+ * the size of the file, which for a 67 MB RAW-derived TIFF is over 130 MB. A
+ * dozen of them at once starves the ones already running, and a worker that
+ * never answers leaves whoever is awaiting it suspended forever.
+ *
+ * Both operations share the count, and the worker is created only once a
+ * permit is held: creating it first, as this used to, meant the cap limited
+ * how many workers *ran* but not how many *existed*.
+ */
 const tiffSem = new Sema(4);
+
 export async function getTiffMetadata(
   buffer: ArrayBuffer,
   options?: { memoryBytes?: number; signal?: AbortSignal }
 ): Promise<{ width: number; height: number }> {
-  const worker = createWorker();
+  // Outside the try: releasing a permit that was never acquired would raise
+  // the cap every time an acquisition failed.
+  await tiffSem.acquire();
+  let worker: Worker | undefined;
   try {
-    await tiffSem.acquire();
     if (options?.signal?.aborted) {
-      worker.terminate();
       throw new DOMException("Aborted", "AbortError");
     }
+    worker = createWorker();
     const req: TiffMetadataRequest = {
       buffer: buffer.slice(0),
       memoryBytes: options?.memoryBytes,
@@ -83,7 +97,7 @@ export async function getTiffMetadata(
     const { width, height } = res as TiffMetadataResponse;
     return { height, width };
   } finally {
-    worker.terminate();
+    worker?.terminate();
     tiffSem.release();
   }
 }
@@ -97,12 +111,16 @@ export async function decodeTiff(
     signal?: AbortSignal;
   }
 ): Promise<TiffDecodeResponse> {
-  const worker = createWorker();
+  // Decoding is the heavier of the two operations and was not counted at all,
+  // so a component remounting in a loop could spawn workers without limit
+  // while metadata callers waited behind a cap that no longer meant anything.
+  await tiffSem.acquire();
+  let worker: Worker | undefined;
   try {
     if (options.signal?.aborted) {
-      worker.terminate();
       throw new DOMException("Aborted", "AbortError");
     }
+    worker = createWorker();
     const req: TiffDecodeRequest = {
       buffer: buffer.slice(0),
       maxHeight: options.maxHeight,
@@ -120,6 +138,7 @@ export async function decodeTiff(
     }
     return res as TiffDecodeResponse;
   } finally {
-    worker.terminate();
+    worker?.terminate();
+    tiffSem.release();
   }
 }

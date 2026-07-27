@@ -89,6 +89,8 @@ describe("computeLuminanceSummary with a fisheye mask", () => {
     expect(summary.average).toBe(INSIDE_LUMINANCE);
     expect(summary.maximum).toBe(INSIDE_LUMINANCE);
     expect(summary.median).toBe(INSIDE_LUMINANCE);
+    // Every kept pixel holds the same value, so the spread is exactly zero.
+    expect(summary.standardDeviation).toBe(0);
   });
 
   it("keeps every pixel when no mask is supplied", () => {
@@ -133,6 +135,50 @@ describe("computeLuminanceSummary with a fisheye mask", () => {
 
     expect(summary.sampleCount).toBe(0);
     expect(summary.average).toBeNull();
+    expect(summary.standardDeviation).toBeNull();
     expect(summary.maskApplied).toBe(true);
+  });
+});
+
+describe("computeLuminanceSummary spread", () => {
+  it("divides by n, describing the region rather than estimating a population", () => {
+    // Two samples either side of a mean of 5. Dividing by n gives exactly 5;
+    // the n - 1 sample estimate would give 5*sqrt(2), about 7.07.
+    const summary = computeLuminanceSummary(
+      {
+        exposure: 1,
+        height: 1,
+        multiplier: 179,
+        values: new Float32Array([0, 10]),
+        width: 2,
+      },
+      null
+    );
+
+    expect(summary.standardDeviation).toBe(5);
+  });
+
+  // n - 1 would divide by zero here.
+  it("reports no spread for a single sample", () => {
+    const summary = computeLuminanceSummary(makeSquareMatrix(), {
+      height: 1,
+      width: 1,
+      x: 1,
+      y: 1,
+    });
+
+    expect(summary.sampleCount).toBe(1);
+    expect(summary.standardDeviation).toBe(0);
+  });
+
+  // The 1.5xIQR filter shapes the histogram only. A bright window in an
+  // otherwise dim room is the whole point of the reading, so dropping it from
+  // the spread would understate the variation the user can see.
+  it("counts the samples the histogram fences off", () => {
+    // Twelve pixels at 10 and four at 1000: mean 257.5, variance 183768.75.
+    const summary = computeLuminanceSummary(makeSquareMatrix(), null);
+
+    expect(summary.sampleCount).toBe(16);
+    expect(summary.standardDeviation).toBeCloseTo(Math.sqrt(183_768.75), 3);
   });
 });

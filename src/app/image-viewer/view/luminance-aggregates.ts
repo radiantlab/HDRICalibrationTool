@@ -21,6 +21,7 @@ export interface LuminanceSummary {
   minimum: number | null;
   outlierCount: number;
   sampleCount: number;
+  standardDeviation: number | null;
 }
 
 /** The lens circle a fisheye picture was cropped around, in pixel space. */
@@ -41,6 +42,7 @@ const EMPTY_SUMMARY: LuminanceSummary = {
   minimum: null,
   outlierCount: 0,
   sampleCount: 0,
+  standardDeviation: null,
 };
 
 // Radiance view types: -vta (angular fisheye) and -vth (hemispherical fisheye)
@@ -275,6 +277,35 @@ function filterHistogramOutliers(sortedValues: Float32Array) {
   };
 }
 
+/**
+ * The spread of the region's luminance, in cd/m2.
+ *
+ * Divided by n rather than n - 1: every pixel in the region is present, so this
+ * describes the region itself rather than estimating a wider population it was
+ * drawn from. A single sample then has a spread of zero rather than an
+ * undefined one.
+ *
+ * A second pass rather than the one-pass sqrt(E[x^2] - E[x]^2) form. That form
+ * subtracts two large, nearly equal numbers whenever the mean is large relative
+ * to the spread, which is the ordinary case for luminance: a facade at 4000
+ * cd/m2 varying by 5 loses most of its significant digits at float precision.
+ */
+function computeStandardDeviation(values: Float32Array, mean: number): number {
+  if (values.length === 0) {
+    return 0;
+  }
+
+  // reduce rather than a loop: for...of over a Float32Array needs a target
+  // above es5, and an index loop trips useForOf. This walks the samples in
+  // place either way, without the Array.from copy elsewhere in this file.
+  const sumOfSquaredDeviations = values.reduce((total, value) => {
+    const deviation = value - mean;
+    return total + deviation * deviation;
+  }, 0);
+
+  return Math.sqrt(sumOfSquaredDeviations / values.length);
+}
+
 export function computeLuminanceSummary(
   matrix: FalsecolorLuminanceMatrix | null,
   selection: ImageRectSelection | null,
@@ -290,6 +321,7 @@ export function computeLuminanceSummary(
 
   const { values, sum, minimum, maximum } = samples;
   const sampleCount = values.length;
+  const average = sum / sampleCount;
   values.sort();
   const midpoint = Math.floor(sampleCount / 2);
   const median =
@@ -307,7 +339,7 @@ export function computeLuminanceSummary(
         );
 
   return {
-    average: sum / sampleCount,
+    average,
     histogram,
     histogramMaximum: filteredHistogram.maximum,
     histogramMinimum: filteredHistogram.minimum,
@@ -317,5 +349,8 @@ export function computeLuminanceSummary(
     minimum,
     outlierCount: filteredHistogram.outlierCount,
     sampleCount,
+    // Over every sample, including the ones the histogram fences off: the
+    // outlier filter shapes the chart, not the statistics.
+    standardDeviation: computeStandardDeviation(values, average),
   };
 }
