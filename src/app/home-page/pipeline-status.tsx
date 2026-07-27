@@ -21,8 +21,10 @@ import { usePipelineStatus } from "../pipeline-status-context";
 
 export function PipelineStatus({
   onFinishAcknowledgment,
+  onShowConsole,
 }: {
   onFinishAcknowledgment: () => void;
+  onShowConsole: () => void;
 }) {
   const { progress, statusText, lastEmittedOutput } = usePipelineStatus();
   const router = useRouter();
@@ -38,6 +40,9 @@ export function PipelineStatus({
       <div className="flex items-center gap-2">
         <div className="text-muted-foreground text-xs">{progress}%</div>
         <Progress value={progress} />
+        <Button onClick={onShowConsole} type="button" variant="outline">
+          Show log
+        </Button>
         <Button disabled={progress !== 100} onClick={onFinishAcknowledgment}>
           Dismiss
         </Button>

@@ -72,6 +72,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useMotionValueFormState } from "@/lib/use-motion-value-form-state";
+import { usePipelineStatus } from "../pipeline-status-context";
 import { useSettingsStore } from "../stores/settings-store";
 import {
   PipelineConfigProvider,
@@ -80,6 +81,7 @@ import {
 import { buildPipelineParams } from "./build-pipeline-params";
 import { LensMaskInput } from "./lens-mask-input";
 import { PipelineStatus } from "./pipeline-status";
+import { RunConsole } from "./run-console";
 import { useSelectedImage } from "./selected-image-context";
 
 const useGlobalPipelineConfig = create<
@@ -322,6 +324,8 @@ export default function Home() {
   }, [radius, setValue]);
 
   const [progressVisible, setProgressVisible] = useState(false);
+  const [consoleOpen, setConsoleOpen] = useState(false);
+  const { clearLog } = usePipelineStatus();
   const [imageSetIssues, setImageSetIssues] = useState<
     Partial<Record<number, ImageSetIssue>>
   >({});
@@ -377,6 +381,9 @@ export default function Home() {
 
             setImageSetIssues({});
             setProgressVisible(true);
+            // A new run starts a fresh transcript.
+            clearLog();
+            setConsoleOpen(true);
             const params = buildPipelineParams(
               data,
               {
@@ -884,12 +891,16 @@ export default function Home() {
                 {progressVisible ? (
                   <PipelineStatus
                     onFinishAcknowledgment={() => setProgressVisible(false)}
+                    onShowConsole={() => setConsoleOpen(true)}
                   />
                 ) : (
                   <Button className="w-full bg-osu-beaver-orange" type="submit">
                     Generate HDR Image
                   </Button>
                 )}
+                {consoleOpen || progressVisible ? (
+                  <RunConsole onOpenChange={setConsoleOpen} open={consoleOpen} />
+                ) : null}
               </div>
             </div>
           </ResizablePanel>

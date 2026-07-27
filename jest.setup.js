@@ -24,6 +24,13 @@ globalThis.__TAURI_INTERNALS__ = globalThis.__TAURI_INTERNALS__ || {
   transformCallback: () => 0,
 };
 
+// The event plugin keeps its own injected global, used when a listener is torn
+// down. Without it, unmounting a component that listens throws during cleanup.
+globalThis.__TAURI_EVENT_PLUGIN_INTERNALS__ =
+  globalThis.__TAURI_EVENT_PLUGIN_INTERNALS__ || {
+    unregisterListener: () => undefined,
+  };
+
 // Components render outside of a real Tauri webview in tests, so calls into
 // the Tauri IPC bridge need a stand-in.
 jest.mock("@tauri-apps/api/webviewWindow", () => ({
