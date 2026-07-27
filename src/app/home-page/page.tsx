@@ -899,7 +899,10 @@ export default function Home() {
                   </Button>
                 )}
                 {consoleOpen || progressVisible ? (
-                  <RunConsole onOpenChange={setConsoleOpen} open={consoleOpen} />
+                  <RunConsole
+                    onOpenChange={setConsoleOpen}
+                    open={consoleOpen}
+                  />
                 ) : null}
               </div>
             </div>

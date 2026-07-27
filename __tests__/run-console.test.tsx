@@ -42,7 +42,9 @@ describe("RunConsole", () => {
     render(<RunConsole onOpenChange={() => undefined} open />);
 
     expect(screen.getByText("Merging exposures")).toBeInTheDocument();
-    expect(screen.getByText("vignetting.cal is fixed size")).toBeInTheDocument();
+    expect(
+      screen.getByText("vignetting.cal is fixed size")
+    ).toBeInTheDocument();
   });
 
   it("reports which set of how many is running", () => {

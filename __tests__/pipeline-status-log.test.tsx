@@ -71,7 +71,9 @@ describe("pipeline status log", () => {
       });
     });
 
-    expect(screen.getByText("vignetting.cal is fixed size")).toBeInTheDocument();
+    expect(
+      screen.getByText("vignetting.cal is fixed size")
+    ).toBeInTheDocument();
   });
 
   it("does not log progress-only events", async () => {

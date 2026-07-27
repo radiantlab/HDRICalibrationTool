@@ -1,6 +1,10 @@
 import { describe, expect, it } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
-import { Dialog, DialogContent, DialogTitle } from "../src/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "../src/components/ui/dialog";
 
 describe("Dialog", () => {
   it("renders nothing while closed", () => {

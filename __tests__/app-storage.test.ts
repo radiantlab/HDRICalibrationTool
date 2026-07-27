@@ -1,6 +1,9 @@
 import { describe, expect, it } from "@jest/globals";
 
-const files: Record<string, string> = {};
+// A Map rather than an object literal: its get() is genuinely string |
+// undefined to both tsc and the linter, so the fallback below is not flagged as
+// an unnecessary condition while still satisfying noUncheckedIndexedAccess.
+const files = new Map<string, string>();
 
 jest.mock("@tauri-apps/api/path", () => ({
   appConfigDir: () => Promise.resolve("/cfg"),
@@ -8,11 +11,11 @@ jest.mock("@tauri-apps/api/path", () => ({
 }));
 
 jest.mock("@tauri-apps/plugin-fs", () => ({
-  exists: (path: string) => Promise.resolve(path in files),
+  exists: (path: string) => Promise.resolve(files.has(path)),
   mkdir: () => Promise.resolve(),
-  readTextFile: (path: string) => Promise.resolve(files[path]),
+  readTextFile: (path: string) => Promise.resolve(files.get(path)),
   writeTextFile: (path: string, contents: string) => {
-    files[path] = contents;
+    files.set(path, contents);
     return Promise.resolve();
   },
 }));
@@ -25,9 +28,8 @@ describe("app storage", () => {
   it("round-trips a value and stamps the version", async () => {
     await writeJson("history/runs.json", { runs: [1, 2] });
 
-    expect(JSON.parse(files["/cfg/history/runs.json"]).version).toBe(
-      STORAGE_VERSION
-    );
+    const written = files.get("/cfg/history/runs.json") ?? "";
+    expect(JSON.parse(written).version).toBe(STORAGE_VERSION);
     expect(await readJson("history/runs.json", { runs: [] })).toEqual({
       runs: [1, 2],
       version: STORAGE_VERSION,
@@ -41,7 +43,7 @@ describe("app storage", () => {
   });
 
   it("returns the fallback rather than throwing on unreadable content", async () => {
-    files["/cfg/history/bad.json"] = "{not json";
+    files.set("/cfg/history/bad.json", "{not json");
 
     expect(await readJson("history/bad.json", { runs: [] })).toEqual({
       runs: [],
@@ -49,7 +51,10 @@ describe("app storage", () => {
   });
 
   it("returns the fallback when the version does not match", async () => {
-    files["/cfg/history/old.json"] = JSON.stringify({ runs: [9], version: 0 });
+    files.set(
+      "/cfg/history/old.json",
+      JSON.stringify({ runs: [9], version: 0 })
+    );
 
     expect(await readJson("history/old.json", { runs: [] })).toEqual({
       runs: [],
