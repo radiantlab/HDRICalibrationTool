@@ -331,6 +331,9 @@ export default function Home() {
             console.log("configForm submitted", data);
 
             const startedAt = new Date().toISOString();
+            // The log still holds the previous run's transcript at this point,
+            // since clearLog only runs once the checks have passed.
+            const logAtSubmit = logRef.current.length;
             const toolSettings = {
               dcrawEmuPath: settings.dcrawEmuPath,
               hdrgenPath: settings.hdrgenPath,
@@ -341,18 +344,22 @@ export default function Home() {
             // Every attempt is recorded, including ones turned away before the
             // backend ran: those are the ones worth looking back at when an
             // evening's work produced nothing. Storage failures are swallowed
-            // so history can never break a run.
-            // One record per set. `startedAt` is the batch's, so a night's
-            // work groups together on the Runs page, and the position keeps
-            // the ids distinct.
+            // so history can never break a run. One record per set, and
+            // `startedAt` is the batch's, so a night's work groups together on
+            // the Runs page while the position keeps the ids distinct.
             const recordAttempt = (
               failure: string | null,
               outputPaths: string[],
               files: string[],
               setName: string,
-              position: number
-            ) =>
-              appendRun({
+              position: number,
+              logFrom: number
+            ) => {
+              // Sliced for the same reason the outputs are: the transcript runs
+              // for the whole batch, and a record that carried all of it would
+              // let an earlier set's error classify this one as a warning.
+              const runLog = logRef.current.slice(logFrom);
+              return appendRun({
                 finishedAt: new Date().toISOString(),
                 id: `${startedAt}-${position}`,
                 inputs: buildPipelineParams(
@@ -361,8 +368,8 @@ export default function Home() {
                   files,
                   setName
                 ) as unknown as Record<string, unknown>,
-                log: logRef.current,
-                outcome: classifyOutcome(logRef.current, failure),
+                log: runLog,
+                outcome: classifyOutcome(runLog, failure),
                 outputs: outputPaths,
                 presetName: null,
                 reason: failure,
@@ -373,6 +380,7 @@ export default function Home() {
                   radiance: settings.radiancePath,
                 },
               }).catch(() => undefined);
+            };
 
             // Reports one set's failure against that set, and only that set.
             // The batch carries on, so nothing here may tear down the progress
@@ -435,13 +443,20 @@ export default function Home() {
             const blocker = describeRunBlocker(data, maskSize);
             if (blocker) {
               toast.error(blocker);
-              await recordAttempt(blocker, [], [], "", 1);
+              await recordAttempt(blocker, [], [], "", 1, logAtSubmit);
               return;
             }
 
             const sets = data.inputSets;
             if (sets.length === 0) {
-              await recordAttempt("No image set selected.", [], [], "", 1);
+              await recordAttempt(
+                "No image set selected.",
+                [],
+                [],
+                "",
+                1,
+                logAtSubmit
+              );
               return;
             }
 
@@ -462,7 +477,8 @@ export default function Home() {
                 [],
                 [],
                 "",
-                1
+                1,
+                logAtSubmit
               );
               return;
             }
@@ -473,64 +489,78 @@ export default function Home() {
             // it also resets the output paths the records are built from, and
             // the console shows the whole batch.
             clearLog();
+            // clearLog empties the outputs ref synchronously but the log ref
+            // only catches up on the next commit, and the first set's baseline
+            // is read in this same tick. Reset it here so the slice starts at
+            // zero rather than at the previous run's length.
+            logRef.current = [];
             setConsoleOpen(true);
             stopRequestedRef.current = false;
             setStopRequested(false);
             setBatchInFlight(true);
 
-            const summary = await runBatch({
-              onBeginSet: ({ position, set, total }: SetPosition) =>
-                beginSet(position, total, set.name),
-              runSet: async ({ position, set }: SetPosition) => {
-                // The outputs are accumulated across the whole run, so a set's
-                // own are the ones appended while it was running.
-                const outputsBefore = getOutputs().length;
-                const params = buildPipelineParams(
-                  data,
-                  toolSettings,
-                  set.files,
-                  set.name
-                );
-                try {
-                  await invoke<string>("pipeline", params);
-                  await recordAttempt(
-                    null,
-                    getOutputs().slice(outputsBefore),
+            try {
+              const summary = await runBatch({
+                onBeginSet: ({ position, set, total }: SetPosition) =>
+                  beginSet(position, total, set.name),
+                runSet: async ({ position, set }: SetPosition) => {
+                  // The outputs and the transcript both accumulate across the
+                  // whole run, so a set's own are the ones appended while it
+                  // was running.
+                  const outputsBefore = getOutputs().length;
+                  const logBefore = logRef.current.length;
+                  const params = buildPipelineParams(
+                    data,
+                    toolSettings,
                     set.files,
-                    set.name,
-                    position
+                    set.name
                   );
-                } catch (error) {
-                  // Normally empty: the backend announces an output only after
-                  // copying it, so a set that failed has none. Sliced anyway
-                  // rather than hardcoded, so a stage that does produce a file
-                  // before failing is still attributed to this set.
-                  await recordAttempt(
-                    String(error),
-                    getOutputs().slice(outputsBefore),
-                    set.files,
-                    set.name,
-                    position
-                  );
-                  await reportSetFailure(error, position, params);
-                  // Rethrown so the loop counts this set as failed. It does not
-                  // stop the queue.
-                  throw error;
+                  try {
+                    await invoke<string>("pipeline", params);
+                    await recordAttempt(
+                      null,
+                      getOutputs().slice(outputsBefore),
+                      set.files,
+                      set.name,
+                      position,
+                      logBefore
+                    );
+                  } catch (error) {
+                    // Normally empty: the backend announces an output only
+                    // after copying it, so a set that failed has none. Sliced
+                    // anyway rather than hardcoded, so a stage that does
+                    // produce a file before failing is still attributed to
+                    // this set.
+                    await recordAttempt(
+                      String(error),
+                      getOutputs().slice(outputsBefore),
+                      set.files,
+                      set.name,
+                      position,
+                      logBefore
+                    );
+                    await reportSetFailure(error, position, params);
+                    // Rethrown so the loop counts this set as failed. It does
+                    // not stop the queue.
+                    throw error;
+                  }
+                },
+                sets,
+                shouldStop: () => stopRequestedRef.current,
+              });
+
+              const message = describeBatchSummary(summary);
+              if (message) {
+                if (summary.failed > 0 || summary.skipped > 0) {
+                  toast.warning(message);
+                } else {
+                  toast.success(message);
                 }
-              },
-              sets,
-              shouldStop: () => stopRequestedRef.current,
-            });
-
-            setBatchInFlight(false);
-
-            const message = describeBatchSummary(summary);
-            if (message) {
-              if (summary.failed > 0 || summary.skipped > 0) {
-                toast.warning(message);
-              } else {
-                toast.success(message);
               }
+            } finally {
+              // In a finally so that anything escaping runBatch cannot strand
+              // the progress UI with Dismiss disabled and no way back.
+              setBatchInFlight(false);
             }
           },
           (errors) => {
