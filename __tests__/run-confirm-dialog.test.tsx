@@ -44,6 +44,11 @@ describe("RunConfirmDialog, one set", () => {
 
     expect(screen.getByText(TITLE)).toBeInTheDocument();
     expect(screen.queryByText(MISSING)).toBeNull();
+    expect(
+      screen.getByText(
+        "Did you mean to not upload them all, or do you want to go back?"
+      )
+    ).toBeInTheDocument();
   });
 
   it("lists the files that were left out", () => {
@@ -106,6 +111,7 @@ describe("RunConfirmDialog, several sets", () => {
     fireEvent.click(screen.getByRole("button", { name: GENERATE_ALL }));
 
     expect(onDecision).toHaveBeenCalledWith(true);
+    expect(screen.queryByRole("button", { name: GENERATE_ANYWAY })).toBeNull();
   });
 
   // Answering two prompts to start one run is what this dialog exists to
