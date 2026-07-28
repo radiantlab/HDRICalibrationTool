@@ -5,6 +5,7 @@ mod header_editing;
 mod merge_exposures;
 mod neutral_density;
 mod nullify_exposure_value;
+mod output_naming;
 mod photometric_adjustment;
 mod picture;
 mod progress;
@@ -32,6 +33,7 @@ use header_editing::{header_editing, ViewArgs};
 use merge_exposures::merge_exposures;
 use neutral_density::neutral_density;
 use nullify_exposure_value::nullify_exposure_value;
+use output_naming::{completion_message, output_stem};
 use photometric_adjustment::photometric_adjustment;
 use progress::StepProgress;
 use projection_adjustment::projection_adjustment;
@@ -207,6 +209,12 @@ pub struct LuminanceArgs {
 // input_images:
 //      vector of the paths to the input images, or the input directories if batch processing.
 //      Input images must be in .JPG format or .CR2 format.
+// set_name:
+//      Names this set in the output filenames, so a batch produces
+//      <set>_<datetime>.hdr rather than N files distinguishable only by a
+//      timestamp. Empty for a run with no set name, which keeps the plain
+//      <datetime>.hdr. Sanitised in output_naming.rs, because it becomes a
+//      filename.
 // response_function:
 //      string for the path to the camera response function (.rsp)
 // fisheye_correction_cal:
@@ -239,6 +247,7 @@ pub async fn pipeline(
     dcraw_emu_path: String,
     output_path: String,
     input_images: Vec<String>,
+    set_name: String,
     response_function: String,
     fisheye_correction_cal: String,
     vignetting_correction_cal: String,
@@ -386,9 +395,8 @@ pub async fn pipeline(
 
     // Get current local date and time and format output name with it
     let datetime = format!("{}", Local::now().format("%F_%H-%M-%S"));
-    let output_file_name = config_settings
-        .output_path
-        .join(format!("{}.hdr", datetime));
+    let stem = output_stem(&set_name, &datetime);
+    let output_file_name = config_settings.output_path.join(format!("{stem}.hdr"));
 
     // Copy the final output hdr image to output directory
     let mut copy_result = copy(
@@ -402,9 +410,7 @@ pub async fn pipeline(
     }
     emit_pipeline_output(&app, &output_file_name)?;
 
-    let luminance_file_name = config_settings
-        .output_path
-        .join(format!("{}_fc.hdr", datetime));
+    let luminance_file_name = config_settings.output_path.join(format!("{stem}_fc.hdr"));
     copy_result = copy(
         &config_settings.temp_path.join("falsecolor_output.hdr"),
         &luminance_file_name,
@@ -421,7 +427,7 @@ pub async fn pipeline(
             kind: PipelineStatusKind::Done,
             progress: Some(100),
             step: None,
-            message: Some("Pipeline complete.".to_string()),
+            message: Some(completion_message(&set_name)),
             set_index: None,
             set_total: None,
         },
