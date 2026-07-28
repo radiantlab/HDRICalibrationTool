@@ -95,6 +95,8 @@ Inside the `if DEBUG {` block, remove (currently `pipeline.rs:319-324`):
 
 - [ ] **Step 4: Replace the branch with the single-scene body**
 
+> The file does not compile between this step and Step 5: `return_path` is deleted here and its last use is removed there. Do not run `cargo` in between. The `emit_status` block that reports the run finishing sits *after* the branch being deleted and stays where it is.
+
 Delete everything from `let mut return_path: PathBuf = PathBuf::new();` through the closing `}` of the `else` block (currently `pipeline.rs:355-566`) and put this in its place, un-indented by one level:
 
 ```rust
@@ -1715,6 +1717,10 @@ Put this in its place:
                     position
                   );
                 } catch (error) {
+                  // Normally empty: the backend announces an output only after
+                  // copying it, so a set that failed has none. Sliced anyway
+                  // rather than hardcoded, so a stage that does produce a file
+                  // before failing is still attributed to this set.
                   await recordAttempt(
                     String(error),
                     getOutputs().slice(outputsBefore),
@@ -1967,7 +1973,7 @@ python3 -c "import json,sys;d=json.load(open(sys.argv[1]));print([r['id'] for r 
   ~/Library/Application\ Support/hdricalibrationinterface/history/runs.json
 ```
 
-Expected: two ids ending `-1` and `-2`, sharing a timestamp prefix.
+Expected: two ids ending `-1` and `-2`, sharing a timestamp prefix. If the file is not there, locate it with `find ~/Library/Application\ Support -name runs.json`.
 
 Then run both good directories (copy `good` to `good2`), press Stop during set 1, and check that set 1 finishes, set 2 never starts, and only one record is written.
 
