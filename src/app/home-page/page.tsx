@@ -573,6 +573,7 @@ export default function Home() {
             <ImageMatrixInput
               className="flex-1 overflow-hidden"
               control={control}
+              disabled={batchInFlight}
               issuesByIndex={imageSetIssues}
               name="inputSets"
               rules={{
