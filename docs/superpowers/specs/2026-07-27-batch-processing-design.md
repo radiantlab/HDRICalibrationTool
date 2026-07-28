@@ -1,6 +1,6 @@
 # Batch processing: run every image set, not just the first
 
-**Status:** approved design, not yet implemented
+**Status:** implemented and manually verified, 2026-07-28
 **Date:** 2026-07-27
 **Issue:** [#224](https://github.com/radiantlab/HDRICalibrationTool/issues/224)
 
@@ -205,3 +205,64 @@ configuration, which is what the loop applies to every set.
 **Manual, against the example CR2 bracket:** two directories, one deliberately
 broken (a single exposure), confirms the good one still produces an HDR and the
 Runs page shows one success and one failure.
+
+Run on 2026-07-28 against the real CR2 bracket: everything works. Merged to
+`main` on that basis.
+
+## What shipped that this design did not call for
+
+- **`completion_message`** in `src-tauri/src/pipeline/output_naming.rs`. The
+  frontend calls the pipeline command once per set, so the hardcoded
+  `"Pipeline complete."` would have appeared in the console after the first of
+  ten sets and read as though the whole batch had finished.
+- **The input panel is locked while a batch is in flight.** `handleSubmit`
+  deep-clones the form values, so the loop runs against a submit-time snapshot
+  while `ImageMatrixInput` renders the live array. Failure banners are keyed by
+  array index, so removing a set mid-batch made a later set's banner land on an
+  innocent row. Gating the add, remove and drop affordances on `batchInFlight`
+  makes that unreachable rather than merely unlikely, and is honest about the
+  fact that the run committed to a snapshot when Generate was pressed.
+
+## Known gaps, recorded rather than fixed
+
+- **A mid-batch change to the camera response file, or applying a preset, still
+  clears every failure banner earned so far.** `inputSetIssueResetKey`
+  (`page.tsx:249-258`) is `JSON.stringify({ cameraResponseLocation, inputSets })`,
+  so it does not depend only on the array, and the panel lock does not reach
+  those two inputs. The severe half is closed: no banner can point at an innocent
+  set. What remains is losing an annotation, and the failure itself is not lost
+  with it, since the run record keeps its reason. The fix is an early return on
+  `batchInFlight` in the effect at `page.tsx:319`.
+- **A set's stored transcript loses its own last entry or two.** `logRef` is
+  synced by an effect, so at the instant `invoke` resolves it has not absorbed
+  the entries committed in that same tick, typically the set's own
+  "Finished `<set>`." line and, on failure, the error line. The console keeps
+  them; run history does not. Classification is unaffected. The structural fix is
+  to move the log ref into `PipelineStatusProvider` beside `outputsRef`, write it
+  synchronously in the listener and in `beginSet`, reset it in `clearLog`, and
+  expose `getLog()` mirroring `getOutputs()`. That would also create a testable
+  seam where there is currently none.
+- **`PipelineStatusPayload.set_index` and `set_total` are now dead in Rust.**
+  Every construction site passes `None` since the directory-batching path was
+  deleted, though the doc comment still advertises them as batch fields. The
+  `setIndex`/`setTotal` frontend *state* must stay: `beginSet` writes it and
+  `run-console.tsx:83` and `page.tsx:1006` read it.
+- **Nothing locks the `buildPipelineParams` key set.** Tauri matches command
+  parameters by name at runtime with no compile-time check, and the tests assert
+  individual keys only. One `expect(Object.keys(params).sort()).toEqual([...])`
+  would catch a future rename, which is the one thing the type system cannot.
+- **Duplicate set names are still permitted, and the name is now load-bearing:**
+  it determines the output stem. Two dropped parent directories that each contain
+  a `scene1` give two rows named `scene1`. The timestamp still keeps the files
+  apart.
+- **A batch's Runs rows are indistinguishable.** Every record in a batch shares
+  `startedAt` by design, and the row shows only time and outcome, nothing naming
+  the set.
+- **`src/components/ui/dropzone-input.tsx` is dead code** with zero references.
+  If it were ever wired up it would be a second writer of `inputSets` that knows
+  nothing about the panel lock.
+- **The submit handler has no automated coverage.** The control-flow decisions
+  live in `run-batch.ts` and are unit-tested; the wiring that reads them is not,
+  because reaching it from jsdom means driving react-hook-form's file inputs and
+  mocking four Tauri plugins. Both defects found during implementation were in
+  that wiring.
