@@ -6,7 +6,10 @@ import {
   renderHook,
   screen,
 } from "@testing-library/react";
-import { CalibrationConfirmDialog } from "../src/app/home-page/calibration-confirm-dialog";
+import {
+  type RunConfirmation,
+  RunConfirmDialog,
+} from "../src/app/home-page/run-confirm-dialog";
 import { usePendingConfirmation } from "../src/app/home-page/use-pending-confirmation";
 
 const GENERATE_ANYWAY = /Generate anyway/i;
@@ -115,19 +118,24 @@ function ConfirmHarness({
 }: {
   onAnswer: (proceed: boolean) => void;
 }) {
-  const { ask, decide, subject } = usePendingConfirmation<string[]>();
+  const { ask, decide, subject } = usePendingConfirmation<RunConfirmation>();
 
   return (
     <>
       <button
         onClick={async () => {
-          onAnswer(await ask(["Camera response", "Vignetting correction"]));
+          onAnswer(
+            await ask({
+              setCount: 1,
+              unsupplied: ["Camera response", "Vignetting correction"],
+            })
+          );
         }}
         type="button"
       >
         Generate HDR Image
       </button>
-      <CalibrationConfirmDialog onDecision={decide} unsupplied={subject} />
+      <RunConfirmDialog confirmation={subject} onDecision={decide} />
     </>
   );
 }
