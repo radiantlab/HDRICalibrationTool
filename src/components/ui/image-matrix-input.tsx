@@ -46,6 +46,13 @@ interface FileMatrixInputProps<
 > {
   className?: string;
   control: Control<T>;
+  /**
+   * Makes the whole panel read-only. A batch commits to a snapshot of the sets
+   * taken when the run started, so while one is in flight the rows still have
+   * to be readable but must not be allowed to shift under the run: the issue
+   * banners are keyed by array index, and any edit resets them all.
+   */
+  disabled?: boolean;
   issuesByIndex?: Partial<Record<number, ImageSetIssue>>;
   name: TName;
   rules?: Omit<RegisterOptions<T, TName>, "validate"> & {
@@ -68,6 +75,7 @@ export function ImageMatrixInput<
   control,
   name,
   className,
+  disabled,
   issuesByIndex,
   rules,
 }: FileMatrixInputProps<T, TName>) {
@@ -175,6 +183,7 @@ export function ImageMatrixInput<
               key={row.name}
             >
               <ImageSetPreview
+                disabled={disabled}
                 files={row.files.toSorted((a, b) => a.localeCompare(b))}
                 name={row.name}
                 onAdd={async () => {
@@ -251,6 +260,7 @@ export function ImageMatrixInput<
         <ContextMenu>
           <ContextMenuTrigger asChild>
             <TauriDropzone
+              disabled={disabled}
               id="image-matrix-input"
               onClick={selectFiles}
               onDrop={onDrop}
@@ -259,8 +269,12 @@ export function ImageMatrixInput<
                 ({ isDragActive }: DropzoneChildrenProps) => (
                   <div
                     className={cn(
-                      "grid h-56 cursor-pointer place-items-center border-8 border-dashed p-4 text-border transition-colors focus:outline-hidden",
-                      "hover:border-foreground hover:text-foreground",
+                      "grid h-56 place-items-center border-8 border-dashed p-4 text-border transition-colors focus:outline-hidden",
+                      // No hover affordance while locked: nothing should invite
+                      // a drop that the panel is going to ignore.
+                      disabled
+                        ? "opacity-50"
+                        : "cursor-pointer hover:border-foreground hover:text-foreground",
                       // show invalid via group parent from Field as red
                       "group-data-[invalid=true]/field:text-destructive",
                       { "border-foreground text-foreground": isDragActive }
@@ -279,12 +293,15 @@ export function ImageMatrixInput<
                     </div>
                   </div>
                 ),
-                []
+                [disabled]
               )}
             </TauriDropzone>
           </ContextMenuTrigger>
           <ContextMenuContent className="w-52">
-            <ContextMenuItem onClick={selectMultipleDirectories}>
+            <ContextMenuItem
+              disabled={disabled}
+              onClick={selectMultipleDirectories}
+            >
               Create from directories...
               {/* <ContextMenuShortcut>⌘]</ContextMenuShortcut> */}
             </ContextMenuItem>
