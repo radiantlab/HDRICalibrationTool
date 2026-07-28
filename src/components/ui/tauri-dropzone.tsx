@@ -114,6 +114,9 @@ export function TauriDropzone({
       type="button"
       {...props}
       className={cn("relative", className)}
+      // `disabled` is destructured above, so the spread cannot carry it. Without
+      // this the drag path honours it while click-to-select stays live.
+      disabled={disabled}
       ref={(val) => {
         rootRef.current = val;
         switch (typeof ref) {

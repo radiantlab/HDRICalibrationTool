@@ -23,11 +23,17 @@ export interface ImageSet {
 export function ImageSetPreview({
   name,
   files,
+  disabled,
   onRemove,
   onAdd,
   onRemoveIndex,
   onClick,
 }: ImageSet & {
+  /**
+   * Makes the set read-only. Everything that changes which files are in the
+   * set stops responding, while names, counts and thumbnails still render.
+   */
+  disabled?: boolean;
   onRemove: () => void;
   onAdd: () => void;
   onRemoveIndex: (index: number) => void;
@@ -81,14 +87,18 @@ export function ImageSetPreview({
           )}
         </div>
         <Button
+          aria-label={`Remove image set ${name}`}
           className="grid h-full w-16 place-items-center rounded-none border-t-0 border-r-0 border-b border-l text-destructive transition-colors hover:cursor-pointer hover:text-foreground"
+          disabled={disabled}
           onClick={onRemove}
           variant="outline"
         >
           <Trash2 />
         </Button>
         <Button
+          aria-label={`Add images to ${name}`}
           className="grid h-full w-16 place-items-center rounded-none border-t-0 border-r-0 border-b border-l text-muted-foreground transition-colors hover:cursor-pointer hover:text-foreground"
+          disabled={disabled}
           onClick={onAdd}
           variant="ghost"
         >
@@ -121,7 +131,10 @@ export function ImageSetPreview({
                   </div>
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                  <ContextMenuItem onClick={() => onRemoveIndex(index)}>
+                  <ContextMenuItem
+                    disabled={disabled}
+                    onClick={() => onRemoveIndex(index)}
+                  >
                     Remove image
                   </ContextMenuItem>
                 </ContextMenuContent>
