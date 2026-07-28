@@ -5,9 +5,10 @@ mod header_editing;
 mod merge_exposures;
 mod neutral_density;
 mod nullify_exposure_value;
+mod output_naming;
 mod photometric_adjustment;
-mod progress;
 mod picture;
+mod progress;
 mod projection_adjustment;
 mod resize;
 mod validity;
@@ -23,8 +24,8 @@ use std::{
 };
 
 use crate::command::CommandError;
-use chrono::prelude::*;
 use cal_check::{cal_warning, resolution_dependent_constants};
+use chrono::prelude::*;
 use crop::crop;
 use evalglare::evalglare;
 use falsecolor::falsecolor;
@@ -32,6 +33,7 @@ use header_editing::{header_editing, ViewArgs};
 use merge_exposures::merge_exposures;
 use neutral_density::neutral_density;
 use nullify_exposure_value::nullify_exposure_value;
+use output_naming::{completion_message, output_stem};
 use photometric_adjustment::photometric_adjustment;
 use progress::StepProgress;
 use projection_adjustment::projection_adjustment;
@@ -176,10 +178,7 @@ fn emit_progress(app: &tauri::AppHandle, progress: i32) -> Result<(), PipelineEr
     )
 }
 
-fn emit_pipeline_output(
-    app: &tauri::AppHandle,
-    path: &Path,
-) -> Result<(), PipelineError> {
+fn emit_pipeline_output(app: &tauri::AppHandle, path: &Path) -> Result<(), PipelineError> {
     let payload = PipelineOutputPayload {
         path: path.to_string_lossy().to_string(),
     };
@@ -210,6 +209,12 @@ pub struct LuminanceArgs {
 // input_images:
 //      vector of the paths to the input images, or the input directories if batch processing.
 //      Input images must be in .JPG format or .CR2 format.
+// set_name:
+//      Names this set in the output filenames, so a batch produces
+//      <set>_<datetime>.hdr rather than N files distinguishable only by a
+//      timestamp. Empty for a run with no set name, which keeps the plain
+//      <datetime>.hdr. Sanitised in output_naming.rs, because it becomes a
+//      filename.
 // response_function:
 //      string for the path to the camera response function (.rsp)
 // fisheye_correction_cal:
@@ -242,6 +247,7 @@ pub async fn pipeline(
     dcraw_emu_path: String,
     output_path: String,
     input_images: Vec<String>,
+    set_name: String,
     response_function: String,
     fisheye_correction_cal: String,
     vignetting_correction_cal: String,
@@ -280,12 +286,6 @@ pub async fn pipeline(
         });
     }
 
-    let is_directory = if input_images.len() > 0 {
-        Path::new(&input_images[0]).is_dir()
-    } else {
-        false
-    };
-
     // let the frontend handle defaults
     // if xdim.len() < 1 {
     //     xdim = "1000".to_string();
@@ -315,17 +315,10 @@ pub async fn pipeline(
         println!("\tytop: {ytop}");
         println!("\txdim: {xdim}");
         println!("\tydim: {ydim}");
-
-        println!("\n\nPROCESSING MODE");
-        if is_directory {
-            println!("\tUser selected directories. (Batch processing)");
-        } else {
-            println!("\tUser selected images. (Single scene)");
-        }
     }
 
     // Add paths to radiance, hdrgen, raw2hdr, and output and temp directories to config settings
-    let mut config_settings = ConfigSettings {
+    let config_settings = ConfigSettings {
         radiance_path: Path::new(&radiance_path).to_owned(),
         hdrgen_path: Path::new(&hdrgen_path).to_owned(),
         dcraw_emu_path: Path::new(&dcraw_emu_path).to_owned(),
@@ -352,217 +345,80 @@ pub async fn pipeline(
     let mut progress = StepProgress::new(PIPELINE_STAGES);
     emit_progress(&app, progress.percent())?; // Initial progress (0%)
 
-    let mut return_path: PathBuf = PathBuf::new();
-    if is_directory {
-        // Directories were selected (batch processing)
-
-        // Run pipeline for each directory selected
-        let set_total = input_images.len();
-        for (set_position, input_dir) in input_images.iter().enumerate() {
-            let set_index = set_position + 1;
-            let set_name = Path::new(input_dir)
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy()
-                .to_string();
-            emit_status(
-                &app,
-                PipelineStatusPayload {
-                    kind: PipelineStatusKind::Step,
-                    progress: None,
-                    step: Some("image_set".to_string()),
-                    message: Some(format!(
-                        "Processing set {set_index} of {set_total}: {set_name}"
-                    )),
-                    set_index: Some(set_index),
-                    set_total: Some(set_total),
-                },
-            )?;
-
-            // Create a subdirectory inside tmp for this directory with input images (same name as input dir)
-            config_settings.temp_path = Path::new(&config_settings.output_path)
-                .join("tmp")
-                .join(Path::new(input_dir).file_name().unwrap_or_default());
-
-            if create_dir_all(&config_settings.temp_path).is_err() {
-                return Err(PipelineError::Processing {
-                    message: "Error creating directories for outputs in temp directory."
-                        .to_string(),
-                });
-            }
-
-            // Grab all JPG or CR2 images from the directory and ignore all other files
-            let input_images_from_dir = get_images_from_dir(&input_dir)?;
-
-            if input_images_from_dir.is_empty() {
-                return Err(PipelineError::InvalidInput {
-                    field: "inputImages".to_string(),
-                    value: "directory-without-images".to_string(),
-                });
-            }
-
-            // Run the HDRGen and Radiance pipeline on the input images
-            let result = process_image_set(
-                &app,
-                &config_settings,
-                &luminance_args,
-                input_images_from_dir,
-                response_function.clone(),
-                fisheye_correction_cal.clone(),
-                vignetting_correction_cal.clone(),
-                photometric_adjustment_cal.clone(),
-                neutral_density_cal.clone(),
-                diameter.clone(),
-                xleft.clone(),
-                ytop.clone(),
-                xdim.clone(),
-                ydim.clone(),
-                vertical_angle.clone(),
-                horizontal_angle.clone(),
-                projection.clone(),
-                measured_vertical_illuminance,
-                &mut progress,
-                filter_images,
-            );
-            if let Err(error) = result {
-                emit_status(
-                    &app,
-                    PipelineStatusPayload {
-                        kind: PipelineStatusKind::Error,
-                        progress: None,
-                        step: None,
-                        message: Some(format!("{:?}", error)),
-                        set_index: None,
-                        set_total: None,
-                    },
-                )?;
-                return Err(error);
-            }
-
-            // Set output file name to be the same as the input directory name (i.e. <dir_name>.hdr)
-            // Get current local date and time and format output name with it
-            let datetime = format!("{}", Local::now().format("%F_%H-%M-%S"));
-            return_path = config_settings.output_path.join(Path::new(input_dir));
-            let base_name = Path::new(input_dir)
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy();
-
-            let output_file_name = config_settings
-                .output_path
-                .join(format!("{}_{}.hdr", base_name, datetime));
-
-            // Copy the final output hdr image to output directory
-            let mut copy_result = copy(
-                &config_settings.temp_path.join("header_editing.hdr"),
-                &output_file_name,
-            );
-            if copy_result.is_err() {
-                return Err(PipelineError::Processing {
-                    message: "Error copying final hdr image to output directory.".to_string(),
-                });
-            }
-            emit_pipeline_output(&app, &output_file_name)?;
-            let base_name2 = Path::new(input_dir)
-                .file_name()
-                .unwrap_or_default()
-                .to_string_lossy();
-            let luminance_file_name = config_settings
-                .output_path
-                .join(format!("{}_{}_fc.hdr", base_name2, datetime));
-            copy_result = copy(
-                &config_settings.temp_path.join("falsecolor_output.hdr"),
-                &luminance_file_name,
-            );
-            if copy_result.is_err() {
-                return Err(PipelineError::Processing {
-                    message: "Error copying final luminance map hdr image to output directory."
-                        .to_string(),
-                });
-            }
+    // Ensure images are a supported format
+    for input_image in &input_images {
+        if !is_supported_format(&PathBuf::from(input_image)) {
+            return Err(PipelineError::InvalidInput {
+                field: "inputImages".to_string(),
+                value: "unsupported-format".to_string(),
+            });
         }
-    } else {
-        // Individual images were selected (single scene)
+    }
 
-        // Ensure images are a supported format
-        for input_image in &input_images {
-            if !is_supported_format(&PathBuf::from(input_image)) {
-                return Err(PipelineError::InvalidInput {
-                    field: "inputImages".to_string(),
-                    value: "unsupported-format".to_string(),
-                });
-            }
-        }
-
-        // Run the HDRGen and Radiance pipeline on the images
-        let result = process_image_set(
+    // Run the HDRGen and Radiance pipeline on the images
+    let result = process_image_set(
+        &app,
+        &config_settings,
+        &luminance_args,
+        input_images,
+        response_function.clone(),
+        fisheye_correction_cal.clone(),
+        vignetting_correction_cal.clone(),
+        photometric_adjustment_cal.clone(),
+        neutral_density_cal.clone(),
+        diameter.clone(),
+        xleft.clone(),
+        ytop.clone(),
+        xdim.clone(),
+        ydim.clone(),
+        vertical_angle.clone(),
+        horizontal_angle.clone(),
+        projection.clone(),
+        measured_vertical_illuminance,
+        &mut progress,
+        filter_images,
+    );
+    if let Err(error) = result {
+        emit_status(
             &app,
-            &config_settings,
-            &luminance_args,
-            input_images,
-            response_function.clone(),
-            fisheye_correction_cal.clone(),
-            vignetting_correction_cal.clone(),
-            photometric_adjustment_cal.clone(),
-            neutral_density_cal.clone(),
-            diameter.clone(),
-            xleft.clone(),
-            ytop.clone(),
-            xdim.clone(),
-            ydim.clone(),
-            vertical_angle.clone(),
-            horizontal_angle.clone(),
-            projection.clone(),
-            measured_vertical_illuminance,
-            &mut progress,
-            filter_images,
-        );
-        if let Err(error) = result {
-            emit_status(
-                &app,
-                PipelineStatusPayload {
-                    kind: PipelineStatusKind::Error,
-                    progress: None,
-                    step: None,
-                    message: Some(format!("{:?}", error)),
-                    set_index: None,
-                    set_total: None,
-                },
-            )?;
-            return Err(error);
-        }
+            PipelineStatusPayload {
+                kind: PipelineStatusKind::Error,
+                progress: None,
+                step: None,
+                message: Some(format!("{:?}", error)),
+                set_index: None,
+                set_total: None,
+            },
+        )?;
+        return Err(error);
+    }
 
-        // Get current local date and time and format output name with it
-        let datetime = format!("{}", Local::now().format("%F_%H-%M-%S"));
-        let output_file_name = config_settings
-            .output_path
-            .join(format!("{}.hdr", datetime));
+    // Get current local date and time and format output name with it
+    let datetime = format!("{}", Local::now().format("%F_%H-%M-%S"));
+    let stem = output_stem(&set_name, &datetime);
+    let output_file_name = config_settings.output_path.join(format!("{stem}.hdr"));
 
-        // Copy the final output hdr image to output directory
-        let mut copy_result = copy(
-            &config_settings.temp_path.join("header_editing.hdr"),
-            &output_file_name,
-        );
-        if copy_result.is_err() {
-            return Err(PipelineError::Processing {
-                message: "Error copying final hdr image to output directory.".to_string(),
-            });
-        }
-        emit_pipeline_output(&app, &output_file_name)?;
+    // Copy the final output hdr image to output directory
+    let mut copy_result = copy(
+        &config_settings.temp_path.join("header_editing.hdr"),
+        &output_file_name,
+    );
+    if copy_result.is_err() {
+        return Err(PipelineError::Processing {
+            message: "Error copying final hdr image to output directory.".to_string(),
+        });
+    }
+    emit_pipeline_output(&app, &output_file_name)?;
 
-        let luminance_file_name = config_settings
-            .output_path
-            .join(format!("{}_fc.hdr", datetime));
-        copy_result = copy(
-            &config_settings.temp_path.join("falsecolor_output.hdr"),
-            &luminance_file_name,
-        );
-        if copy_result.is_err() {
-            return Err(PipelineError::Processing {
-                message: "Error copying final hdr luminance image to output directory.".to_string(),
-            });
-        }
-        return_path = config_settings.output_path;
+    let luminance_file_name = config_settings.output_path.join(format!("{stem}_fc.hdr"));
+    copy_result = copy(
+        &config_settings.temp_path.join("falsecolor_output.hdr"),
+        &luminance_file_name,
+    );
+    if copy_result.is_err() {
+        return Err(PipelineError::Processing {
+            message: "Error copying final hdr luminance image to output directory.".to_string(),
+        });
     }
 
     emit_status(
@@ -571,45 +427,14 @@ pub async fn pipeline(
             kind: PipelineStatusKind::Done,
             progress: Some(100),
             step: None,
-            message: Some("Pipeline complete.".to_string()),
+            message: Some(completion_message(&set_name)),
             set_index: None,
             set_total: None,
         },
     )?;
 
     // If no errors, return Ok
-    Ok(return_path.to_string_lossy().to_string())
-}
-
-/*
- * Retrieves all JPG and CR2 images from a directory, ignoring other files or directories.
- * Does not check for images to be of the same format.
- */
-pub fn get_images_from_dir(input_dir: &String) -> Result<Vec<String>, PipelineError> {
-    // Taken from example code at https://doc.rust-lang.org/std/fs/fn.read_dir.html
-
-    // Get everything in the directory (all files and directories)
-    let entries = fs::read_dir(input_dir)
-        .map_err(|_| PipelineError::Processing {
-            message: format!("Error reading input directory: {input_dir}."),
-        })?
-        .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, std::io::Error>>()
-        .map_err(|_| PipelineError::Processing {
-            message: format!("Error getting input directory contents: {input_dir}."),
-        })?;
-
-    // Find the files that have a JPG, TIFF, or CR2 extension
-    let mut input_image_paths: Vec<String> = Vec::new();
-    for entry in entries {
-        if is_supported_format(&entry) {
-            let x = entry.into_os_string().into_string().unwrap_or_default();
-            input_image_paths.push(x);
-        }
-    }
-
-    // Return the paths to the JPG and CR2 images
-    Ok(input_image_paths)
+    Ok(config_settings.output_path.to_string_lossy().to_string())
 }
 
 /*

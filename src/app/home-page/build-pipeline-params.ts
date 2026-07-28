@@ -7,17 +7,6 @@ export interface PipelineToolSettings {
   radiancePath: string;
 }
 
-/**
- * Builds the payload for the `pipeline` Tauri command.
- *
- * `ytop` is the distance from the top of the image to the top of the lens
- * mask, which is the origin the overlay works in. crop.rs converts it to the
- * bottom-left origin Radiance expects.
- *
- * Tauri matches command parameters by name at runtime, so a key renamed here
- * must be renamed in the `#[tauri::command]` signature in the same change.
- * Nothing catches a mismatch at compile time.
- */
 /** The circumscribed square the crop stage cuts out, in image pixels. */
 export interface MaskBox {
   diameter: number;
@@ -40,10 +29,26 @@ export function maskBox(data: pipelineConfig): MaskBox {
   };
 }
 
+/**
+ * Builds the payload for the `pipeline` Tauri command.
+ *
+ * `ytop` is the distance from the top of the image to the top of the lens
+ * mask, which is the origin the overlay works in. crop.rs converts it to the
+ * bottom-left origin Radiance expects.
+ *
+ * Tauri matches command parameters by name at runtime, so a key renamed here
+ * must be renamed in the `#[tauri::command]` signature in the same change.
+ * Nothing catches a mismatch at compile time.
+ *
+ * `setName` is passed through as the user typed or as the directory was named.
+ * It becomes part of a filename, so it is sanitised in Rust where the file is
+ * written rather than here, where a caller could bypass it.
+ */
 export function buildPipelineParams(
   data: pipelineConfig,
   settings: PipelineToolSettings,
-  inputImages: string[]
+  inputImages: string[],
+  setName: string
 ) {
   const { diameter, xleft, ytop } = maskBox(data);
 
@@ -68,6 +73,7 @@ export function buildPipelineParams(
     scaleLabel: "",
     scaleLevels: "",
     scaleLimit: "",
+    setName,
     verticalAngle: data.fisheyeView.verticalViewDegrees,
     vignettingCorrectionCal: data.correctionFiles.vignetting ?? "",
     xdim: data.outputSettings.targetRes,

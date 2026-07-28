@@ -22,9 +22,24 @@ import { usePipelineStatus } from "../pipeline-status-context";
 export function PipelineStatus({
   onFinishAcknowledgment,
   onShowConsole,
+  onStop,
+  running,
+  stopRequested,
 }: {
   onFinishAcknowledgment: () => void;
   onShowConsole: () => void;
+  /**
+   * Null when there is no later set to stop before, which is every run of a
+   * single image set.
+   */
+  onStop: (() => void) | null;
+  /**
+   * Whether the run is still going. Not derived from progress: the backend
+   * reports a run finishing at the end of every set, so the bar reads 100
+   * between sets while the batch continues.
+   */
+  running: boolean;
+  stopRequested: boolean;
 }) {
   const { progress, statusText, lastEmittedOutput } = usePipelineStatus();
   const router = useRouter();
@@ -33,7 +48,7 @@ export function PipelineStatus({
     <div className="flex flex-col gap-2">
       {statusText ? (
         <div className="justify-left flex items-center gap-2 text-muted-foreground text-sm">
-          {progress !== 100 && <Spinner className="size-4" />}
+          {running ? <Spinner className="size-4" /> : null}
           {statusText}
         </div>
       ) : null}
@@ -43,12 +58,22 @@ export function PipelineStatus({
         <Button onClick={onShowConsole} type="button" variant="outline">
           Show log
         </Button>
-        <Button disabled={progress !== 100} onClick={onFinishAcknowledgment}>
+        {onStop && running ? (
+          <Button
+            disabled={stopRequested}
+            onClick={onStop}
+            type="button"
+            variant="outline"
+          >
+            {stopRequested ? "Stopping after this set" : "Stop"}
+          </Button>
+        ) : null}
+        <Button disabled={running} onClick={onFinishAcknowledgment}>
           Dismiss
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button disabled={progress !== 100} size="icon" variant="outline">
+            <Button disabled={running} size="icon" variant="outline">
               <EllipsisVerticalIcon className="size-4" />
             </Button>
           </DropdownMenuTrigger>

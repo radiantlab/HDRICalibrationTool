@@ -30,7 +30,7 @@ const config: pipelineConfig = {
 
 describe("buildPipelineParams", () => {
   it("sends the mask offset from the top as ytop", () => {
-    const params = buildPipelineParams(config, settings, ["a.jpg"]);
+    const params = buildPipelineParams(config, settings, ["a.jpg"], "");
 
     expect(params.ytop).toBe(64);
     expect(params.xleft).toBe(200);
@@ -41,7 +41,8 @@ describe("buildPipelineParams", () => {
     const params = buildPipelineParams(
       { ...config, fisheyeView: { ...config.fisheyeView, projection: "vth" } },
       settings,
-      ["a.jpg"]
+      ["a.jpg"],
+      ""
     );
 
     expect(params.projection).toBe("vth");
@@ -51,21 +52,36 @@ describe("buildPipelineParams", () => {
     const params = buildPipelineParams(
       { ...config, validityCheck: { measuredVerticalIlluminanceLux: 1240 } },
       settings,
-      ["a.jpg"]
+      ["a.jpg"],
+      ""
     );
 
     expect(params.measuredVerticalIlluminance).toBe(1240);
   });
 
   it("sends null when no measurement was entered", () => {
-    const params = buildPipelineParams(config, settings, ["a.jpg"]);
+    const params = buildPipelineParams(config, settings, ["a.jpg"], "");
 
     expect(params.measuredVerticalIlluminance).toBeNull();
   });
 
   it("no longer sends a ydown key", () => {
-    const params = buildPipelineParams(config, settings, ["a.jpg"]);
+    const params = buildPipelineParams(config, settings, ["a.jpg"], "");
 
     expect(params).not.toHaveProperty("ydown");
+  });
+
+  it("forwards the set name so the output can be named after it", () => {
+    const params = buildPipelineParams(config, settings, ["a.jpg"], "kitchen");
+
+    expect(params.setName).toBe("kitchen");
+  });
+
+  // A single scene has no set to name, and Rust falls back to the plain
+  // timestamp, which is what the app produced before batches existed.
+  it("forwards an empty name unchanged", () => {
+    const params = buildPipelineParams(config, settings, ["a.jpg"], "");
+
+    expect(params.setName).toBe("");
   });
 });
