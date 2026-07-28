@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from "@jest/globals";
-import { runBatch } from "../src/app/home-page/run-batch";
+import { describeBatchSummary, runBatch } from "../src/app/home-page/run-batch";
 import type { ImageSet } from "../src/components/ui/image-set-preview";
 
 function set(name: string): ImageSet {
@@ -139,5 +139,43 @@ describe("runBatch", () => {
       succeeded: 0,
       total: 0,
     });
+  });
+});
+
+describe("describeBatchSummary", () => {
+  // The single set is the common case, and it has already said everything it
+  // has to say through the progress bar or a failure toast.
+  it("says nothing about a single set", () => {
+    expect(
+      describeBatchSummary({ failed: 0, skipped: 0, succeeded: 1, total: 1 })
+    ).toBeNull();
+  });
+
+  it("says nothing when there were no sets at all", () => {
+    expect(
+      describeBatchSummary({ failed: 0, skipped: 0, succeeded: 0, total: 0 })
+    ).toBeNull();
+  });
+
+  it("counts the sets that completed", () => {
+    expect(
+      describeBatchSummary({ failed: 0, skipped: 0, succeeded: 3, total: 3 })
+    ).toBe("3 of 3 sets completed.");
+  });
+
+  // A failed set is already covered by the count, so it needs no clause of its
+  // own: what the reader wants is how many of the ten worked.
+  it("reports a failure through the count alone", () => {
+    expect(
+      describeBatchSummary({ failed: 1, skipped: 0, succeeded: 2, total: 3 })
+    ).toBe("2 of 3 sets completed.");
+  });
+
+  // Stopping is different: without saying so, "1 of 3" reads as two failures
+  // rather than as the batch having been ended on purpose.
+  it("names the sets that were never started", () => {
+    expect(
+      describeBatchSummary({ failed: 0, skipped: 2, succeeded: 1, total: 3 })
+    ).toBe("1 of 3 sets completed, 2 not started.");
   });
 });

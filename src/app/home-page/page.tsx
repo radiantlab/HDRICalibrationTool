@@ -27,7 +27,7 @@ import {
   Sun,
   SwitchCamera,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import {
@@ -79,13 +79,18 @@ import {
   type pipelineConfig,
 } from "./(pipeline-configuration)/config-provider";
 import { buildPipelineParams } from "./build-pipeline-params";
-import { CalibrationConfirmDialog } from "./calibration-confirm-dialog";
 import { unsuppliedCalibrationFiles } from "./calibration-files";
 import { LensMaskInput } from "./lens-mask-input";
 import { useGlobalPipelineConfig } from "./pipeline-config-store";
 import { PipelineStatus } from "./pipeline-status";
 import { describeRunBlocker } from "./preflight";
 import { PresetBar } from "./preset-bar";
+import { describeBatchSummary, runBatch, type SetPosition } from "./run-batch";
+import {
+  describeRunConfirmation,
+  type RunConfirmation,
+  RunConfirmDialog,
+} from "./run-confirm-dialog";
 import { RunConsole } from "./run-console";
 import { useSelectedImage } from "./selected-image-context";
 import { usePendingConfirmation } from "./use-pending-confirmation";
@@ -278,7 +283,20 @@ export default function Home() {
 
   const [progressVisible, setProgressVisible] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
-  const { clearLog, getOutputs, log } = usePipelineStatus();
+  const { beginSet, clearLog, getOutputs, log, setTotal } = usePipelineStatus();
+
+  // Whether a run is in flight, held explicitly rather than inferred from the
+  // progress bar. The backend reports a run finishing at the end of every set,
+  // so between sets the bar reads 100 while the batch is still going.
+  const [batchInFlight, setBatchInFlight] = useState(false);
+  const [stopRequested, setStopRequested] = useState(false);
+  // Read by the loop between sets, from a closure created before the button
+  // was ever pressed, so it cannot be the state value.
+  const stopRequestedRef = useRef(false);
+  const requestStop = useCallback(() => {
+    stopRequestedRef.current = true;
+    setStopRequested(true);
+  }, []);
   // The record is written when a run ends, by which time the log has grown.
   // Capturing `log` in the submit closure would persist an empty transcript.
   const logRef = useRef(log);
@@ -292,10 +310,10 @@ export default function Home() {
 
   // The submit handler stops here and waits for the user to answer.
   const {
-    ask: confirmIncompleteCalibration,
-    decide: decideCalibration,
-    subject: unsuppliedCalibration,
-  } = usePendingConfirmation<string[]>();
+    ask: confirmRun,
+    decide: decideRun,
+    subject: runConfirmation,
+  } = usePendingConfirmation<RunConfirmation>();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: inputSetIssueResetKey is a change-detection trigger (a stringified snapshot of the inputs that should reset validation issues), not a value read inside the effect body, so it can't be "added" by inlining its computation here.
   useEffect(() => {
@@ -324,18 +342,24 @@ export default function Home() {
             // backend ran: those are the ones worth looking back at when an
             // evening's work produced nothing. Storage failures are swallowed
             // so history can never break a run.
+            // One record per set. `startedAt` is the batch's, so a night's
+            // work groups together on the Runs page, and the position keeps
+            // the ids distinct.
             const recordAttempt = (
               failure: string | null,
               outputPaths: string[],
-              files: string[]
+              files: string[],
+              setName: string,
+              position: number
             ) =>
               appendRun({
                 finishedAt: new Date().toISOString(),
-                id: startedAt,
+                id: `${startedAt}-${position}`,
                 inputs: buildPipelineParams(
                   data,
                   toolSettings,
-                  files
+                  files,
+                  setName
                 ) as unknown as Record<string, unknown>,
                 log: logRef.current,
                 outcome: classifyOutcome(logRef.current, failure),
@@ -350,99 +374,164 @@ export default function Home() {
                 },
               }).catch(() => undefined);
 
+            // Reports one set's failure against that set, and only that set.
+            // The batch carries on, so nothing here may tear down the progress
+            // UI or clear another set's annotation.
+            const reportSetFailure = async (
+              error: unknown,
+              position: number,
+              params: Record<string, unknown>
+            ) => {
+              const knownHdrgenIssue = getKnownHdrgenIssue(error);
+              if (knownHdrgenIssue) {
+                // Keyed by array index, because that is how ImageMatrixInput
+                // maps its rows. The only place a position is converted.
+                setImageSetIssues((issues) => ({
+                  ...issues,
+                  [position - 1]: knownHdrgenIssue,
+                }));
+                toast.error("HDRGen could not merge the selected image set.", {
+                  icon: <AlertTriangle className="size-4 text-red-500" />,
+                });
+                return;
+              }
+
+              let tracePath: string | null = null;
+              try {
+                tracePath = await writePipelineTrace(
+                  params,
+                  error,
+                  settings.outputPath
+                );
+              } catch (traceError) {
+                toast.error(`Failed to write pipeline trace: ${traceError}`);
+              }
+              const toastMessage = tracePath
+                ? "Pipeline failed. Trace saved. (Send this file to a maintainer)"
+                : "Pipeline failed. Trace could not be saved.";
+              toast.error(toastMessage, {
+                action: tracePath
+                  ? {
+                      label: "Show in folder",
+                      onClick: () =>
+                        toast.promise(revealItemInDir(tracePath), {
+                          error: "Failed to reveal in folder",
+                          loading: "Revealing in folder...",
+                          success: "Revealed in folder",
+                        }),
+                    }
+                  : undefined,
+                icon: <AlertTriangle className="size-4 text-red-500" />,
+              });
+            };
+
             // Undefined until an image is selected, in which case there are no
             // dimensions to check the mask against yet.
             const maskSize = (await maskPreviewMetadata)?.size ?? null;
+            // Runs once, against the global configuration, because that is
+            // what every set is run with. Deliberately not per set: the mask
+            // is checked against the selected preview image only, and
+            // validating each set's own dimensions is separate work.
             const blocker = describeRunBlocker(data, maskSize);
             if (blocker) {
               toast.error(blocker);
-              recordAttempt(blocker, [], []);
+              await recordAttempt(blocker, [], [], "", 1);
               return;
             }
 
-            // The only check that asks rather than
-            // refuses: skipping a calibration file is a legitimate choice, so
-            // this confirms intent instead of blocking. Everything above is a
-            // value the pipeline cannot run with at all.
+            const sets = data.inputSets;
+            if (sets.length === 0) {
+              await recordAttempt("No image set selected.", [], [], "", 1);
+              return;
+            }
+
+            // The only check that asks rather than refuses. Skipping a
+            // calibration file is a legitimate choice, and so is applying one
+            // set of settings to ten directories; both are worth stating and
+            // neither is worth blocking.
             const unsupplied = unsuppliedCalibrationFiles(data);
-            if (
-              unsupplied.length > 0 &&
-              !(await confirmIncompleteCalibration(unsupplied))
-            ) {
-              recordAttempt(
-                `Cancelled: ${unsupplied.join(", ")} not uploaded.`,
+            const confirmation = describeRunConfirmation(
+              sets.length,
+              unsupplied
+            );
+            if (confirmation && !(await confirmRun(confirmation))) {
+              await recordAttempt(
+                unsupplied.length > 0
+                  ? `Cancelled: ${unsupplied.join(", ")} not uploaded.`
+                  : "Cancelled before starting.",
                 [],
-                []
+                [],
+                "",
+                1
               );
-              return;
-            }
-
-            // TODO: implement batch processing
-            const [imageSet] = data.inputSets;
-            if (!imageSet) {
-              recordAttempt("No image set selected.", [], []);
               return;
             }
 
             setImageSetIssues({});
             setProgressVisible(true);
-            // A new run starts a fresh transcript.
+            // A new run starts a fresh transcript. Called once, not per set:
+            // it also resets the output paths the records are built from, and
+            // the console shows the whole batch.
             clearLog();
             setConsoleOpen(true);
-            const params = buildPipelineParams(
-              data,
-              toolSettings,
-              imageSet.files
-            );
-            console.log("pipeline params", params);
-            invoke<string>("pipeline", params)
-              .then(() => {
-                recordAttempt(null, getOutputs(), imageSet.files);
-              })
-              .catch(async (error) => {
-                recordAttempt(String(error), getOutputs(), imageSet.files);
-                setProgressVisible(false);
+            stopRequestedRef.current = false;
+            setStopRequested(false);
+            setBatchInFlight(true);
 
-                const knownHdrgenIssue = getKnownHdrgenIssue(error);
-                if (knownHdrgenIssue) {
-                  setImageSetIssues({ 0: knownHdrgenIssue });
-                  toast.error(
-                    "HDRGen could not merge the selected image set.",
-                    {
-                      icon: <AlertTriangle className="size-4 text-red-500" />,
-                    }
-                  );
-                  return;
-                }
-
-                let tracePath: string | null = null;
+            const summary = await runBatch({
+              onBeginSet: ({ position, set, total }: SetPosition) =>
+                beginSet(position, total, set.name),
+              runSet: async ({ position, set }: SetPosition) => {
+                // The outputs are accumulated across the whole run, so a set's
+                // own are the ones appended while it was running.
+                const outputsBefore = getOutputs().length;
+                const params = buildPipelineParams(
+                  data,
+                  toolSettings,
+                  set.files,
+                  set.name
+                );
                 try {
-                  tracePath = await writePipelineTrace(
-                    params,
-                    error,
-                    settings.outputPath
+                  await invoke<string>("pipeline", params);
+                  await recordAttempt(
+                    null,
+                    getOutputs().slice(outputsBefore),
+                    set.files,
+                    set.name,
+                    position
                   );
-                } catch (traceError) {
-                  toast.error(`Failed to write pipeline trace: ${traceError}`);
+                } catch (error) {
+                  // Normally empty: the backend announces an output only after
+                  // copying it, so a set that failed has none. Sliced anyway
+                  // rather than hardcoded, so a stage that does produce a file
+                  // before failing is still attributed to this set.
+                  await recordAttempt(
+                    String(error),
+                    getOutputs().slice(outputsBefore),
+                    set.files,
+                    set.name,
+                    position
+                  );
+                  await reportSetFailure(error, position, params);
+                  // Rethrown so the loop counts this set as failed. It does not
+                  // stop the queue.
+                  throw error;
                 }
-                const toastMessage = tracePath
-                  ? "Pipeline failed. Trace saved. (Send this file to a maintainer)"
-                  : "Pipeline failed. Trace could not be saved.";
-                toast.error(toastMessage, {
-                  action: tracePath
-                    ? {
-                        label: "Show in folder",
-                        onClick: () =>
-                          toast.promise(revealItemInDir(tracePath), {
-                            error: "Failed to reveal in folder",
-                            loading: "Revealing in folder...",
-                            success: "Revealed in folder",
-                          }),
-                      }
-                    : undefined,
-                  icon: <AlertTriangle className="size-4 text-red-500" />,
-                });
-              });
+              },
+              sets,
+              shouldStop: () => stopRequestedRef.current,
+            });
+
+            setBatchInFlight(false);
+
+            const message = describeBatchSummary(summary);
+            if (message) {
+              if (summary.failed > 0 || summary.skipped > 0) {
+                toast.warning(message);
+              } else {
+                toast.success(message);
+              }
+            }
           },
           (errors) => {
             console.log("form errors", errors);
@@ -884,6 +973,9 @@ export default function Home() {
                   <PipelineStatus
                     onFinishAcknowledgment={() => setProgressVisible(false)}
                     onShowConsole={() => setConsoleOpen(true)}
+                    onStop={(setTotal ?? 1) > 1 ? requestStop : null}
+                    running={batchInFlight}
+                    stopRequested={stopRequested}
                   />
                 ) : (
                   <Button className="w-full bg-osu-beaver-orange" type="submit">
@@ -896,9 +988,9 @@ export default function Home() {
                     open={consoleOpen}
                   />
                 ) : null}
-                <CalibrationConfirmDialog
-                  onDecision={decideCalibration}
-                  unsupplied={unsuppliedCalibration}
+                <RunConfirmDialog
+                  confirmation={runConfirmation}
+                  onDecision={decideRun}
                 />
               </div>
             </div>

@@ -16,6 +16,25 @@ export interface BatchSummary {
 }
 
 /**
+ * Says how a batch ended, or nothing when there is nothing to add.
+ *
+ * A single set already reported itself, through the progress bar on success
+ * and a toast on failure, so it gains no summary. Whether the message is good
+ * news is the caller's to decide, since only it knows how to show either.
+ */
+export function describeBatchSummary(summary: BatchSummary): string | null {
+  if (summary.total <= 1) {
+    return null;
+  }
+
+  const parts = [`${summary.succeeded} of ${summary.total} sets completed`];
+  if (summary.skipped > 0) {
+    parts.push(`${summary.skipped} not started`);
+  }
+  return `${parts.join(", ")}.`;
+}
+
+/**
  * Runs each image set in turn, reporting what happened to each.
  *
  * Deliberately free of React and Tauri. The risk in batching is control flow,
