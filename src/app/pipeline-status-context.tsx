@@ -84,6 +84,14 @@ function toLogEntry(payload: PipelineStatusPayload): LogEntry | null {
 }
 
 interface PipelineStatusContextValue {
+  /**
+   * Announces the set the frontend is about to run.
+   *
+   * Batching is a frontend loop over single-scene runs, so nothing in Rust
+   * knows a set's position any more. Progress is returned to zero because the
+   * backend reports a run finishing at the end of every set.
+   */
+  beginSet: (position: number, total: number, name: string) => void;
   clearLog: () => void;
   /** Reads the outputs synchronously, without waiting for a React commit. */
   getOutputs: () => string[];
@@ -182,6 +190,26 @@ export function PipelineStatusProvider({
 
   const getOutputs = useCallback(() => outputsRef.current, []);
 
+  const beginSet = useCallback(
+    (position: number, total: number, name: string) => {
+      const message = `Processing set ${position} of ${total}: ${name}`;
+      setSetIndex(position);
+      setSetTotal(total);
+      setProgress(0);
+      setStatusText(message);
+      setLog((entries) => [
+        ...entries,
+        {
+          at: new Date().toISOString(),
+          kind: "step",
+          message,
+          step: "image_set",
+        },
+      ]);
+    },
+    []
+  );
+
   const clearLog = useCallback(() => {
     setLog([]);
     outputsRef.current = [];
@@ -192,6 +220,7 @@ export function PipelineStatusProvider({
 
   const value = useMemo(
     () => ({
+      beginSet,
       clearLog,
       getOutputs,
       lastEmittedOutput,
@@ -204,6 +233,7 @@ export function PipelineStatusProvider({
       statusText,
     }),
     [
+      beginSet,
       clearLog,
       getOutputs,
       lastEmittedOutput,
