@@ -7,14 +7,17 @@ they work identically in the Tauri webview and on a static host.
 |---|---|
 | [radiantlab/Radiance](https://github.com/radiantlab/Radiance) | `evalglare` `getinfo` `pcomb` `pcompos` `pextrem` `pfilt` `psign` `ra_xyze` |
 | [radiantlab/hdrgen](https://github.com/radiantlab/hdrgen) | `hdrgen` |
+| [radiantlab/LibRaw](https://github.com/radiantlab/LibRaw) | `dcraw_emu` |
 
 `falsecolor` is absent on purpose: it is a Perl script upstream, so it has no
 wasm build. `src/lib/pipeline/falsecolor.ts` reimplements it by driving
 `pcomb`, `pcompos`, `psign` and `pextrem`.
 
-`dcraw_emu` is absent because it has no wasm build **yet** — see
-[#237](https://github.com/radiantlab/HDRICalibrationTool/issues/237). Until it
-lands, this pipeline handles JPEG and TIFF but not RAW.
+`dcraw_emu` converts RAW inputs to TIFF before hdrgen sees them
+([#237](https://github.com/radiantlab/HDRICalibrationTool/issues/237)). It peaks
+at 266 MiB on a 5796x3870 CR2, about 6.5% of the wasm32 ceiling, and takes
+roughly 2 s per frame. Note the pipeline skips image filtering when the input is
+RAW, matching the Rust implementation.
 
 ## Refreshing
 
@@ -30,9 +33,14 @@ cmake --build build-web --target evalglare getinfo pcomb pcompos pextrem pfilt p
 # hdrgen
 emcmake cmake -S . -B build-web -DCMAKE_BUILD_TYPE=Release -DHDRGEN_WASM_NODERAWFS=OFF
 cmake --build build-web --target hdrgen -j8
+
+# LibRaw
+emcmake cmake -S . -B build-web -DCMAKE_BUILD_TYPE=Release -DLIBRAW_WASM_NODERAWFS=OFF
+cmake --build build-web --target dcraw_emu -j8
 ```
 
-Then copy `bin/*.js` and `bin/*.wasm` here.
+Then copy the `.js` and `.wasm` outputs here. Radiance and hdrgen put theirs in
+`build-web/bin/`; LibRaw puts them in `build-web/`.
 
 Do not substitute a NODERAWFS build: it targets node, runs `main()` at
 instantiation before inputs can be staged, and does not export `FS`.
