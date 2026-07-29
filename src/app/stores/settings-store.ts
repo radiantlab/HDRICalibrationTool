@@ -76,6 +76,12 @@ export const useSettingsStore = create<SettingsStore>()(
       },
     }),
     {
+      // Zustand shallow-merges at the top level, so a persisted `settings`
+      // object replaces the defaults wholesale. A field added after a user
+      // last saved therefore arrives as undefined rather than its default,
+      // which is why `useWasmPipeline` is read defensively at its use sites.
+      // Safe here because undefined is falsy and the Rust pipeline is the
+      // fallback; a setting whose default were `true` would need a migration.
       name: "hdr-settings",
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

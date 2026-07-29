@@ -264,7 +264,7 @@ export default function SettingsPage() {
                 htmlFor="useWasmPipeline"
               >
                 <input
-                  checked={localSettings.useWasmPipeline}
+                  checked={localSettings.useWasmPipeline ?? false}
                   className="mt-1"
                   id="useWasmPipeline"
                   name="useWasmPipeline"
