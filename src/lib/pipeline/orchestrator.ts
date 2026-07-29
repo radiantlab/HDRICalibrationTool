@@ -157,7 +157,7 @@ export async function runPipeline({
 
   // ---- merge -------------------------------------------------------------
   step("merge_exposures", "Merging exposures");
-  const { images, responseFunction } = await prepareInputs(
+  const { images, responseFunction, consumed } = await prepareInputs(
     runner,
     params,
     emit,
@@ -168,6 +168,12 @@ export async function runPipeline({
     "hdrgen",
     hdrgenArgs(images, responseFunction, workPath("merge_exposures.hdr"))
   );
+  // Everything the merge read is dead here: no later stage names a source
+  // image or a converted TIFF. On the RAW path that is the bulk of the run's
+  // memory -- ten source frames plus ten 67 MB intermediates, roughly 900 MB
+  // of a ~1.1 GB peak -- and without this it would be held to the end. See
+  // #232.
+  runner.release?.(consumed);
   advance();
   checkStop();
 
@@ -469,10 +475,20 @@ async function prepareInputs(
   params: PipelineParams,
   emit: StatusEmitter,
   decodeImage?: DecodeImage
-): Promise<{ images: string[]; responseFunction: string }> {
+): Promise<{
+  /** Paths the merge reads and nothing after it does. */
+  consumed: string[];
+  images: string[];
+  responseFunction: string;
+}> {
   if (!params.inputImages.some(isRawImage)) {
+    const images = await maybeFilter(params, emit, decodeImage);
+    // The filtered-out frames are consumed too: they were staged before the
+    // run started and the merge never names them, so they would otherwise sit
+    // in memory untouched for the whole pipeline.
     return {
-      images: await maybeFilter(params, emit, decodeImage),
+      consumed: params.inputImages,
+      images,
       responseFunction: params.responseFunction,
     };
   }
@@ -492,7 +508,13 @@ async function prepareInputs(
 
   const responsePath = workPath("sqr.rsp");
   await runner.writeFile(responsePath, SQUARE_RESPONSE);
-  return { images: converted, responseFunction: responsePath };
+  // Both halves: the source RAW files, which only dcraw_emu read, and the
+  // TIFFs it produced, which only hdrgen reads.
+  return {
+    consumed: [...params.inputImages, ...converted],
+    images: converted,
+    responseFunction: responsePath,
+  };
 }
 
 /**

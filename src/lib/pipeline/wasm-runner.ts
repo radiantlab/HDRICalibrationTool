@@ -166,6 +166,36 @@ export class WasmToolRunner implements ToolRunner {
     this.files.clear();
   }
 
+  /**
+   * Drops files the pipeline has finished with.
+   *
+   * Unknown paths are ignored rather than reported: the orchestrator releases
+   * the source images whether or not they were RAW, and on the JPEG path
+   * `prepareInputs` never converted anything, so most of that list is legitimately
+   * absent.
+   */
+  release(paths: string[]): void {
+    for (const path of paths) {
+      this.files.delete(path);
+    }
+  }
+
+  /**
+   * Bytes currently held in JS memory.
+   *
+   * Exposed because this, not wasm linear memory, is what a large bracket
+   * actually consumes. MEMFS keeps file bytes outside the wasm heap (#234), so
+   * `onHeapPeak` measures a per-instance working set that says nothing about
+   * how much the run is accumulating. See #232.
+   */
+  retainedBytes(): number {
+    let total = 0;
+    for (const file of this.files.values()) {
+      total += file.byteLength;
+    }
+    return total;
+  }
+
   async run(tool: string, args: string[], io?: ToolIo): Promise<ToolResult> {
     const factory = await this.factoryFor(tool);
 

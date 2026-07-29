@@ -53,6 +53,21 @@ export interface ToolResult {
 export interface ToolRunner {
   exists: (path: string) => Promise<boolean>;
   readFile: (path: string) => Promise<Uint8Array>;
+  /**
+   * Discards files the pipeline will not read again.
+   *
+   * Optional because it is an optimisation: an implementation that ignores it
+   * is still correct, just heavier. It exists because the RAW path is the one
+   * place the working set is large enough to matter. Converting a 10-frame CR2
+   * bracket produces ten 67 MB TIFFs, and once `hdrgen` has merged them
+   * neither they nor the ten source files are named by any later stage --
+   * about 900 MB of a ~1.1 GB peak, held to the end of the run for nothing.
+   *
+   * Releasing a path that is still needed is a bug in the caller, not
+   * something implementations defend against, so it is called only where the
+   * orchestrator can name the files it consumed.
+   */
+  release?: (paths: string[]) => void;
   run: (tool: string, args: string[], io?: ToolIo) => Promise<ToolResult>;
   /** Write a file into the virtual filesystem shared with `run`. */
   writeFile: (path: string, data: Uint8Array | string) => Promise<void>;
