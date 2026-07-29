@@ -7,7 +7,7 @@
 [![Next.js](https://img.shields.io/badge/Next.js-v15.3.5-%23000000?logo=nextdotjs)](https://nextjs.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-v3.3.0-%2306B6D4?logo=tailwindcss)](https://tailwindcss.com/)
 
-This application provides a graphical user interface for the creation and calibration of High Dynamic Range (HDR) images using Radiance, `hdrgen`, and `dcraw_emu` according to the pipeline process published [here](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319). The program works by taking in multiple LDR image files as well as some calibration information related to the camera/lens used, in order to return calibrated HDR images, also called luminance maps. The application is intended for lighting and daylighting professionals or researchers who are interested in studying the indoor visual environment and especially discomfort glare.
+This application provides a graphical user interface for the creation and calibration of High Dynamic Range (HDR) images. It runs Radiance, `hdrgen` and `dcraw_emu` internally, as WebAssembly, so none of them has to be installed. It follows the pipeline process published [here](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319). The program works by taking in multiple LDR image files as well as some calibration information related to the camera/lens used, in order to return calibrated HDR images, also called luminance maps. The application is intended for lighting and daylighting professionals or researchers who are interested in studying the indoor visual environment and especially discomfort glare.
 
 ## Supported Platforms
 
@@ -17,7 +17,9 @@ This application provides a graphical user interface for the creation and calibr
 
 ## Getting Started
 
-Install [Radiance](https://www.radiance-online.org/) and [hdrgen](http://www.anyhere.com/) to your local machine and note where these tools are located (the folder path). After these dependencies have been installed, install the [HDRI Calibration Interface](https://github.com/radiantlab/HDRICalibrationTool/releases/latest) for your operating system. The binary for dcraw_emu is already included with the application (see Acknowledgements & Licensing below).
+Install the [HDRI Calibration Interface](https://github.com/radiantlab/HDRICalibrationTool/releases/latest) for your operating system. That is the whole of it.
+
+**There is nothing else to install and no paths to configure.** Radiance, `hdrgen` and `dcraw_emu` all ship inside the application, compiled to WebAssembly, and run there. Earlier versions required you to install Radiance and `hdrgen` yourself and tell the app where they were; that step is gone. The Settings page reports which version of each is in use.
 
 Note that the binaries are unsigned and might be flagged as untrusted by your operating system. On macOS, you need to right click on the application and select Open to have the option to run it.
 
@@ -39,7 +41,7 @@ Upload the calibration files for the remaining fields. These should have a `.cal
 
 ### Settings
 
-Click on the settings tab in the left hand navigation sidebar and you should see a settings display appear. For the Radiance path, give the path to the Radiance binaries. This would be something like `/usr/local/radiance/bin/` on macOS/Ubuntu and `C:\Radiance\bin` on Windows. For `hdrgen`, provide the path to the directory where these binaries are installed. This should be something like `/usr/local/bin` on macOS/Ubuntu. Lastly, the output should point to the folder to which you want the output images to be saved to.
+Click on the settings tab in the left hand navigation sidebar. The only path to set is the output folder, where generated images are saved. The page also reports the versions of the app and of the image-processing tools built into it.
 
 ### Generate Images
 
@@ -64,11 +66,13 @@ This project leverages [Tauri](https://tauri.app/) with [Rust](https://www.rust-
 - [Next.js](https://nextjs.org/)
 - [Tailwind CSS](https://tailwindcss.com/docs/guides/nextjs)
 
-It also relies on the following software/binaries:
+The image-processing tools are built from forks we maintain and committed as
+WebAssembly in `public/wasm/`. Rebuilding them is only necessary when bumping
+one of these; see [`public/wasm/README.md`](./public/wasm/README.md).
 
-- [Radiance](https://github.com/LBNL-ETA/Radiance)
-- [hdrgen](https://github.com/radiance-org/hdrgen)
-- [dcraw_emu](https://www.libraw.org/)
+- [radiantlab/Radiance](https://github.com/radiantlab/Radiance) — fork of [LBNL-ETA/Radiance](https://github.com/LBNL-ETA/Radiance)
+- [radiantlab/hdrgen](https://github.com/radiantlab/hdrgen)
+- [radiantlab/LibRaw](https://github.com/radiantlab/LibRaw) (`dcraw_emu`) — fork of [LibRaw/LibRaw](https://github.com/LibRaw/LibRaw)
 
 Contributions are currently limited to those working on the Architectural Lighting Design Capstone Project at Oregon State University. If you are interested in contributing, please contact the project authors.
 
@@ -113,7 +117,7 @@ npm run tauri build -- --target universal-apple-darwin
 
 ## Acknowledgements & Licensing
 
-This app builds upon the scene processing and simulation strengths of existing programs such as Radiance, `hdrgen`, and LibRaw.
+This app builds upon the scene processing and simulation strengths of existing programs such as Radiance, `hdrgen`, and LibRaw. All three are compiled to WebAssembly from the forks listed below and shipped with the application, so it has no external dependencies.
 
 The application itself is licensed **GPL-3.0** (see [`LICENSE`](./LICENSE)). It incorporates:
 

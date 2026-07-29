@@ -4,7 +4,7 @@
 
 ## 1. Overview
 
-The HDRI Calibration Tool is a cross-platform desktop application (Tauri 2 + Next.js) that turns a bracketed set of low dynamic range (LDR) photographs into a calibrated high dynamic range (HDR) luminance map. It wraps three external command-line tools — [Radiance](https://www.radiance-online.org/), `hdrgen`, and `dcraw_emu` — behind a guided GUI pipeline, following the calibration process published in [Pierson et al., 2019](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319).
+The HDRI Calibration Tool is a cross-platform desktop application (Tauri 2 + Next.js) that turns a bracketed set of low dynamic range (LDR) photographs into a calibrated high dynamic range (HDR) luminance map. It runs three image-processing tools — [Radiance](https://www.radiance-online.org/), `hdrgen`, and `dcraw_emu` — behind a guided GUI pipeline, following the calibration process published in [Pierson et al., 2019](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319). All three are compiled to WebAssembly and ship inside the application, so there is nothing to install and no tool paths to configure.
 
 **Target users:** lighting/daylighting researchers and professionals studying the indoor visual environment, particularly discomfort glare, who need calibrated luminance data without hand-driving Radiance/hdrgen from the command line.
 
@@ -90,7 +90,8 @@ Known constraint carried over from the legacy viewer: full desktop support depen
 
 `src/app/settings-page/page.tsx`
 
-- Configurable filesystem paths for the three external tools: Radiance, `hdrgen`, `dcraw_emu`.
+- Output folder. There are no tool paths to configure: every tool ships with the app.
+- Reports the app, Tauri, Radiance, `hdrgen` and LibRaw versions, read from `public/wasm/versions.json`.
 - Configurable default output directory.
 - Experience-level preference (`standard` vs. presumably an advanced mode — surfaced in state, UI still minimal).
 - App/Tauri version display, sourced live from the Tauri API.
@@ -112,4 +113,4 @@ Known constraint carried over from the legacy viewer: full desktop support depen
 - Only one image set can be run through the pipeline per submission; the code has an explicit `TODO` for batch processing of multiple sets.
 - Falsecolor HDR rendering and multi-image memory cleanup were flagged as unresolved issues in earlier iterations of the image viewer (PR #218); verify these are resolved in the current (#223) implementation before relying on them for large viewing sessions.
 - The Image Viewer's WebDriver-based end-to-end test (`e2e-tests/`) uses `@wdio/tauri-service`'s embedded driver, which supports Windows, Linux, and macOS. It runs in CI on Windows and Linux as a non-blocking job (not yet a required check).
-- Vendored, bundled Radiance/`hdrgen` binaries (eliminating the separate install step in the README) are in progress but not yet merged (PR #207).
+- ~~Vendored, bundled Radiance/`hdrgen` binaries~~ — superseded. The tools are compiled to WebAssembly and run in-process rather than being bundled as executables, which removes the install step and the tool-path settings entirely. See the WebAssembly port epic (#227).
