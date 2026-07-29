@@ -70,6 +70,17 @@ function call(invocations: Invocation[], index: number): Invocation {
   return found;
 }
 
+function defaultStdout(tool: string): string {
+  if (tool === "evalglare") {
+    return "1234.5\n";
+  }
+  if (tool === "pextrem") {
+    // falsecolor parses these two lines to label the extrema.
+    return "193 207 3.070068e-02 3.118896e-02 1.995850e-02\n211 202 1.292969e+00 1.308594e+00 1.300781e+00\n";
+  }
+  return "";
+}
+
 class FakeRunner implements ToolRunner {
   readonly calls: Invocation[] = [];
   readonly files = new Map<string, Uint8Array>();
@@ -114,7 +125,7 @@ class FakeRunner implements ToolRunner {
     return Promise.resolve({
       code: override.code ?? 0,
       stderr: override.stderr ?? "",
-      stdout: override.stdout ?? (tool === "evalglare" ? "1234.5\n" : ""),
+      stdout: override.stdout ?? defaultStdout(tool),
     });
   }
 
@@ -179,7 +190,11 @@ describe("stage ordering", () => {
     const runner = new FakeRunner();
     await runPipeline({ params: params(), runner });
 
-    expect(runner.toolsInOrder()).toEqual([
+    // falsecolor is not a tool -- it is a TypeScript reimplementation that
+    // drives pcomb/pcompos/psign/pextrem -- so the stage sequence is the
+    // prefix up to it, and its own calls follow.
+    const stages = runner.toolsInOrder();
+    expect(stages.slice(0, 7)).toEqual([
       "hdrgen",
       "ra_xyze",
       "pcompos",
@@ -187,8 +202,8 @@ describe("stage ordering", () => {
       "getinfo", // view angles
       "evalglare",
       "getinfo", // results
-      "falsecolor",
     ]);
+    expect(stages.slice(7)).toContain("pextrem");
   });
 
   it("writes the view header BEFORE evalglare reads it", async () => {
@@ -220,7 +235,11 @@ describe("stage ordering", () => {
       runner,
     });
 
-    const pcomb = runner.callsTo("pcomb");
+    // falsecolor drives pcomb too, so count only the correction stages --
+    // the ones writing a correction output.
+    const pcomb = runner
+      .callsTo("pcomb")
+      .filter((invocation) => !invocation.io?.stdout?.includes("/fc_"));
     expect(pcomb).toHaveLength(2);
     expect(call(pcomb, 0).args).toEqual([
       "-f",

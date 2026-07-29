@@ -10,11 +10,11 @@
  * lets the whole sequence be tested without wasm, binaries or a filesystem.
  */
 
+import { falsecolor } from "./falsecolor";
 import {
   cropArgs,
   dcrawArgs,
   evalglareArgs,
-  falsecolorArgs,
   hdrgenArgs,
   headerEditingArgs,
   nullifyExposureArgs,
@@ -328,22 +328,20 @@ export async function runPipeline({
   advance();
 
   // ---- false colour ------------------------------------------------------
+  // falsecolor is a TypeScript reimplementation rather than a wasm tool: the
+  // original is a Perl script, so it has no wasm build. It drives
+  // pcomb/pcompos/psign/pextrem through this same runner. See #230.
   step("falsecolor", "Generating false colour image");
-  await run(
-    runner,
-    "falsecolor",
-    falsecolorArgs(
-      {
-        legendHeight: params.legendHeight,
-        legendWidth: params.legendWidth,
-        scaleLabel: params.scaleLabel,
-        scaleLevels: params.scaleLevels,
-        scaleLimit: params.scaleLimit,
-      },
-      workPath("header_editing.hdr")
-    ),
-    { stdout: workPath("falsecolor.hdr") }
-  );
+  await falsecolor(runner, {
+    argv: falsecolorArgv(params),
+    input: workPath("header_editing.hdr"),
+    legendHeight: params.legendHeight,
+    legendWidth: params.legendWidth,
+    output: workPath("falsecolor.hdr"),
+    scaleLabel: params.scaleLabel,
+    scaleLevels: params.scaleLevels,
+    scaleLimit: params.scaleLimit,
+  });
   advance();
 
   emit({
@@ -358,6 +356,39 @@ export async function runPipeline({
     falsecolorPath: workPath("falsecolor.hdr"),
     outputPath: workPath("header_editing.hdr"),
   };
+}
+
+/**
+ * The argument list falsecolor records in the picture header.
+ *
+ * Only ever written into the header, but it is what tells whoever opens the
+ * file later how it was produced, so it mirrors what the Rust pipeline passed
+ * on the command line.
+ */
+function falsecolorArgv(params: PipelineParams): string[] {
+  const argv =
+    params.scaleLabel === ""
+      ? ["-e"]
+      : [
+          "-s",
+          params.scaleLimit,
+          "-l",
+          params.scaleLabel,
+          "-n",
+          params.scaleLevels,
+          "-e",
+        ];
+  const width = Number.parseInt(params.legendWidth.trim(), 10);
+  const height = Number.parseInt(params.legendHeight.trim(), 10);
+  if (
+    Number.isInteger(width) &&
+    Number.isInteger(height) &&
+    width > 0 &&
+    height > 0
+  ) {
+    argv.push("-lw", String(width), "-lh", String(height));
+  }
+  return [...argv, "-i"];
 }
 
 function validate(params: PipelineParams): void {

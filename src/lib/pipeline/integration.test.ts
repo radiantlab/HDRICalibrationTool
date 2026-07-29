@@ -54,6 +54,17 @@ function fakeToolchain(): {
         callMain: (args: string[]) => {
           ran.push({ args, tool });
 
+          if (tool === "pextrem") {
+            // falsecolor parses these two lines to label the extrema.
+            if (stdoutPath) {
+              write(
+                stdoutPath,
+                "193 207 3.070068e-02 3.118896e-02 1.995850e-02\n211 202 1.292969e+00 1.308594e+00 1.300781e+00\n"
+              );
+            }
+            return 0;
+          }
+
           if (tool === "evalglare") {
             printErr?.("warning: search radius less than 3 pixels");
             if (stdoutPath) {
@@ -173,7 +184,8 @@ describe("orchestrator over the wasm runner", () => {
       runner,
     });
 
-    expect(toolchain.ran.map((call) => call.tool)).toEqual([
+    const tools = toolchain.ran.map((call) => call.tool);
+    expect(tools.slice(0, 7)).toEqual([
       "hdrgen",
       "ra_xyze",
       "pcompos",
@@ -181,8 +193,10 @@ describe("orchestrator over the wasm runner", () => {
       "getinfo",
       "evalglare",
       "getinfo",
-      "falsecolor",
     ]);
+    // falsecolor follows as its own tool calls, not as a "falsecolor" tool
+    expect(tools).toContain("pextrem");
+    expect(tools).not.toContain("falsecolor");
     expect(result.computedVerticalIlluminance).toBe("1234.5");
     expect(events.at(-1)).toMatchObject({ kind: "done", progress: 100 });
   });
