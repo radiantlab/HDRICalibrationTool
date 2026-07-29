@@ -64,14 +64,58 @@ export type ModuleLoader = (tool: string) => Promise<ModuleFactory>;
  * The builds are `-sMODULARIZE=1 -sEXPORT_ES6=1`, so the default export is the
  * factory. Only usable where dynamic `import()` of a URL works, which is the
  * browser and the Tauri webview but not Jest -- tests inject their own loader.
+ *
+ * The browser's own failure for a bad dynamic import is "Importing a module
+ * script failed", with no indication of which module or why. Since the module
+ * is same-origin and fetchable, a HEAD first turns the common causes -- wrong
+ * base URL, a stale build without the artifacts, the app pointed at a
+ * different dev-server port -- into a message that names them, and leaves a
+ * genuine parse or CSP failure reported as itself.
  */
 export function urlModuleLoader(baseUrl: string): ModuleLoader {
   return async (tool: string) => {
-    const module = (await import(
-      /* webpackIgnore: true */ `${baseUrl}/${tool}.js`
-    )) as { default: ModuleFactory };
-    return module.default;
+    const url = `${baseUrl}/${tool}.js`;
+    await assertReachable(url, tool);
+    try {
+      const module = (await import(
+        /* webpackIgnore: true */ /* turbopackIgnore: true */ url
+      )) as { default: ModuleFactory };
+      return module.default;
+    } catch (error) {
+      throw new Error(
+        `${tool}: ${url} is served but could not be imported as a module ` +
+          `(${describe(error)}). The file is reachable, so this is a parse or ` +
+          "policy failure rather than a missing artifact.",
+        { cause: error }
+      );
+    }
   };
+}
+
+async function assertReachable(url: string, tool: string): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(url, { method: "HEAD" });
+  } catch (error) {
+    throw new Error(
+      `${tool}: could not reach ${url} (${describe(error)}). ` +
+        `Expected it at ${new URL(url, globalThis.location?.href ?? "http://localhost").href}. ` +
+        "Check that the app is served from the same origin as public/wasm/.",
+      { cause: error }
+    );
+  }
+  if (!response.ok) {
+    throw new Error(
+      `${tool}: ${url} returned ${response.status}. The wasm artifacts are ` +
+        "missing from this build -- see public/wasm/README.md. If the app is " +
+        "running against a dev server, confirm it is the one serving these " +
+        "files and not a second instance on another port."
+    );
+  }
+}
+
+function describe(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 export interface WasmRunnerOptions {
