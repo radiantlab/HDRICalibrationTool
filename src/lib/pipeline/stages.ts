@@ -155,10 +155,10 @@ export function pcombCalArgs(calFile: string, input: string): string[] {
 /**
  * The photometric adjustment, which additionally passes `-h`.
  *
- * `-h` does **not** suppress pcomb's own command line -- that still appears in
- * the output. It toggles `echoheader` off (`pcomb.c:118`), which stops the
- * *input's* header from being copied through, so everything upstream is
- * discarded here: the camera, hdrgen's record of which frames were merged, the
+ * `-h` does not suppress pcomb's own command line -- that still appears in the
+ * output. It toggles `echoheader` off (`pcomb.c:118`), which stops the input's
+ * header from being copied through, so everything upstream is discarded
+ * here: the camera, hdrgen's record of which frames were merged, the
  * original capture date, `PRIMARIES`, `EXPOSURE`, and the crop and resize
  * lines. A picture processed with calibration files therefore carries less
  * provenance than one processed without, since without them no pcomb stage

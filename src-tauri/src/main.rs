@@ -1,12 +1,9 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-// Import pipeline module
-mod pipeline;
-use pipeline::pipeline;
-
-// Command helper for running CLI tools
-mod command;
+// The image pipeline now runs in the frontend as WebAssembly (src/lib/pipeline),
+// so Tauri is left as a shell for native file access and window management.
+// What remains here serves the image viewer, not the pipeline.
 
 // Command to convert raw image into tiff image
 mod raw_image_help;
@@ -33,7 +30,6 @@ fn main() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
-            pipeline,
             convert_raw_img,
             read_hdr_metadata
         ])

@@ -1,14 +1,14 @@
 /**
- * Runs the WebAssembly pipeline from the desktop app.
+ * Runs the image pipeline from the desktop app.
  *
  * This is the adapter between the host and `src/lib/pipeline/`, and the only
  * place the two meet. It lives here rather than under `src/lib/pipeline/`
  * deliberately: that directory must not import `@tauri-apps/*`, because the
  * same code has to run in a browser with no Tauri at all.
  *
- * Nothing here replaces the Rust pipeline. Both are available, and which one
- * runs is a setting, so the two can be compared on the same image set before
- * the Rust one is removed (#233).
+ * This is now the only pipeline. It ran alongside the Rust one until both were
+ * compared on the reference JPEG and CR2 brackets (#231, #237); the Rust one
+ * was removed at #233.
  */
 
 import { emit } from "@tauri-apps/api/event";
@@ -34,13 +34,6 @@ const TRAILING_SEPARATOR = /[\\/]+$/;
 /** Where the browser builds are served from. See `public/wasm/README.md`. */
 const WASM_BASE_URL = "/wasm";
 
-/**
- * The payload `buildPipelineParams` produces.
- *
- * It still carries the four tool paths, which mean nothing here -- the tools
- * are wasm modules. They are accepted and ignored rather than removed, so the
- * call site can hand the same object to either pipeline while both exist.
- */
 /** The numeric fields the form can leave empty. */
 type RequiredNumericField =
   | "diameter"
@@ -53,7 +46,6 @@ type RequiredNumericField =
 
 export interface BuiltPipelineParams
   extends Omit<PipelineParams, RequiredNumericField> {
-  dcrawEmuPath?: string;
   /**
    * Nullable because the form's numeric inputs are, until they are filled in.
    * The Rust command takes f64 and would fail on a null just as surely; the
@@ -62,10 +54,8 @@ export interface BuiltPipelineParams
    */
   diameter: number | null;
   filterImages?: boolean;
-  hdrgenPath?: string;
   horizontalAngle: number | null;
   outputPath: string;
-  radiancePath?: string;
   verticalAngle: number | null;
   xdim: number | null;
   xleft: number | null;

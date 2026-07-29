@@ -128,19 +128,6 @@ export default function SettingsPage() {
             */}
             {[
               {
-                id: "radiancePath",
-                label: "Radiance",
-                placeholder: "This path is required",
-                value: localSettings.radiancePath,
-              },
-              {
-                id: "hdrgenPath",
-                label: "hdrgen (optional)",
-                placeholder:
-                  "This path is optional, only enter a new path if you wish to override the included hdrgen binary",
-                value: localSettings.hdrgenPath,
-              },
-              {
                 id: "dcrawEmuPath",
                 label: "dcraw_emu (optional)",
                 placeholder:
@@ -258,38 +245,6 @@ export default function SettingsPage() {
               </div>
             ))}
 
-            <div className="mt-6 border-gray-300 border-t pt-4">
-              <label
-                className="flex items-start gap-2"
-                htmlFor="useWasmPipeline"
-              >
-                <input
-                  checked={localSettings.useWasmPipeline ?? false}
-                  className="mt-1"
-                  id="useWasmPipeline"
-                  name="useWasmPipeline"
-                  onChange={(event) => {
-                    setLocalSettings({
-                      ...localSettings,
-                      useWasmPipeline: event.currentTarget.checked,
-                    });
-                    setSaveDisabled(false);
-                  }}
-                  type="checkbox"
-                />
-                <span>
-                  <span className="block font-semibold">
-                    Use the built-in WebAssembly pipeline (experimental)
-                  </span>
-                  <span className="block text-sm">
-                    Runs Radiance and hdrgen inside the app, so the three paths
-                    above are not used. Being validated against the existing
-                    pipeline; RAW input is not supported yet, so JPEG and TIFF
-                    sets only.
-                  </span>
-                </span>
-              </label>
-            </div>
           </div>
         </div>
       </main>

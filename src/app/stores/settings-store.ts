@@ -12,29 +12,17 @@ import { createJSONStorage, persist } from "zustand/middleware";
 /**
  * Interface defining the application settings
  *
- * @property radiancePath - Path to the Radiance binary directory
- * @property hdrgenPath - Path to the HDRGen binary
- * @property dcrawEmuPath - Path to the dcraw_emu binary
+ * @property dcrawEmuPath - Path to the dcraw_emu binary, used by the image
+ *   viewer's RAW preview only. The pipeline runs as WebAssembly and locates no
+ *   binaries at all; the Radiance and hdrgen paths this once held are gone,
+ *   which is what resolves the "dependencies are hard to set up" complaint.
  * @property outputPath - Default path for output files
  * @property osPlatform - Operating system platform (windows, darwin, linux)
  */
 interface Settings {
   dcrawEmuPath: string;
-  hdrgenPath: string;
   osPlatform: string;
   outputPath: string;
-  radiancePath: string;
-  /**
-   * Run the WebAssembly pipeline instead of the Rust one.
-   *
-   * Temporary, and off by default: it exists so the two can be compared on the
-   * same image set before the Rust pipeline is removed
-   * (radiantlab/HDRICalibrationTool#233). Once the WebAssembly path is proven
-   * this setting goes, along with the three tool paths above -- which is the
-   * change that actually resolves the "dependencies are hard to set up"
-   * complaint.
-   */
-  useWasmPipeline: boolean;
 }
 
 /**
@@ -68,20 +56,28 @@ export const useSettingsStore = create<SettingsStore>()(
       // Initial default empty settings
       settings: {
         dcrawEmuPath: "",
-        hdrgenPath: "",
         osPlatform: "",
         outputPath: "",
-        radiancePath: "",
-        useWasmPipeline: false,
       },
     }),
     {
       // Zustand shallow-merges at the top level, so a persisted `settings`
-      // object replaces the defaults wholesale. A field added after a user
-      // last saved therefore arrives as undefined rather than its default,
-      // which is why `useWasmPipeline` is read defensively at its use sites.
-      // Safe here because undefined is falsy and the Rust pipeline is the
-      // fallback; a setting whose default were `true` would need a migration.
+      // object replaces the defaults wholesale. Two consequences worth
+      // knowing, in opposite directions:
+      //
+      //  - A field *added* after a user last saved arrives as undefined rather
+      //    than as its default, so anything new must either tolerate undefined
+      //    or ship a migration.
+      //  - A field *removed* stays in the persisted object indefinitely.
+      //    `radiancePath`, `hdrgenPath` and `useWasmPipeline` are therefore
+      //    still in existing users' localStorage. That is harmless -- nothing
+      //    reads them and the extra keys are inert -- and deliberately not
+      //    cleaned up, since a migration that rewrites stored settings is more
+      //    risk than three dead strings.
+      //
+      // `useWasmPipeline` in particular must not be revived as a dispatch:
+      // anyone who explicitly set it false still has false persisted, and
+      // there is no longer another pipeline to fall back to.
       name: "hdr-settings",
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

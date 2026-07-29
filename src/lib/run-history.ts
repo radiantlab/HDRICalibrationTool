@@ -16,7 +16,15 @@ export interface RunRecord {
   /** Why a run failed or was rejected. Null when it succeeded. */
   reason: string | null;
   startedAt: string;
-  toolPaths: {
+  /**
+   * Where the pipeline's binaries lived, on runs old enough to have had any.
+   *
+   * Optional because nothing records it any more: the pipeline is WebAssembly
+   * shipped with the app, so there is no path to capture and nothing a
+   * different machine would need in order to reproduce a run. Kept on the type
+   * so history written before the cutover still parses.
+   */
+  toolPaths?: {
     dcrawEmu: string;
     hdrgen: string;
     radiance: string;

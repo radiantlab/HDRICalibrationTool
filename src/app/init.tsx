@@ -2,8 +2,9 @@
  * Initialization component for the HDRI Calibration Tool.
  *
  * This component is responsible for setting up the application's initial state.
- * It queries the operating system platform, sets default paths based on the platform,
- * and loads saved binary paths from storage.
+ * It queries the operating system platform and sets up the default output
+ * directory. It used to guess where Radiance had been installed as well; the
+ * pipeline is WebAssembly now, so there is nothing to locate.
  */
 "use client";
 
@@ -41,11 +42,6 @@ const Initialization: React.FC = () => {
           console.log("OS platform successfully queried:", osPlatform);
         }
 
-        const radianceDefaultPath =
-          osPlatform === "windows"
-            ? "C:\\Radiance\\bin"
-            : "/usr/local/radiance/bin";
-
         let outputDefaultPath = settings.outputPath;
         if (!outputDefaultPath) {
           try {
@@ -69,10 +65,8 @@ const Initialization: React.FC = () => {
           ...settings,
           osPlatform,
           outputPath: outputDefaultPath || settings.outputPath,
-          radiancePath: settings.radiancePath || radianceDefaultPath,
         };
         const needsUpdate =
-          nextSettings.radiancePath !== settings.radiancePath ||
           nextSettings.outputPath !== settings.outputPath ||
           nextSettings.osPlatform !== settings.osPlatform;
 

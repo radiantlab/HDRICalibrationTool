@@ -13,7 +13,6 @@
  */
 "use client";
 
-import { invoke } from "@tauri-apps/api/core";
 import { documentDir, join } from "@tauri-apps/api/path";
 import { mkdir, writeTextFile } from "@tauri-apps/plugin-fs";
 import { revealItemInDir } from "@tauri-apps/plugin-opener";
@@ -335,12 +334,7 @@ export default function Home() {
             // The log still holds the previous run's transcript at this point,
             // since clearLog only runs once the checks have passed.
             const logAtSubmit = logRef.current.length;
-            const toolSettings = {
-              dcrawEmuPath: settings.dcrawEmuPath,
-              hdrgenPath: settings.hdrgenPath,
-              outputPath: settings.outputPath,
-              radiancePath: settings.radiancePath,
-            };
+            const toolSettings = { outputPath: settings.outputPath };
 
             // Every attempt is recorded, including ones turned away before the
             // backend ran: those are the ones worth looking back at when an
@@ -375,11 +369,6 @@ export default function Home() {
                 presetName: null,
                 reason: failure,
                 startedAt,
-                toolPaths: {
-                  dcrawEmu: settings.dcrawEmuPath,
-                  hdrgen: settings.hdrgenPath,
-                  radiance: settings.radiancePath,
-                },
               }).catch(() => undefined);
             };
 
@@ -517,21 +506,10 @@ export default function Home() {
                     set.name
                   );
                   try {
-                    // Two pipelines exist while the WebAssembly one is being
-                    // validated against the Rust one on real image sets. Both
-                    // take the same params, emit the same status events and
-                    // name their outputs identically, so nothing downstream of
-                    // this line can tell them apart -- which is what makes the
-                    // comparison worth anything. See #231; the Rust path and
-                    // this setting both go at #233.
-                    if (settings.useWasmPipeline) {
-                      await runWasmPipeline({
-                        params,
-                        shouldStop: () => stopRequestedRef.current,
-                      });
-                    } else {
-                      await invoke<string>("pipeline", params);
-                    }
+                    await runWasmPipeline({
+                      params,
+                      shouldStop: () => stopRequestedRef.current,
+                    });
                     await recordAttempt(
                       null,
                       getOutputs().slice(outputsBefore),
