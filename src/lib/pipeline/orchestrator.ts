@@ -34,6 +34,12 @@ import {
   type ToolResult,
   type ToolRunner,
 } from "./types";
+import {
+  calWarning,
+  evaluateValidity,
+  resolutionDependentConstants,
+  validityMessage,
+} from "./warnings";
 
 /**
  * Stages that report progress: merge, nullify, crop, header (view), evalglare,
@@ -69,6 +75,16 @@ const RAW_EXTENSIONS = new Set([
 export function isRawImage(name: string): boolean {
   const dot = name.lastIndexOf(".");
   return dot !== -1 && RAW_EXTENSIONS.has(name.slice(dot + 1).toLowerCase());
+}
+
+interface Correction {
+  cal: string;
+  /** Label for the resolution check, or null when the file has no geometry. */
+  checkResolution: string | null;
+  message: string;
+  output: string;
+  step: string;
+  suppressHeader: boolean;
 }
 
 export interface PipelineResult {
@@ -175,6 +191,11 @@ export async function runPipeline({
 
   let next = "crop.hdr";
 
+  // The resolution the .cal files will be applied at. The geometric ones are
+  // checked against this, so it has to follow the resize.
+  let workingWidth = params.diameter;
+  let workingHeight = params.diameter;
+
   // ---- resize, only when the mask is larger than the target --------------
   if (params.diameter > 1000) {
     step("resize", "Resizing HDR image");
@@ -187,52 +208,73 @@ export async function runPipeline({
       }
     );
     next = "resize.hdr";
+    workingWidth = params.xdim;
+    workingHeight = params.ydim;
   }
   checkStop();
 
   // ---- the four .cal corrections, each applied only when supplied --------
-  const corrections: [string, string, string, string, boolean][] = [
-    [
-      "projection_adjustment",
-      "Applying projection adjustment",
-      params.fisheyeCorrectionCal,
-      "projection_adjustment.hdr",
-      false,
-    ],
-    [
-      "vignetting_correction",
-      "Applying vignetting correction",
-      params.vignettingCorrectionCal,
-      "vignetting_correction.hdr",
-      false,
-    ],
-    [
-      "neutral_density",
-      "Applying neutral density correction",
-      params.neutralDensityCal,
-      "neutral_density.hdr",
-      false,
-    ],
-    [
-      "photometric_adjustment",
-      "Applying photometric adjustment",
-      params.photometricAdjustmentCal,
-      "photometric_adjustment.hdr",
-      true,
-    ],
+  const corrections: Correction[] = [
+    {
+      // Only the two geometric files are resolution-checked: a photometric
+      // factor or a neutral density transmittance has no pixel coordinates to
+      // get wrong.
+      cal: params.fisheyeCorrectionCal,
+      checkResolution: "fisheye",
+      message: "Applying projection adjustment",
+      output: "projection_adjustment.hdr",
+      step: "projection_adjustment",
+      suppressHeader: false,
+    },
+    {
+      cal: params.vignettingCorrectionCal,
+      checkResolution: "vignetting",
+      message: "Applying vignetting correction",
+      output: "vignetting_correction.hdr",
+      step: "vignetting_correction",
+      suppressHeader: false,
+    },
+    {
+      cal: params.neutralDensityCal,
+      checkResolution: null,
+      message: "Applying neutral density correction",
+      output: "neutral_density.hdr",
+      step: "neutral_density",
+      suppressHeader: false,
+    },
+    {
+      cal: params.photometricAdjustmentCal,
+      checkResolution: null,
+      message: "Applying photometric adjustment",
+      output: "photometric_adjustment.hdr",
+      step: "photometric_adjustment",
+      suppressHeader: true,
+    },
   ];
 
-  for (const [name, message, cal, output, suppressHeader] of corrections) {
-    if (cal === "") {
+  for (const correction of corrections) {
+    if (correction.cal === "") {
       continue;
     }
-    step(name, message);
-    const args = suppressHeader
-      ? photometricArgs(cal, workPath(next))
-      : pcombCalArgs(cal, workPath(next));
-    // biome-ignore lint/performance/noAwaitInLoops: each correction consumes the previous one's output, so these are sequential by definition
-    await run(runner, "pcomb", args, { stdout: workPath(output) });
-    next = output;
+    step(correction.step, correction.message);
+
+    if (correction.checkResolution) {
+      // biome-ignore lint/performance/noAwaitInLoops: this loop is sequential by definition -- each correction consumes the previous one's output, and the check reads the file this iteration is about to apply
+      await warnIfResolutionDependent(
+        runner,
+        emit,
+        correction.checkResolution,
+        correction.cal,
+        workingWidth,
+        workingHeight
+      );
+    }
+
+    const args = correction.suppressHeader
+      ? photometricArgs(correction.cal, workPath(next))
+      : pcombCalArgs(correction.cal, workPath(next));
+    await run(runner, "pcomb", args, { stdout: workPath(correction.output) });
+    next = correction.output;
     checkStop();
   }
 
@@ -259,6 +301,12 @@ export async function runPipeline({
   const computedVerticalIlluminance = await runEvalglare(runner, params);
   advance();
   checkStop();
+
+  reportValidity(
+    emit,
+    computedVerticalIlluminance,
+    params.measuredVerticalIlluminance
+  );
 
   step("header_editing", "Writing results to HDR header");
   await run(
@@ -396,6 +444,89 @@ async function runEvalglare(
     kind: "command",
     stderr: result.stderr,
     tool: "evalglare",
+  });
+}
+
+/**
+ * Warns when a geometry-dependent .cal file cannot adapt to the resolution it
+ * is about to be applied at.
+ *
+ * Advisory only, exactly as in Rust: a hardcoded file may well match, so this
+ * never fails the run. It does not throw even when the file cannot be read --
+ * the correction stage that follows will fail on its own if the path is truly
+ * bad, and reporting the read failure here is more useful than pre-empting it.
+ */
+async function warnIfResolutionDependent(
+  runner: ToolRunner,
+  emit: StatusEmitter,
+  label: string,
+  calPath: string,
+  width: number,
+  height: number
+): Promise<void> {
+  let text: string;
+  try {
+    text = new TextDecoder().decode(await runner.readFile(calPath));
+  } catch (error) {
+    emit({
+      kind: "warning",
+      message: `Could not read the ${label} calibration file ${calPath}: ${error}`,
+      progress: null,
+      step: "cal_check",
+    });
+    return;
+  }
+
+  const constants = resolutionDependentConstants(text);
+  if (constants === null) {
+    return;
+  }
+  emit({
+    kind: "warning",
+    message: calWarning(label, calPath, width, height, constants),
+    progress: null,
+    step: "cal_check",
+  });
+}
+
+/**
+ * Compares the HDR-derived vertical illuminance against a measured one.
+ *
+ * A pass is reported as a `step` rather than a `warning`, so a good result is
+ * not shown to the operator as though something were wrong.
+ */
+function reportValidity(
+  emit: StatusEmitter,
+  rawEvalglareValue: string,
+  measured: number | null | undefined
+): void {
+  if (measured === null || measured === undefined) {
+    return;
+  }
+
+  const trimmed = rawEvalglareValue.trim();
+  const evHdr = Number(trimmed);
+  if (trimmed === "" || !Number.isFinite(evHdr)) {
+    emit({
+      kind: "warning",
+      message:
+        `Could not read a vertical illuminance from evalglare output ${JSON.stringify(trimmed)}; ` +
+        "the validity check was skipped.",
+      progress: null,
+      step: "validity_check",
+    });
+    return;
+  }
+
+  const outcome = evaluateValidity(evHdr, measured);
+  if (!outcome) {
+    return;
+  }
+  emit({
+    kind: outcome.kind === "pass" ? "step" : "warning",
+    message: validityMessage(outcome, evHdr, measured),
+    progress: null,
+    step: "validity_check",
   });
 }
 

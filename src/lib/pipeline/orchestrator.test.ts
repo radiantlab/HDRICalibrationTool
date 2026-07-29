@@ -434,3 +434,146 @@ describe("cancellation", () => {
     expect(runner.toolsInOrder()).toEqual(["hdrgen", "ra_xyze"]);
   });
 });
+
+describe("calibration file resolution warnings", () => {
+  const HARDCODED = "r=sqrt(sq(x-500)+sq(y-500))/500;\nro=sf*ri(1);\n";
+  const ADAPTIVE = "xc : xres/2;\nyc : yres/2;\n";
+
+  const warnings = (events: PipelineStatusPayload[]) =>
+    events.filter((event) => event.kind === "warning");
+
+  it("warns when a geometric .cal cannot adapt to the resolution", async () => {
+    const runner = new FakeRunner();
+    await runner.writeFile("/cal/vignetting.cal", HARDCODED);
+    const events: PipelineStatusPayload[] = [];
+
+    await runPipeline({
+      emit: (payload) => events.push(payload),
+      params: params({ vignettingCorrectionCal: "/cal/vignetting.cal" }),
+      runner,
+    });
+
+    const warning = warnings(events).find(
+      (event) => event.step === "cal_check"
+    );
+    expect(warning?.message).toContain("vignetting.cal");
+    expect(warning?.message).toContain("500");
+  });
+
+  it("stays quiet when the .cal derives its geometry from the picture", async () => {
+    const runner = new FakeRunner();
+    await runner.writeFile("/cal/fisheye.cal", ADAPTIVE);
+    const events: PipelineStatusPayload[] = [];
+
+    await runPipeline({
+      emit: (payload) => events.push(payload),
+      params: params({ fisheyeCorrectionCal: "/cal/fisheye.cal" }),
+      runner,
+    });
+
+    expect(warnings(events)).toHaveLength(0);
+  });
+
+  it("reports the resolution AFTER the resize, not the mask diameter", async () => {
+    // The correction is applied to the resized picture, so 1000x1000 is the
+    // resolution the constants have to match -- not the 3612 mask.
+    const runner = new FakeRunner();
+    await runner.writeFile("/cal/vignetting.cal", HARDCODED);
+    const events: PipelineStatusPayload[] = [];
+
+    await runPipeline({
+      emit: (payload) => events.push(payload),
+      params: params({ vignettingCorrectionCal: "/cal/vignetting.cal" }),
+      runner,
+    });
+
+    expect(
+      warnings(events).find((event) => event.step === "cal_check")?.message
+    ).toContain("1000x1000");
+  });
+
+  it("does not check the non-geometric corrections", async () => {
+    // A photometric factor has no pixel coordinates to get wrong.
+    const runner = new FakeRunner();
+    await runner.writeFile("/cal/cf.cal", HARDCODED);
+    const events: PipelineStatusPayload[] = [];
+
+    await runPipeline({
+      emit: (payload) => events.push(payload),
+      params: params({
+        neutralDensityCal: "/cal/cf.cal",
+        photometricAdjustmentCal: "/cal/cf.cal",
+      }),
+      runner,
+    });
+
+    expect(warnings(events)).toHaveLength(0);
+  });
+
+  it("warns but does not fail when the .cal cannot be read", async () => {
+    const runner = new FakeRunner();
+    const events: PipelineStatusPayload[] = [];
+
+    // never written, so readFile rejects
+    await runPipeline({
+      emit: (payload) => events.push(payload),
+      params: params({ fisheyeCorrectionCal: "/cal/missing.cal" }),
+      runner,
+    });
+
+    expect(
+      warnings(events).find((event) => event.step === "cal_check")?.message
+    ).toContain("Could not read the fisheye calibration file");
+    // the run still completed
+    expect(events.at(-1)).toMatchObject({ kind: "done" });
+  });
+});
+
+describe("validity check", () => {
+  const validityEvent = (events: PipelineStatusPayload[]) =>
+    events.find((event) => event.step === "validity_check");
+
+  const runWith = async (
+    evalglareValue: string,
+    measured: number | null
+  ): Promise<PipelineStatusPayload[]> => {
+    const runner = new FakeRunner();
+    runner.results.evalglare = { code: 1, stdout: evalglareValue };
+    const events: PipelineStatusPayload[] = [];
+    await runPipeline({
+      emit: (payload) => events.push(payload),
+      params: params({ measuredVerticalIlluminance: measured }),
+      runner,
+    });
+    return events;
+  };
+
+  it("reports a pass as a step, not a warning", async () => {
+    // A good result should not be shown to the operator as a problem.
+    const event = validityEvent(await runWith("1050\n", 1000));
+    expect(event).toMatchObject({ kind: "step" });
+    expect(event?.message).toContain("Validity check passed");
+  });
+
+  it("reports a failure as a warning", async () => {
+    const event = validityEvent(await runWith("1300\n", 1000));
+    expect(event).toMatchObject({ kind: "warning" });
+    expect(event?.message).toContain("FAILED");
+  });
+
+  it("reports the middle band as a warning too", async () => {
+    const event = validityEvent(await runWith("1150\n", 1000));
+    expect(event).toMatchObject({ kind: "warning" });
+    expect(event?.message).toContain("above the 10% typically expected");
+  });
+
+  it("says nothing when no measurement was supplied", async () => {
+    expect(validityEvent(await runWith("1050\n", null))).toBeUndefined();
+  });
+
+  it("warns when evalglare output is not a number", async () => {
+    const event = validityEvent(await runWith("not a number\n", 1000));
+    expect(event).toMatchObject({ kind: "warning" });
+    expect(event?.message).toContain("the validity check was skipped");
+  });
+});
