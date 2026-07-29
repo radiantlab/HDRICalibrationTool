@@ -1,13 +1,14 @@
 /**
  * Navigation component for the HDRI Calibration Tool.
  *
- * This component provides the application's main navigation bar with links to different sections
- * of the application. It also displays application information such as name and version numbers
- * retrieved from the Tauri API.
+ * This component provides the application's main navigation bar with links to
+ * different sections of the application, and the app's name. Version numbers
+ * live on the Settings page, which also reports the versions of the
+ * image-processing tools.
  */
 "use client";
 
-import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
+import { getName } from "@tauri-apps/api/app";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,19 +22,14 @@ import { useEffect, useState } from "react";
 export default function Navigation() {
   const pathname = usePathname();
 
-  const [appVersion, setAppVersion] = useState<string>("");
   const [appName, setAppName] = useState<string>("");
-  const [tauriVersion, setTauriVersion] = useState<string>("");
 
   useEffect(() => {
-    /**
-     * Retrieves app name, app version, and tauri version from Tauri API
-     * and updates the component state with this information
-     */
+    // Only the name is shown here now. The versions moved to Settings, where
+    // there is room to list the image-processing tools alongside them; three
+    // more lines in the header would have crowded it for no gain.
     async function fetchAppInfo() {
-      setAppVersion(await getVersion());
       setAppName(await getName());
-      setTauriVersion(await getTauriVersion());
     }
 
     fetchAppInfo();
@@ -54,10 +50,7 @@ export default function Navigation() {
             />
             <h1 className="font-bold text-2xl">{appName}</h1>
           </div>
-          {/* Version information display */}
           <div className="text-right text-gray-600 text-sm">
-            <div>App Version: {appVersion}</div>
-            <div>Tauri Version: {tauriVersion}</div>
             {/* The pipeline follows this tutorial step by step, and several
                 fields cite its sections, so the open-access original has to be
                 reachable from inside the app for those citations to be useful. */}

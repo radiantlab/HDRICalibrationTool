@@ -34,13 +34,20 @@ const calibrationFactorPath = fileURLToPath(
 const lensInformationPath = fileURLToPath(
   new URL("../inputs/JPEG/ImageLensInformation.txt", import.meta.url)
 );
-const radiancePath = path.join(
-  process.env.LOCALAPPDATA ?? path.join(os.homedir(), "AppData", "Local"),
-  "HDRICalibrationTool",
-  "tools",
-  "Radiance",
-  "bin"
-);
+// CI downloads Radiance/hdrgen from their official GitHub releases and
+// points these at the extracted bin directories (see the e2e-tests job in
+// .github/workflows/test-on-pr-and-push.yml). The AppData/Local fallback
+// only applies to local runs where the tools happen to be installed there.
+const radiancePath =
+  process.env.E2E_RADIANCE_PATH ??
+  path.join(
+    process.env.LOCALAPPDATA ?? path.join(os.homedir(), "AppData", "Local"),
+    "HDRICalibrationTool",
+    "tools",
+    "Radiance",
+    "bin"
+  );
+const hdrgenPath = process.env.E2E_HDRGEN_PATH ?? "";
 const expectedJpegFileCount = readdirSync(jpegInputDirectory).filter(
   (fileName) => [".jpg", ".jpeg"].includes(path.extname(fileName).toLowerCase())
 ).length;
@@ -162,6 +169,7 @@ async function setTextInputValue(selector: string, value: string) {
 async function setPersistedSettings(nextSettings: {
   outputPath?: string;
   radiancePath?: string;
+  hdrgenPath?: string;
 }) {
   await browser.execute((settingsPatch) => {
     const storageKey = "hdr-settings";
@@ -265,6 +273,7 @@ describe("HDRI Calibration Tool", () => {
     await setPersistedSettings({
       outputPath: tempOutputDirectory,
       radiancePath,
+      hdrgenPath,
     });
     await browser.refresh();
     await browser.waitUntil(

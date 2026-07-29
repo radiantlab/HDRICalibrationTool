@@ -42,6 +42,20 @@ cmake --build build-web --target dcraw_emu -j8
 Then copy the `.js` and `.wasm` outputs here. Radiance and hdrgen put theirs in
 `build-web/bin/`; LibRaw puts them in `build-web/`.
 
+**Then regenerate `versions.json` from the same checkouts:**
+
+```sh
+npm run wasm:versions          # writes versions.json
+npm run wasm:versions:check    # fails if it is stale
+```
+
+The Settings page reads that file to report which Radiance, hdrgen and LibRaw
+these artifacts came from. It has to be generated rather than read at runtime:
+none of the Radiance tools here prints its own version, and `dcraw_emu`'s usage
+banner does not carry LibRaw's. So the file is the only record, and refreshing
+the `.wasm` without it leaves the app confidently reporting the previous
+build.
+
 Do not substitute a NODERAWFS build: it targets node, runs `main()` at
 instantiation before inputs can be staged, and does not export `FS`.
 

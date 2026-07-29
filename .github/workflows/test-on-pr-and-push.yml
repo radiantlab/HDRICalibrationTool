@@ -101,6 +101,11 @@ jobs:
       matrix:
         platform: ['windows-latest', 'ubuntu-22.04']
     runs-on: ${{ matrix.platform }}
+    env:
+      # Pinned to specific releases deliberately -- LBNL-ETA/Radiance tags
+      # every commit to master, so "latest" would be a moving target.
+      RADIANCE_RELEASE_TAG: 39b99660
+      HDRGEN_RELEASE_TAG: v1.0.1
     steps:
       - uses: actions/checkout@v4
 
@@ -117,6 +122,39 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xvfb
+
+      - name: install Radiance and hdrgen (Ubuntu)
+        if: matrix.platform == 'ubuntu-22.04'
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sL -o radiance.zip "https://github.com/LBNL-ETA/Radiance/releases/download/${RADIANCE_RELEASE_TAG}/Radiance_${RADIANCE_RELEASE_TAG}_Linux.zip"
+          unzip -q radiance.zip -d radiance-outer
+          tar xzf radiance-outer/*.tar.gz -C "$RUNNER_TEMP"
+          radiance_bin="$(find "$RUNNER_TEMP" -type d -path '*/radiance/bin' | head -n1)"
+          chmod +x "$radiance_bin"/*
+          echo "E2E_RADIANCE_PATH=$radiance_bin" >> "$GITHUB_ENV"
+
+          mkdir -p "$RUNNER_TEMP/hdrgen"
+          curl -sL -o hdrgen.zip "https://github.com/radiance-org/hdrgen/releases/download/${HDRGEN_RELEASE_TAG}/ubuntu-latest-binaries.zip"
+          unzip -q hdrgen.zip -d "$RUNNER_TEMP/hdrgen"
+          chmod +x "$RUNNER_TEMP/hdrgen"/*
+          echo "E2E_HDRGEN_PATH=$RUNNER_TEMP/hdrgen" >> "$GITHUB_ENV"
+
+      - name: install Radiance and hdrgen (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/radiance"
+          curl -sL -o radiance.zip "https://github.com/LBNL-ETA/Radiance/releases/download/${RADIANCE_RELEASE_TAG}/Radiance_${RADIANCE_RELEASE_TAG}_Windows.zip"
+          unzip -q radiance.zip -d "$RUNNER_TEMP/radiance"
+          echo "E2E_RADIANCE_PATH=$RUNNER_TEMP/radiance/bin" >> "$GITHUB_ENV"
+
+          mkdir -p "$RUNNER_TEMP/hdrgen"
+          curl -sL -o hdrgen.zip "https://github.com/radiance-org/hdrgen/releases/download/${HDRGEN_RELEASE_TAG}/windows-latest-binaries.zip"
+          unzip -q hdrgen.zip -d "$RUNNER_TEMP/hdrgen"
+          echo "E2E_HDRGEN_PATH=$RUNNER_TEMP/hdrgen" >> "$GITHUB_ENV"
 
       - name: install frontend dependencies
         run: npm install

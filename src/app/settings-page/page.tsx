@@ -2,10 +2,14 @@
  * Settings Page Component for the HDRI Calibration Tool.
  *
  * This component allows users to configure application settings including:
- * - External utility paths (Radiance, hdrgen, dcraw_emu)
  * - Output file location
  * - User experience level
  * - Debug console access
+ *
+ * It also reports what this build is made of. There used to be paths here for
+ * Radiance, hdrgen and dcraw_emu, which the user had to install and locate;
+ * every tool now ships with the app as WebAssembly, so the paths are gone and
+ * their versions are shown instead.
  *
  * Settings are saved to persistent storage via Tauri API calls.
  */
@@ -17,6 +21,13 @@ import { openPath } from "@tauri-apps/plugin-opener";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import {
+  TOOL_LABELS,
+  TOOL_ORDER,
+  TOOL_ROLES,
+  type WasmVersions,
+  wasmVersions,
+} from "@/lib/build-versions";
 import { useSettingsStore } from "../stores/settings-store";
 import SettingsButtonBar from "./settings-button-bar";
 
@@ -36,9 +47,11 @@ export default function SettingsPage() {
   const [_experienceLevel, _setExperienceLevel] = useState("standard");
   const [_consoleInput, _setConsoleInput] = useState("");
 
-  const [_appVersion, setAppVersion] = useState<string>("");
-  const [_appName, setAppName] = useState<string>("");
-  const [_tauriVersion, setTauriVersion] = useState<string>("");
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [appName, setAppName] = useState<string>("");
+  const [tauriVersion, setTauriVersion] = useState<string>("");
+  const [tools, setTools] = useState<WasmVersions | null>(null);
+  const [toolsError, setToolsError] = useState<string | null>(null);
   useEffect(() => {
     /**
      * Retrieves app name, app version, and tauri version from Tauri API
@@ -51,6 +64,14 @@ export default function SettingsPage() {
     }
 
     fetchAppInfo();
+    // Surfaced rather than swallowed: a missing versions.json means the wasm
+    // artifacts were refreshed without regenerating it, and the numbers shown
+    // would otherwise silently describe a different build.
+    wasmVersions()
+      .then(setTools)
+      .catch((error: unknown) => {
+        setToolsError(error instanceof Error ? error.message : String(error));
+      });
   }, []);
 
   // Update local settings when global settings change
@@ -237,6 +258,59 @@ export default function SettingsPage() {
               </div>
             ))}
 
+          </div>
+          {/* What this build is made of. Moved here from the header, which had
+              room for the app and Tauri versions only, and none for the tools
+              that actually do the work. */}
+          <div className="rounded-lg border border-gray-300 p-5">
+            <h2 className="mb-4 font-bold text-xl">About this build</h2>
+
+            <dl className="mb-5 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
+              <dt className="font-semibold">{appName || "Application"}</dt>
+              <dd>{appVersion || "\u2014"}</dd>
+              <dt className="font-semibold">Tauri</dt>
+              <dd>{tauriVersion || "\u2014"}</dd>
+            </dl>
+
+            <h3 className="mb-1 font-semibold">Image processing tools</h3>
+            <p className="mb-3 text-gray-600 text-sm">
+              These run inside the app as WebAssembly. Nothing needs installing,
+              and there are no paths to configure.
+            </p>
+
+            {toolsError ? (
+              <p className="text-red-700 text-sm">
+                Could not read the tool versions: {toolsError}
+              </p>
+            ) : (
+              <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
+                {TOOL_ORDER.map((name) => {
+                  const tool = tools?.tools[name];
+                  return (
+                    <div className="contents" key={name}>
+                      <dt className="font-semibold">{TOOL_LABELS[name]}</dt>
+                      <dd>
+                        <span>{tool ? tool.version : "\u2026"}</span>
+                        <span className="block text-gray-600">
+                          {TOOL_ROLES[name]}
+                        </span>
+                        {tool ? (
+                          <span className="block font-mono text-gray-500 text-xs">
+                            {tool.repository} @ {tool.commit.slice(0, 8)}
+                          </span>
+                        ) : null}
+                      </dd>
+                    </div>
+                  );
+                })}
+                {tools ? (
+                  <div className="contents">
+                    <dt className="font-semibold">Emscripten</dt>
+                    <dd>{tools.emscripten}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            )}
           </div>
         </div>
       </main>
