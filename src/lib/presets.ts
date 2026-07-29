@@ -1,10 +1,10 @@
 import { join } from "@tauri-apps/api/path";
 import {
-  copyFile,
   exists,
   mkdir,
   readFile,
   remove,
+  writeFile,
 } from "@tauri-apps/plugin-fs";
 import type { pipelineConfig } from "@/app/home-page/(pipeline-configuration)/config-provider";
 import { readJson, storagePath, writeJson } from "./app-storage";
@@ -125,10 +125,26 @@ export async function savePreset(
   const copied = await Promise.all(
     slots.map(async ([slot, sourcePath]) => {
       const fileName = SLOT_FILENAMES[slot];
-      await copyFile(sourcePath, await join(dir, fileName));
+      // Read once, then write those same bytes and hash them.
+      //
+      // This replaced `copyFile` plus a separate hash of the source, which
+      // could disagree: a copy that landed short still recorded the hash of
+      // what the source *should* have contained. That is not hypothetical --
+      // calibration files kept on Google Drive copied as zero bytes, and an
+      // empty .cal silently turns its correction into a no-op, so runs varied
+      // with no visible cause and the preset looked intact.
+      const bytes = await readFile(sourcePath);
+      if (bytes.length === 0) {
+        throw new Error(
+          `${sourcePath} is empty, so it cannot be saved as the ${slot} file. ` +
+            "If it is stored in a cloud folder, open it once so the file is " +
+            "downloaded rather than a placeholder, then save the preset again."
+        );
+      }
+      await writeFile(await join(dir, fileName), bytes);
       const file: PresetFile = {
         fileName,
-        sha256: await sha256Hex(await readFile(sourcePath)),
+        sha256: await sha256Hex(bytes),
         sourcePath,
       };
       return [slot, file] as const;
