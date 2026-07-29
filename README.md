@@ -115,7 +115,16 @@ npm run tauri build -- --target universal-apple-darwin
 
 This app builds upon the scene processing and simulation strengths of existing programs such as Radiance, `hdrgen`, and LibRaw.
 
-This application includes the `dcraw_emu` binary from LibRaw, a library licensed under the GNU Lesser General Public License v2.1 (LGPL-2.1). See `licenses/LGPL-2.1.txt` for details. The source code for LibRAW can be obtained from https://www.libraw.org/.
+The application itself is licensed **GPL-3.0** (see [`LICENSE`](./LICENSE)). It incorporates:
+
+| Component | Licence | Source |
+|---|---|---|
+| Radiance tools | Radiance Software License 2.0 (BSD-3-Clause in substance) | [radiantlab/Radiance](https://github.com/radiantlab/Radiance) |
+| `hdrgen` | BSD-3-Clause, see [`licenses/BSD-3-Clause.txt`](./licenses/BSD-3-Clause.txt) | [radiantlab/hdrgen](https://github.com/radiantlab/hdrgen) |
+| panlib | BSD-3-Clause | [radiantlab/panlib](https://github.com/radiantlab/panlib) |
+| LibRaw (`dcraw_emu`) | LGPL-2.1, see [`licenses/LGPL-2.1.txt`](./licenses/LGPL-2.1.txt) | [radiantlab/LibRaw](https://github.com/radiantlab/LibRaw), upstream at https://www.libraw.org/ |
+
+LibRaw offers a choice of LGPL-2.1 or CDDL-1.0; the LGPL is the one that applies here, because the CDDL is incompatible with the GPL. Where LibRaw is statically linked rather than invoked as a separate process, as it is in the WebAssembly pipeline, it is incorporated under **LGPL-2.1 section 3**, which permits applying ordinary GPL terms to that copy. The reasoning, and the obligations that follow for a browser deployment, are recorded in [`licenses/DECISIONS.md`](./licenses/DECISIONS.md).
 
 ### Authors
 
