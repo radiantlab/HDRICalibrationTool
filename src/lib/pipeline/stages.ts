@@ -155,9 +155,24 @@ export function pcombCalArgs(calFile: string, input: string): string[] {
 /**
  * The photometric adjustment, which additionally passes `-h`.
  *
- * `-h` suppresses the header pcomb would otherwise prepend. This is the last
- * correction, so the accumulated command lines are dropped here rather than
- * carried into the finished picture.
+ * `-h` does **not** suppress pcomb's own command line -- that still appears in
+ * the output. It toggles `echoheader` off (`pcomb.c:118`), which stops the
+ * *input's* header from being copied through, so everything upstream is
+ * discarded here: the camera, hdrgen's record of which frames were merged, the
+ * original capture date, `PRIMARIES`, `EXPOSURE`, and the crop and resize
+ * lines. A picture processed with calibration files therefore carries less
+ * provenance than one processed without, since without them no pcomb stage
+ * runs at all.
+ *
+ * Nothing numerical is lost. `PRIMARIES` is always Radiance's default here
+ * (`ra_xyze -r` writes those), and `EXPOSURE` is always 1 because
+ * `nullify_exposure_value` passes `ra_xyze -o`, which sets `origexp = 1.0`
+ * (`ra_xyze.c:105`). Every reader defaults a missing `EXPOSURE` to 1 anyway.
+ *
+ * Kept because `photometric_adjustment.rs:20` does it and this port must match
+ * byte for byte. It is the only one of the four pcomb stages that passes `-h`,
+ * which is what makes it look accidental rather than chosen: the three before
+ * it accumulate header lines that this one throws away.
  */
 export function photometricArgs(calFile: string, input: string): string[] {
   return ["-h", "-f", calFile, input];
