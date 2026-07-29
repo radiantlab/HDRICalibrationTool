@@ -92,6 +92,7 @@ import {
   RunConfirmDialog,
 } from "./run-confirm-dialog";
 import { RunConsole } from "./run-console";
+import { runWasmPipeline } from "./run-wasm-pipeline";
 import { useSelectedImage } from "./selected-image-context";
 import { usePendingConfirmation } from "./use-pending-confirmation";
 
@@ -516,7 +517,21 @@ export default function Home() {
                     set.name
                   );
                   try {
-                    await invoke<string>("pipeline", params);
+                    // Two pipelines exist while the WebAssembly one is being
+                    // validated against the Rust one on real image sets. Both
+                    // take the same params, emit the same status events and
+                    // name their outputs identically, so nothing downstream of
+                    // this line can tell them apart -- which is what makes the
+                    // comparison worth anything. See #231; the Rust path and
+                    // this setting both go at #233.
+                    if (settings.useWasmPipeline) {
+                      await runWasmPipeline({
+                        params,
+                        shouldStop: () => stopRequestedRef.current,
+                      });
+                    } else {
+                      await invoke<string>("pipeline", params);
+                    }
                     await recordAttempt(
                       null,
                       getOutputs().slice(outputsBefore),

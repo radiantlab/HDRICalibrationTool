@@ -264,3 +264,49 @@ describe("joinOutputPath", () => {
     expect(joinOutputPath("C:\\out\\", "a.hdr")).toBe("C:\\out\\a.hdr");
   });
 });
+
+describe("required numeric fields", () => {
+  it("names the field the user has to fill in", async () => {
+    // The form's numeric inputs are nullable until filled. Failing here with
+    // the field name beats surfacing as a NaN in an argument list later.
+    const host = fakeHost();
+    await expect(
+      runWasmPipeline({
+        host,
+        makeRunner: fakeRunner,
+        now: FIXED_NOW,
+        params: params({ verticalAngle: null }),
+        run: fakeRun,
+      })
+    ).rejects.toMatchObject({
+      detail: { field: "verticalAngle", kind: "invalid_input" },
+    });
+  });
+
+  it("rejects a NaN as firmly as a null", async () => {
+    const host = fakeHost();
+    await expect(
+      runWasmPipeline({
+        host,
+        makeRunner: fakeRunner,
+        now: FIXED_NOW,
+        params: params({ xdim: Number.NaN }),
+        run: fakeRun,
+      })
+    ).rejects.toMatchObject({ detail: { field: "xdim" } });
+  });
+
+  it("fails before staging anything", async () => {
+    const host = fakeHost();
+    await expect(
+      runWasmPipeline({
+        host,
+        makeRunner: fakeRunner,
+        now: FIXED_NOW,
+        params: params({ diameter: null }),
+        run: fakeRun,
+      })
+    ).rejects.toThrow();
+    expect(host.reads).toEqual([]);
+  });
+});

@@ -24,6 +24,7 @@ import type {
   PipelineStatusPayload,
   ToolRunner,
 } from "@/lib/pipeline/types";
+import { PipelineError } from "@/lib/pipeline/types";
 import { urlModuleLoader, WasmToolRunner } from "@/lib/pipeline/wasm-runner";
 
 /** A trailing slash or backslash on the output directory. */
@@ -39,13 +40,47 @@ const WASM_BASE_URL = "/wasm";
  * are wasm modules. They are accepted and ignored rather than removed, so the
  * call site can hand the same object to either pipeline while both exist.
  */
-export interface BuiltPipelineParams extends PipelineParams {
+/** The numeric fields the form can leave empty. */
+type RequiredNumericField =
+  | "diameter"
+  | "horizontalAngle"
+  | "verticalAngle"
+  | "xdim"
+  | "xleft"
+  | "ydim"
+  | "ytop";
+
+export interface BuiltPipelineParams
+  extends Omit<PipelineParams, RequiredNumericField> {
   dcrawEmuPath?: string;
+  /**
+   * Nullable because the form's numeric inputs are, until they are filled in.
+   * The Rust command takes f64 and would fail on a null just as surely; the
+   * difference is that this fails with the field name attached, so the message
+   * says which box to go and fill.
+   */
+  diameter: number | null;
   filterImages?: boolean;
   hdrgenPath?: string;
+  horizontalAngle: number | null;
   outputPath: string;
   radiancePath?: string;
+  verticalAngle: number | null;
+  xdim: number | null;
+  xleft: number | null;
+  ydim: number | null;
+  ytop: number | null;
 }
+
+const REQUIRED_NUMERIC_FIELDS: RequiredNumericField[] = [
+  "diameter",
+  "horizontalAngle",
+  "verticalAngle",
+  "xdim",
+  "xleft",
+  "ydim",
+  "ytop",
+];
 
 export interface RunWasmPipelineOptions {
   /** Injected in tests; defaults to the real Tauri filesystem. */
@@ -82,6 +117,31 @@ const tauriHost: HostFilesystem = {
   write: (path, data) => writeFile(path, data),
 };
 
+/**
+ * Narrows the form's nullable numbers to the numbers the pipeline requires.
+ *
+ * Checked here rather than deep in the pipeline so the failure names the field
+ * the user has to go and fill in, instead of surfacing as a NaN in an argument
+ * list several stages later.
+ */
+function requireNumbers(
+  params: BuiltPipelineParams
+): Record<RequiredNumericField, number> {
+  const narrowed = {} as Record<RequiredNumericField, number>;
+  for (const field of REQUIRED_NUMERIC_FIELDS) {
+    const value = params[field];
+    if (value === null || !Number.isFinite(value)) {
+      throw new PipelineError({
+        field,
+        kind: "invalid_input",
+        value: String(value),
+      });
+    }
+    narrowed[field] = value;
+  }
+  return narrowed;
+}
+
 /** Files the pipeline reads by path and so must be staged before it starts. */
 function referencedFiles(params: BuiltPipelineParams): string[] {
   return [
@@ -109,6 +169,7 @@ export async function runWasmPipeline({
   run = runPipeline,
 }: RunWasmPipelineOptions): Promise<string[]> {
   const runner = makeRunner();
+  const numbers = requireNumbers(params);
 
   // Staged up front rather than lazily: a missing input should fail before any
   // wasm module is instantiated, not eight stages in.
@@ -125,7 +186,7 @@ export async function runWasmPipeline({
         // A dropped status line must never fail the run that produced it.
       });
     },
-    params,
+    params: { ...params, ...numbers },
     runner,
     shouldStop,
   });

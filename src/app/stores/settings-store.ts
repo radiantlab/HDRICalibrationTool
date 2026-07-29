@@ -24,6 +24,17 @@ interface Settings {
   osPlatform: string;
   outputPath: string;
   radiancePath: string;
+  /**
+   * Run the WebAssembly pipeline instead of the Rust one.
+   *
+   * Temporary, and off by default: it exists so the two can be compared on the
+   * same image set before the Rust pipeline is removed
+   * (radiantlab/HDRICalibrationTool#233). Once the WebAssembly path is proven
+   * this setting goes, along with the three tool paths above -- which is the
+   * change that actually resolves the "dependencies are hard to set up"
+   * complaint.
+   */
+  useWasmPipeline: boolean;
 }
 
 /**
@@ -61,6 +72,7 @@ export const useSettingsStore = create<SettingsStore>()(
         osPlatform: "",
         outputPath: "",
         radiancePath: "",
+        useWasmPipeline: false,
       },
     }),
     {
