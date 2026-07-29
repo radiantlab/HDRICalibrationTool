@@ -12,15 +12,15 @@ import { createJSONStorage, persist } from "zustand/middleware";
 /**
  * Interface defining the application settings
  *
- * @property dcrawEmuPath - Path to the dcraw_emu binary, used by the image
- *   viewer's RAW preview only. The pipeline runs as WebAssembly and locates no
- *   binaries at all; the Radiance and hdrgen paths this once held are gone,
- *   which is what resolves the "dependencies are hard to set up" complaint.
+ * No binary paths remain. Every tool the app runs -- the pipeline and the RAW
+ * preview alike -- is WebAssembly shipped with it, so there is nothing to
+ * locate and nothing for a user to configure. That is what resolves the
+ * "dependencies are hard to set up" complaint.
+ *
  * @property outputPath - Default path for output files
  * @property osPlatform - Operating system platform (windows, darwin, linux)
  */
 interface Settings {
-  dcrawEmuPath: string;
   osPlatform: string;
   outputPath: string;
 }
@@ -55,7 +55,6 @@ export const useSettingsStore = create<SettingsStore>()(
       setSettings: (settings) => set({ settings }),
       // Initial default empty settings
       settings: {
-        dcrawEmuPath: "",
         osPlatform: "",
         outputPath: "",
       },
@@ -69,8 +68,9 @@ export const useSettingsStore = create<SettingsStore>()(
       //    than as its default, so anything new must either tolerate undefined
       //    or ship a migration.
       //  - A field *removed* stays in the persisted object indefinitely.
-      //    `radiancePath`, `hdrgenPath` and `useWasmPipeline` are therefore
-      //    still in existing users' localStorage. That is harmless -- nothing
+      //    `radiancePath`, `hdrgenPath`, `dcrawEmuPath` and `useWasmPipeline`
+      //    are therefore still in existing users' localStorage. That is
+      //    harmless -- nothing
       //    reads them and the extra keys are inert -- and deliberately not
       //    cleaned up, since a migration that rewrites stored settings is more
       //    risk than three dead strings.

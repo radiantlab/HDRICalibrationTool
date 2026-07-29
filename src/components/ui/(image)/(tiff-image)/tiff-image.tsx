@@ -1,8 +1,7 @@
 "use client";
 
 import { memo, Suspense, useEffect, useMemo, useRef, useState } from "react";
-import { useTiffPath } from "./useTiffPath";
-import { readFile } from "@tauri-apps/plugin-fs";
+import { useTiffBytes } from "./use-tiff-bytes";
 import { Spinner } from "@/components/ui/spinner";
 import { lazy } from "react";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
@@ -13,7 +12,7 @@ import { TiffDecodeResponse } from "@/lib/tiff-worker.types";
 const TiffImageInner = lazy(() => import("./tiff-image-inner"));
 
 export const TiffImage = memo(function TiffImage({ src }: { src: string }) {
-	const tiffPath = useTiffPath(src);
+	const tiffBytes = useTiffBytes(src);
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	const [tiffPromise, setTiffPromise] = useState<Promise<TiffDecodeResponse>>();
@@ -37,7 +36,7 @@ export const TiffImage = memo(function TiffImage({ src }: { src: string }) {
 			observer.disconnect();
 
 			const dpr = Math.max(1, window.devicePixelRatio || 1);
-			const newPromise = tiffPath.then(readFile).then((f) =>
+			const newPromise = tiffBytes.then((f) =>
 				decodeTiff(f.buffer, {
 					memoryBytes: f.buffer.byteLength * 2,
 					maxWidth: Math.floor(width * dpr),
@@ -63,7 +62,7 @@ export const TiffImage = memo(function TiffImage({ src }: { src: string }) {
 		// containerRef.current is deliberately absent: a ref is not reactive, so
 		// listing it only made the effect re-run once the ref went from null to
 		// the element, cancelling the decode it had just started.
-	}, [tiffPath]);
+	}, [tiffBytes]);
 
 	return (
 		<div ref={containerRef} className="size-full">

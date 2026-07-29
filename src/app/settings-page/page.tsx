@@ -119,21 +119,13 @@ export default function SettingsPage() {
           {/* Left: External Utilities */}
           <div className="rounded-lg border border-gray-300 p-5">
             <h2 className="mb-4 flex items-center font-bold text-xl">
-              External Utilities
-              {/* <span className="ml-2 text-gray-500 text-sm">ⓘ</span> */}
+              Paths
             </h2>
 
             {/*
               Mapping through the settings fields to create input sections for each
             */}
             {[
-              {
-                id: "dcrawEmuPath",
-                label: "dcraw_emu (optional)",
-                placeholder:
-                  "This path is optional, only enter a new path if you wish to override the included dcraw_emu binary",
-                value: localSettings.dcrawEmuPath,
-              },
               {
                 id: "outputPath",
                 label: "HDRI Output",

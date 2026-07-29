@@ -2,8 +2,7 @@ import { convertFileSrc } from "@tauri-apps/api/core";
 import { readFile } from "@tauri-apps/plugin-fs";
 import path from "path";
 import { useMemo } from "react";
-import { useSettingsStore } from "@/app/stores/settings-store";
-import { getTiffPath } from "@/components/ui/(image)/(tiff-image)/useTiffPath";
+import { rawToTiff } from "./raw-preview";
 import { getTiffMetadata } from "./tiff-worker-client";
 
 export interface GenericImageMetadata {
@@ -24,7 +23,6 @@ export function useGenericImageMetadata(
 export function useGenericImageMetadata(
   fsPath: string | undefined
 ): Promise<GenericImageMetadata> | undefined {
-  const { settings } = useSettingsStore();
   return useMemo(() => {
     if (!fsPath) {
       return;
@@ -35,9 +33,9 @@ export function useGenericImageMetadata(
       case ".jpeg":
         return getJpegImageMetadata(fsPath);
       default:
-        return getTiffImageMetadata(fsPath, settings.dcrawEmuPath);
+        return getTiffImageMetadata(fsPath);
     }
-  }, [fsPath, settings.dcrawEmuPath]);
+  }, [fsPath]);
 }
 
 function getJpegImageMetadata(fsPath: string): Promise<GenericImageMetadata> {
@@ -54,13 +52,13 @@ function getJpegImageMetadata(fsPath: string): Promise<GenericImageMetadata> {
 }
 
 function getTiffImageMetadata(
-  fsPath: string,
-  dcrawEmuPath: string
+  fsPath: string
 ): Promise<GenericImageMetadata> {
-  const tiffPath = getTiffPath(fsPath, dcrawEmuPath);
-  return tiffPath.then(async (resolvedTiffPath) => {
-    const u8 = await readFile(resolvedTiffPath);
-    const buffer = u8.buffer.slice(0);
+  // Shares `raw-preview`'s cache with the on-screen preview, so opening an
+  // image does not convert it twice -- once for its dimensions and once to
+  // draw it.
+  return rawToTiff(fsPath, (source) => readFile(source)).then(async (u8) => {
+    const { buffer } = u8;
     const { width, height } = await getTiffMetadata(buffer, {
       memoryBytes: Math.max(
         4 << 20,
