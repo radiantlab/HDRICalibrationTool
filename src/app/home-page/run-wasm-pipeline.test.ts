@@ -198,11 +198,13 @@ describe("outputs", () => {
       run: fakeRun,
     });
 
+    // Both files are written, but only the HDR picture is announced -- Rust
+    // does the same, and the viewer opens the most recently announced output,
+    // so announcing the false-colour image opened that instead.
     expect(order).toEqual([
       "write:/out/JPEG_2026-07-29_11-41-49.hdr",
       "announce:/out/JPEG_2026-07-29_11-41-49.hdr",
       "write:/out/JPEG_2026-07-29_11-41-49_fc.hdr",
-      "announce:/out/JPEG_2026-07-29_11-41-49_fc.hdr",
     ]);
   });
 
@@ -308,5 +310,24 @@ describe("required numeric fields", () => {
       })
     ).rejects.toThrow();
     expect(host.reads).toEqual([]);
+  });
+});
+
+describe("which output the viewer opens", () => {
+  it("announces the HDR picture and not the false-colour one", async () => {
+    // The viewer opens the most recently announced output. Rust announces only
+    // the picture, so announcing both here opened the false-colour image.
+    const host = fakeHost();
+    await runWasmPipeline({
+      host,
+      makeRunner: fakeRunner,
+      now: FIXED_NOW,
+      params: params(),
+      run: fakeRun,
+    });
+
+    expect(host.outputs).toEqual(["/out/JPEG_2026-07-29_11-41-49.hdr"]);
+    // still written, just not announced
+    expect(host.writes).toContain("/out/JPEG_2026-07-29_11-41-49_fc.hdr");
   });
 });

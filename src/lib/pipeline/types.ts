@@ -126,6 +126,13 @@ export type StatusEmitter = (payload: PipelineStatusPayload) => void;
  */
 export interface PipelineParams {
   diameter: number;
+  /**
+   * Drop source frames that contribute nothing to the merge.
+   *
+   * JPEG only, and only when the set is not RAW -- the same condition the Rust
+   * pipeline applies.
+   */
+  filterImages?: boolean;
   fisheyeCorrectionCal: string;
   horizontalAngle: number;
   inputImages: string[];

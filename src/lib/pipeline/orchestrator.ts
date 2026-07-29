@@ -11,6 +11,7 @@
  */
 
 import { falsecolor } from "./falsecolor";
+import { type DecodeImage, filterImages } from "./filter-images";
 import {
   cropArgs,
   dcrawArgs,
@@ -111,6 +112,12 @@ class Progress {
 }
 
 export interface RunOptions {
+  /**
+   * Decodes a JPEG to RGBA. Required only when `filterImages` is set, since
+   * that is the one stage needing pixels rather than a wasm tool. Injected so
+   * this module stays host-agnostic: the app supplies `createImageBitmap`.
+   */
+  decodeImage?: DecodeImage;
   emit?: StatusEmitter;
   params: PipelineParams;
   runner: ToolRunner;
@@ -123,6 +130,7 @@ export async function runPipeline({
   params,
   emit = () => undefined,
   shouldStop = () => false,
+  decodeImage,
 }: RunOptions): Promise<PipelineResult> {
   validate(params);
 
@@ -149,7 +157,12 @@ export async function runPipeline({
 
   // ---- merge -------------------------------------------------------------
   step("merge_exposures", "Merging exposures");
-  const { images, responseFunction } = await prepareInputs(runner, params);
+  const { images, responseFunction } = await prepareInputs(
+    runner,
+    params,
+    emit,
+    decodeImage
+  );
   await run(
     runner,
     "hdrgen",
@@ -391,6 +404,39 @@ function falsecolorArgv(params: PipelineParams): string[] {
   return [...argv, "-i"];
 }
 
+/**
+ * Drops frames that contribute nothing, when asked and when it is possible.
+ *
+ * Skipped silently without a decoder rather than failing: filtering is an
+ * optimisation, and a run that merges every frame is correct, only slower.
+ */
+async function maybeFilter(
+  params: PipelineParams,
+  emit: StatusEmitter,
+  decodeImage?: DecodeImage
+): Promise<string[]> {
+  if (
+    !(params.filterImages && decodeImage) ||
+    params.inputImages.length === 0
+  ) {
+    return params.inputImages;
+  }
+
+  const before = params.inputImages.length;
+  const kept = await filterImages(
+    params.inputImages,
+    { diameter: params.diameter, xleft: params.xleft, ytop: params.ytop },
+    decodeImage
+  );
+  emit({
+    kind: "step",
+    message: `Filtering images: kept ${kept.length} of ${before}`,
+    progress: null,
+    step: "filter_images",
+  });
+  return kept;
+}
+
 function validate(params: PipelineParams): void {
   if (params.inputImages.length === 0) {
     throw new PipelineError({
@@ -420,11 +466,13 @@ function validate(params: PipelineParams): void {
  */
 async function prepareInputs(
   runner: ToolRunner,
-  params: PipelineParams
+  params: PipelineParams,
+  emit: StatusEmitter,
+  decodeImage?: DecodeImage
 ): Promise<{ images: string[]; responseFunction: string }> {
   if (!params.inputImages.some(isRawImage)) {
     return {
-      images: params.inputImages,
+      images: await maybeFilter(params, emit, decodeImage),
       responseFunction: params.responseFunction,
     };
   }

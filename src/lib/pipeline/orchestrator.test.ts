@@ -27,6 +27,8 @@ interface Invocation {
 /** The exact key set serde emits, which the frontend's zod schema expects. */
 const SNAKE_CASE_KEYS = /^(kind|message|progress|step|set_index|set_total)$/;
 
+const KEPT_COUNT = /kept \d+ of 2/;
+
 const PICTURE = new TextEncoder().encode(
   "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 3870 +X 5796\nPIXELS"
 );
@@ -594,5 +596,71 @@ describe("validity check", () => {
     const event = validityEvent(await runWith("not a number\n", 1000));
     expect(event).toMatchObject({ kind: "warning" });
     expect(event?.message).toContain("the validity check was skipped");
+  });
+});
+
+describe("image filtering", () => {
+  const flat = (level: number) => {
+    const rgba = new Uint8ClampedArray(4 * 4 * 4);
+    for (let i = 0; i < 16; i += 1) {
+      rgba.set([level, level, level, 255], i * 4);
+    }
+    return { height: 4, rgba, width: 4 };
+  };
+
+  it("merges only the frames the filter kept", async () => {
+    const runner = new FakeRunner();
+    const levels: Record<string, number> = {
+      "/in/blown.jpg": 250,
+      "/in/crushed.jpg": 5,
+      "/in/mid.jpg": 128,
+    };
+    await runPipeline({
+      decodeImage: (path) => Promise.resolve(flat(levels[path] ?? 0)),
+      params: params({
+        diameter: 4,
+        filterImages: true,
+        inputImages: ["/in/blown.jpg", "/in/mid.jpg", "/in/crushed.jpg"],
+        xleft: 0,
+        ytop: 0,
+      }),
+      runner,
+    });
+
+    const hdrgen = call(runner.callsTo("hdrgen"), 0).args;
+    expect(hdrgen).toContain("/in/mid.jpg");
+    expect(hdrgen).not.toContain("/in/blown.jpg");
+  });
+
+  it("merges every frame when filtering is off", async () => {
+    const runner = new FakeRunner();
+    await runPipeline({
+      decodeImage: () => Promise.resolve(flat(128)),
+      params: params({ filterImages: false }),
+      runner,
+    });
+    expect(call(runner.callsTo("hdrgen"), 0).args).toContain("/in/a.jpg");
+    expect(call(runner.callsTo("hdrgen"), 0).args).toContain("/in/b.jpg");
+  });
+
+  it("merges every frame when no decoder was supplied", async () => {
+    // Filtering is an optimisation. A run without a decoder is correct, only
+    // slower -- so it must not fail.
+    const runner = new FakeRunner();
+    await runPipeline({ params: params({ filterImages: true }), runner });
+    expect(call(runner.callsTo("hdrgen"), 0).args).toContain("/in/b.jpg");
+  });
+
+  it("reports how many frames it kept", async () => {
+    const events: PipelineStatusPayload[] = [];
+    await runPipeline({
+      decodeImage: () => Promise.resolve(flat(128)),
+      emit: (payload) => events.push(payload),
+      params: params({ diameter: 4, filterImages: true, xleft: 0, ytop: 0 }),
+      runner: new FakeRunner(),
+    });
+    expect(
+      events.find((event) => event.step === "filter_images")?.message
+    ).toMatch(KEPT_COUNT);
   });
 });

@@ -13,6 +13,7 @@
 
 import { emit } from "@tauri-apps/api/event";
 import { readFile, writeFile } from "@tauri-apps/plugin-fs";
+import type { DecodedImage } from "@/lib/pipeline/filter-images";
 import { runPipeline } from "@/lib/pipeline/orchestrator";
 import {
   completionMessage,
@@ -179,6 +180,7 @@ export async function runWasmPipeline({
   }
 
   const result = await run({
+    decodeImage,
     // Deliberately not awaited: a status event is a notification, and making
     // every stage wait on the UI would serialise the run behind rendering.
     emit: (payload) => {
@@ -194,20 +196,30 @@ export async function runWasmPipeline({
   const stem = outputStem(params.setName, runTimestamp(now()));
   const written: string[] = [];
 
-  const outputs: [string, string][] = [
-    [result.outputPath, `${stem}.hdr`],
+  // Only the HDR picture is announced. Rust writes the false-colour image but
+  // never emits a pipeline-output for it, and the viewer opens the most
+  // recently announced output -- so announcing both opened the false-colour
+  // one instead of the picture.
+  const outputs: [string, string, boolean][] = [
+    [result.outputPath, `${stem}.hdr`, true],
     ...(result.falsecolorPath
-      ? ([[result.falsecolorPath, `${stem}_fc.hdr`]] as [string, string][])
+      ? ([[result.falsecolorPath, `${stem}_fc.hdr`, false]] as [
+          string,
+          string,
+          boolean,
+        ][])
       : []),
   ];
 
-  for (const [source, name] of outputs) {
+  for (const [source, name, announce] of outputs) {
     const destination = joinOutputPath(params.outputPath, name);
     // biome-ignore lint/performance/noAwaitInLoops: each output is announced only after it is on disk, which is what lets a failed set be attributed correctly
     await host.write(destination, await runner.readFile(source));
-    // Announced after the write, matching the Rust pipeline: a set that failed
-    // has announced no outputs, which is what the run history relies on.
-    await host.emitOutput(destination);
+    if (announce) {
+      // Announced after the write, matching the Rust pipeline: a set that
+      // failed has announced no outputs, which is what run history relies on.
+      await host.emitOutput(destination);
+    }
     written.push(destination);
   }
 
@@ -223,6 +235,34 @@ export async function runWasmPipeline({
   runner.clear?.();
 
   return written;
+}
+
+/**
+ * Decodes a JPEG to RGBA using the platform's own decoder.
+ *
+ * Only the image filter needs pixels; every other stage goes through a wasm
+ * tool. `createImageBitmap` hands the work to the browser's decoder rather
+ * than shipping one, and `OffscreenCanvas` keeps it off the main thread's
+ * rendering path.
+ *
+ * The bitmap is closed explicitly: a 21-megapixel frame is ~84 MB of RGBA, and
+ * eighteen of them held at once would dwarf the pipeline's own working set.
+ */
+async function decodeImage(path: string): Promise<DecodedImage> {
+  const bytes = await tauriHost.read(path);
+  const bitmap = await createImageBitmap(new Blob([bytes as BlobPart]));
+  try {
+    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error(`could not get a 2d context to decode ${path}`);
+    }
+    context.drawImage(bitmap, 0, 0);
+    const { data } = context.getImageData(0, 0, bitmap.width, bitmap.height);
+    return { height: bitmap.height, rgba: data, width: bitmap.width };
+  } finally {
+    bitmap.close();
+  }
 }
 
 /**

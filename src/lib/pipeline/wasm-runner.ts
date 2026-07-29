@@ -175,6 +175,12 @@ export class WasmToolRunner implements ToolRunner {
       // is fine. stdout is not -- an intermediate runs to tens of megabytes --
       // which is why it goes to a file instead.
       printErr: (line: string) => stderr.push(line),
+      // argv[0], which Emscripten otherwise sets to "./this.program". Radiance
+      // tools record argv[0] in the picture header, so without this every
+      // stage is credited to "this.program" -- and `getinfo -r "pcompos "`,
+      // which falsecolor uses to strip its own scaffolding out of the header,
+      // matches on that name and silently removes nothing.
+      thisProgram: tool,
     });
 
     makeDir(instance, WORK_DIR);
