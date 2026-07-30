@@ -1,0 +1,130 @@
+# Checks the web build: lint, types, unit tests, the static export, and the
+# Playwright suite that drives it in a real browser.
+#
+# This is the one that runs on every push and pull request, because it is the
+# one that covers the whole application. The pipeline is WebAssembly and the
+# frontend is a static export, so a browser exercises the same code the
+# desktop app runs -- the desktop job exists to prove the Tauri shell around it
+# still builds, not to test the pipeline a second time.
+
+name: CI (web)
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # A newer push makes an in-flight run irrelevant. Not applied to `main`,
+  # where every commit's result is worth keeping.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  group: ci-web-${{ github.ref }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, types and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          cache: npm
+          node-version: lts/*
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run check
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npm test -- --ci
+
+      - name: Verify the recorded tool versions match the shipped WebAssembly
+        # `public/wasm/versions.json` is what the Settings page reports. If it
+        # drifts from the binaries next to it, the app confidently tells you it
+        # ran a Radiance it did not run.
+        run: npm run wasm:versions:check
+
+  build:
+    name: Static export
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          cache: npm
+          node-version: lts/*
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Check the export is actually servable
+        # A static export with no index.html 404s at the root, which is the
+        # first thing a visitor sees and the last thing a build log mentions.
+        run: |
+          test -f out/index.html
+          test -f out/home-page.html
+          test -f out/wasm/versions.json
+          test -f out/wasm/hdrgen.wasm
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: out
+          retention-days: 7
+
+  e2e:
+    name: End-to-end (${{ matrix.project }})
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # WebKit first in the list and first in the config, deliberately.
+        # Safari implements no part of the File System Access API, so it takes
+        # the plain file-input and download path -- which is the path this
+        # application ships to everyone.
+        project: [webkit, chromium]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          cache: npm
+          node-version: lts/*
+
+      - name: Reuse the export from the build job
+        # Rather than rebuilding per browser. It is the same bytes either way,
+        # and this is the artifact that would actually be deployed.
+        uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: out
+
+      - run: npm ci --prefix e2e-web
+
+      - name: Install browsers
+        run: npm --prefix e2e-web exec -- playwright install --with-deps ${{ matrix.project }}
+
+      - name: Run
+        run: npm --prefix e2e-web exec -- playwright test --project=${{ matrix.project }}
+
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: |
+            e2e-web/playwright-report
+            e2e-web/test-results
+          retention-days: 7

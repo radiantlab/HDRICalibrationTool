@@ -1,0 +1,230 @@
+# Builds the desktop installers and publishes a release. On demand only.
+#
+# Replaces `publish.yml` and `publish-macos-signed.yml`, which both fired on a
+# push to `release` and both tried to create the same `app-v__VERSION__` tag.
+# Whichever lost that race attached its installers to a release it had not
+# created, and a failure in either left a half-populated draft behind.
+#
+# The shape here is the one Tauri recommends for a matrix: one job creates the
+# draft, the platform jobs upload into it by id, and a final job publishes it
+# only if every platform succeeded. A release therefore never appears with
+# Windows missing because the macOS notarization timed out.
+#
+# macOS builds are signed and notarized. Windows and Linux are not; there is no
+# certificate for either, and an unsigned build that says so is better than a
+# workflow that pretends otherwise.
+
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      draft:
+        default: true
+        description: Leave the release as a draft rather than publishing it
+        type: boolean
+      prerelease:
+        default: false
+        description: Mark the release as a prerelease
+        type: boolean
+
+concurrency:
+  # Never two releases at once: they would fight over the same tag.
+  cancel-in-progress: false
+  group: release
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create draft release
+    runs-on: ubuntu-latest
+    outputs:
+      release_id: ${{ steps.create.outputs.result }}
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: lts/*
+
+      - name: Read the version
+        id: version
+        # From package.json, which is also what `tauri.conf.json` and the
+        # Settings page report. One number, one source.
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Check the versions agree
+        # A release built from a package.json and a tauri.conf.json that
+        # disagree ships an installer whose About box is wrong.
+        run: |
+          npm_version=$(node -p "require('./package.json').version")
+          tauri_version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          cargo_version=$(grep -m1 '^version = ' src-tauri/Cargo.toml | cut -d'"' -f2)
+          echo "package.json=$npm_version tauri.conf.json=$tauri_version Cargo.toml=$cargo_version"
+          if [ "$npm_version" != "$tauri_version" ] || [ "$npm_version" != "$cargo_version" ]; then
+            echo "::error::version mismatch between package.json, tauri.conf.json and Cargo.toml"
+            exit 1
+          fi
+
+      - name: Create the draft
+        id: create
+        uses: actions/github-script@v7
+        env:
+          IS_PRERELEASE: ${{ inputs.prerelease }}
+          VERSION: ${{ steps.version.outputs.version }}
+        with:
+          script: |
+            const version = process.env.VERSION;
+            const { data } = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `app-v${version}`,
+              name: `App v${version}`,
+              body: [
+                'Install the file for your operating system. There is nothing else to install:',
+                'Radiance, hdrgen and dcraw_emu ship inside the application as WebAssembly.',
+                '',
+                'macOS builds are signed and notarized. Windows and Linux builds are unsigned',
+                'and may be flagged as untrusted; on Windows choose "More info" then "Run anyway".',
+              ].join('\n'),
+              draft: true,
+              prerelease: process.env.IS_PRERELEASE === 'true',
+            });
+            return data.id;
+          result-encoding: string
+
+  build:
+    name: Build (${{ matrix.platform }})
+    needs: create-release
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target universal-apple-darwin
+          # Deliberately not `ubuntu-latest`. A .deb and an AppImage link
+          # against the glibc of the machine that built them, so building on
+          # the oldest supported runner is what makes them install on anything
+          # older than that runner.
+          - platform: ubuntu-22.04
+            args: ""
+          - platform: windows-latest
+            args: ""
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          cache: npm
+          node-version: lts/*
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.platform }}
+          workspaces: src-tauri
+
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - run: npm ci
+
+      - name: Import the Apple signing certificate
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${APPLE_CERTIFICATE:-}" ]; then
+            echo "::error::APPLE_CERTIFICATE is not set. macOS releases must be signed."
+            exit 1
+          fi
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          # Long enough to outlast a notarization round trip, which is the
+          # step most likely to sit waiting on Apple.
+          security set-keychain-settings -t 3600 -u build.keychain
+          security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          rm -f certificate.p12
+
+          # `grep` returning 1 on no match would kill this step with no
+          # explanation, because GitHub runs every `run:` under `bash -e`.
+          # Failing deliberately, with the identities printed, turns "the step
+          # died" into "the certificate is not a Developer ID Application one".
+          if ! identity=$(security find-identity -v -p codesigning build.keychain | grep "Developer ID Application"); then
+            echo "::error::No 'Developer ID Application' identity in the imported certificate."
+            security find-identity -v -p codesigning build.keychain || true
+            exit 1
+          fi
+          echo "APPLE_SIGNING_IDENTITY=$(echo "$identity" | awk -F'"' '{print $2}')" >> "$GITHUB_ENV"
+
+      - name: Write the App Store Connect API key
+        if: matrix.platform == 'macos-latest'
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+        run: |
+          set -euo pipefail
+          echo "$APPLE_API_KEY_CONTENT" | base64 --decode > "AuthKey_${APPLE_API_KEY}.p8"
+
+      - name: Build and upload
+        uses: tauri-apps/tauri-action@v0
+        env:
+          # Present only on macOS; harmless and unread elsewhere. Their
+          # presence is what makes tauri-action sign and notarize.
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_PATH: ${{ github.workspace }}/AuthKey_${{ secrets.APPLE_API_KEY }}.p8
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ env.APPLE_SIGNING_IDENTITY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: ${{ matrix.args }}
+          releaseId: ${{ needs.create-release.outputs.release_id }}
+
+      - name: Remove the API key
+        if: ${{ matrix.platform == 'macos-latest' && always() }}
+        env:
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+        run: rm -f "AuthKey_${APPLE_API_KEY}.p8"
+
+  publish-release:
+    name: Publish
+    needs: [create-release, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish or leave as a draft
+        uses: actions/github-script@v7
+        env:
+          KEEP_DRAFT: ${{ inputs.draft }}
+          RELEASE_ID: ${{ needs.create-release.outputs.release_id }}
+        with:
+          script: |
+            const draft = process.env.KEEP_DRAFT === 'true';
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: Number(process.env.RELEASE_ID),
+              draft,
+            });
+            core.notice(
+              draft
+                ? 'All platforms built. The release is a draft; publish it when you are ready.'
+                : 'All platforms built and the release is published.'
+            );
