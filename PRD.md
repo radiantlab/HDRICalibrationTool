@@ -1,30 +1,35 @@
 # HDRI Calibration Tool — Product Requirements Document
 
-**Status:** describes functionality present on `main` as of the merge of PR #223 (2026-07-24). This is a description of what is implemented, not a roadmap.
+**Status:** describes functionality present on `main` as of the completion of the WebAssembly port (#227, 2026-07-30). This is a description of what is implemented, not a roadmap.
 
 ## 1. Overview
 
-The HDRI Calibration Tool is a cross-platform desktop application (Tauri 2 + Next.js) that turns a bracketed set of low dynamic range (LDR) photographs into a calibrated high dynamic range (HDR) luminance map. It runs three image-processing tools — [Radiance](https://www.radiance-online.org/), `hdrgen`, and `dcraw_emu` — behind a guided GUI pipeline, following the calibration process published in [Pierson et al., 2019](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319). All three are compiled to WebAssembly and ship inside the application, so there is nothing to install and no tool paths to configure.
+The HDRI Calibration Tool turns a bracketed set of low dynamic range (LDR) photographs into a calibrated high dynamic range (HDR) luminance map. It runs three image-processing tools — [Radiance](https://www.radiance-online.org/), `hdrgen`, and `dcraw_emu` — behind a guided GUI pipeline, following the calibration process published in [Pierson et al., 2019](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319). All three are compiled to WebAssembly and ship inside the application, so there is nothing to install and no tool paths to configure.
+
+**It is one application with two hosts.** The same static export runs as a Tauri 2 desktop app and as a website. There is no server component in either case: the pipeline is WebAssembly executing in a Web Worker inside the page, so images are never uploaded and never leave the machine. The two hosts differ only in what the platform permits, and every such difference lives behind `src/lib/host/` — file selection, output writing, revealing a file in a file manager, and the app-version lookup.
 
 **Target users:** lighting/daylighting researchers and professionals studying the indoor visual environment, particularly discomfort glare, who need calibrated luminance data without hand-driving Radiance/hdrgen from the command line.
 
-**Supported platforms:** Windows, macOS (Intel + Apple Silicon, universal binary), Ubuntu. The in-app HDR Image Viewer additionally requires XQuartz on macOS 10.8+; it is not currently supported on Windows for that reason on older releases (see §9).
+**Supported platforms:** Windows, macOS (Intel + Apple Silicon, universal binary), Ubuntu, and any modern browser including Safari. The HDR Image Viewer is built in and needs no additional software anywhere; the XQuartz requirement that applied to older releases came from Radiance's X11-based `ximage` and no longer applies.
 
 ## 2. Application Structure
 
-A three-tab desktop app (`src/app/navigation.tsx`):
+Four tabs (`src/app/navigation.tsx`), identical in both hosts:
 
 | Tab | Route | Purpose |
 |---|---|---|
 | Image Generator | `/home-page` | Configure and run the LDR → HDR calibration pipeline |
-| Settings | `/settings-page` | Configure external tool paths and app preferences |
+| Settings | `/settings-page` | Output folder, and the versions of everything bundled |
+| Runs | `/runs` | History of previous pipeline runs and their outcomes |
 | Image Viewer | `/image-viewer`, `/image-viewer/view` | Load and inspect a generated `.hdr` file |
+
+`/` redirects to `/home-page`, so the site root resolves in a browser.
 
 ## 3. Feature: Image Generator (Home Page)
 
 `src/app/home-page/page.tsx`
 
-- **Image set input** — drag-and-drop or file-picker selection of an LDR bracket (JPEG, TIFF, or camera raw). Multiple named image sets can be staged; each set is validated to contain at least 2 images. (Batch processing of more than one set per pipeline run is not yet implemented — see §9.)
+- **Image set input** — drag-and-drop or file-picker selection of an LDR bracket (JPEG, TIFF, or camera raw). Multiple named image sets can be staged; each set is validated to contain at least 2 images, and every staged set is run. On the desktop a set is a directory; in a browser, `webkitdirectory` reports a relative path, so nested folders still become separate sets and a plain multi-file selection becomes one.
 - **Camera response function** — upload of a `.rsp` file describing the camera's tone response, required for JPEG-derived input.
 - **Cropping and resizing**
   - Interactive circular lens-mask editor (drag center + radius handles) to isolate the fisheye field of view within the source frame.
@@ -37,37 +42,40 @@ A three-tab desktop app (`src/app/navigation.tsx`):
 - **Output header editing** — configurable horizontal/vertical fisheye view angle (degrees), written into the output HDR header.
 - **Source image filtering** — optional toggle to exclude LDR images that don't contribute usefully to HDR generation, trading a small time cost for improved accuracy.
 - **Pipeline execution and status**
-  - Submits the full parameter set to the Rust backend (`pipeline` Tauri command) and shows live progress (`PipelineStatus` component, driven by backend-emitted events).
+  - Stages the input bytes, hands them to the pipeline worker, and shows live progress (`PipelineStatus`, driven by events on an `EventTarget` rather than by a process boundary).
   - Known `hdrgen` failure modes (unsolvable response function, insufficient/non-overlapping exposures) are pattern-matched from stderr and surfaced as an actionable per-image-set error instead of a raw stack trace.
-  - Any other pipeline failure is captured as a JSON trace file (inputs + error) written next to the output, with a "reveal in folder" action so it can be sent to a maintainer.
+  - Any other pipeline failure is captured as a JSON trace (inputs + error) so it can be sent to a maintainer.
 
-## 4. Feature: Backend Calibration Pipeline
+## 4. Feature: Calibration Pipeline
 
-`src-tauri/src/pipeline.rs` and `src-tauri/src/pipeline/*`
+`src/lib/pipeline/*`, driven from `src/app/home-page/run-wasm-pipeline.ts`
 
-Exposed as a single async Tauri command (`pipeline`) that runs the following steps, in this order, per image set (verified against `process_image_set` in `pipeline.rs`):
+The pipeline is TypeScript orchestrating WebAssembly. It runs **in a Web Worker**, not on the page: Emscripten's `callMain` is synchronous and blocks its thread for the whole of a tool, so an inline pipeline froze the tab for the length of an hdrgen merge. The worker reads no files itself — the page stages the bytes and transfers them in, because only the page knows how to reach a file (Tauri's filesystem on the desktop, the virtual filesystem in a browser), and keeping that out of the worker is what lets one worker serve both hosts.
 
-1. **Merge exposures** (`merge_exposures.rs`) — combines the LDR bracket into a single HDR image via `hdrgen`, using the supplied camera response function. Raw camera formats in the input set are converted through `dcraw_emu` inline at this step (not a separate pipeline stage).
-2. **Nullify exposure value** (`nullify_exposure_value.rs`) — always runs.
-3. **Crop** (`crop.rs`) — applies the lens mask (diameter/x/y from the UI). Always runs.
-4. **Resize** (`resize.rs`) — *only if* the lens mask diameter exceeds 1000px.
-5. **Projection adjustment** (`projection_adjustment.rs`) — fisheye projection correction, *only if* a fisheye correction `.cal` file was supplied.
-6. **Vignetting correction** (`vignetting_effect_correction.rs`) — *only if* a vignetting `.cal` file was supplied.
-7. **Neutral density correction** (`neutral_density.rs`) — *only if* a neutral density `.cal` file was supplied.
-8. **Photometric adjustment** (`photometric_adjustment.rs`) — applies the calibration factor, *only if* supplied.
-9. **Header editing (view angles)** (`header_editing.rs`) — writes the `VIEW= -vta -vv -vh` line into the Radiance header *before* evalglare runs, since evalglare reads its view geometry from the header rather than purely from its own CLI flags. Always runs. (Fixed 2026-07-24 — see §8; this used to run *after* evalglare, which produced incorrect glare values on every pipeline run.)
-10. **Evalglare** (`evalglare.rs`) — always runs; computes a glare value via Radiance's `evalglare`, now evaluating against a header with the correct view angles already written.
-11. **Header editing (glare value)** (`header_editing.rs`) — a second call to the same step, this time adding the evalglare-derived `COMPUTED_VERTICAL_ILLUMINANCE` value into the header (the quantity `evalglare -V` reports, named to pair with the user-supplied `MEASURED_VERTICAL_ILLUMINANCE`). Always runs. This is the file copied out as the pipeline's primary output.
-12. **Falsecolor** (`falsecolor.rs`) — generates the false-color luminance map via Radiance's `falsecolor`, from the fully-edited header. Always runs; this is the pipeline's secondary (`_fc.hdr`) output.
+Each tool is a separate Emscripten module built with `-sEXIT_RUNTIME=1`, which means one `main()` per instance and therefore a fresh instance per stage. Each `.wasm` is compiled once per session and the compiled module reused across instantiations; recompiling per stage cost roughly 7.6x on instantiation alone, plus a network round trip per stage when served over HTTP.
 
-Steps 4–8 are conditionally skipped when their corresponding calibration input is absent; merge, nullify, crop, both header-editing passes, evalglare, and falsecolor are unconditional. Each step invokes the corresponding Radiance/`hdrgen` binary as a subprocess and propagates structured `CommandError`/`PipelineError` results back to the frontend (rather than raw process failures). Progress/status events are emitted per step for the frontend's progress bar.
+Per image set, in this order (`orchestrator.ts`):
 
-Directory (batch) input triggers the same per-set sequence once per directory, but the frontend currently only submits a single set per run (see §9).
+1. **Merge exposures** — combines the LDR bracket into a single HDR image via `hdrgen`, using the supplied camera response function. Raw camera formats are converted through `dcraw_emu` first, and the resulting TIFF is shared with the UI's preview rather than converted twice (#242).
+2. **Nullify exposure value** — always runs.
+3. **Crop** — applies the lens mask (diameter/x/y from the UI). Always runs.
+4. **Resize** — *only if* the lens mask diameter exceeds 1000px.
+5. **Projection adjustment** — fisheye projection correction, *only if* a fisheye correction `.cal` file was supplied.
+6. **Vignetting correction** — *only if* a vignetting `.cal` file was supplied.
+7. **Neutral density correction** — *only if* a neutral density `.cal` file was supplied.
+8. **Photometric adjustment** — applies the calibration factor, *only if* supplied.
+9. **Header editing (view angles)** — writes the `VIEW= -vta -vv -vh` line into the Radiance header *before* evalglare runs, since evalglare reads its view geometry from the header rather than purely from its own CLI flags. Always runs. (See §8.)
+10. **Evalglare** — always runs; computes a glare value against a header with the correct view angles already written.
+11. **Header editing (glare value)** — a second pass, adding the evalglare-derived `COMPUTED_VERTICAL_ILLUMINANCE` value (the quantity `evalglare -V` reports, named to pair with the user-supplied `MEASURED_VERTICAL_ILLUMINANCE`). This is the pipeline's primary output.
+12. **Falsecolor** — the false-color luminance map, reimplemented in TypeScript because upstream `falsecolor` is a Perl script rather than a C tool. Always runs; the `_fc.hdr` secondary output.
 
-Two other backend commands support the rest of the app:
+Steps 4–8 are conditionally skipped when their corresponding calibration input is absent; the rest are unconditional. Failures propagate as structured `PipelineError` values rather than raw exit codes, and a status event is emitted per step.
 
-- `convert_raw_img` (`raw_image_help.rs`) — converts raw image(s) to `.tiff` for UI preview purposes, with on-disk caching.
-- `read_hdr_metadata` (`hdr_metadata.rs`) — parses a Radiance `.hdr` header into a key/value map for display in the Image Viewer.
+Every staged image set runs, in sequence (`run-batch.ts`).
+
+The two former Rust commands have TypeScript equivalents: raw conversion rides on the `dcraw_emu` WebAssembly build with an in-session cache, and `src/lib/hdr-metadata.ts` parses a Radiance header into the key/value map the viewer displays.
+
+**Numerical parity.** The WebAssembly build was validated against native binaries on the reference brackets: the RAW/TIFF path matches to 1e-8, and the JPEG path differs by an unbiased ~1.7%, traced to the float IDCT and settled deliberately in #235. Wall clock is roughly 2x native, the cost of a single-threaded build that needs no COOP/COEP headers and therefore hosts anywhere.
 
 ## 5. Feature: Image Viewer
 
@@ -81,28 +89,29 @@ Two other backend commands support the rest of the app:
   - Hover readout of luminance at the cursor position (`hover-luminance-details.tsx`).
   - Rectangular/region selection tool (`use-image-selection-layer.ts`, `image-selection-context.tsx`) reporting min/max/average luminance and distribution for the selected region (`luminance-aggregates.ts`, `selection-details.tsx`).
   - Illuminance summary panel (`illuminance-details.tsx`).
-- **Metadata panel** — displays parsed `.hdr` header fields via `read_hdr_metadata`.
+- **Metadata panel** — displays parsed `.hdr` header fields (`src/lib/hdr-metadata.ts`).
 - **View controls** — `view-control-card.tsx` consolidates exposure, overlay, and display toggles.
 
-Known constraint carried over from the legacy viewer: full desktop support depends on the platform's WebView/WebGL capability (see README §"Supported Platforms" note on XQuartz for macOS).
+The viewer works on every platform with no additional software. It requires WebGL, which every supported target has; WebGPU is used only as an optional accelerator for the false-color computation.
 
 ## 6. Feature: Settings
 
 `src/app/settings-page/page.tsx`
 
-- Output folder. There are no tool paths to configure: every tool ships with the app.
-- Reports the app, Tauri, Radiance, `hdrgen` and LibRaw versions, read from `public/wasm/versions.json`.
-- Configurable default output directory.
-- Experience-level preference (`standard` vs. presumably an advanced mode — surfaced in state, UI still minimal).
-- App/Tauri version display, sourced live from the Tauri API.
-- Settings persist via a Zustand store (`stores/settings-store.ts`) backed by browser `localStorage`, hydrated on load.
+- Output folder, on the desktop. It is hidden in a browser, because a browser downloads and the browser chooses where — an output path there would be a control that does nothing (`canWriteToChosenDirectory()`).
+- There are no tool paths to configure: every tool ships with the app.
+- Reports the app and Tauri versions, and the Radiance, `hdrgen` and LibRaw versions read from `public/wasm/versions.json`. The Tauri version is absent in a browser, which is reported as absent rather than guessed.
+- Carries the link to the Corresponding Source, which GPL-3 §6(d) requires be offered from the application itself once `.wasm` is served over the network.
+- Settings persist via a Zustand store (`stores/settings-store.ts`) backed by `localStorage`, hydrated on load.
 
 ## 7. Cross-cutting / Infrastructure
 
-- **Pipeline status & error UX** — a shared `PipelineStatusProvider` (`pipeline-status-context.tsx`) coordinates progress/error state so it's consistent between the Home page and any future consumers.
+- **Host abstraction** — `src/lib/host/` is the only place either build knows which host it is running in: `env.ts` (capabilities, reported separately from the host itself), `pick.ts` (file selection), `save.ts` (writing versus downloading), `events.ts`, `reveal.ts`. There is one build; Tauri is detected at runtime rather than compiled in.
+- **Storage** — `src/lib/app-storage.ts` over IndexedDB (`storage/kv.ts`), holding both records and file content. Preset calibration files are stored as content rather than as paths, after files kept on a cloud drive copied as zero bytes while the preset still recorded the expected hash. Desktop installs migrate their old on-disk files once (`storage/migrate-tauri-files.ts`).
+- **Virtual filesystem** — `src/lib/vfs.ts` gives browser-side files synthetic paths, so the pipeline's path-based contract holds unchanged. Two lifetimes: `/session/...` dies with the tab, `/presets/...` is IndexedDB-backed and survives.
+- **Pipeline status & error UX** — a shared `PipelineStatusProvider` coordinates progress and error state across pages.
 - **Toast notifications** (`sonner`) for success/error/action feedback app-wide.
-- **Image caching** — `src-tauri/src/image_cache/` caches derived TIFF previews and raw-to-TIFF conversions to avoid redundant subprocess work when the same source image is reused across the UI.
-- **Static export** — the Next.js frontend builds via `output: "export"` (no Node server at runtime; Tauri serves the static bundle).
+- **Static export** — the Next.js frontend builds via `output: "export"`. No Node server at runtime: Tauri serves the bundle on the desktop, and any static host serves it on the web.
 
 ## 8. Recent Fixes
 
@@ -110,7 +119,20 @@ Known constraint carried over from the legacy viewer: full desktop support depen
 
 ## 9. Known Limitations (as of this document)
 
-- Only one image set can be run through the pipeline per submission; the code has an explicit `TODO` for batch processing of multiple sets.
-- Falsecolor HDR rendering and multi-image memory cleanup were flagged as unresolved issues in earlier iterations of the image viewer (PR #218); verify these are resolved in the current (#223) implementation before relying on them for large viewing sessions.
-- The Image Viewer's WebDriver-based end-to-end test (`e2e-tests/`) uses `@wdio/tauri-service`'s embedded driver, which supports Windows, Linux, and macOS. It runs in CI on Windows and Linux as a non-blocking job (not yet a required check).
-- ~~Vendored, bundled Radiance/`hdrgen` binaries~~ — superseded. The tools are compiled to WebAssembly and run in-process rather than being bundled as executables, which removes the install step and the tool-path settings entirely. See the WebAssembly port epic (#227).
+Applying to both hosts:
+
+- **Roughly 2x native wall clock.** The WebAssembly build is single-threaded on purpose, which is what lets it host anywhere without COOP/COEP headers. Threads or SIMD would recover some of it, at the cost of that property.
+- **Input resolution has a ceiling.** A 10-frame CR2 bracket peaks around 2.12 GB against the wasm32 4 GB limit, and the floor scales with frame *area*, so the ceiling arrives near 55-60 MP. Re-measure if input resolution roughly doubles.
+- **The JPEG path differs from native by ~1.7%**, unbiased, traced to the float IDCT (#235). The RAW path matches to 1e-8.
+
+Applying to the browser only, and all of them consequences of what a browser permits rather than of unfinished work:
+
+- **Outputs are downloaded** and the browser decides where. `showSaveFilePicker` needs a user gesture *per file*, and a batch produces two files per image set, so it is unusable for this.
+- **Files chosen in a previous session cannot be reopened.** A browser gives no durable handle to a picked file. Presets are unaffected: they store their calibration files as content.
+- **The RAW-to-TIFF cache is per-session.** An OPFS-backed cache that survives a reload has not been built.
+- **Memory beyond desktop Chromium is unmeasured.** A 10-frame CR2 bracket peaks near 700 MB of JS heap; comfortable there, unmeasured on mobile.
+
+Testing:
+
+- The desktop suite (`e2e-tests/`, WebdriverIO) and the web suite (`e2e-web/`, Playwright) are separate because Playwright cannot attach to a Tauri window — neither WKWebView nor WebKitGTK exposes a CDP endpoint. Both now run the full generation case, which previously could not run in CI at all without externally installed binaries.
+- ~~Vendored, bundled Radiance/`hdrgen` binaries~~ — superseded by the WebAssembly port (#227).
