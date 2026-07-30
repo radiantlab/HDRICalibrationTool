@@ -1,0 +1,148 @@
+# Checks the Tauri shell on all three platforms it ships to.
+#
+# The application logic is covered by the web CI, because it is the same code:
+# the pipeline is WebAssembly and the frontend is a static export, and Tauri
+# only wraps them in a native window. What is left for this workflow is
+# everything that is *not* shared -- that the Rust crate compiles on each
+# target, that its dependencies still agree with the npm side, and that the
+# app actually runs in a native webview rather than only in Chromium.
+#
+# That last point earns its cost. Two failures this workflow exists to catch
+# have already happened: a dependency bump moved the Tauri npm plugins forward
+# while Cargo.lock stayed put, which fails the build outright, and the pipeline
+# moved into a Web Worker, which was verified in a browser but not in
+# WKWebView or WebKitGTK.
+
+name: CI (desktop)
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  group: ci-desktop-${{ github.ref }}
+
+permissions:
+  contents: read
+
+jobs:
+  rust:
+    name: Rust checks
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Format
+        run: cargo fmt --manifest-path src-tauri/Cargo.toml --check
+
+      - name: Clippy
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+
+  build:
+    name: Build (${{ matrix.platform }})
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest
+            args: --target universal-apple-darwin
+          - platform: ubuntu-22.04
+            args: ""
+          - platform: windows-latest
+            args: ""
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: lts/*
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          # Only the macOS runner builds a universal binary, so only it needs
+          # both architectures installed.
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.platform }}
+          workspaces: src-tauri
+
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.platform == 'ubuntu-22.04'
+        # webkit2gtk 4.1 is the Tauri v2 one. The 4.0 package that used to be
+        # installed alongside it was for Tauri v1 and does nothing here.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - run: npm ci
+
+      - name: Build
+        # No bundling. Producing installers is the release workflow's job, and
+        # skipping it here saves several minutes per platform on every push
+        # without weakening what this job actually checks: that it compiles.
+        run: npm run tauri build -- --no-bundle ${{ matrix.args }}
+
+  e2e:
+    name: End-to-end (${{ matrix.platform }})
+    runs-on: ${{ matrix.platform }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ubuntu-22.04, windows-latest]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          node-version: lts/*
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: e2e-${{ matrix.platform }}
+          workspaces: src-tauri
+
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf xvfb
+
+      - run: npm ci
+
+      - run: npm ci --prefix e2e-tests
+
+      # No Radiance or hdrgen is downloaded any more. Both are WebAssembly
+      # shipped in the repository, so the run that generates an HDR image --
+      # which never worked reliably in CI without real binaries -- now runs
+      # unconditionally, on every platform, with nothing installed.
+      - name: Run (Linux, headless)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: xvfb-run --auto-servernum npm run test:e2e:desktop
+
+      - name: Run (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: npm run test:e2e:desktop

@@ -5,6 +5,22 @@
     "ultracite/biome/react",
     "ultracite/biome/next"
   ],
+  "files": {
+    // Generated artifacts. None of these are written by hand, so formatting
+    // them produces enormous diffs that say nothing and would be undone by
+    // the next regeneration. Together they were ~12,700 of the ~12,780
+    // diagnostics `check` reported, which is why the check had stopped being
+    // run at all -- and a check nobody runs is not a check.
+    "includes": [
+      "!public/wasm",
+      // Marks exported as single-line SVG.
+      "!public/logo",
+      "!src/app/icon.svg",
+      // Written by the Tauri CLI.
+      "!src-tauri/gen",
+      "!src-tauri/capabilities/migrated.json"
+    ]
+  },
   "linter": {
     "rules": {
       "suspicious": {
@@ -16,7 +32,34 @@
         // Every current use is a real bitmask/binary-format operation, not
         // a typo for a logical operator, so this rule is disabled globally
         // rather than suppressed inline at ~9 call sites.
-        "noBitwiseOperators": "off"
+        "noBitwiseOperators": "off",
+
+        // Every flagged site in this codebase is a case where the *type* is
+        // more confident than runtime reality, in one of two ways, and
+        // removing the guard would introduce a crash rather than tidy dead
+        // code:
+        //
+        //  - React refs. `.current` is typed from its initial value, so a
+        //    `if (ref.current)` on a DOM ref reads as "always falsy" and a
+        //    `if (!dragStateRef.current)` as "always truthy". Both are wrong
+        //    the moment the component mounts or a drag starts.
+        //    (run-console.tsx, use-image-selection-layer.ts x3)
+        //  - Unvalidated reads from storage. `readJson<T>` casts what came
+        //    out of IndexedDB to T without checking its shape, so the type
+        //    says `presets` is an array while a corrupt document may hold
+        //    anything. The `?? []` guards reality, not the type.
+        //    (presets.ts, run-history.ts)
+        //
+        // Also seen resolving the wrong overload of
+        // useGenericImageMetadata, where dropping the guard crashes with no
+        // image selected, and missing noUncheckedIndexedAccess entirely in
+        // falsecolor-luminance-webgpu.ts -- that one already carried an
+        // inline suppression before this rule started firing more widely.
+        //
+        // Seven false positives and no true ones, so this is off globally
+        // rather than suppressed at each site. Worth revisiting if Biome
+        // learns that a ref's current value is not its initial one.
+        "noUnnecessaryConditions": "off"
       },
       "performance": {
         // Surveyed all ~33 flagged sites: the large majority are inline
@@ -46,6 +89,30 @@
     }
   },
   "overrides": [
+    {
+      // The two end-to-end suites. Both rules disabled here are performance
+      // rules, and neither measures anything in a test that drives a real
+      // browser:
+      //
+      //  - noAwaitInLoops. Every await in these specs is a round trip to a
+      //    browser, and the order is the point -- open the section, then click
+      //    the picker, then assert the value landed. Running them concurrently
+      //    would not be faster, it would be wrong.
+      //  - useTopLevelRegex. A regex literal allocated once per test is
+      //    invisible next to a page navigation. More to the point, a function
+      //    handed to `browser.execute` or `page.evaluate` is serialised and
+      //    sent to the browser, so it *cannot* close over a module-level
+      //    constant: hoisting the regex would break it outright.
+      "includes": ["e2e-web/**", "e2e-tests/**"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noAwaitInLoops": "off",
+            "useTopLevelRegex": "off"
+          }
+        }
+      }
+    },
     {
       // Biome 2.5.3 panics internally ("processing panicked: index out of
       // bounds", inside biome_module_graph::module_resolver) whenever it

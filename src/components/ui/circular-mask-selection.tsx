@@ -127,7 +127,7 @@ export function CircularMaskSelection({
         }}
       >
         <Plus
-          className="size-8 text-red-500"
+          className="size-8 text-destructive"
           shapeRendering="crispEdges"
           vectorEffect="non-scaling-stroke"
         />

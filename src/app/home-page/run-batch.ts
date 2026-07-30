@@ -68,10 +68,7 @@ export async function runBatch({
   let started = 0;
   let succeeded = 0;
 
-  // Array.from(...) rather than iterating sets.entries() directly: this
-  // project's tsconfig targets es5, and a bare ArrayIterator needs
-  // --downlevelIteration to be consumed by for-of.
-  for (const [index, set] of Array.from(sets.entries())) {
+  for (const [index, set] of sets.entries()) {
     if (shouldStop?.()) {
       break;
     }

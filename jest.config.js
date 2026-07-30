@@ -16,6 +16,15 @@ const config = {
   },
   setupFilesAfterEnv: ["<rootDir>/jest.setup.js"],
   testEnvironment: "jsdom",
+  // The two end-to-end suites drive real browsers and have their own runners.
+  // Without this, Jest collects the Playwright specs and fails on
+  // `@playwright/test` refusing to be imported outside a Playwright process.
+  testPathIgnorePatterns: [
+    "<rootDir>/node_modules/",
+    "<rootDir>/e2e-tests/",
+    "<rootDir>/e2e-web/",
+    "<rootDir>/out/",
+  ],
 };
 
 // next/jest builds its own `transformIgnorePatterns` from the ESM-only

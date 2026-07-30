@@ -12,18 +12,17 @@ import { createJSONStorage, persist } from "zustand/middleware";
 /**
  * Interface defining the application settings
  *
- * @property radiancePath - Path to the Radiance binary directory
- * @property hdrgenPath - Path to the HDRGen binary
- * @property dcrawEmuPath - Path to the dcraw_emu binary
+ * No binary paths remain. Every tool the app runs -- the pipeline and the RAW
+ * preview alike -- is WebAssembly shipped with it, so there is nothing to
+ * locate and nothing for a user to configure. That is what resolves the
+ * "dependencies are hard to set up" complaint.
+ *
  * @property outputPath - Default path for output files
  * @property osPlatform - Operating system platform (windows, darwin, linux)
  */
 interface Settings {
-  dcrawEmuPath: string;
-  hdrgenPath: string;
   osPlatform: string;
   outputPath: string;
-  radiancePath: string;
 }
 
 /**
@@ -56,14 +55,29 @@ export const useSettingsStore = create<SettingsStore>()(
       setSettings: (settings) => set({ settings }),
       // Initial default empty settings
       settings: {
-        dcrawEmuPath: "",
-        hdrgenPath: "",
         osPlatform: "",
         outputPath: "",
-        radiancePath: "",
       },
     }),
     {
+      // Zustand shallow-merges at the top level, so a persisted `settings`
+      // object replaces the defaults wholesale. Two consequences worth
+      // knowing, in opposite directions:
+      //
+      //  - A field *added* after a user last saved arrives as undefined rather
+      //    than as its default, so anything new must either tolerate undefined
+      //    or ship a migration.
+      //  - A field *removed* stays in the persisted object indefinitely.
+      //    `radiancePath`, `hdrgenPath`, `dcrawEmuPath` and `useWasmPipeline`
+      //    are therefore still in existing users' localStorage. That is
+      //    harmless -- nothing
+      //    reads them and the extra keys are inert -- and deliberately not
+      //    cleaned up, since a migration that rewrites stored settings is more
+      //    risk than three dead strings.
+      //
+      // `useWasmPipeline` in particular must not be revived as a dispatch:
+      // anyone who explicitly set it false still has false persisted, and
+      // there is no longer another pipeline to fall back to.
       name: "hdr-settings",
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

@@ -1,7 +1,6 @@
 "use client";
 
-import { type DialogFilter, open } from "@tauri-apps/plugin-dialog";
-import { exists } from "@tauri-apps/plugin-fs";
+import type { DialogFilter } from "@tauri-apps/plugin-dialog";
 import {
   type Control,
   type FieldPathByValue,
@@ -17,6 +16,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { pickDirectoryFiles, pickFiles } from "@/lib/host/pick";
+import { anyFileExists } from "@/lib/host-fs-tauri";
 import { cn } from "@/lib/utils";
 
 type FilePathFieldName<T extends FieldValues> = FieldPathByValue<
@@ -90,7 +91,9 @@ export function FileInput<
 
         const path = value.trim();
         try {
-          const ok = await exists(path);
+          // Virtual too: a preset supplies paths that exist in storage rather
+          // than on disk, and reporting those as missing would be wrong.
+          const ok = await anyFileExists(path);
           return ok || "Path does not exist";
         } catch {
           // If tauri environment not available or other error
@@ -105,12 +108,13 @@ export function FileInput<
     if (disabled) {
       return;
     }
-    const selection = await open({
-      directory,
-      filters,
-      multiple: false,
-    });
-    if (typeof selection === "string") {
+    // A directory selection yields its files rather than the directory, so
+    // this control takes the first: it holds a single path, and in a browser
+    // there is no directory path to hold.
+    const [selection] = directory
+      ? await pickDirectoryFiles({ filters })
+      : await pickFiles({ filters, multiple: false });
+    if (selection) {
       field.onChange(selection);
       field.onBlur();
     }

@@ -2,26 +2,37 @@
  * Settings Page Component for the HDRI Calibration Tool.
  *
  * This component allows users to configure application settings including:
- * - External utility paths (Radiance, hdrgen, dcraw_emu)
  * - Output file location
  * - User experience level
  * - Debug console access
+ *
+ * It also reports what this build is made of. There used to be paths here for
+ * Radiance, hdrgen and dcraw_emu, which the user had to install and locate;
+ * every tool now ships with the app as WebAssembly, so the paths are gone and
+ * their versions are shown instead.
  *
  * Settings are saved to persistent storage via Tauri API calls.
  */
 "use client";
 
-import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
-import { open } from "@tauri-apps/plugin-dialog";
-import { openPath } from "@tauri-apps/plugin-opener";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import {
+  TOOL_LABELS,
+  TOOL_ORDER,
+  TOOL_ROLES,
+  type WasmVersions,
+  wasmVersions,
+} from "@/lib/build-versions";
+import { appInfo, canWriteToChosenDirectory } from "@/lib/host/env";
+import { openExternal } from "@/lib/host/open-external";
+import { pickOutputDirectory } from "@/lib/host/pick";
 import { useSettingsStore } from "../stores/settings-store";
 import SettingsButtonBar from "./settings-button-bar";
 
 const handleExternalLink = async (url: string) => {
-  await openPath(url);
+  await openExternal(url);
 };
 
 /**
@@ -36,21 +47,36 @@ export default function SettingsPage() {
   const [_experienceLevel, _setExperienceLevel] = useState("standard");
   const [_consoleInput, _setConsoleInput] = useState("");
 
-  const [_appVersion, setAppVersion] = useState<string>("");
-  const [_appName, setAppName] = useState<string>("");
-  const [_tauriVersion, setTauriVersion] = useState<string>("");
+  const [appVersion, setAppVersion] = useState<string>("");
+  const [appName, setAppName] = useState<string>("");
+  const [tauriVersion, setTauriVersion] = useState<string>("");
+  const [tools, setTools] = useState<WasmVersions | null>(null);
+  // Resolved in an effect rather than inline: this is a static export, so the
+  // first render happens at build time where there is no window to ask.
+  const [canChooseOutput, setCanChooseOutput] = useState(true);
+  const [toolsError, setToolsError] = useState<string | null>(null);
   useEffect(() => {
     /**
      * Retrieves app name, app version, and tauri version from Tauri API
      * and updates the component state
      */
     async function fetchAppInfo() {
-      setAppVersion(await getVersion());
-      setAppName(await getName());
-      setTauriVersion(await getTauriVersion());
+      const info = await appInfo();
+      setAppVersion(info.version);
+      setAppName(info.name);
+      setTauriVersion(info.tauriVersion ?? "");
     }
 
     fetchAppInfo();
+    setCanChooseOutput(canWriteToChosenDirectory());
+    // Surfaced rather than swallowed: a missing versions.json means the wasm
+    // artifacts were refreshed without regenerating it, and the numbers shown
+    // would otherwise silently describe a different build.
+    wasmVersions()
+      .then(setTools)
+      .catch((error: unknown) => {
+        setToolsError(error instanceof Error ? error.message : String(error));
+      });
   }, []);
 
   // Update local settings when global settings change
@@ -89,14 +115,10 @@ export default function SettingsPage() {
    * @param label - Label for the dialog title
    * @param isDirectory - Whether to select a directory (true) or a file (false)
    */
-  const dialog = async (id: string, label: string, isDirectory = false) => {
-    const selectedPath = await open({
-      directory: isDirectory,
-      multiple: false,
-      title: `Select${label}Path`,
-    });
+  const dialog = async (id: string, label: string, _isDirectory = false) => {
+    const selectedPath = await pickOutputDirectory(`Select${label}Path`);
     if (selectedPath !== null) {
-      handleUpdatePath(id, selectedPath as string);
+      handleUpdatePath(id, selectedPath);
     }
   };
   /**
@@ -113,54 +135,50 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="grid min-h-screen grid-cols-4 bg-gray-300 text-black">
-      <main className="col-span-4 m-8 mt-0 mb-10 border-gray-400 border-r border-l bg-white p-5">
+    // Column, not a scrolling box. The action bar is a sibling of the scroll
+    // area rather than floating over it: it used to be `fixed bottom-0`, which
+    // covered whatever the page ended with, and no amount of bottom margin
+    // fixes that reliably because the bar's height is not the margin's
+    // business. `min-h-0` is what lets the middle child shrink and take the
+    // overflow, since the body is `h-screen overflow-hidden`.
+    <div className="flex min-h-0 flex-1 flex-col bg-muted text-foreground">
+      <main className="mx-8 mb-8 min-h-0 flex-1 overflow-y-auto border-border border-r border-l bg-background p-5">
         <div className="grid grid-cols-1 gap-6">
           {/* Left: External Utilities */}
-          <div className="rounded-lg border border-gray-300 p-5">
+          <div className="rounded-lg border border-border p-5">
             <h2 className="mb-4 flex items-center font-bold text-xl">
-              External Utilities
-              {/* <span className="ml-2 text-gray-500 text-sm">ⓘ</span> */}
+              {canChooseOutput ? "Paths" : "Output"}
             </h2>
+
+            {canChooseOutput ? null : (
+              <p className="mb-4 text-muted-foreground text-sm">
+                Generated images are downloaded, so where they are saved is your
+                browser's setting rather than this app's. There is nothing to
+                configure here.
+              </p>
+            )}
 
             {/*
               Mapping through the settings fields to create input sections for each
             */}
-            {[
-              {
-                id: "radiancePath",
-                label: "Radiance",
-                placeholder: "This path is required",
-                value: localSettings.radiancePath,
-              },
-              {
-                id: "hdrgenPath",
-                label: "hdrgen (optional)",
-                placeholder:
-                  "This path is optional, only enter a new path if you wish to override the included hdrgen binary",
-                value: localSettings.hdrgenPath,
-              },
-              {
-                id: "dcrawEmuPath",
-                label: "dcraw_emu (optional)",
-                placeholder:
-                  "This path is optional, only enter a new path if you wish to override the included dcraw_emu binary",
-                value: localSettings.dcrawEmuPath,
-              },
-              {
-                id: "outputPath",
-                label: "HDRI Output",
-                placeholder: "This path is required",
-                value: localSettings.outputPath,
-              },
-            ].map(({ id, label, value, placeholder }) => (
+            {(canChooseOutput
+              ? [
+                  {
+                    id: "outputPath",
+                    label: "HDRI Output",
+                    placeholder: "This path is required",
+                    value: localSettings.outputPath,
+                  },
+                ]
+              : []
+            ).map(({ id, label, value, placeholder }) => (
               <div className="mb-4" key={id}>
                 <label className="mb-1 block font-semibold" htmlFor={id}>
                   {label}
                 </label>
                 <div className="flex items-center gap-2">
                   <input
-                    className="grow rounded border border-gray-400 px-2 py-1"
+                    className="grow rounded border border-input bg-background px-2 py-1"
                     id={id}
                     name={id}
                     onChange={handleSettingsChange}
@@ -169,7 +187,7 @@ export default function SettingsPage() {
                     value={value}
                   />
                   <button
-                    className="rounded bg-gray-300 px-2 py-1 font-semibold text-gray-700 hover:bg-gray-400"
+                    className="rounded bg-secondary px-2 py-1 font-semibold text-secondary-foreground hover:bg-secondary/80"
                     onClick={() =>
                       setLocalSettings({ ...localSettings, [id]: "" })
                     }
@@ -178,7 +196,7 @@ export default function SettingsPage() {
                     Clear
                   </button>
                   <button
-                    className="rounded bg-gray-300 px-2 py-1 font-semibold text-gray-700 hover:bg-gray-400"
+                    className="rounded bg-secondary px-2 py-1 font-semibold text-secondary-foreground hover:bg-secondary/80"
                     onClick={() => dialog(id, label, id === "outputPath")}
                     type="button"
                   >
@@ -257,6 +275,88 @@ export default function SettingsPage() {
                 )}
               </div>
             ))}
+          </div>
+          {/* What this build is made of. Moved here from the header, which had
+              room for the app and Tauri versions only, and none for the tools
+              that actually do the work. */}
+          <div className="rounded-lg border border-border p-5">
+            <h2 className="mb-4 font-bold text-xl">About this build</h2>
+
+            <dl className="mb-5 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
+              <dt className="font-semibold">{appName || "Application"}</dt>
+              <dd>{appVersion || "\u2014"}</dd>
+              {tauriVersion ? (
+                <>
+                  <dt className="font-semibold">Tauri</dt>
+                  <dd>{tauriVersion}</dd>
+                </>
+              ) : null}
+            </dl>
+
+            <h3 className="mb-1 font-semibold">Image processing tools</h3>
+            <p className="mb-3 text-muted-foreground text-sm">
+              These run inside the app as WebAssembly. Nothing needs installing,
+              and there are no paths to configure.
+            </p>
+
+            {toolsError ? (
+              <p className="text-destructive text-sm">
+                Could not read the tool versions: {toolsError}
+              </p>
+            ) : (
+              <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 text-sm">
+                {TOOL_ORDER.map((name) => {
+                  const tool = tools?.tools[name];
+                  return (
+                    <div className="contents" key={name}>
+                      <dt className="font-semibold">{TOOL_LABELS[name]}</dt>
+                      <dd>
+                        <span>{tool ? tool.version : "\u2026"}</span>
+                        <span className="block text-muted-foreground">
+                          {TOOL_ROLES[name]}
+                        </span>
+                        {tool ? (
+                          <span className="block font-mono text-muted-foreground text-xs">
+                            {tool.repository} @ {tool.commit.slice(0, 8)}
+                          </span>
+                        ) : null}
+                      </dd>
+                    </div>
+                  );
+                })}
+                {tools ? (
+                  <div className="contents">
+                    <dt className="font-semibold">Emscripten</dt>
+                    <dd>{tools.emscripten}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            )}
+
+            {/*
+              Required, not decorative. Serving .wasm is conveying object code
+              under GPL-3, and section 6(d) wants "clear directions next to the
+              object code" for obtaining the Corresponding Source. A link in
+              the repository is not next to the object code; this is. See
+              licenses/DECISIONS.md.
+            */}
+            <p className="mt-5 border-border border-t pt-4 text-muted-foreground text-sm">
+              This application is free software, licensed{" "}
+              <strong>GPL-3.0</strong>. The complete source, including the forks
+              the tools above are built from, is at{" "}
+              <button
+                className="underline hover:text-foreground"
+                onClick={() =>
+                  openExternal(
+                    "https://github.com/radiantlab/HDRICalibrationTool"
+                  )
+                }
+                type="button"
+              >
+                github.com/radiantlab/HDRICalibrationTool
+              </button>
+              .
+            </p>
           </div>
         </div>
       </main>

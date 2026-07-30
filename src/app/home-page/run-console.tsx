@@ -1,6 +1,5 @@
 "use client";
 
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -13,6 +12,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { canRevealInFileManager } from "@/lib/host/env";
+import { revealFile } from "@/lib/host/reveal";
 import { serializeViewerUrl } from "../image-viewer/viewer-url";
 import { usePipelineStatus } from "../pipeline-status-context";
 
@@ -125,18 +126,20 @@ export function RunConsole({
             Copy log
           </Button>
           <div className="flex gap-2">
-            <Button
-              disabled={!lastEmittedOutput}
-              onClick={() => {
-                if (lastEmittedOutput) {
-                  revealItemInDir(lastEmittedOutput.path);
-                }
-              }}
-              type="button"
-              variant="outline"
-            >
-              Open folder
-            </Button>
+            {canRevealInFileManager() ? (
+              <Button
+                disabled={!lastEmittedOutput}
+                onClick={() => {
+                  if (lastEmittedOutput) {
+                    revealFile(lastEmittedOutput.path);
+                  }
+                }}
+                type="button"
+                variant="outline"
+              >
+                Open folder
+              </Button>
+            ) : null}
             <Button
               disabled={!lastEmittedOutput}
               onClick={openImage}

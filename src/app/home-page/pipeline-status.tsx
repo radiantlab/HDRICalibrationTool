@@ -5,7 +5,6 @@ import {
   FolderOpenIcon,
   PhotoIcon,
 } from "@heroicons/react/24/solid";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
+import { canRevealInFileManager } from "@/lib/host/env";
+import { revealFile } from "@/lib/host/reveal";
 import { serializeViewerUrl } from "../image-viewer/viewer-url";
 import { usePipelineStatus } from "../pipeline-status-context";
 
@@ -78,17 +79,19 @@ export function PipelineStatus({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem
-              disabled={!lastEmittedOutput}
-              onClick={() => {
-                if (lastEmittedOutput) {
-                  revealItemInDir(lastEmittedOutput.path);
-                }
-              }}
-            >
-              <FolderOpenIcon />
-              View file
-            </DropdownMenuItem>
+            {canRevealInFileManager() ? (
+              <DropdownMenuItem
+                disabled={!lastEmittedOutput}
+                onClick={() => {
+                  if (lastEmittedOutput) {
+                    revealFile(lastEmittedOutput.path);
+                  }
+                }}
+              >
+                <FolderOpenIcon />
+                View file
+              </DropdownMenuItem>
+            ) : null}
             <DropdownMenuItem
               disabled={!lastEmittedOutput}
               onClick={() => {

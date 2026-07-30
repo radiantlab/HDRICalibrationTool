@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowDownOnSquareStackIcon } from "@heroicons/react/24/solid";
-import { open } from "@tauri-apps/plugin-dialog";
 import { useRouter } from "next/navigation";
 import path from "path";
 import { useCallback } from "react";
@@ -10,6 +9,7 @@ import {
   type DropzoneChildrenProps,
   TauriDropzone,
 } from "@/components/ui/tauri-dropzone";
+import { pickFiles } from "@/lib/host/pick";
 import { cn } from "@/lib/utils";
 import { serializeViewerUrl } from "./viewer-url";
 
@@ -28,8 +28,7 @@ export default function ImageViewer() {
       className="size-full p-16"
       id="image-viewer-input"
       onClick={async () => {
-        const selectedFile = await open({
-          directory: false,
+        const [selectedFile] = await pickFiles({
           filters: [{ extensions: ["hdr"], name: "HDR Image" }],
           multiple: false,
         });

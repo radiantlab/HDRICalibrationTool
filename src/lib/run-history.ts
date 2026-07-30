@@ -1,6 +1,5 @@
-import { stat } from "@tauri-apps/plugin-fs";
 import type { LogEntry } from "@/app/pipeline-status-context";
-import { readJson, storagePath, writeJson } from "./app-storage";
+import { readJson, writeJson } from "./app-storage";
 
 export type RunOutcome = "ok" | "warning" | "error" | "rejected";
 
@@ -16,7 +15,15 @@ export interface RunRecord {
   /** Why a run failed or was rejected. Null when it succeeded. */
   reason: string | null;
   startedAt: string;
-  toolPaths: {
+  /**
+   * Where the pipeline's binaries lived, on runs old enough to have had any.
+   *
+   * Optional because nothing records it any more: the pipeline is WebAssembly
+   * shipped with the app, so there is no path to capture and nothing a
+   * different machine would need in order to reproduce a run. Kept on the type
+   * so history written before the cutover still parses.
+   */
+  toolPaths?: {
     dcrawEmu: string;
     hdrgen: string;
     radiance: string;
@@ -59,18 +66,25 @@ export async function clearRuns(): Promise<void> {
   await writeJson(HISTORY_FILE, { runs: [] });
 }
 
-/** Feeds the size indicator that unbounded retention requires. */
+/**
+ * Feeds the size indicator that unbounded retention requires.
+ *
+ * Measured by re-serialising rather than by stat-ing a file, because there is
+ * no file any more. The number is what the records cost, which is what the
+ * indicator is for; it is not the storage engine's on-disk footprint, and it
+ * never was exactly that either.
+ */
 export async function historyStats(): Promise<{
   bytes: number;
   count: number;
 }> {
   const runs = await readRuns();
-  const path = await storagePath("history", "runs.json");
   let bytes = 0;
   try {
-    bytes = (await stat(path)).size;
+    bytes = new TextEncoder().encode(JSON.stringify({ runs })).length;
   } catch {
-    // No history has been written yet.
+    // A record holding something non-serialisable should not break the page
+    // that displays the count.
   }
   return { bytes, count: runs.length };
 }

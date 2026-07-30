@@ -54,7 +54,10 @@ export const config = {
   framework: "mocha",
   maxInstances: 1,
   mochaOpts: {
-    timeout: 240_000,
+    // Comfortably longer than the pipeline's own wait, so a slow run fails
+    // with "no outputs, the app was showing ..." rather than mocha killing the
+    // test first and reporting only that time ran out.
+    timeout: 900_000,
     ui: "bdd",
   },
 

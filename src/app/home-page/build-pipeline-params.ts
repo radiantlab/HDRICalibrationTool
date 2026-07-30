@@ -1,10 +1,7 @@
 import type { pipelineConfig } from "./(pipeline-configuration)/config-provider";
 
 export interface PipelineToolSettings {
-  dcrawEmuPath: string;
-  hdrgenPath: string;
   outputPath: string;
-  radiancePath: string;
 }
 
 /** The circumscribed square the crop stage cuts out, in image pixels. */
@@ -30,19 +27,19 @@ export function maskBox(data: pipelineConfig): MaskBox {
 }
 
 /**
- * Builds the payload for the `pipeline` Tauri command.
+ * Builds the payload the WebAssembly pipeline runs on.
  *
  * `ytop` is the distance from the top of the image to the top of the lens
- * mask, which is the origin the overlay works in. crop.rs converts it to the
- * bottom-left origin Radiance expects.
+ * mask, which is the origin the overlay works in. `cropArgs` converts it to
+ * the bottom-left origin Radiance expects.
  *
- * Tauri matches command parameters by name at runtime, so a key renamed here
- * must be renamed in the `#[tauri::command]` signature in the same change.
- * Nothing catches a mismatch at compile time.
+ * It carried three tool paths until the pipeline moved to WebAssembly. There
+ * are no binaries to locate any more, so they are gone rather than passed and
+ * ignored.
  *
- * `setName` is passed through as the user typed or as the directory was named.
- * It becomes part of a filename, so it is sanitised in Rust where the file is
- * written rather than here, where a caller could bypass it.
+ * `setName` is passed through as the user typed it or as the directory was
+ * named. It becomes part of a filename, so it is sanitised by `outputStem`
+ * where the file is written rather than here, where a caller could bypass it.
  */
 export function buildPipelineParams(
   data: pipelineConfig,
@@ -53,11 +50,9 @@ export function buildPipelineParams(
   const { diameter, xleft, ytop } = maskBox(data);
 
   return {
-    dcrawEmuPath: settings.dcrawEmuPath,
     diameter,
     filterImages: data.outputSettings.filterIrrelevantSrcImages,
     fisheyeCorrectionCal: data.correctionFiles.fisheye ?? "",
-    hdrgenPath: settings.hdrgenPath,
     horizontalAngle: data.fisheyeView.horizontalViewDegrees,
     inputImages,
     legendHeight: "",
@@ -68,7 +63,6 @@ export function buildPipelineParams(
     outputPath: settings.outputPath,
     photometricAdjustmentCal: data.correctionFiles.calibrationFactor ?? "",
     projection: data.fisheyeView.projection,
-    radiancePath: settings.radiancePath,
     responseFunction: data.cameraResponseLocation ?? "",
     scaleLabel: "",
     scaleLevels: "",

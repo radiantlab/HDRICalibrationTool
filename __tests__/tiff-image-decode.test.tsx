@@ -22,18 +22,12 @@ jest.mock("@/lib/tiff-worker-client", () => ({
     });
   },
 }));
-jest.mock("@tauri-apps/plugin-fs", () => ({
-  readFile: () => Promise.resolve({ buffer: new ArrayBuffer(64) }),
-}));
-jest.mock("@/components/ui/(image)/(tiff-image)/useTiffPath", () => {
+jest.mock("@/components/ui/(image)/(tiff-image)/use-tiff-bytes", () => {
   // One promise for the whole module, because the real hook memoises. Handing
   // back a new one per render makes the identity of TiffImage's only effect
   // dependency change every render, which loops until the heap gives out.
-  const tiffPath = Promise.resolve("/cache/capt01.tiff");
-  return {
-    getTiffPath: () => tiffPath,
-    useTiffPath: () => tiffPath,
-  };
+  const tiffBytes = Promise.resolve(new Uint8Array(64));
+  return { useTiffBytes: () => tiffBytes };
 });
 
 import { TiffImage } from "../src/components/ui/(image)/(tiff-image)/tiff-image";

@@ -10,6 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { errorMessage } from "@/lib/error-message";
 
 export function ErrorBoundary({
   children,
@@ -25,7 +26,7 @@ export function ErrorBoundary({
           <ContextMenu>
             <ContextMenuTrigger asChild>
               <div className="grid size-full place-items-center border-2 border-destructive border-dashed font-mono text-destructive">
-                {errorPrefixMessage} {error.message}
+                {errorPrefixMessage} {errorMessage(error)}
               </div>
             </ContextMenuTrigger>
             <ContextMenuContent className="w-36">

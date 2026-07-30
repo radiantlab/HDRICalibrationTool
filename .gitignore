@@ -35,4 +35,17 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-/.vscode/
+/.vscode/.playwright-mcp/
+
+# Playwright screenshots taken while verifying the browser build
+*.png.tmp
+
+# Playwright (web e2e)
+/e2e-web/node_modules/
+/e2e-web/test-results/
+/e2e-web/playwright-report/
+/e2e-web/blob-report/
+/e2e-web/.cache/
+
+# Playwright MCP scratch output, written while inspecting the running app
+/.playwright-mcp/
