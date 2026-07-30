@@ -127,13 +127,21 @@ jobs:
           name: web-build
           path: out
 
-      - run: npm ci --prefix e2e-web
+      # `working-directory` rather than `npm --prefix`. `--prefix` moves where
+      # npm resolves packages, not the working directory, so Playwright looked
+      # for its config at the repository root, found none, and reported
+      # `Available projects: ""`.
+      - name: Install
+        run: npm ci
+        working-directory: e2e-web
 
       - name: Install browsers
-        run: npm --prefix e2e-web exec -- playwright install --with-deps ${{ matrix.project }}
+        run: npx playwright install --with-deps ${{ matrix.project }}
+        working-directory: e2e-web
 
       - name: Run
-        run: npm --prefix e2e-web exec -- playwright test --project=${{ matrix.project }}
+        run: npx playwright test --project=${{ matrix.project }}
+        working-directory: e2e-web
 
       - if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7

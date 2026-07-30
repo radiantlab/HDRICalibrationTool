@@ -216,6 +216,36 @@ async function waitForPreviewImages() {
   );
 }
 
+/**
+ * What the webview believes about itself and about the run in progress.
+ *
+ * The desktop and browser builds are the same code, told apart at runtime by
+ * `isTauri()`. If that answers wrong under WebDriver, output is *downloaded*
+ * rather than written to the chosen folder, and the only symptom is an empty
+ * output directory -- identical to a pipeline that never ran. Worth reporting
+ * the two apart.
+ */
+async function readPipelineState(): Promise<string> {
+  return await browser.execute(() => {
+    const tauri = "__TAURI_INTERNALS__" in window;
+    const workers = typeof Worker !== "undefined";
+    // `innerText` rather than a walk over `textContent`: it reports what is
+    // rendered, so it excludes the `<style>` blocks that a textContent walk
+    // drowns in and includes toast text, which is where a failed run says so.
+    const shown = (document.body.innerText ?? "")
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) =>
+        /^\d\d:\d\d|merging|nullif|cropping|resizing|false colour|evalglare|complete|failed|error|could not|unable/i.test(
+          line
+        )
+      )
+      .slice(-8)
+      .join(" || ");
+    return `tauri=${tauri} workers=${workers} shown=${shown || "(nothing)"}`;
+  });
+}
+
 function getPipelineFailureMessage(outputDir: string): string | null {
   const traceDir = path.join(outputDir, "pipeline-traces");
   if (!existsSync(traceDir)) {
@@ -324,11 +354,16 @@ describe("HDRI Calibration Tool", () => {
     });
 
     await browser.waitUntil(
-      () => {
+      async () => {
         const failureMessage = getPipelineFailureMessage(tempOutputDirectory);
         if (failureMessage) {
           throw new Error(failureMessage);
         }
+
+        // What the app itself says. Without this, a run that fails inside the
+        // webview is indistinguishable from one that never started: the only
+        // signal is an empty output directory, and the reason is on screen.
+        console.log("[pipeline]", await readPipelineState());
 
         const outputFiles = readdirSync(tempOutputDirectory).filter(
           (fileName) => fileName.endsWith(".hdr")

@@ -90,18 +90,20 @@
   },
   "overrides": [
     {
-      // The Playwright suite. Both rules disabled here are performance rules,
-      // and neither measures anything in a test that drives a real browser:
+      // The two end-to-end suites. Both rules disabled here are performance
+      // rules, and neither measures anything in a test that drives a real
+      // browser:
       //
       //  - noAwaitInLoops. Every await in these specs is a round trip to a
       //    browser, and the order is the point -- open the section, then click
       //    the picker, then assert the value landed. Running them concurrently
       //    would not be faster, it would be wrong.
       //  - useTopLevelRegex. A regex literal allocated once per test is
-      //    invisible next to a page navigation, and hoisting the small
-      //    matchers used for accessible names would move them away from the
-      //    assertion that explains what they are for.
-      "includes": ["e2e-web/**"],
+      //    invisible next to a page navigation. More to the point, a function
+      //    handed to `browser.execute` or `page.evaluate` is serialised and
+      //    sent to the browser, so it *cannot* close over a module-level
+      //    constant: hoisting the regex would break it outright.
+      "includes": ["e2e-web/**", "e2e-tests/**"],
       "linter": {
         "rules": {
           "performance": {
