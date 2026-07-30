@@ -42,12 +42,30 @@ export default function Navigation() {
         <div className="mr-8 ml-8 flex h-full items-center justify-between border-border border-b">
           {/* Logo and app name */}
           <div className="flex items-center" id="logo">
+            {/*
+              Two files rather than one, swapped on the theme class. The mark's
+              darkest blade is near-black, which measures 1.11:1 against the
+              dark ground -- invisible, leaving a gap in the iris. The dark
+              variant lifts the low end of the ramp so every blade is still a
+              shape, and keeps the dark-to-bright reading that makes it an
+              exposure bracket.
+
+              The src is absolute. It was relative, which resolved against the
+              current directory and so 404'd on /image-viewer/view.
+            */}
             <img
-              alt="Logo"
-              className="mr-3 h-10 object-contain"
-              height={452}
-              src="SunApertureOrange.png"
-              width={452}
+              alt=""
+              className="mr-3 h-10 object-contain dark:hidden"
+              height={512}
+              src="/logo/a-exposure-stack.svg"
+              width={512}
+            />
+            <img
+              alt=""
+              className="mr-3 hidden h-10 object-contain dark:block"
+              height={512}
+              src="/logo/a-exposure-stack-dark.svg"
+              width={512}
             />
             <h1 className="font-bold text-2xl">{appName}</h1>
           </div>
