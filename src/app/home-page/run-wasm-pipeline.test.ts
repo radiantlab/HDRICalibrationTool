@@ -8,43 +8,50 @@
  */
 
 import { describe, expect, it } from "@jest/globals";
-import type { PipelineStatusPayload, ToolRunner } from "@/lib/pipeline/types";
+import type { PipelineStatusPayload } from "@/lib/pipeline/types";
+import type { ExecuteOptions } from "./pipeline-worker-client";
 
-/** Stands in for WasmToolRunner: a Map, with no wasm anywhere near it. */
-function fakeRunner(): ToolRunner & { clear: () => void } {
-  const files = new Map<string, Uint8Array>();
-  return {
-    clear: () => files.clear(),
-    exists: (path) => Promise.resolve(files.has(path)),
-    readFile: (path) =>
-      Promise.resolve(
-        files.get(path) ?? new TextEncoder().encode(`stub:${path}`)
-      ),
-    run: () => Promise.resolve({ code: 0, stderr: "", stdout: "" }),
-    writeFile: (path, data) => {
-      files.set(
-        path,
-        typeof data === "string" ? new TextEncoder().encode(data) : data
-      );
-      return Promise.resolve();
-    },
+/**
+ * Stands in for the worker, which jsdom cannot provide and which has the
+ * orchestrator's own tests behind it anyway.
+ *
+ * It still performs the staging reads, because the order of those is one of
+ * the things these tests are about.
+ */
+function fakeExecute(): ((options: ExecuteOptions) => Promise<{
+  computedVerticalIlluminance: string | null;
+  outputs: { bytes: Uint8Array; kind: "falsecolor" | "main" }[];
+}>) {
+  return async (options: ExecuteOptions) => {
+    const referenced = [
+      ...options.params.inputImages,
+      options.params.responseFunction,
+      options.params.fisheyeCorrectionCal,
+      options.params.vignettingCorrectionCal,
+      options.params.neutralDensityCal,
+      options.params.photometricAdjustmentCal,
+    ].filter((path) => path !== "");
+    for (const path of referenced) {
+      // biome-ignore lint/performance/noAwaitInLoops: the order of these reads is precisely what the staging tests assert
+      await options.read(path);
+    }
+
+    options.onStatus({
+      kind: "step",
+      message: "Merging exposures",
+      progress: null,
+      step: "merge_exposures",
+    });
+
+    return {
+      computedVerticalIlluminance: "1234.5",
+      outputs: [
+        { bytes: new TextEncoder().encode("main"), kind: "main" as const },
+        { bytes: new TextEncoder().encode("fc"), kind: "falsecolor" as const },
+      ],
+    };
   };
 }
-
-/** Stands in for the orchestrator, which has its own tests. */
-const fakeRun = ({ emit }: { emit?: (p: PipelineStatusPayload) => void }) => {
-  emit?.({
-    kind: "step",
-    message: "Merging exposures",
-    progress: null,
-    step: "merge_exposures",
-  });
-  return Promise.resolve({
-    computedVerticalIlluminance: "1234.5",
-    falsecolorPath: "/work/falsecolor.hdr",
-    outputPath: "/work/header_editing.hdr",
-  });
-};
 
 import {
   type BuiltPipelineParams,
@@ -129,14 +136,13 @@ describe("staging", () => {
     const host = fakeHost();
     await runWasmPipeline({
       host,
-      makeRunner: fakeRunner,
+      execute: fakeExecute(),
       now: FIXED_NOW,
       params: params({
         fisheyeCorrectionCal: "/cal/f.cal",
         responseFunction: "/rsp/r.rsp",
         vignettingCorrectionCal: "/cal/v.cal",
       }),
-      run: fakeRun,
     });
 
     expect(host.reads).toEqual([
@@ -152,10 +158,9 @@ describe("staging", () => {
     const host = fakeHost();
     await runWasmPipeline({
       host,
-      makeRunner: fakeRunner,
+      execute: fakeExecute(),
       now: FIXED_NOW,
       params: params(),
-      run: fakeRun,
     });
     expect(host.reads).toEqual(["/in/a.jpg", "/in/b.jpg"]);
   });
@@ -166,10 +171,9 @@ describe("outputs", () => {
     const host = fakeHost();
     const written = await runWasmPipeline({
       host,
-      makeRunner: fakeRunner,
+      execute: fakeExecute(),
       now: FIXED_NOW,
       params: params(),
-      run: fakeRun,
     });
 
     expect(written).toEqual([
@@ -197,10 +201,9 @@ describe("outputs", () => {
 
     await runWasmPipeline({
       host: wrappedHost,
-      makeRunner: fakeRunner,
+      execute: fakeExecute(),
       now: FIXED_NOW,
       params: params(),
-      run: fakeRun,
     });
 
     // Both files are written, but only the HDR picture is announced -- Rust
@@ -217,10 +220,9 @@ describe("outputs", () => {
     const host = fakeHost();
     const written = await runWasmPipeline({
       host,
-      makeRunner: fakeRunner,
+      execute: fakeExecute(),
       now: FIXED_NOW,
       params: params({ setName: "" }),
-      run: fakeRun,
     });
     expect(written[0]).toBe("/out/2026-07-29_11-41-49.hdr");
   });
@@ -231,10 +233,9 @@ describe("status", () => {
     const host = fakeHost();
     await runWasmPipeline({
       host,
-      makeRunner: fakeRunner,
+      execute: fakeExecute(),
       now: FIXED_NOW,
       params: params(),
-      run: fakeRun,
     });
 
     expect(host.statuses[0]).toMatchObject({
@@ -247,10 +248,9 @@ describe("status", () => {
     const host = fakeHost();
     await runWasmPipeline({
       host,
-      makeRunner: fakeRunner,
+      execute: fakeExecute(),
       now: FIXED_NOW,
       params: params(),
-      run: fakeRun,
     });
 
     expect(host.statuses.at(-1)).toMatchObject({
@@ -280,10 +280,9 @@ describe("required numeric fields", () => {
     await expect(
       runWasmPipeline({
         host,
-        makeRunner: fakeRunner,
+      execute: fakeExecute(),
         now: FIXED_NOW,
         params: params({ verticalAngle: null }),
-        run: fakeRun,
       })
     ).rejects.toMatchObject({
       detail: { field: "verticalAngle", kind: "invalid_input" },
@@ -295,10 +294,9 @@ describe("required numeric fields", () => {
     await expect(
       runWasmPipeline({
         host,
-        makeRunner: fakeRunner,
+      execute: fakeExecute(),
         now: FIXED_NOW,
         params: params({ xdim: Number.NaN }),
-        run: fakeRun,
       })
     ).rejects.toMatchObject({ detail: { field: "xdim" } });
   });
@@ -308,10 +306,9 @@ describe("required numeric fields", () => {
     await expect(
       runWasmPipeline({
         host,
-        makeRunner: fakeRunner,
+      execute: fakeExecute(),
         now: FIXED_NOW,
         params: params({ diameter: null }),
-        run: fakeRun,
       })
     ).rejects.toThrow();
     expect(host.reads).toEqual([]);
@@ -325,10 +322,9 @@ describe("which output the viewer opens", () => {
     const host = fakeHost();
     await runWasmPipeline({
       host,
-      makeRunner: fakeRunner,
+      execute: fakeExecute(),
       now: FIXED_NOW,
       params: params(),
-      run: fakeRun,
     });
 
     expect(host.outputs).toEqual(["/out/JPEG_2026-07-29_11-41-49.hdr"]);

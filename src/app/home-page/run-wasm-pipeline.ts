@@ -11,11 +11,9 @@
  * was removed at #233.
  */
 
-import { readAnyFile } from "@/lib/host-fs-tauri";
 import { emitPipelineEvent } from "@/lib/host/events";
 import { joinPath, saveOutput } from "@/lib/host/save";
-import type { DecodedImage } from "@/lib/pipeline/filter-images";
-import { runPipeline } from "@/lib/pipeline/orchestrator";
+import { readAnyFile } from "@/lib/host-fs-tauri";
 import {
   completionMessage,
   outputStem,
@@ -24,16 +22,13 @@ import {
 import type {
   PipelineParams,
   PipelineStatusPayload,
-  ToolRunner,
 } from "@/lib/pipeline/types";
 import { PipelineError } from "@/lib/pipeline/types";
 import {
-  urlModuleCompiler,
-  urlModuleLoader,
-  WasmToolRunner,
-} from "@/lib/pipeline/wasm-runner";
-import { tauriRawIo } from "@/lib/host/raw-io";
-import { rawToTiff } from "@/lib/raw-preview";
+  type ExecuteOptions,
+  executeInWorker,
+  type PipelineRunResult,
+} from "./pipeline-worker-client";
 
 /** Where the browser builds are served from. See `public/wasm/README.md`. */
 const WASM_BASE_URL = "/wasm";
@@ -77,19 +72,24 @@ const REQUIRED_NUMERIC_FIELDS: RequiredNumericField[] = [
   "ytop",
 ];
 
+export type PipelineExecutor = (
+  options: ExecuteOptions
+) => Promise<PipelineRunResult>;
+
 export interface RunWasmPipelineOptions {
+  /**
+   * Runs the pipeline. Defaults to a Web Worker.
+   *
+   * The default matters: `callMain` is synchronous and blocks its thread for a
+   * whole tool, so running the pipeline on the main thread froze the page for
+   * the length of an hdrgen merge. Tests inject an in-process executor
+   * instead, since a worker is exactly what jsdom cannot provide.
+   */
+  execute?: PipelineExecutor;
   /** Injected in tests; defaults to the real Tauri filesystem. */
   host?: HostFilesystem;
-  /**
-   * Injected in tests. Module mocking is avoided here because `jest.mock`
-   * does not hoist above imports under this project's SWC transform, and
-   * because the orchestrator and runner already have their own tests -- this
-   * one is about the adapter's contract with the app.
-   */
-  makeRunner?: () => ToolRunner & { clear?: () => void };
   now?: () => Date;
   params: BuiltPipelineParams;
-  run?: typeof runPipeline;
   /** Returning true stops the run before the next stage starts. */
   shouldStop?: () => boolean;
 }
@@ -152,18 +152,6 @@ function requireNumbers(
   return narrowed;
 }
 
-/** Files the pipeline reads by path and so must be staged before it starts. */
-function referencedFiles(params: BuiltPipelineParams): string[] {
-  return [
-    ...params.inputImages,
-    params.responseFunction,
-    params.fisheyeCorrectionCal,
-    params.vignettingCorrectionCal,
-    params.neutralDensityCal,
-    params.photometricAdjustmentCal,
-  ].filter((path) => path !== "");
-}
-
 /**
  * Runs one image set and writes its two pictures next to the Rust pipeline's.
  *
@@ -174,67 +162,47 @@ export async function runWasmPipeline({
   shouldStop,
   host = tauriHost,
   now = () => new Date(),
-  makeRunner = () =>
-    new WasmToolRunner({
-      compile: urlModuleCompiler(WASM_BASE_URL),
-      load: urlModuleLoader(WASM_BASE_URL),
-    }),
-  run = runPipeline,
+  execute = executeInWorker,
 }: RunWasmPipelineOptions): Promise<string[]> {
-  const runner = makeRunner();
   const numbers = requireNumbers(params);
 
-  // Staged up front rather than lazily: a missing input should fail before any
-  // wasm module is instantiated, not eight stages in.
-  for (const path of referencedFiles(params)) {
-    // biome-ignore lint/performance/noAwaitInLoops: reads are sequential so a missing file fails on its own path rather than inside an aggregate rejection
-    await runner.writeFile(path, await host.read(path));
-  }
-
-  const result = await run({
-    // The thumbnail strip has usually converted every frame in the set
-    // already, so this is a cache hit per frame rather than a second pass of
-    // dcraw_emu. Same function, same flags, so the bytes hdrgen merges are the
-    // bytes the user was shown. See #242.
-    convertRaw: (path) => rawToTiff(path, tauriRawIo),
-    decodeImage,
+  const result = await execute({
     // Deliberately not awaited: a status event is a notification, and making
     // every stage wait on the UI would serialise the run behind rendering.
-    emit: (payload) => {
+    onStatus: (payload) => {
       host.emitStatus(payload).catch(() => {
         // A dropped status line must never fail the run that produced it.
       });
     },
     params: { ...params, ...numbers },
-    runner,
+    read: (path) => host.read(path),
     shouldStop,
+    // Resolved against the document, because a worker's own base URL is the
+    // chunk it was loaded from, which is not where the artifacts live.
+    wasmBaseUrl: new URL(
+      WASM_BASE_URL,
+      globalThis.location?.href ?? "http://localhost/"
+    ).href,
   });
 
   const stem = outputStem(params.setName, runTimestamp(now()));
   const written: string[] = [];
 
-  // Only the HDR picture is announced. Rust writes the false-colour image but
-  // never emits a pipeline-output for it, and the viewer opens the most
+  // Only the HDR picture is announced. Rust wrote the false-colour image but
+  // never emitted a pipeline-output for it, and the viewer opens the most
   // recently announced output -- so announcing both opened the false-colour
   // one instead of the picture.
-  const outputs: [string, string, boolean][] = [
-    [result.outputPath, `${stem}.hdr`, true],
-    ...(result.falsecolorPath
-      ? ([[result.falsecolorPath, `${stem}_fc.hdr`, false]] as [
-          string,
-          string,
-          boolean,
-        ][])
-      : []),
-  ];
+  const outputs: [Uint8Array, string, boolean][] = result.outputs.map(
+    (output) => [
+      output.bytes,
+      output.kind === "main" ? `${stem}.hdr` : `${stem}_fc.hdr`,
+      output.kind === "main",
+    ]
+  );
 
-  for (const [source, name, announce] of outputs) {
+  for (const [bytes, name, announce] of outputs) {
     // biome-ignore lint/performance/noAwaitInLoops: each output is announced only after it has been written, which is what lets a failed set be attributed correctly
-    const saved = await host.save(
-      params.outputPath,
-      name,
-      await runner.readFile(source)
-    );
+    const saved = await host.save(params.outputPath, name, bytes);
     const destination = saved.location;
     if (saved.downloaded) {
       // Said explicitly because a download is invisible: the browser chooses
@@ -266,39 +234,7 @@ export async function runWasmPipeline({
     step: null,
   });
 
-  // Frees the staged inputs and every intermediate. Without this a batch would
-  // accumulate every set's images in JS memory.
-  runner.clear?.();
-
   return written;
-}
-
-/**
- * Decodes a JPEG to RGBA using the platform's own decoder.
- *
- * Only the image filter needs pixels; every other stage goes through a wasm
- * tool. `createImageBitmap` hands the work to the browser's decoder rather
- * than shipping one, and `OffscreenCanvas` keeps it off the main thread's
- * rendering path.
- *
- * The bitmap is closed explicitly: a 21-megapixel frame is ~84 MB of RGBA, and
- * eighteen of them held at once would dwarf the pipeline's own working set.
- */
-async function decodeImage(path: string): Promise<DecodedImage> {
-  const bytes = await tauriHost.read(path);
-  const bitmap = await createImageBitmap(new Blob([bytes as BlobPart]));
-  try {
-    const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
-    const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error(`could not get a 2d context to decode ${path}`);
-    }
-    context.drawImage(bitmap, 0, 0);
-    const { data } = context.getImageData(0, 0, bitmap.width, bitmap.height);
-    return { height: bitmap.height, rgba: data, width: bitmap.width };
-  } finally {
-    bitmap.close();
-  }
 }
 
 /** Re-exported: the join moved to `host/save.ts` with the writing. */

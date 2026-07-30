@@ -518,6 +518,14 @@ async function prepareInputs(
   for (const image of params.inputImages) {
     index += 1;
     const output = workPath(`input${index}.tiff`);
+    // Already staged by the host, which had it cached from the thumbnail it
+    // drew when the file was added. Converting it again would cost ~2 s a
+    // frame for bytes we are holding. See #242.
+    // biome-ignore lint/performance/noAwaitInLoops: one frame resident at a time, as below
+    if (await runner.exists(output)) {
+      converted.push(output);
+      continue;
+    }
     if (convertRaw) {
       // Staged by reference rather than copied, so a frame the host already
       // converted for its thumbnail costs nothing to reuse here.

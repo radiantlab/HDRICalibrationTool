@@ -194,6 +194,31 @@ async function convert(
   return tiff as Uint8Array<ArrayBuffer>;
 }
 
+/**
+ * Returns an already-converted TIFF, or undefined. Never converts.
+ *
+ * The pipeline runs in a worker, so converting here would put the ~2 s a frame
+ * back on the main thread -- exactly what moving it off was for. This lets the
+ * page hand over conversions it is already holding and leave the rest to the
+ * worker.
+ */
+export async function peekRawTiff(
+  path: string,
+  io: RawSourceIo
+): Promise<Uint8Array | undefined> {
+  const key = await cacheKey(path, io);
+  const hit = cache.get(key);
+  if (!hit) {
+    return;
+  }
+  try {
+    return await hit.tiff;
+  } catch {
+    // A conversion that failed is not a cache hit.
+    return;
+  }
+}
+
 export function clearRawPreviewCache(): void {
   cache.clear();
   held = 0;
