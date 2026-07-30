@@ -18,6 +18,16 @@ interface E2EDropDetail {
 
 const E2E_DROP_EVENT = "__hdricalibrationtool_e2e_drop__";
 
+/** Whether a drag position falls within a dropzone's box. */
+function contains(rect: DOMRect, position: { x: number; y: number }): boolean {
+  return (
+    position.x >= rect.left &&
+    position.x <= rect.right &&
+    position.y >= rect.top &&
+    position.y <= rect.bottom
+  );
+}
+
 export interface DropzoneChildrenProps {
   isDragActive: boolean;
 }
@@ -128,51 +138,50 @@ export function TauriDropzone({
     let cancelled = false;
     let dispose: (() => void) | undefined;
 
-    import("@tauri-apps/api/webviewWindow").then(
-      ({ getCurrentWebviewWindow }) => {
-        const unlistenPromise = getCurrentWebviewWindow().onDragDropEvent(
-          (event) => {
-            const payload: DragDropEvent = event.payload;
-            if (payload.type === "leave") {
-              setIsDragActive(false);
-              return;
-            }
-
-            // this is slightly off, since the event position is relative to the whole window,
-            // while the rect is relative to the viewport... but as far as I know tauri exposes no api to correct this
-            // TODO: fix this if possible
-            const currentRect = rootRef.current?.getBoundingClientRect();
-            if (!currentRect) {
-              return;
-            }
-            const isInside =
-              payload.position.x >= currentRect.left &&
-              payload.position.x <= currentRect.right &&
-              payload.position.y >= currentRect.top &&
-              payload.position.y <= currentRect.bottom;
-            if (!isInside) {
-              setIsDragActive(false);
-              return;
-            }
-
-            if (payload.type === "enter" || payload.type === "over") {
-              setIsDragActive(true);
-              return;
-            }
-            if (payload.type === "drop") {
-              handleDrop(payload.paths);
-            }
-          }
-        );
-        unlistenPromise.then((unlisten) => {
-          if (cancelled) {
-            unlisten();
-          } else {
-            dispose = unlisten;
-          }
-        });
+    const onDragDrop = (event: { payload: DragDropEvent }) => {
+      const { payload } = event;
+      if (payload.type === "leave") {
+        setIsDragActive(false);
+        return;
       }
-    );
+
+      // this is slightly off, since the event position is relative to the whole window,
+      // while the rect is relative to the viewport... but as far as I know tauri exposes no api to correct this
+      // TODO: fix this if possible
+      const currentRect = rootRef.current?.getBoundingClientRect();
+      if (!currentRect) {
+        return;
+      }
+      if (!contains(currentRect, payload.position)) {
+        setIsDragActive(false);
+        return;
+      }
+
+      if (payload.type === "enter" || payload.type === "over") {
+        setIsDragActive(true);
+        return;
+      }
+      if (payload.type === "drop") {
+        handleDrop(payload.paths);
+      }
+    };
+
+    // Awaited in sequence rather than chained. The listener resolves after the
+    // effect may already have been cleaned up, which is what `cancelled` is
+    // for: unsubscribing immediately is the only way to avoid a listener that
+    // outlives the component.
+    (async () => {
+      const { getCurrentWebviewWindow } = await import(
+        "@tauri-apps/api/webviewWindow"
+      );
+      const unlisten =
+        await getCurrentWebviewWindow().onDragDropEvent(onDragDrop);
+      if (cancelled) {
+        unlisten();
+      } else {
+        dispose = unlisten;
+      }
+    })();
 
     return () => {
       cancelled = true;

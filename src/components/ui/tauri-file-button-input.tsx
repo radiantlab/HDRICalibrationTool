@@ -1,6 +1,5 @@
 "use client";
 
-import { pickDirectoryFiles, pickFiles } from "@/lib/host/pick";
 import {
   type Control,
   type FieldValues,
@@ -8,6 +7,7 @@ import {
   useController,
 } from "react-hook-form";
 import { Button, type ButtonProps } from "@/components/ui/button";
+import { pickDirectoryFiles, pickFiles } from "@/lib/host/pick";
 
 interface TauriFileDialogFilter {
   extensions: string[];

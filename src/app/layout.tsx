@@ -13,8 +13,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import Initialization from "./init";
 import Navigation from "./navigation";
-import { ThemeProvider } from "./theme-provider";
 import { PipelineStatusProvider } from "./pipeline-status-context";
+import { ThemeProvider } from "./theme-provider";
 
 // Define metadata for the application
 export const metadata: Metadata = {

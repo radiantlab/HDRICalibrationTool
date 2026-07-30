@@ -53,9 +53,7 @@ function getJpegImageMetadata(fsPath: string): Promise<GenericImageMetadata> {
   });
 }
 
-function getTiffImageMetadata(
-  fsPath: string
-): Promise<GenericImageMetadata> {
+function getTiffImageMetadata(fsPath: string): Promise<GenericImageMetadata> {
   // Shares `raw-preview`'s cache with the on-screen preview, so opening an
   // image does not convert it twice -- once for its dimensions and once to
   // draw it.

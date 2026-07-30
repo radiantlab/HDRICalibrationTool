@@ -214,8 +214,10 @@ export async function peekRawTiff(
   try {
     return await hit.tiff;
   } catch {
-    // A conversion that failed is not a cache hit.
-    return;
+    // Deliberately swallowed. This only *peeks*: a conversion that failed
+    // earlier is not this caller's failure to report, and returning undefined
+    // sends it down the same path as a cache miss, where the worker converts
+    // it again and surfaces the real error in context.
   }
 }
 

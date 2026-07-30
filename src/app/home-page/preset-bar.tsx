@@ -137,10 +137,7 @@ export function PresetBar({
     if (preset.lensMask) {
       form.setValue("lensMask", preset.lensMask);
     }
-    form.setValue(
-      "cameraResponseLocation",
-      presetFilePath(preset, "response")
-    );
+    form.setValue("cameraResponseLocation", presetFilePath(preset, "response"));
     form.setValue("correctionFiles", {
       calibrationFactor: presetFilePath(preset, "calibrationFactor"),
       fisheye: presetFilePath(preset, "fisheye"),

@@ -57,7 +57,9 @@ export async function migrateTauriFiles(): Promise<MigrationReport> {
 
   const root = await appConfigDir();
 
-  const history = await readLegacyJson(await join(root, "history", "runs.json"));
+  const history = await readLegacyJson(
+    await join(root, "history", "runs.json")
+  );
   if (history) {
     await putDocument(HISTORY_KEY, history);
     report.historyImported = true;

@@ -69,7 +69,9 @@ function run<T>(
         request.onerror = () =>
           reject(request.error ?? new Error(`${store}: request failed`));
         transaction.onabort = () =>
-          reject(transaction.error ?? new Error(`${store}: transaction aborted`));
+          reject(
+            transaction.error ?? new Error(`${store}: transaction aborted`)
+          );
       })
   );
 }
@@ -93,8 +95,10 @@ export function deleteDocument(key: string): Promise<unknown> {
  * so a caller cannot mutate what the next caller reads.
  */
 export async function getFile(key: string): Promise<Uint8Array | undefined> {
-  const stored = await run<ArrayBuffer | undefined>(FILES, "readonly", (store) =>
-    store.get(key)
+  const stored = await run<ArrayBuffer | undefined>(
+    FILES,
+    "readonly",
+    (store) => store.get(key)
   );
   return stored ? new Uint8Array(stored) : undefined;
 }

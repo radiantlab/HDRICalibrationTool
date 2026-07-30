@@ -18,9 +18,6 @@
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { appInfo, canWriteToChosenDirectory } from "@/lib/host/env";
-import { openExternal } from "@/lib/host/open-external";
-import { pickOutputDirectory } from "@/lib/host/pick";
 import {
   TOOL_LABELS,
   TOOL_ORDER,
@@ -28,6 +25,9 @@ import {
   type WasmVersions,
   wasmVersions,
 } from "@/lib/build-versions";
+import { appInfo, canWriteToChosenDirectory } from "@/lib/host/env";
+import { openExternal } from "@/lib/host/open-external";
+import { pickOutputDirectory } from "@/lib/host/pick";
 import { useSettingsStore } from "../stores/settings-store";
 import SettingsButtonBar from "./settings-button-bar";
 
@@ -152,9 +152,9 @@ export default function SettingsPage() {
 
             {canChooseOutput ? null : (
               <p className="mb-4 text-muted-foreground text-sm">
-                Generated images are downloaded, so where they are saved is
-                your browser's setting rather than this app's. There is nothing
-                to configure here.
+                Generated images are downloaded, so where they are saved is your
+                browser's setting rather than this app's. There is nothing to
+                configure here.
               </p>
             )}
 
@@ -275,7 +275,6 @@ export default function SettingsPage() {
                 )}
               </div>
             ))}
-
           </div>
           {/* What this build is made of. Moved here from the header, which had
               room for the app and Tauri versions only, and none for the tools
@@ -343,8 +342,8 @@ export default function SettingsPage() {
             */}
             <p className="mt-5 border-border border-t pt-4 text-muted-foreground text-sm">
               This application is free software, licensed{" "}
-              <strong>GPL-3.0</strong>. The complete source, including the
-              forks the tools above are built from, is at{" "}
+              <strong>GPL-3.0</strong>. The complete source, including the forks
+              the tools above are built from, is at{" "}
               <button
                 className="underline hover:text-foreground"
                 onClick={() =>

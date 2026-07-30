@@ -1,6 +1,5 @@
 "use client";
 
-import { onPipelineEvent } from "@/lib/host/events";
 import type React from "react";
 import {
   createContext,
@@ -13,6 +12,7 @@ import {
 } from "react";
 import { toast } from "sonner";
 import z from "zod";
+import { onPipelineEvent } from "@/lib/host/events";
 
 const pipelineStatusSchema = z.object({
   kind: z.enum(["step", "progress", "warning", "error", "done"]),

@@ -6,6 +6,7 @@
  * receives the finished pictures.
  */
 
+import { tauriRawIo } from "@/lib/host/raw-io";
 import { isRawImage } from "@/lib/pipeline/orchestrator";
 import type {
   PipelineOutputFile,
@@ -14,11 +15,10 @@ import type {
 } from "@/lib/pipeline/pipeline.worker.types";
 import { workPath } from "@/lib/pipeline/stages";
 import {
-  type PipelineParams,
   PipelineError,
+  type PipelineParams,
   type PipelineStatusPayload,
 } from "@/lib/pipeline/types";
-import { tauriRawIo } from "@/lib/host/raw-io";
 import { peekRawTiff } from "@/lib/raw-preview";
 
 export interface PipelineRunResult {

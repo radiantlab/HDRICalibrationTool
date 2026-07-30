@@ -14,8 +14,8 @@
  * In a browser the paths are synthetic and `vfs.ts` resolves them.
  */
 
-import { isTauri } from "./env";
 import { registerSessionFile } from "../vfs";
+import { isTauri } from "./env";
 
 export interface PickFilter {
   extensions: string[];
@@ -175,13 +175,14 @@ async function pickImageSetsWithTauri(options: {
 
   const groups = new Map<string, string[]>();
   for (const rawPath of paths.toSorted((a, b) => a.localeCompare(b))) {
-    const directoryPath = options.directory
-      ? rawPath
-      : await dirname(rawPath);
+    // biome-ignore lint/performance/noAwaitInLoops: the paths are walked in sorted order so a set's files land in a stable order, and these are a handful of Tauri path calls over what a person picked in a dialog
+    const directoryPath = options.directory ? rawPath : await dirname(rawPath);
     const name = await basename(directoryPath);
     const entries = options.directory
       ? (await readDir(rawPath))
-          .filter((entry) => entry.isFile && matches(entry.name, options.filters))
+          .filter(
+            (entry) => entry.isFile && matches(entry.name, options.filters)
+          )
           .map((entry) => join(rawPath, entry.name))
       : [Promise.resolve(rawPath)];
     const group = groups.get(name) ?? [];

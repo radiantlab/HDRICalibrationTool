@@ -13,8 +13,6 @@
  */
 "use client";
 
-import { isTauri } from "@/lib/host/env";
-import { revealFile } from "@/lib/host/reveal";
 import {
   AlertTriangle,
   Aperture,
@@ -68,6 +66,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useGenericImageMetadata } from "@/lib/generic-image-metadata";
+import { isTauri } from "@/lib/host/env";
+import { revealFile } from "@/lib/host/reveal";
 import { appendRun, classifyOutcome } from "@/lib/run-history";
 import { useMotionValueFormState } from "@/lib/use-motion-value-form-state";
 import { usePipelineStatus } from "../pipeline-status-context";

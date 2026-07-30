@@ -1,8 +1,6 @@
 "use client";
 
 import type { DialogFilter } from "@tauri-apps/plugin-dialog";
-import { pickDirectoryFiles, pickFiles } from "@/lib/host/pick";
-import { anyFileExists } from "@/lib/host-fs-tauri";
 import {
   type Control,
   type FieldPathByValue,
@@ -18,6 +16,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { pickDirectoryFiles, pickFiles } from "@/lib/host/pick";
+import { anyFileExists } from "@/lib/host-fs-tauri";
 import { cn } from "@/lib/utils";
 
 type FilePathFieldName<T extends FieldValues> = FieldPathByValue<

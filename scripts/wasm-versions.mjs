@@ -115,7 +115,9 @@ if (checkOnly) {
   try {
     existing = readFileSync(OUTPUT, "utf8");
   } catch {
-    console.error(`${OUTPUT} does not exist. Run: node scripts/wasm-versions.mjs`);
+    console.error(
+      `${OUTPUT} does not exist. Run: node scripts/wasm-versions.mjs`
+    );
     process.exit(1);
   }
   if (existing !== serialised) {

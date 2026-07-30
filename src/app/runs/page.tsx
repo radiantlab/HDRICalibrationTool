@@ -1,7 +1,5 @@
 "use client";
 
-import { canRevealInFileManager } from "@/lib/host/env";
-import { revealFile } from "@/lib/host/reveal";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -27,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { canRevealInFileManager } from "@/lib/host/env";
+import { revealFile } from "@/lib/host/reveal";
 import {
   clearRuns,
   historyStats,

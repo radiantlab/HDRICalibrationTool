@@ -1,7 +1,5 @@
 import { ArrowDownOnSquareStackIcon } from "@heroicons/react/24/solid";
 import type { DialogFilter } from "@tauri-apps/plugin-dialog";
-import { isTauri } from "@/lib/host/env";
-import { pickFiles, pickImageSets } from "@/lib/host/pick";
 import type { DirEntry } from "@tauri-apps/plugin-fs";
 import path from "path";
 import { useCallback } from "react";
@@ -24,6 +22,8 @@ import {
   type DropzoneChildrenProps,
   TauriDropzone,
 } from "@/components/ui/tauri-dropzone";
+import { isTauri } from "@/lib/host/env";
+import { pickFiles, pickImageSets } from "@/lib/host/pick";
 import { imageFileExtensions } from "@/lib/image-file-extensions";
 import { cn } from "@/lib/utils";
 import { Field, FieldContent, FieldError } from "./field";
@@ -118,10 +118,7 @@ export function ImageMatrixInput<
           ...(value ?? []),
           {
             files: files.filter((candidate) => {
-              const extension = path
-                .extname(candidate)
-                .slice(1)
-                .toLowerCase();
+              const extension = path.extname(candidate).slice(1).toLowerCase();
               const accepted = imageFileExtensions.includes(extension);
               if (!accepted) {
                 toast.error(

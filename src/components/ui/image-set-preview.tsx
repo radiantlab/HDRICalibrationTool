@@ -1,9 +1,9 @@
 import { PlusIcon } from "@heroicons/react/24/solid";
-import { fileInfo } from "@/lib/host/file-info";
 import { Trash2 } from "lucide-react";
 import path from "path";
 import prettyBytes from "pretty-bytes";
 import { useMemo } from "react";
+import { fileInfo } from "@/lib/host/file-info";
 import { GenericImage } from "./(image)/generic-image";
 import { Button } from "./button";
 import {

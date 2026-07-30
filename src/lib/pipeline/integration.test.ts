@@ -291,9 +291,7 @@ describe("orchestrator over the wasm runner", () => {
     await runPipeline({
       convertRaw: (path) => {
         asked.push(path);
-        return Promise.resolve(
-          new TextEncoder().encode(`CONVERTED ${path}`)
-        );
+        return Promise.resolve(new TextEncoder().encode(`CONVERTED ${path}`));
       },
       params: params({ inputImages: ["/in/capt01.CR2", "/in/capt02.CR2"] }),
       runner,

@@ -9,7 +9,11 @@
  */
 
 import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { type ThemePreference, useTheme } from "./theme-provider";
 
 const NEXT: Record<ThemePreference, ThemePreference> = {

@@ -18,10 +18,10 @@ import type { ExecuteOptions } from "./pipeline-worker-client";
  * It still performs the staging reads, because the order of those is one of
  * the things these tests are about.
  */
-function fakeExecute(): ((options: ExecuteOptions) => Promise<{
+function fakeExecute(): (options: ExecuteOptions) => Promise<{
   computedVerticalIlluminance: string | null;
   outputs: { bytes: Uint8Array; kind: "falsecolor" | "main" }[];
-}>) {
+}> {
   return async (options: ExecuteOptions) => {
     const referenced = [
       ...options.params.inputImages,
@@ -85,7 +85,6 @@ function fakeHost(): HostFilesystem & {
       return Promise.resolve(new TextEncoder().encode(`bytes:${path}`));
     },
     reads,
-    statuses,
     // The host decides where an output lands: a real path on the desktop, a
     // filename in a browser where the download folder is not the app's to
     // choose. The fake mirrors the desktop, since that is what the assertions
@@ -95,6 +94,7 @@ function fakeHost(): HostFilesystem & {
       writes.push(location);
       return Promise.resolve({ downloaded: false, location, name });
     },
+    statuses,
     writes,
   };
 }
@@ -135,8 +135,8 @@ describe("staging", () => {
   it("reads every referenced file before running", async () => {
     const host = fakeHost();
     await runWasmPipeline({
-      host,
       execute: fakeExecute(),
+      host,
       now: FIXED_NOW,
       params: params({
         fisheyeCorrectionCal: "/cal/f.cal",
@@ -157,8 +157,8 @@ describe("staging", () => {
   it("skips the correction files that were not supplied", async () => {
     const host = fakeHost();
     await runWasmPipeline({
-      host,
       execute: fakeExecute(),
+      host,
       now: FIXED_NOW,
       params: params(),
     });
@@ -170,8 +170,8 @@ describe("outputs", () => {
   it("names them the way the Rust pipeline does", async () => {
     const host = fakeHost();
     const written = await runWasmPipeline({
-      host,
       execute: fakeExecute(),
+      host,
       now: FIXED_NOW,
       params: params(),
     });
@@ -200,8 +200,8 @@ describe("outputs", () => {
     };
 
     await runWasmPipeline({
-      host: wrappedHost,
       execute: fakeExecute(),
+      host: wrappedHost,
       now: FIXED_NOW,
       params: params(),
     });
@@ -219,8 +219,8 @@ describe("outputs", () => {
   it("falls back to the timestamp when the set is unnamed", async () => {
     const host = fakeHost();
     const written = await runWasmPipeline({
-      host,
       execute: fakeExecute(),
+      host,
       now: FIXED_NOW,
       params: params({ setName: "" }),
     });
@@ -232,8 +232,8 @@ describe("status", () => {
   it("forwards the pipeline's events unchanged", async () => {
     const host = fakeHost();
     await runWasmPipeline({
-      host,
       execute: fakeExecute(),
+      host,
       now: FIXED_NOW,
       params: params(),
     });
@@ -247,8 +247,8 @@ describe("status", () => {
   it("finishes with the same completion message as Rust", async () => {
     const host = fakeHost();
     await runWasmPipeline({
-      host,
       execute: fakeExecute(),
+      host,
       now: FIXED_NOW,
       params: params(),
     });
@@ -279,8 +279,8 @@ describe("required numeric fields", () => {
     const host = fakeHost();
     await expect(
       runWasmPipeline({
+        execute: fakeExecute(),
         host,
-      execute: fakeExecute(),
         now: FIXED_NOW,
         params: params({ verticalAngle: null }),
       })
@@ -293,8 +293,8 @@ describe("required numeric fields", () => {
     const host = fakeHost();
     await expect(
       runWasmPipeline({
+        execute: fakeExecute(),
         host,
-      execute: fakeExecute(),
         now: FIXED_NOW,
         params: params({ xdim: Number.NaN }),
       })
@@ -305,8 +305,8 @@ describe("required numeric fields", () => {
     const host = fakeHost();
     await expect(
       runWasmPipeline({
+        execute: fakeExecute(),
         host,
-      execute: fakeExecute(),
         now: FIXED_NOW,
         params: params({ diameter: null }),
       })
@@ -321,8 +321,8 @@ describe("which output the viewer opens", () => {
     // the picture, so announcing both here opened the false-colour image.
     const host = fakeHost();
     await runWasmPipeline({
-      host,
       execute: fakeExecute(),
+      host,
       now: FIXED_NOW,
       params: params(),
     });

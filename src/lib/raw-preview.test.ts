@@ -9,15 +9,12 @@
  */
 
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import type {
-  EmscriptenModule,
-  ModuleFactory,
-} from "./pipeline/wasm-runner";
+import type { EmscriptenModule, ModuleFactory } from "./pipeline/wasm-runner";
 import {
   clearRawPreviewCache,
+  type RawSourceIo,
   rawCacheBytes,
   rawToTiff,
-  type RawSourceIo,
 } from "./raw-preview";
 
 /** Counts conversions, which is the whole point of the cache. */
@@ -112,9 +109,23 @@ describe("shared RAW conversion", () => {
     await rawToTiff("/in/capt01.CR2", io(load));
 
     expect(runs[0]).toEqual([
-      "-T", "-o", "1", "-W", "-j", "-q", "3",
-      "-g", "2", "0", "-t", "0", "-b", "1.1",
-      "-Z", "/work/preview.tiff", "/work/capt01.CR2",
+      "-T",
+      "-o",
+      "1",
+      "-W",
+      "-j",
+      "-q",
+      "3",
+      "-g",
+      "2",
+      "0",
+      "-t",
+      "0",
+      "-b",
+      "1.1",
+      "-Z",
+      "/work/preview.tiff",
+      "/work/capt01.CR2",
     ]);
   });
 

@@ -136,10 +136,18 @@ async function compileFrom(
 ): Promise<WebAssembly.Module> {
   try {
     return await WebAssembly.compileStreaming(fetch(url));
-  } catch {
+  } catch (streamingError) {
+    // Streaming compilation refuses anything not served as `application/wasm`,
+    // which some static hosts get wrong. Fetching the bytes and compiling them
+    // works regardless, so the fallback is worth having.
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`${tool}: ${url} returned ${response.status}`);
+      // The streaming failure is carried along: on a misconfigured host the
+      // status is the useful half, and on a genuinely broken module the
+      // original compile error is.
+      throw new Error(`${tool}: ${url} returned ${response.status}`, {
+        cause: streamingError,
+      });
     }
     return await WebAssembly.compile(await response.arrayBuffer());
   }
@@ -288,9 +296,11 @@ export class WasmToolRunner implements ToolRunner {
                 module: WebAssembly.Module
               ) => void
             ) => {
-              WebAssembly.instantiate(compiled, imports).then((instantiated) => {
-                done(instantiated, compiled);
-              });
+              WebAssembly.instantiate(compiled, imports).then(
+                (instantiated) => {
+                  done(instantiated, compiled);
+                }
+              );
             },
           }
         : {}),
@@ -327,9 +337,7 @@ export class WasmToolRunner implements ToolRunner {
     return { code, stderr: stderr.join("\n"), stdout };
   }
 
-  private compiledFor(
-    tool: string
-  ): Promise<WebAssembly.Module | undefined> {
+  private compiledFor(tool: string): Promise<WebAssembly.Module | undefined> {
     if (!this.compile) {
       return Promise.resolve(undefined);
     }

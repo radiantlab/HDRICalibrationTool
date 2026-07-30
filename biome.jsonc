@@ -5,6 +5,22 @@
     "ultracite/biome/react",
     "ultracite/biome/next"
   ],
+  "files": {
+    // Generated artifacts. None of these are written by hand, so formatting
+    // them produces enormous diffs that say nothing and would be undone by
+    // the next regeneration. Together they were ~12,700 of the ~12,780
+    // diagnostics `check` reported, which is why the check had stopped being
+    // run at all -- and a check nobody runs is not a check.
+    "includes": [
+      "!public/wasm",
+      // Marks exported as single-line SVG.
+      "!public/logo",
+      "!src/app/icon.svg",
+      // Written by the Tauri CLI.
+      "!src-tauri/gen",
+      "!src-tauri/capabilities/migrated.json"
+    ]
+  },
   "linter": {
     "rules": {
       "suspicious": {
@@ -73,6 +89,28 @@
     }
   },
   "overrides": [
+    {
+      // The Playwright suite. Both rules disabled here are performance rules,
+      // and neither measures anything in a test that drives a real browser:
+      //
+      //  - noAwaitInLoops. Every await in these specs is a round trip to a
+      //    browser, and the order is the point -- open the section, then click
+      //    the picker, then assert the value landed. Running them concurrently
+      //    would not be faster, it would be wrong.
+      //  - useTopLevelRegex. A regex literal allocated once per test is
+      //    invisible next to a page navigation, and hoisting the small
+      //    matchers used for accessible names would move them away from the
+      //    assertion that explains what they are for.
+      "includes": ["e2e-web/**"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noAwaitInLoops": "off",
+            "useTopLevelRegex": "off"
+          }
+        }
+      }
+    },
     {
       // Biome 2.5.3 panics internally ("processing panicked: index out of
       // bounds", inside biome_module_graph::module_resolver) whenever it

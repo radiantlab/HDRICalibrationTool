@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowDownOnSquareStackIcon } from "@heroicons/react/24/solid";
-import { pickFiles } from "@/lib/host/pick";
 import { useRouter } from "next/navigation";
 import path from "path";
 import { useCallback } from "react";
@@ -10,6 +9,7 @@ import {
   type DropzoneChildrenProps,
   TauriDropzone,
 } from "@/components/ui/tauri-dropzone";
+import { pickFiles } from "@/lib/host/pick";
 import { cn } from "@/lib/utils";
 import { serializeViewerUrl } from "./viewer-url";
 

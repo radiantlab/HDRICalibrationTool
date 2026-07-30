@@ -1,13 +1,13 @@
 import { describe, expect, it } from "@jest/globals";
 import { act, render, screen } from "@testing-library/react";
 import {
-  emitPipelineEvent,
-  type PipelineEventName,
-} from "../src/lib/host/events";
-import {
   PipelineStatusProvider,
   usePipelineStatus,
 } from "../src/app/pipeline-status-context";
+import {
+  emitPipelineEvent,
+  type PipelineEventName,
+} from "../src/lib/host/events";
 
 /**
  * Status events used to cross a process boundary from the Rust pipeline, so

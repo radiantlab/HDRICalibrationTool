@@ -42,7 +42,9 @@ describe("parseHdrMetadata", () => {
   it("stops at the blank line and never reads pixels", () => {
     // A payload byte that happens to look like a header line must not appear.
     const withPayload = `${CR2_HEADER}\nSHOULD_NOT_APPEAR=1`;
-    expect(parseHdrMetadata(encode(withPayload)).SHOULD_NOT_APPEAR).toBeUndefined();
+    expect(
+      parseHdrMetadata(encode(withPayload)).SHOULD_NOT_APPEAR
+    ).toBeUndefined();
   });
 
   it("ignores lines that are not key=value", () => {

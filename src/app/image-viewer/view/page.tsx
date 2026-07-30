@@ -42,6 +42,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import { errorMessage } from "@/lib/error-message";
+import {
+  type HdrMetadata as ParsedHdrMetadata,
+  parseHdrMetadata,
+} from "@/lib/hdr-metadata";
+import { readAnyFile } from "@/lib/host-fs-tauri";
 import { cn } from "@/lib/utils";
 import {
   computeFalsecolorLuminance,
@@ -73,12 +79,6 @@ import {
   ViewControlCard,
   type ViewType,
 } from "./view-control-card";
-import { errorMessage } from "@/lib/error-message";
-import { readAnyFile } from "@/lib/host-fs-tauri";
-import {
-  type HdrMetadata as ParsedHdrMetadata,
-  parseHdrMetadata,
-} from "@/lib/hdr-metadata";
 
 const DEFAULT_FALSECOLOR_MULTIPLIER = 179;
 const HEATMAP_LEGEND_WIDTH = 200;
@@ -389,8 +389,6 @@ function parseRadianceHDR(data: Uint8Array) {
 
   return { exposure, height, rgbeData, width };
 }
-
-
 
 type ImageViewerData = LoadedHdrData & {
   hdrMetadata: HdrMetadata | null;
