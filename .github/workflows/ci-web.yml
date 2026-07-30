@@ -30,9 +30,9 @@ jobs:
     name: Lint, types and unit tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           cache: npm
           node-version: lts/*
@@ -58,9 +58,9 @@ jobs:
     name: Static export
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           cache: npm
           node-version: lts/*
@@ -78,7 +78,7 @@ jobs:
           test -f out/wasm/versions.json
           test -f out/wasm/hdrgen.wasm
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: web-build
           path: out
@@ -97,9 +97,9 @@ jobs:
         # application ships to everyone.
         project: [webkit, chromium]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           cache: npm
           node-version: lts/*
@@ -107,7 +107,7 @@ jobs:
       - name: Reuse the export from the build job
         # Rather than rebuilding per browser. It is the same bytes either way,
         # and this is the artifact that would actually be deployed.
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: web-build
           path: out
@@ -121,7 +121,7 @@ jobs:
         run: npm --prefix e2e-web exec -- playwright test --project=${{ matrix.project }}
 
       - if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.project }}
           path: |
