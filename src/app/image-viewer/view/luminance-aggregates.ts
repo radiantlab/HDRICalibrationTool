@@ -295,9 +295,8 @@ function computeStandardDeviation(values: Float32Array, mean: number): number {
     return 0;
   }
 
-  // reduce rather than a loop: for...of over a Float32Array needs a target
-  // above es5, and an index loop trips useForOf. This walks the samples in
-  // place either way, without the Array.from copy elsewhere in this file.
+  // reduce rather than an index loop, which trips useForOf. Walks the samples
+  // in place, without the Array.from copy elsewhere in this file.
   const sumOfSquaredDeviations = values.reduce((total, value) => {
     const deviation = value - mean;
     return total + deviation * deviation;

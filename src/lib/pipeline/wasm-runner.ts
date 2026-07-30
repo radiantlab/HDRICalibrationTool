@@ -190,10 +190,9 @@ export class WasmToolRunner implements ToolRunner {
    */
   retainedBytes(): number {
     let total = 0;
-    // biome-ignore lint/complexity/noForEach: the project targets es5, where for..of over a Map iterator needs downlevelIteration
-    this.files.forEach((file) => {
+    for (const file of this.files.values()) {
       total += file.byteLength;
-    });
+    }
     return total;
   }
 
