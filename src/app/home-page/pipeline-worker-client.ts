@@ -36,6 +36,26 @@ export interface ExecuteOptions {
   wasmBaseUrl: string;
 }
 
+/**
+ * Copies bytes the client is free to give away.
+ *
+ * The staged buffers are transferred to the worker, and a transfer *moves*
+ * them: the page's view is left detached and zero-length. What `read` returns
+ * is not the client's to move. The session filesystem hands back the array it
+ * holds in its map, and the RAW preview cache hands back its own buffer by
+ * design, so transferring either emptied a store that the rest of the session
+ * still depends on -- the next run could not start, and a preset comparing its
+ * calibration against a now-empty source reported it as changed on disk.
+ *
+ * `slice` on the view rather than on `buffer` also keeps the copy to exactly
+ * the bytes in question, where a view onto part of a larger buffer would
+ * otherwise have handed the whole thing over, and gives every entry a distinct
+ * buffer so two paths resolving to the same bytes cannot transfer it twice.
+ */
+function owned(bytes: Uint8Array): Uint8Array {
+  return bytes.slice();
+}
+
 /** Files the pipeline reads by path and so must be staged before it starts. */
 function referencedFiles(params: PipelineParams): string[] {
   return [
@@ -57,7 +77,7 @@ export async function executeInWorker(
   // wasm module is instantiated, not eight stages in.
   for (const path of referencedFiles(options.params)) {
     // biome-ignore lint/performance/noAwaitInLoops: reads are sequential so a missing file fails on its own path rather than inside an aggregate rejection
-    files[path] = await options.read(path);
+    files[path] = owned(await options.read(path));
   }
 
   // Hand over RAW conversions already in hand from drawing the thumbnails.
@@ -73,7 +93,10 @@ export async function executeInWorker(
     // biome-ignore lint/performance/noAwaitInLoops: a cache lookup per frame, and ordering keeps the index aligned with the orchestrator's naming
     const tiff = await peekRawTiff(image, tauriRawIo);
     if (tiff) {
-      files[workPath(`input${index}.tiff`)] = tiff;
+      // Copied like the rest: the cache holds this buffer for the thumbnails
+      // and for the next run, and handing it over would leave both with an
+      // entry that reads as zero bytes.
+      files[workPath(`input${index}.tiff`)] = owned(tiff);
     }
   }
 
@@ -138,11 +161,22 @@ export async function executeInWorker(
         params: options.params,
         wasmBaseUrl: options.wasmBaseUrl,
       };
-      // Transferred, not copied: an 18-frame bracket is hundreds of megabytes.
-      worker.postMessage(
-        request,
-        Object.values(files).map((bytes) => bytes.buffer as ArrayBuffer)
-      );
+      try {
+        // Transferred, not copied: an 18-frame bracket is hundreds of
+        // megabytes. Safe because `owned` staged copies the client may give
+        // away; transferring what `read` returned is what detached the
+        // session filesystem's own arrays.
+        worker.postMessage(
+          request,
+          Object.values(files).map((bytes) => bytes.buffer as ArrayBuffer)
+        );
+      } catch (error) {
+        // The throw is synchronous, so it rejects the promise on its own. The
+        // interval is not covered by that, and one left running would keep
+        // calling `shouldStop` for the life of the page.
+        clearInterval(stopCheck);
+        reject(error);
+      }
     });
   } finally {
     worker.terminate();

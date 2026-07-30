@@ -89,6 +89,18 @@ export async function readVirtual(path: string): Promise<Uint8Array> {
           "have to be selected again."
       );
     }
+    // A registered entry can still read as nothing, because a consumer that
+    // transfers the array to a worker detaches it and leaves a zero-length
+    // view behind in this map. That is a bug in the consumer -- staging is
+    // supposed to copy first -- but it used to surface as a silently empty
+    // file, which is the failure this module exists to prevent, so it is
+    // reported here rather than passed on.
+    if (bytes.byteLength === 0) {
+      throw new Error(
+        `${path} reads as empty, which should not be possible for a file that ` +
+          "was registered with contents. Select the files again."
+      );
+    }
     return bytes;
   }
 
