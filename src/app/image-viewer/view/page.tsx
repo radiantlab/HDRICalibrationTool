@@ -73,6 +73,7 @@ import {
   ViewControlCard,
   type ViewType,
 } from "./view-control-card";
+import { errorMessage } from "@/lib/error-message";
 import { readAnyFile } from "@/lib/host-fs-tauri";
 import {
   type HdrMetadata as ParsedHdrMetadata,
@@ -443,7 +444,7 @@ function ImageViewerErrorState({ error }: FallbackProps) {
       <Card className="absolute w-full max-w-md">
         <CardHeader>
           <CardTitle>Failed to load image</CardTitle>
-          <CardDescription>{error.message}</CardDescription>
+          <CardDescription>{errorMessage(error)}</CardDescription>
         </CardHeader>
       </Card>
     </div>
