@@ -51,6 +51,15 @@ export interface ExecuteOptions {
  * the bytes in question, where a view onto part of a larger buffer would
  * otherwise have handed the whole thing over, and gives every entry a distinct
  * buffer so two paths resolving to the same bytes cannot transfer it twice.
+ *
+ * The copies cost peak memory, and every one is made before the single send
+ * that frees them, so originals and copies coexist. A JPEG bracket is a few
+ * megabytes a frame and does not notice. A RAW one does: an 18-frame CR2
+ * bracket holds its sources and its converted TIFFs and now briefly holds a
+ * second set of both. That is the price of the stores surviving the run, and
+ * it belongs with whatever moves the RAW conversion off the main thread, since
+ * that is the change that decides whether the peeked TIFF should be handed
+ * over at all.
  */
 function owned(bytes: Uint8Array): Uint8Array {
   return bytes.slice();
