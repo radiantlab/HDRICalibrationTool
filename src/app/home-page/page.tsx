@@ -437,6 +437,7 @@ export default function Home() {
 
             // Undefined until an image is selected, in which case there are no
             // dimensions to check the mask against yet.
+            //
             const maskSize = (await maskPreviewMetadata)?.size ?? null;
             // Runs once, against the global configuration, because that is
             // what every set is run with. Deliberately not per set: the mask

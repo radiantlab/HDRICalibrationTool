@@ -277,7 +277,6 @@ fn main(@builtin(global_invocation_id) globalId: vec3<u32>) {
     );
 
     device.queue.submit([commandEncoder.finish()]);
-    // biome-ignore lint/suspicious/noUnnecessaryConditions: gpuMapMode is typed as Record<string, number>; under noUncheckedIndexedAccess tsc correctly treats gpuMapMode.READ as number | undefined (Biome's type inference misses this), so the fallback is required for tsc to pass.
     await readbackBuffer.mapAsync(gpuMapMode.READ ?? 1);
     const mappedRange = readbackBuffer.getMappedRange();
     const result = new Float32Array(mappedRange.slice(0));

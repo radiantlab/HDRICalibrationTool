@@ -16,7 +16,34 @@
         // Every current use is a real bitmask/binary-format operation, not
         // a typo for a logical operator, so this rule is disabled globally
         // rather than suppressed inline at ~9 call sites.
-        "noBitwiseOperators": "off"
+        "noBitwiseOperators": "off",
+
+        // Every flagged site in this codebase is a case where the *type* is
+        // more confident than runtime reality, in one of two ways, and
+        // removing the guard would introduce a crash rather than tidy dead
+        // code:
+        //
+        //  - React refs. `.current` is typed from its initial value, so a
+        //    `if (ref.current)` on a DOM ref reads as "always falsy" and a
+        //    `if (!dragStateRef.current)` as "always truthy". Both are wrong
+        //    the moment the component mounts or a drag starts.
+        //    (run-console.tsx, use-image-selection-layer.ts x3)
+        //  - Unvalidated reads from storage. `readJson<T>` casts what came
+        //    out of IndexedDB to T without checking its shape, so the type
+        //    says `presets` is an array while a corrupt document may hold
+        //    anything. The `?? []` guards reality, not the type.
+        //    (presets.ts, run-history.ts)
+        //
+        // Also seen resolving the wrong overload of
+        // useGenericImageMetadata, where dropping the guard crashes with no
+        // image selected, and missing noUncheckedIndexedAccess entirely in
+        // falsecolor-luminance-webgpu.ts -- that one already carried an
+        // inline suppression before this rule started firing more widely.
+        //
+        // Seven false positives and no true ones, so this is off globally
+        // rather than suppressed at each site. Worth revisiting if Biome
+        // learns that a ref's current value is not its initial one.
+        "noUnnecessaryConditions": "off"
       },
       "performance": {
         // Surveyed all ~33 flagged sites: the large majority are inline
