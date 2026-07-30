@@ -212,7 +212,16 @@ export async function changedSources(
       if (!(await io.exists(file.sourcePath))) {
         return null;
       }
-      const current = await sha256Hex(await io.readFile(file.sourcePath));
+      let current: string;
+      try {
+        current = await sha256Hex(await io.readFile(file.sourcePath));
+      } catch {
+        // A source that exists but cannot be read is in the same position as
+        // one that has been moved: there is nothing to compare against, and
+        // the preset carries its own copy regardless. Reporting it as changed
+        // would tell the user to re-save from a file that cannot be read.
+        return null;
+      }
       return current === file.sha256 ? null : slot;
     })
   );
