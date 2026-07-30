@@ -1,5 +1,5 @@
 /**
- * Navigation component for the HDRI Calibration Tool.
+ * Navigation component for the LumiLab.
  *
  * This component provides the application's main navigation bar with links to
  * different sections of the application, and the app's name. Version numbers

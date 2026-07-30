@@ -10,9 +10,7 @@ const applicationPath = path.resolve(
   "src-tauri",
   "target",
   "debug",
-  process.platform === "win32"
-    ? "HDRICalibrationInterface.exe"
-    : "HDRICalibrationInterface"
+  process.platform === "win32" ? "LumiLab.exe" : "LumiLab"
 );
 const watchMode = process.env.E2E_WATCH === "1";
 const watchPauseMs = Number.parseInt(

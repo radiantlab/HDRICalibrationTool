@@ -1,6 +1,6 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/schema.json",
-  "productName": "HDRI Calibration Interface",
+  "productName": "LumiLab",
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
@@ -15,7 +15,7 @@
         "fullscreen": false,
         "height": 800,
         "resizable": true,
-        "title": "HDRI Calibration Interface",
+        "title": "LumiLab",
         "width": 1280,
         "minWidth": 1280,
         "minHeight": 800

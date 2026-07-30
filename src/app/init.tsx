@@ -1,5 +1,5 @@
 /**
- * Initialization component for the HDRI Calibration Tool.
+ * Initialization component for the LumiLab.
  *
  * This component is responsible for setting up the application's initial state.
  * It queries the operating system platform and sets up the default output
@@ -81,7 +81,7 @@ const Initialization: React.FC = () => {
             const { documentDir, join } = await import("@tauri-apps/api/path");
             const { mkdir } = await import("@tauri-apps/plugin-fs");
             const docsDir = await documentDir();
-            const targetDir = await join(docsDir, "HDRICalibrationInterface");
+            const targetDir = await join(docsDir, "LumiLab");
             await mkdir(targetDir, { recursive: true });
             outputDefaultPath = targetDir;
           } catch (error) {

@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "HDRICalibrationInterface"
+name = "LumiLab"
 version = "4.0.0"
 dependencies = [
  "blake3",

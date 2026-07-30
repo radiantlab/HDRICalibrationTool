@@ -16,7 +16,7 @@ interface E2EDropDetail {
   targetId: string;
 }
 
-const E2E_DROP_EVENT = "__hdricalibrationtool_e2e_drop__";
+const E2E_DROP_EVENT = "__lumilab_e2e_drop__";
 
 /** Whether a drag position falls within a dropzone's box. */
 function contains(rect: DOMRect, position: { x: number; y: number }): boolean {

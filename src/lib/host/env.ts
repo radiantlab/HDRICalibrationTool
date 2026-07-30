@@ -57,7 +57,7 @@ export interface AppInfo {
  * costs no runtime lookup and cannot disagree with what was shipped.
  */
 export async function appInfo(): Promise<AppInfo> {
-  const name = process.env.NEXT_PUBLIC_APP_NAME ?? "HDRI Calibration Tool";
+  const name = process.env.NEXT_PUBLIC_APP_NAME ?? "LumiLab";
   const version = process.env.NEXT_PUBLIC_APP_VERSION ?? "0.0.0";
 
   if (!isTauri()) {

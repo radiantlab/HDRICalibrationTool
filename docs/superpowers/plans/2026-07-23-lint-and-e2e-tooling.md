@@ -37,7 +37,7 @@
 - [ ] **Step 1: Run the non-interactive initializer**
 
 ```bash
-cd /Users/ulbrical/GitHub/HDRICalibrationTool
+cd /Users/ulbrical/GitHub/LumiLab
 CI=true npx ultracite@latest init --pm npm --linter biome --frameworks react next --quiet
 ```
 
@@ -183,7 +183,7 @@ git commit -m "fix: resolve remaining ultracite lint violations"
 - [ ] **Step 1: Add the optional dependency**
 
 ```bash
-cd /Users/ulbrical/GitHub/HDRICalibrationTool/src-tauri
+cd /Users/ulbrical/GitHub/LumiLab/src-tauri
 cargo add tauri-plugin-wdio-webdriver --optional
 ```
 
@@ -262,7 +262,7 @@ fn main() {
 - [ ] **Step 4: Verify the default (feature-off) build — this protects the currently-green push-to-`main` CI path**
 
 ```bash
-cd /Users/ulbrical/GitHub/HDRICalibrationTool/src-tauri
+cd /Users/ulbrical/GitHub/LumiLab/src-tauri
 cargo build --release
 ```
 Expected: exits 0, and `cargo tree -e features 2>/dev/null | grep wdio` (or simply `cargo build --release --verbose 2>&1 | grep wdio`) shows no `tauri-plugin-wdio-webdriver` compilation — it must not appear in a default build.
@@ -277,7 +277,7 @@ Expected: exits 0, and this time the build output does compile `tauri-plugin-wdi
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/ulbrical/GitHub/HDRICalibrationTool
+cd /Users/ulbrical/GitHub/LumiLab
 git add src-tauri/Cargo.toml src-tauri/Cargo.lock src-tauri/src/main.rs
 git commit -m "build: add tauri-plugin-wdio-webdriver behind an e2e-driver feature flag"
 ```
@@ -297,7 +297,7 @@ git commit -m "build: add tauri-plugin-wdio-webdriver behind an e2e-driver featu
 - [ ] **Step 1: Add the service dependency**
 
 ```bash
-cd /Users/ulbrical/GitHub/HDRICalibrationTool/e2e-tests
+cd /Users/ulbrical/GitHub/LumiLab/e2e-tests
 npm install --save-dev @wdio/tauri-service
 ```
 
@@ -318,8 +318,8 @@ const applicationPath = path.resolve(
 	"target",
 	"debug",
 	process.platform === "win32"
-		? "HDRICalibrationInterface.exe"
-		: "HDRICalibrationInterface",
+		? "LumiLab.exe"
+		: "LumiLab",
 );
 const watchMode = process.env.E2E_WATCH === "1";
 const watchPauseMs = Number.parseInt(
@@ -417,7 +417,7 @@ This removes the manual `tauri-driver` path resolution, the `beforeSession`/`aft
 - [ ] **Step 3: Verify the file parses and the app-build step alone works**
 
 ```bash
-cd /Users/ulbrical/GitHub/HDRICalibrationTool
+cd /Users/ulbrical/GitHub/LumiLab
 node --check e2e-tests/wdio.conf.js
 npm run tauri build -- --debug --no-bundle --features e2e-driver
 ```
@@ -496,7 +496,7 @@ In `.github/workflows/test-on-pr-and-push.yml`, add this job alongside the exist
 - [ ] **Step 2: Validate the YAML**
 
 ```bash
-cd /Users/ulbrical/GitHub/HDRICalibrationTool
+cd /Users/ulbrical/GitHub/LumiLab
 python3 -c "import yaml, sys; yaml.safe_load(open('.github/workflows/test-on-pr-and-push.yml'))" && echo "YAML OK"
 ```
 Expected: `YAML OK`. (If `python3`/`pyyaml` isn't available, use `npx js-yaml .github/workflows/test-on-pr-and-push.yml >/dev/null && echo OK` instead.)
@@ -542,4 +542,4 @@ This is real remote/shared-state work — confirm with the user before running S
 
 **Placeholder scan:** no TBD/"add appropriate"/"similar to Task N" patterns; Task 4's conditional branches (2a/2b) are a genuine tool-output-dependent fork, not a placeholder, and both branches have concrete instructions.
 
-**Type/name consistency:** feature name `e2e-driver` is identical in Cargo.toml (Task 5), `main.rs`'s `#[cfg(feature = "e2e-driver")]` (Task 5), the `wdio.conf.js` build command (Task 6), and the CI job (Task 7, inherited via `onPrepare`). Binary name `HDRICalibrationInterface`/`HDRICalibrationInterface.exe` matches the existing (pre-migration) `wdio.conf.js` and `Cargo.toml`'s `name = "HDRICalibrationInterface"`.
+**Type/name consistency:** feature name `e2e-driver` is identical in Cargo.toml (Task 5), `main.rs`'s `#[cfg(feature = "e2e-driver")]` (Task 5), the `wdio.conf.js` build command (Task 6), and the CI job (Task 7, inherited via `onPrepare`). Binary name `LumiLab`/`LumiLab.exe` matches the existing (pre-migration) `wdio.conf.js` and `Cargo.toml`'s `name = "LumiLab"`.

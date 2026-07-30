@@ -13,9 +13,7 @@ test("the site root lands on the generator", async ({ page }) => {
   // thing a visitor sees and the last thing a build log mentions.
   await page.goto("/");
   await expect(page).toHaveURL(/\/home-page/);
-  await expect(
-    page.getByRole("heading", { name: "HDRI Calibration Tool" })
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "LumiLab" })).toBeVisible();
 });
 
 test("every tab is reachable by URL, not only by clicking", async ({
@@ -42,7 +40,7 @@ test("the logo and title sit flush left, and the controls flush right", async ({
   await page.goto("/home-page");
 
   const header = page.locator("#logo");
-  const title = page.getByRole("heading", { name: "HDRI Calibration Tool" });
+  const title = page.getByRole("heading", { name: "LumiLab" });
   const tutorial = page.getByRole("button", {
     name: "Luminance Maps tutorial",
   });

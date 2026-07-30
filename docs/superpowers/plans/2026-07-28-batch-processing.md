@@ -9,7 +9,7 @@
 **Tech Stack:** Next.js 15 / React 19 / TypeScript, react-hook-form, Tauri v2 (Rust backend), Jest + Testing Library (jsdom), `cargo test`, Biome via `ultracite`.
 
 **Spec:** `docs/superpowers/specs/2026-07-27-batch-processing-design.md`
-**Issue:** [#224](https://github.com/radiantlab/HDRICalibrationTool/issues/224)
+**Issue:** [#224](https://github.com/radiantlab/LumiLab/issues/224)
 
 ## Global Constraints
 
@@ -1938,11 +1938,11 @@ Expected: all pass.
 - [ ] **Step 2: Prepare two image sets**
 
 The real RAW bracket lives at
-`/Users/ulbrical/Library/CloudStorage/GoogleDrive-ulbrical@oregonstate.edu/Shared drives/radiantlab HDRICalibrationTool/examples/inputs/CR2/`.
+`/Users/ulbrical/Library/CloudStorage/GoogleDrive-ulbrical@oregonstate.edu/Shared drives/radiantlab LumiLab/examples/inputs/CR2/`.
 Copy it to two scratch directories, and delete all but one exposure from the second so it cannot merge:
 
 ```bash
-SRC="/Users/ulbrical/Library/CloudStorage/GoogleDrive-ulbrical@oregonstate.edu/Shared drives/radiantlab HDRICalibrationTool/examples/inputs/CR2"
+SRC="/Users/ulbrical/Library/CloudStorage/GoogleDrive-ulbrical@oregonstate.edu/Shared drives/radiantlab LumiLab/examples/inputs/CR2"
 mkdir -p "$TMPDIR/batch-check/good" "$TMPDIR/batch-check/broken"
 cp "$SRC"/*.cr2 "$TMPDIR/batch-check/good/"
 cp "$SRC"/capt01.cr2 "$TMPDIR/batch-check/broken/"

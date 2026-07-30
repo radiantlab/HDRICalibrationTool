@@ -1,10 +1,10 @@
-# HDRI Calibration Tool — Product Requirements Document
+# LumiLab — Product Requirements Document
 
 **Status:** describes functionality present on `main` as of the completion of the WebAssembly port (#227, 2026-07-30). This is a description of what is implemented, not a roadmap.
 
 ## 1. Overview
 
-The HDRI Calibration Tool turns a bracketed set of low dynamic range (LDR) photographs into a calibrated high dynamic range (HDR) luminance map. It runs three image-processing tools — [Radiance](https://www.radiance-online.org/), `hdrgen`, and `dcraw_emu` — behind a guided GUI pipeline, following the calibration process published in [Pierson et al., 2019](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319). All three are compiled to WebAssembly and ship inside the application, so there is nothing to install and no tool paths to configure.
+The LumiLab turns a bracketed set of low dynamic range (LDR) photographs into a calibrated high dynamic range (HDR) luminance map. It runs three image-processing tools — [Radiance](https://www.radiance-online.org/), `hdrgen`, and `dcraw_emu` — behind a guided GUI pipeline, following the calibration process published in [Pierson et al., 2019](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319). All three are compiled to WebAssembly and ship inside the application, so there is nothing to install and no tool paths to configure.
 
 **It is one application with two hosts.** The same static export runs as a Tauri 2 desktop app and as a website. There is no server component in either case: the pipeline is WebAssembly executing in a Web Worker inside the page, so images are never uploaded and never leave the machine. The two hosts differ only in what the platform permits, and every such difference lives behind `src/lib/host/` — file selection, output writing, revealing a file in a file manager, and the app-version lookup.
 

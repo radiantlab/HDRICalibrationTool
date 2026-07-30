@@ -7,12 +7,12 @@ Written so it can be read on its own, without reading the code, by anyone who
 needs to sign off on a public release.
 
 **Last reviewed:** 2026-07-29, when the WebAssembly port
-([#227](https://github.com/radiantlab/HDRICalibrationTool/issues/227)) changed
+([#227](https://github.com/radiantlab/LumiLab/issues/227)) changed
 LibRaw from a separately-invoked binary into statically linked code.
 
 ## The application
 
-**HDRI Calibration Tool is licensed GPL-3.0.** See [`../LICENSE`](../LICENSE).
+**LumiLab is licensed GPL-3.0.** See [`../LICENSE`](../LICENSE).
 That predates any of the decisions below and is the fixed point they are
 resolved against.
 

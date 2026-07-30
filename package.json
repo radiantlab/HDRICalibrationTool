@@ -67,7 +67,7 @@
     "typescript": "^6.0.3",
     "ultracite": "^7.9.4"
   },
-  "name": "hdricalibrartiontool",
+  "name": "lumilab",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
