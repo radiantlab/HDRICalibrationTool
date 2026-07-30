@@ -18,8 +18,6 @@
 <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind%20CSS-v4.3-%2306B6D4?logo=tailwindcss" alt="Tailwind CSS v4.3" /></a>
 </p>
 
-<img src="public/splash.png" alt="HDRI Calibration Interface" />
-
 This application provides a graphical user interface for the creation and calibration of High Dynamic Range (HDR) images. It runs Radiance, `hdrgen` and `dcraw_emu` internally, as WebAssembly, so none of them has to be installed. It follows the pipeline process published [here](https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319). The program works by taking in multiple LDR image files as well as some calibration information related to the camera/lens used, in order to return calibrated HDR images, also called luminance maps. The application is intended for lighting and daylighting professionals or researchers who are interested in studying the indoor visual environment and especially discomfort glare.
 
 ## One application, two ways to run it
@@ -114,7 +112,7 @@ WebAssembly in `public/wasm/`. Rebuilding them is only necessary when bumping
 one of these; see [`public/wasm/README.md`](./public/wasm/README.md).
 
 - [radiantlab/Radiance](https://github.com/radiantlab/Radiance) — fork of [LBNL-ETA/Radiance](https://github.com/LBNL-ETA/Radiance)
-- [radiantlab/hdrgen](https://github.com/radiantlab/hdrgen)
+- [radiantlab/hdrgen](https://github.com/radiantlab/hdrgen) — fork of [radiance-org/hdrgen](https://github.com/radiance-org/hdrgen)
 - [radiantlab/LibRaw](https://github.com/radiantlab/LibRaw) (`dcraw_emu`) — fork of [LibRaw/LibRaw](https://github.com/LibRaw/LibRaw)
 
 Contributions are currently limited to those working on the Architectural Lighting Design Capstone Project at Oregon State University. If you are interested in contributing, please contact the project authors.
@@ -198,7 +196,7 @@ The application itself is licensed **GPL-3.0** (see [`LICENSE`](./LICENSE)). It 
 | Component | Licence | Source |
 |---|---|---|
 | Radiance tools | Radiance Software License 2.0 (BSD-3-Clause in substance) | [radiantlab/Radiance](https://github.com/radiantlab/Radiance) |
-| `hdrgen` | BSD-3-Clause, see [`licenses/BSD-3-Clause.txt`](./licenses/BSD-3-Clause.txt) | [radiantlab/hdrgen](https://github.com/radiantlab/hdrgen) |
+| `hdrgen` | BSD-3-Clause, see [`licenses/BSD-3-Clause.txt`](./licenses/BSD-3-Clause.txt) | [radiantlab/hdrgen](https://github.com/radiantlab/hdrgen), upstream at [radiance-org/hdrgen](https://github.com/radiance-org/hdrgen) |
 | panlib | BSD-3-Clause | [radiantlab/panlib](https://github.com/radiantlab/panlib) |
 | LibRaw (`dcraw_emu`) | LGPL-2.1, see [`licenses/LGPL-2.1.txt`](./licenses/LGPL-2.1.txt) | [radiantlab/LibRaw](https://github.com/radiantlab/LibRaw), upstream at https://www.libraw.org/ |
 
