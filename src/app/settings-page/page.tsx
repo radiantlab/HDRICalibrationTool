@@ -135,13 +135,14 @@ export default function SettingsPage() {
   };
 
   return (
-    // The body is `h-screen overflow-hidden` so the home page can manage its
-    // own panel scrolling, which means any page taller than the viewport is
-    // clipped rather than scrolled unless it scrolls itself. `min-h-0` is what
-    // lets a flex child actually shrink and hand the overflow to this
-    // container instead of growing past it.
-    <div className="grid min-h-0 flex-1 grid-cols-4 overflow-y-auto bg-muted text-foreground">
-      <main className="col-span-4 m-8 mt-0 mb-10 border-border border-r border-l bg-background p-5">
+    // Column, not a scrolling box. The action bar is a sibling of the scroll
+    // area rather than floating over it: it used to be `fixed bottom-0`, which
+    // covered whatever the page ended with, and no amount of bottom margin
+    // fixes that reliably because the bar's height is not the margin's
+    // business. `min-h-0` is what lets the middle child shrink and take the
+    // overflow, since the body is `h-screen overflow-hidden`.
+    <div className="flex min-h-0 flex-1 flex-col bg-muted text-foreground">
+      <main className="mx-8 mb-8 min-h-0 flex-1 overflow-y-auto border-border border-r border-l bg-background p-5">
         <div className="grid grid-cols-1 gap-6">
           {/* Left: External Utilities */}
           <div className="rounded-lg border border-border p-5">
