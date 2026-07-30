@@ -86,6 +86,9 @@ test("generates two HDR pictures from the JPEG bracket", async ({ page }) => {
 test("generates a second time after the preset is reapplied", async ({
   page,
 }) => {
+  // Two full runs in one test, and the default budget covers about one.
+  test.setTimeout(RUN_TIMEOUT * 2);
+
   await page.goto("/home-page");
   await loadJpegBracket(page);
   await configureRun(page);
@@ -113,9 +116,10 @@ test("generates a second time after the preset is reapplied", async ({
   await applyPreset(page, "Bracket");
 
   // Nothing has touched the calibration files, so nothing should say they have
-  // changed. The warning was the first visible symptom of the emptied sources,
-  // and it appeared before the run that then failed.
-  await expect(page.getByText(/changed on disk/)).toHaveCount(0);
+  // changed. Soft, because this is the first of the two symptoms and aborting
+  // here would leave the second one -- the run that could not start -- untested
+  // in exactly the case that matters, the one where both are back.
+  await expect.soft(page.getByText(/changed on disk/)).toHaveCount(0);
 
   await generate(page);
   await expect.poll(() => downloads.length, { timeout: RUN_TIMEOUT }).toBe(4);
