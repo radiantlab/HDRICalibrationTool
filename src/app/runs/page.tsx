@@ -1,5 +1,6 @@
 "use client";
 
+import { canRevealInFileManager } from "@/lib/host/env";
 import { revealFile } from "@/lib/host/reveal";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -182,17 +183,19 @@ export default function RunsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem
-                        disabled={record.outputs.length === 0}
-                        onClick={() => {
-                          const [first] = record.outputs;
-                          if (first) {
-                            revealFile(first);
-                          }
-                        }}
-                      >
-                        Open folder
-                      </DropdownMenuItem>
+                      {canRevealInFileManager() ? (
+                        <DropdownMenuItem
+                          disabled={record.outputs.length === 0}
+                          onClick={() => {
+                            const [first] = record.outputs;
+                            if (first) {
+                              revealFile(first);
+                            }
+                          }}
+                        >
+                          Open folder
+                        </DropdownMenuItem>
+                      ) : null}
                       <DropdownMenuItem
                         disabled={openableOutputs(record).length === 0}
                         onClick={() => {

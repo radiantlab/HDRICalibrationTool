@@ -86,7 +86,7 @@ function fakeHost(): HostFilesystem & {
     save: (directory: string, name: string) => {
       const location = `${directory}/${name}`;
       writes.push(location);
-      return Promise.resolve({ location });
+      return Promise.resolve({ downloaded: false, location, name });
     },
     writes,
   };

@@ -13,11 +13,11 @@ export default function SettingsButtonBar({
   savePaths: () => void;
 }) {
   return (
-    <div className="fixed bottom-0 left-0 w-full border-gray-400 bg-gray-300">
-      <div className="mr-8 ml-8 flex justify-around border-gray-400 border-t py-4">
+    <div className="fixed bottom-0 left-0 w-full border-border bg-muted">
+      <div className="mr-8 ml-8 flex justify-around border-border border-t py-4">
         {/* Button to clear changes (revert to saved settings) */}
         <button
-          className="w-max rounded border-gray-400 bg-gray-600 px-4 py-1 font-semibold text-gray-300 hover:bg-gray-500"
+          className="w-max rounded border-border bg-gray-600 px-4 py-1 font-semibold text-gray-300 hover:bg-gray-500"
           type="button"
         >
           Clear Changes
@@ -25,9 +25,9 @@ export default function SettingsButtonBar({
 
         {/* Button to apply and save changes */}
         <button
-          className={`w-max rounded border-gray-400 px-2 py-1 font-semibold ${
+          className={`w-max rounded border-border px-2 py-1 font-semibold ${
             saveDisabled
-              ? "cursor-not-allowed bg-gray-400 text-gray-700" // Disabled style
+              ? "cursor-not-allowed bg-gray-400 text-muted-foreground" // Disabled style
               : "bg-osu-beaver-orange text-white hover:bg-osu-luminance" // Enabled style
           }`}
           disabled={saveDisabled}

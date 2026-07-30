@@ -135,17 +135,22 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="grid min-h-screen grid-cols-4 bg-gray-300 text-black">
-      <main className="col-span-4 m-8 mt-0 mb-10 border-gray-400 border-r border-l bg-white p-5">
+    // The body is `h-screen overflow-hidden` so the home page can manage its
+    // own panel scrolling, which means any page taller than the viewport is
+    // clipped rather than scrolled unless it scrolls itself. `min-h-0` is what
+    // lets a flex child actually shrink and hand the overflow to this
+    // container instead of growing past it.
+    <div className="grid min-h-0 flex-1 grid-cols-4 overflow-y-auto bg-muted text-foreground">
+      <main className="col-span-4 m-8 mt-0 mb-10 border-border border-r border-l bg-background p-5">
         <div className="grid grid-cols-1 gap-6">
           {/* Left: External Utilities */}
-          <div className="rounded-lg border border-gray-300 p-5">
+          <div className="rounded-lg border border-border p-5">
             <h2 className="mb-4 flex items-center font-bold text-xl">
               {canChooseOutput ? "Paths" : "Output"}
             </h2>
 
             {canChooseOutput ? null : (
-              <p className="mb-4 text-gray-600 text-sm">
+              <p className="mb-4 text-muted-foreground text-sm">
                 Generated images are downloaded, so where they are saved is
                 your browser's setting rather than this app's. There is nothing
                 to configure here.
@@ -172,7 +177,7 @@ export default function SettingsPage() {
                 </label>
                 <div className="flex items-center gap-2">
                   <input
-                    className="grow rounded border border-gray-400 px-2 py-1"
+                    className="grow rounded border border-input bg-background px-2 py-1"
                     id={id}
                     name={id}
                     onChange={handleSettingsChange}
@@ -181,7 +186,7 @@ export default function SettingsPage() {
                     value={value}
                   />
                   <button
-                    className="rounded bg-gray-300 px-2 py-1 font-semibold text-gray-700 hover:bg-gray-400"
+                    className="rounded bg-secondary px-2 py-1 font-semibold text-secondary-foreground hover:bg-secondary/80"
                     onClick={() =>
                       setLocalSettings({ ...localSettings, [id]: "" })
                     }
@@ -190,7 +195,7 @@ export default function SettingsPage() {
                     Clear
                   </button>
                   <button
-                    className="rounded bg-gray-300 px-2 py-1 font-semibold text-gray-700 hover:bg-gray-400"
+                    className="rounded bg-secondary px-2 py-1 font-semibold text-secondary-foreground hover:bg-secondary/80"
                     onClick={() => dialog(id, label, id === "outputPath")}
                     type="button"
                   >
@@ -274,7 +279,7 @@ export default function SettingsPage() {
           {/* What this build is made of. Moved here from the header, which had
               room for the app and Tauri versions only, and none for the tools
               that actually do the work. */}
-          <div className="rounded-lg border border-gray-300 p-5">
+          <div className="rounded-lg border border-border p-5">
             <h2 className="mb-4 font-bold text-xl">About this build</h2>
 
             <dl className="mb-5 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
@@ -289,13 +294,13 @@ export default function SettingsPage() {
             </dl>
 
             <h3 className="mb-1 font-semibold">Image processing tools</h3>
-            <p className="mb-3 text-gray-600 text-sm">
+            <p className="mb-3 text-muted-foreground text-sm">
               These run inside the app as WebAssembly. Nothing needs installing,
               and there are no paths to configure.
             </p>
 
             {toolsError ? (
-              <p className="text-red-700 text-sm">
+              <p className="text-destructive text-sm">
                 Could not read the tool versions: {toolsError}
               </p>
             ) : (
@@ -307,11 +312,11 @@ export default function SettingsPage() {
                       <dt className="font-semibold">{TOOL_LABELS[name]}</dt>
                       <dd>
                         <span>{tool ? tool.version : "\u2026"}</span>
-                        <span className="block text-gray-600">
+                        <span className="block text-muted-foreground">
                           {TOOL_ROLES[name]}
                         </span>
                         {tool ? (
-                          <span className="block font-mono text-gray-500 text-xs">
+                          <span className="block font-mono text-muted-foreground text-xs">
                             {tool.repository} @ {tool.commit.slice(0, 8)}
                           </span>
                         ) : null}

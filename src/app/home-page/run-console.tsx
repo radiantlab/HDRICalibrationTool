@@ -1,5 +1,6 @@
 "use client";
 
+import { canRevealInFileManager } from "@/lib/host/env";
 import { revealFile } from "@/lib/host/reveal";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -125,18 +126,20 @@ export function RunConsole({
             Copy log
           </Button>
           <div className="flex gap-2">
-            <Button
-              disabled={!lastEmittedOutput}
-              onClick={() => {
-                if (lastEmittedOutput) {
-                  revealFile(lastEmittedOutput.path);
-                }
-              }}
-              type="button"
-              variant="outline"
-            >
-              Open folder
-            </Button>
+            {canRevealInFileManager() ? (
+              <Button
+                disabled={!lastEmittedOutput}
+                onClick={() => {
+                  if (lastEmittedOutput) {
+                    revealFile(lastEmittedOutput.path);
+                  }
+                }}
+                type="button"
+                variant="outline"
+              >
+                Open folder
+              </Button>
+            ) : null}
             <Button
               disabled={!lastEmittedOutput}
               onClick={openImage}

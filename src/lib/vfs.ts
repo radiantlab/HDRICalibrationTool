@@ -48,6 +48,20 @@ export function registerSessionFile(name: string, bytes: Uint8Array): string {
   return path;
 }
 
+/**
+ * Registers a finished picture so the viewer can open it.
+ *
+ * In a browser an output is downloaded, and a download leaves nothing the app
+ * can read back: the file belongs to the browser now. Keeping the bytes under
+ * a readable path means "view result" still works after a run, which is most
+ * of the point of producing the picture.
+ */
+export function registerOutputFile(name: string, bytes: Uint8Array): string {
+  const path = `${SESSION_PREFIX}output/${name}`;
+  session.set(path, bytes);
+  return path;
+}
+
 /** The stable path for a preset's calibration file. */
 export function presetPath(id: string, fileName: string): string {
   return `${STORED_PREFIX}${id}/${fileName}`;

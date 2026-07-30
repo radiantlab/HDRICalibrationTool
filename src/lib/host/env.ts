@@ -19,20 +19,22 @@ export function isTauri(): boolean {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 }
 
-/** True where a directory can be chosen and written to without a prompt per file. */
-export function hasDirectoryPicker(): boolean {
-  return typeof window !== "undefined" && "showDirectoryPicker" in window;
-}
-
 /**
  * True where the app can put output files somewhere the user chose.
  *
- * Tauri can always. A browser can only with File System Access; otherwise
- * output is downloaded, which means the browser decides where it lands and
- * the configured output path means nothing.
+ * **Desktop only, deliberately, even though Chromium could.** Chromium has
+ * `showDirectoryPicker` and this once returned true for it, which was a lie:
+ * `save.ts` downloads in every browser, so the settings page offered an output
+ * path that nothing honoured. A capability check that disagrees with the code
+ * behind it is worse than not having one.
+ *
+ * Making it true for Chromium means implementing directory handles, including
+ * persisting the handle and re-requesting permission on a later visit. Worth
+ * doing, but it is a feature rather than a branch, and Safari would still take
+ * the download path -- so downloads have to work well regardless.
  */
 export function canWriteToChosenDirectory(): boolean {
-  return isTauri() || hasDirectoryPicker();
+  return isTauri();
 }
 
 /** True where a file can be shown in the OS file manager. Desktop only. */

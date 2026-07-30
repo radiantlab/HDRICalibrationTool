@@ -15,10 +15,18 @@
  * does not exist.
  */
 
+import { registerOutputFile } from "../vfs";
 import { isTauri } from "./env";
 
 export interface SavedOutput {
-  /** What to show the user. A real path on desktop, a filename in a browser. */
+  /**
+   * True when the file went to the browser's download folder rather than
+   * somewhere the app chose. Callers should say so: a picture that appears
+   * nowhere the user was looking is indistinguishable from one that was never
+   * written.
+   */
+  downloaded: boolean;
+  /** A path the app can read back. Real on the desktop, virtual in a browser. */
   location: string;
   name: string;
 }
@@ -38,11 +46,14 @@ export async function saveOutput(
     const { writeFile } = await import("@tauri-apps/plugin-fs");
     const location = joinPath(directory, name);
     await writeFile(location, bytes);
-    return { location, name };
+    return { downloaded: false, location, name };
   }
 
   download(name, bytes);
-  return { location: name, name };
+  // Also kept in the session filesystem. The download is the user's copy and
+  // the app cannot read it back, so without this the viewer would have nothing
+  // to open after a run that just succeeded.
+  return { downloaded: true, location: registerOutputFile(name, bytes), name };
 }
 
 function download(name: string, bytes: Uint8Array): void {

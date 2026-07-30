@@ -73,6 +73,7 @@ import {
   ViewControlCard,
   type ViewType,
 } from "./view-control-card";
+import { readAnyFile } from "@/lib/host-fs-tauri";
 import {
   type HdrMetadata as ParsedHdrMetadata,
   parseHdrMetadata,
@@ -236,8 +237,10 @@ function isTransformAwayFromBaseline(
 }
 
 async function loadHdrData(filePath: string): Promise<LoadedHdrData> {
-  const { readFile } = await import("@tauri-apps/plugin-fs");
-  const fileData = await readFile(filePath);
+  // Virtual as well as real: in a browser the picture the pipeline just made
+  // was downloaded, and what the app can still read is the copy kept in the
+  // session filesystem.
+  const fileData = await readAnyFile(filePath);
   // Parsed from the bytes already in hand. The Rust command this replaced
   // opened the file a second time to read the same few hundred bytes.
   const hdrMetadata = parseHdrMetadata(fileData);
@@ -852,8 +855,12 @@ function ImageViewerCanvasContent({
           </div>
         </TransformComponent>
       </TransformWrapper>
-      <div className="absolute top-4 left-4 z-30 flex items-start gap-2">
-        <div className="pointer-events-none w-56">
+      <div className="absolute top-4 left-4 z-30 flex max-h-[calc(100%-2rem)] items-start gap-2">
+        {/* Bounded and scrollable: a picture carrying the full hdrgen
+            provenance chain has far more header than fits beside it, and the
+            overflow was simply cut off. Pointer events are enabled so it can
+            actually be scrolled, which costs drag-to-pan over this corner. */}
+        <div className="max-h-[calc(100vh-14rem)] w-56 overflow-y-auto">
           <HdrMetadataDetails metadata={viewerData.hdrMetadata} />
         </div>
         <div className="pointer-events-auto flex shrink-0 items-start gap-1">

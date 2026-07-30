@@ -100,7 +100,7 @@ export interface HostFilesystem {
     directory: string,
     name: string,
     data: Uint8Array
-  ) => Promise<{ location: string }>;
+  ) => Promise<{ downloaded: boolean; location: string; name: string }>;
 }
 
 const tauriHost: HostFilesystem = {
@@ -223,11 +223,27 @@ export async function runWasmPipeline({
 
   for (const [source, name, announce] of outputs) {
     // biome-ignore lint/performance/noAwaitInLoops: each output is announced only after it has been written, which is what lets a failed set be attributed correctly
-    const { location: destination } = await host.save(
+    const saved = await host.save(
       params.outputPath,
       name,
       await runner.readFile(source)
     );
+    const destination = saved.location;
+    if (saved.downloaded) {
+      // Said explicitly because a download is invisible: the browser chooses
+      // where it lands, and without this the run reports success while the
+      // user has no idea whether anything was produced or where it went.
+      host
+        .emitStatus({
+          kind: "step",
+          message: `Downloaded ${saved.name} to your browser's downloads folder`,
+          progress: null,
+          step: "save_output",
+        })
+        .catch(() => {
+          // A dropped status line must never fail the run that produced it.
+        });
+    }
     if (announce) {
       // Announced after the write, matching the Rust pipeline: a set that
       // failed has announced no outputs, which is what run history relies on.

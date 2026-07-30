@@ -5,6 +5,7 @@ import {
   FolderOpenIcon,
   PhotoIcon,
 } from "@heroicons/react/24/solid";
+import { canRevealInFileManager } from "@/lib/host/env";
 import { revealFile } from "@/lib/host/reveal";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -78,17 +79,19 @@ export function PipelineStatus({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem
-              disabled={!lastEmittedOutput}
-              onClick={() => {
-                if (lastEmittedOutput) {
-                  revealFile(lastEmittedOutput.path);
-                }
-              }}
-            >
-              <FolderOpenIcon />
-              View file
-            </DropdownMenuItem>
+            {canRevealInFileManager() ? (
+              <DropdownMenuItem
+                disabled={!lastEmittedOutput}
+                onClick={() => {
+                  if (lastEmittedOutput) {
+                    revealFile(lastEmittedOutput.path);
+                  }
+                }}
+              >
+                <FolderOpenIcon />
+                View file
+              </DropdownMenuItem>
+            ) : null}
             <DropdownMenuItem
               disabled={!lastEmittedOutput}
               onClick={() => {

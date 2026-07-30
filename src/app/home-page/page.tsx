@@ -401,7 +401,7 @@ export default function Home() {
                   [position - 1]: knownHdrgenIssue,
                 }));
                 toast.error("HDRGen could not merge the selected image set.", {
-                  icon: <AlertTriangle className="size-4 text-red-500" />,
+                  icon: <AlertTriangle className="size-4 text-destructive" />,
                 });
                 return;
               }
@@ -431,7 +431,7 @@ export default function Home() {
                         }),
                     }
                   : undefined,
-                icon: <AlertTriangle className="size-4 text-red-500" />,
+                icon: <AlertTriangle className="size-4 text-destructive" />,
               });
             };
 
