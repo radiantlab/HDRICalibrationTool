@@ -248,7 +248,11 @@ async function waitForOutputs(outputDir: string): Promise<void> {
             .length >= 2
         );
       },
-      { interval: 1000, timeout: 180_000, timeoutMsg: "no outputs" }
+      // Ten minutes. The WebAssembly build is single-threaded on purpose and a
+      // GitHub Windows runner is two slow cores: Ubuntu finished the whole
+      // spec in 2m33s while Windows was still merging at the old 180s cap.
+      // This is a hang detector, not a performance budget.
+      { interval: 1000, timeout: 600_000, timeoutMsg: "no outputs" }
     );
   } catch (error) {
     throw new Error(
@@ -275,9 +279,19 @@ async function readPipelineState(): Promise<string> {
       )
       .slice(-8)
       .join(" || ");
-    const dialog = document.querySelector('[role="dialog"]');
-    const blocking = dialog
-      ? ` BLOCKED-BY-DIALOG:${(dialog.textContent ?? "").slice(0, 120)}`
+    // Only a dialog offering a decision is blocking. The progress modal is a
+    // `role="dialog"` too, so reporting every dialog cried wolf on every
+    // healthy run -- which is worse than saying nothing, because the one time
+    // it matters nobody believes it.
+    const waiting = Array.from(
+      document.querySelectorAll('[role="dialog"]')
+    ).find((dialog) =>
+      Array.from(dialog.querySelectorAll("button")).some((button) =>
+        /generate (anyway|all)|go back/i.test(button.textContent ?? "")
+      )
+    );
+    const blocking = waiting
+      ? ` WAITING-ON-DIALOG:${(waiting.textContent ?? "").slice(0, 120)}`
       : "";
     return `tauri=${tauri} workers=${workers} shown=${shown || "(nothing)"}${blocking}`;
   });
