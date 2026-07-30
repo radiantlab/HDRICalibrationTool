@@ -230,6 +230,46 @@ export async function readDownload(download: Download): Promise<Buffer> {
   return Buffer.concat(chunks);
 }
 
+/**
+ * Presses Generate and clicks through the confirmation if one appears.
+ *
+ * The confirmation only fires when something is missing, so a fully configured
+ * run should not see it. Handling it anyway keeps a change to that dialog's
+ * wording from failing the run itself.
+ */
+export async function generate(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Generate HDR Image" }).click();
+  const confirm = page.getByRole("button", { name: /Generate (anyway|all)/ });
+  if (await confirm.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await confirm.click();
+  }
+}
+
+/**
+ * Saves the current configuration as a named preset.
+ *
+ * The dialog's own Save button is taken from inside the dialog, because the
+ * preset bar behind it has one under the same name and an unscoped locator
+ * matches both.
+ */
+export async function savePreset(page: Page, name: string): Promise<void> {
+  await page.getByRole("button", { exact: true, name: "Save" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel("Name").fill(name);
+  await dialog.getByRole("button", { exact: true, name: "Save" }).click();
+  await expect(dialog).toBeHidden();
+}
+
+/** Reapplies a saved preset through the preset bar. */
+export async function applyPreset(page: Page, name: string): Promise<void> {
+  const trigger = page
+    .getByRole("combobox")
+    .filter({ hasText: "No preset selected" });
+  await trigger.click();
+  await page.getByRole("option", { name }).click();
+  await expect(trigger).toHaveCount(0);
+}
+
 /** Fills every calibration field and the lens mask, ready to generate. */
 export async function configureRun(page: Page): Promise<void> {
   // The mask fields only render once a preview is chosen: `LensMaskInput`
