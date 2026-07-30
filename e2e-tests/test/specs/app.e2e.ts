@@ -225,6 +225,39 @@ async function waitForPreviewImages() {
  * output directory -- identical to a pipeline that never ran. Worth reporting
  * the two apart.
  */
+/**
+ * Waits for the two pictures, and says what the app was showing if they never
+ * arrive.
+ *
+ * The bare wait reported only "expected HDR outputs to be written to <dir>",
+ * which is true of a pipeline that failed on its first stage, one still
+ * running, and one blocked on an unanswered dialog alike. Attaching the
+ * on-screen state distinguishes them, and costs one round trip on failure
+ * rather than one per poll.
+ */
+async function waitForOutputs(outputDir: string): Promise<void> {
+  try {
+    await browser.waitUntil(
+      () => {
+        const failureMessage = getPipelineFailureMessage(outputDir);
+        if (failureMessage) {
+          throw new Error(failureMessage);
+        }
+        return (
+          readdirSync(outputDir).filter((name) => name.endsWith(".hdr"))
+            .length >= 2
+        );
+      },
+      { interval: 1000, timeout: 180_000, timeoutMsg: "no outputs" }
+    );
+  } catch (error) {
+    throw new Error(
+      `expected HDR outputs in ${outputDir}. The app was showing: ${await readPipelineState()}`,
+      { cause: error }
+    );
+  }
+}
+
 async function readPipelineState(): Promise<string> {
   return await browser.execute(() => {
     const tauri = "__TAURI_INTERNALS__" in window;
@@ -242,7 +275,11 @@ async function readPipelineState(): Promise<string> {
       )
       .slice(-8)
       .join(" || ");
-    return `tauri=${tauri} workers=${workers} shown=${shown || "(nothing)"}`;
+    const dialog = document.querySelector('[role="dialog"]');
+    const blocking = dialog
+      ? ` BLOCKED-BY-DIALOG:${(dialog.textContent ?? "").slice(0, 120)}`
+      : "";
+    return `tauri=${tauri} workers=${workers} shown=${shown || "(nothing)"}${blocking}`;
   });
 }
 
@@ -353,29 +390,33 @@ describe("HDRI Calibration Tool", () => {
       button.click();
     });
 
-    await browser.waitUntil(
-      async () => {
-        const failureMessage = getPipelineFailureMessage(tempOutputDirectory);
-        if (failureMessage) {
-          throw new Error(failureMessage);
-        }
-
-        // What the app itself says. Without this, a run that fails inside the
-        // webview is indistinguishable from one that never started: the only
-        // signal is an empty output directory, and the reason is on screen.
-        console.log("[pipeline]", await readPipelineState());
-
-        const outputFiles = readdirSync(tempOutputDirectory).filter(
-          (fileName) => fileName.endsWith(".hdr")
-        );
-        return outputFiles.length >= 2;
-      },
-      {
-        interval: 1000,
-        timeout: 180_000,
-        timeoutMsg: `expected HDR outputs to be written to ${tempOutputDirectory}`,
+    // The run does not start until this is answered, and answering it is what
+    // a user does too. `describeRunConfirmation` raises it whenever more than
+    // one set is queued or any calibration file is unsupplied (#225).
+    //
+    // This test used to click Generate and wait. The dialog sat there unread
+    // for the full three minutes, and the only symptom was an empty output
+    // directory -- indistinguishable from a pipeline that died on its first
+    // stage, which is how it went unnoticed while CI reported success with
+    // `continue-on-error` set on the job.
+    await browser.pause(1000);
+    await browser.execute(() => {
+      const dialog = document.querySelector('[role="dialog"]');
+      if (!dialog) {
+        return;
       }
-    );
+      const button = Array.from(dialog.querySelectorAll("button")).find(
+        (element) => /generate (anyway|all)/i.test(element.textContent ?? "")
+      );
+      if (!button) {
+        throw new Error(
+          `a dialog is blocking the run and has no confirm button: ${(dialog.textContent ?? "").slice(0, 200)}`
+        );
+      }
+      button.click();
+    });
+
+    await waitForOutputs(tempOutputDirectory);
 
     const outputFiles = readdirSync(tempOutputDirectory).filter((fileName) =>
       fileName.endsWith(".hdr")
@@ -390,7 +431,12 @@ describe("HDRI Calibration Tool", () => {
       outputFiles[0];
     assert.ok(hdrForViewer, "expected at least one HDR file for image viewer");
 
-    await browser.url("http://tauri.localhost/image-viewer");
+    // Derived from wherever the app already is, not hardcoded. Tauri serves
+    // the app from `http://tauri.localhost` on Windows but `tauri://localhost`
+    // on macOS and Linux, so the literal Windows origin that used to be here
+    // navigated nowhere on the other two.
+    const homeUrl = await browser.getUrl();
+    await browser.url(homeUrl.replace(/\/home-page.*$/, "/image-viewer"));
     await browser.waitUntil(
       async () => (await browser.getUrl()).endsWith("/image-viewer"),
       {
