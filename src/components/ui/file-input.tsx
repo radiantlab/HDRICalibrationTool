@@ -1,7 +1,7 @@
 "use client";
 
 import { type DialogFilter, open } from "@tauri-apps/plugin-dialog";
-import { exists } from "@tauri-apps/plugin-fs";
+import { anyFileExists } from "@/lib/host-fs-tauri";
 import {
   type Control,
   type FieldPathByValue,
@@ -90,7 +90,9 @@ export function FileInput<
 
         const path = value.trim();
         try {
-          const ok = await exists(path);
+          // Virtual too: a preset supplies paths that exist in storage rather
+          // than on disk, and reporting those as missing would be wrong.
+          const ok = await anyFileExists(path);
           return ok || "Path does not exist";
         } catch {
           // If tauri environment not available or other error

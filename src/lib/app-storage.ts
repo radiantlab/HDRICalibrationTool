@@ -1,56 +1,41 @@
-import { appConfigDir, join } from "@tauri-apps/api/path";
-import {
-  exists,
-  mkdir,
-  readTextFile,
-  writeTextFile,
-} from "@tauri-apps/plugin-fs";
+/**
+ * Versioned JSON documents, stored in IndexedDB.
+ *
+ * This used to write files under Tauri's app config directory. It does not any
+ * more, and the reason is not only the browser build: preset calibration files
+ * lived on disk while the record describing them lived in JSON, and the two
+ * could disagree. They did -- files kept on a cloud drive copied as zero bytes
+ * while the preset still recorded the hash of what the source should have
+ * contained, so runs varied with nothing in the UI to explain it. Content and
+ * record now live in one store.
+ *
+ * Nothing here imports `@tauri-apps/*`. Migration from the old files is
+ * separate, in `storage/migrate-tauri-files.ts`, and runs on desktop only.
+ */
+
+import { getDocument, putDocument } from "./storage/kv";
 
 /** Bumped only when a stored shape changes incompatibly. */
 export const STORAGE_VERSION = 1;
 
-export async function storagePath(...segments: string[]): Promise<string> {
-  return await join(await appConfigDir(), ...segments);
-}
-
 /**
- * Reads a versioned JSON file, falling back rather than throwing.
+ * Reads a versioned document, falling back rather than throwing.
  *
  * History and presets are records, not state the app depends on, so a corrupt
- * or future-versioned file must never stop the app from starting.
+ * or future-versioned document must never stop the app from starting.
  */
-export async function readJson<T>(
-  relativePath: string,
-  fallback: T
-): Promise<T> {
-  const path = await storagePath(...relativePath.split("/"));
+export async function readJson<T>(key: string, fallback: T): Promise<T> {
   try {
-    if (!(await exists(path))) {
+    const stored = await getDocument<{ version?: number }>(key);
+    if (!stored || stored.version !== STORAGE_VERSION) {
       return fallback;
     }
-    const parsed = JSON.parse(await readTextFile(path));
-    if (parsed?.version !== STORAGE_VERSION) {
-      return fallback;
-    }
-    return parsed as T;
+    return stored as T;
   } catch {
     return fallback;
   }
 }
 
-export async function writeJson(
-  relativePath: string,
-  value: object
-): Promise<void> {
-  const segments = relativePath.split("/");
-  const path = await storagePath(...segments);
-  if (segments.length > 1) {
-    await mkdir(await storagePath(...segments.slice(0, -1)), {
-      recursive: true,
-    });
-  }
-  await writeTextFile(
-    path,
-    JSON.stringify({ ...value, version: STORAGE_VERSION }, null, 2)
-  );
+export async function writeJson(key: string, value: object): Promise<void> {
+  await putDocument(key, { ...value, version: STORAGE_VERSION });
 }

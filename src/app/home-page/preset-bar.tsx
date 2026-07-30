@@ -32,6 +32,7 @@ import {
   type GenericImageMetadata,
   useGenericImageMetadata,
 } from "@/lib/generic-image-metadata";
+import { tauriPresetIo } from "@/lib/preset-io-tauri";
 import {
   changedSources,
   deletePreset,
@@ -125,10 +126,12 @@ export function PresetBar({
       setChanged([]);
       return;
     }
-    changedSources(selected).then(setChanged);
+    changedSources(selected, tauriPresetIo).then(setChanged);
   }, [selected]);
 
-  const apply = async (preset: Preset) => {
+  // Not async any more: presetFilePath is a pure derivation now that a preset
+  // carries its calibration rather than pointing at a copy on disk.
+  const apply = (preset: Preset) => {
     form.setValue("fisheyeView", preset.fisheyeView);
     form.setValue("outputSettings", preset.outputSettings);
     if (preset.lensMask) {
@@ -136,13 +139,13 @@ export function PresetBar({
     }
     form.setValue(
       "cameraResponseLocation",
-      await presetFilePath(preset, "response")
+      presetFilePath(preset, "response")
     );
     form.setValue("correctionFiles", {
-      calibrationFactor: await presetFilePath(preset, "calibrationFactor"),
-      fisheye: await presetFilePath(preset, "fisheye"),
-      neutralDensity: await presetFilePath(preset, "neutralDensity"),
-      vignetting: await presetFilePath(preset, "vignetting"),
+      calibrationFactor: presetFilePath(preset, "calibrationFactor"),
+      fisheye: presetFilePath(preset, "fisheye"),
+      neutralDensity: presetFilePath(preset, "neutralDensity"),
+      vignetting: presetFilePath(preset, "vignetting"),
     });
 
     if (
@@ -164,7 +167,13 @@ export function PresetBar({
     }
     const id = presetId(trimmed);
     try {
-      await savePreset(id, trimmed, form.getValues(), maskImageSize);
+      await savePreset(
+        id,
+        trimmed,
+        form.getValues(),
+        maskImageSize,
+        tauriPresetIo
+      );
       await load();
       setSelectedId(id);
       setSaveOpen(false);

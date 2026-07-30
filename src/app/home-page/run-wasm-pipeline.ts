@@ -12,10 +12,8 @@
  */
 
 import { emit } from "@tauri-apps/api/event";
-import { readFile, writeFile } from "@tauri-apps/plugin-fs";
+import { readAnyFile, writeRealFile } from "@/lib/host-fs-tauri";
 import type { DecodedImage } from "@/lib/pipeline/filter-images";
-import { tauriRawIo } from "@/lib/raw-io-tauri";
-import { rawToTiff } from "@/lib/raw-preview";
 import { runPipeline } from "@/lib/pipeline/orchestrator";
 import {
   completionMessage,
@@ -29,6 +27,8 @@ import type {
 } from "@/lib/pipeline/types";
 import { PipelineError } from "@/lib/pipeline/types";
 import { urlModuleLoader, WasmToolRunner } from "@/lib/pipeline/wasm-runner";
+import { tauriRawIo } from "@/lib/raw-io-tauri";
+import { rawToTiff } from "@/lib/raw-preview";
 
 /** A trailing slash or backslash on the output directory. */
 const TRAILING_SEPARATOR = /[\\/]+$/;
@@ -106,8 +106,11 @@ const tauriHost: HostFilesystem = {
   // means pipeline-status-context.tsx needs no changes at all: it cannot tell
   // which pipeline produced the event.
   emitStatus: (payload) => emit("pipeline-status", payload),
-  read: (path) => readFile(path),
-  write: (path, data) => writeFile(path, data),
+  // Virtual as well as real: a preset's calibration files have no disk entry,
+  // so reading them through Tauri's filesystem would fail with ENOENT on a
+  // file that is present and correct.
+  read: (path) => readAnyFile(path),
+  write: (path, data) => writeRealFile(path, data),
 };
 
 /**
