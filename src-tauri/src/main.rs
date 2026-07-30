@@ -1,12 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-// The image pipeline now runs in the frontend as WebAssembly (src/lib/pipeline),
-// so Tauri is left as a shell for native file access and window management.
-// What remains here serves the image viewer, not the pipeline.
-
-mod hdr_metadata;
-use hdr_metadata::read_hdr_metadata;
+// Everything this app does now happens in the frontend: the image pipeline and
+// the RAW converter run as WebAssembly (src/lib/pipeline), and persistence is
+// in IndexedDB. Tauri is left as a shell for native file access, file dialogs
+// and window management, and defines no commands of its own.
 
 use tauri::Manager;
 
@@ -22,7 +20,6 @@ fn main() {
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![read_hdr_metadata])
         .setup(|app| {
             let window = app.get_webview_window("main").unwrap();
             window.show().unwrap();

@@ -1,6 +1,5 @@
 "use client";
 
-import { invoke } from "@tauri-apps/api/core";
 import { LocateFixed, SquareX } from "lucide-react";
 import { redirect } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
@@ -74,6 +73,10 @@ import {
   ViewControlCard,
   type ViewType,
 } from "./view-control-card";
+import {
+  type HdrMetadata as ParsedHdrMetadata,
+  parseHdrMetadata,
+} from "@/lib/hdr-metadata";
 
 const DEFAULT_FALSECOLOR_MULTIPLIER = 179;
 const HEATMAP_LEGEND_WIDTH = 200;
@@ -86,14 +89,15 @@ const HDR_RESOLUTION_LINE_REGEX = /([+-][XY])\s+(\d+)\s+([+-][XY])\s+(\d+)/;
 
 interface LoadedHdrData {
   exposure: number;
+  hdrMetadata: HdrMetadata;
   rgbaData: Float32Array | null;
   texture: DataTexture;
 }
 
-interface HdrMetadata {
-  FORMAT: string;
-  [key: string]: string;
-}
+// FORMAT used to be declared required here, but nothing reads it as a
+// property -- it appears only as a lookup key in illuminance-details.tsx --
+// and the Rust command it came from made no such guarantee either.
+type HdrMetadata = ParsedHdrMetadata;
 
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
@@ -234,6 +238,9 @@ function isTransformAwayFromBaseline(
 async function loadHdrData(filePath: string): Promise<LoadedHdrData> {
   const { readFile } = await import("@tauri-apps/plugin-fs");
   const fileData = await readFile(filePath);
+  // Parsed from the bytes already in hand. The Rust command this replaced
+  // opened the file a second time to read the same few hundred bytes.
+  const hdrMetadata = parseHdrMetadata(fileData);
 
   // Parse the HDR file ourselves since RGBELoader.parse() has bugs
   // with Radiance headers that contain long lines
@@ -264,6 +271,7 @@ async function loadHdrData(filePath: string): Promise<LoadedHdrData> {
 
   return {
     exposure,
+    hdrMetadata,
     rgbaData: floatData,
     texture,
   };
@@ -378,9 +386,7 @@ function parseRadianceHDR(data: Uint8Array) {
   return { exposure, height, rgbeData, width };
 }
 
-async function readHdrMetadata(filePath: string): Promise<HdrMetadata> {
-  return invoke<HdrMetadata>("read_hdr_metadata", { path: filePath });
-}
+
 
 type ImageViewerData = LoadedHdrData & {
   hdrMetadata: HdrMetadata | null;
@@ -390,10 +396,8 @@ type ImageViewerData = LoadedHdrData & {
 };
 
 async function loadImageViewerData(filePath: string): Promise<ImageViewerData> {
-  const [loadedHdrData, hdrMetadata] = await Promise.all([
-    loadHdrData(filePath),
-    readHdrMetadata(filePath).catch(() => null),
-  ]);
+  const loadedHdrData = await loadHdrData(filePath);
+  const { hdrMetadata } = loadedHdrData;
   const imageWidth = loadedHdrData.texture.image.width;
   const imageHeight = loadedHdrData.texture.image.height;
   let luminanceMatrix: FalsecolorLuminanceMatrix | null = null;
