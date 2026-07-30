@@ -35,6 +35,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           cache: npm
+          # Both lockfiles. Keyed on the root one alone, the Playwright
+          # install in the e2e job is uncached on every run.
+          cache-dependency-path: |
+            package-lock.json
+            e2e-web/package-lock.json
           node-version: lts/*
 
       - run: npm ci
@@ -63,6 +68,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           cache: npm
+          # Both lockfiles. Keyed on the root one alone, the Playwright
+          # install in the e2e job is uncached on every run.
+          cache-dependency-path: |
+            package-lock.json
+            e2e-web/package-lock.json
           node-version: lts/*
 
       - run: npm ci
@@ -102,6 +112,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           cache: npm
+          # Both lockfiles. Keyed on the root one alone, the Playwright
+          # install in the e2e job is uncached on every run.
+          cache-dependency-path: |
+            package-lock.json
+            e2e-web/package-lock.json
           node-version: lts/*
 
       - name: Reuse the export from the build job

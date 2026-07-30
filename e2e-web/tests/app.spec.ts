@@ -46,27 +46,39 @@ test("the logo and title sit flush left, and the controls flush right", async ({
   const tutorial = page.getByRole("button", {
     name: "Luminance Maps tutorial",
   });
+  // The visible one of the two theme variants.
+  const mark = page.locator("#logo img:visible");
 
-  const [group, heading, link, viewport] = await Promise.all([
+  const [group, heading, link, logo, viewport] = await Promise.all([
     header.boundingBox(),
     title.boundingBox(),
     tutorial.boundingBox(),
+    mark.boundingBox(),
     page.evaluate(() => window.innerWidth),
   ]);
 
-  if (!(group && heading && link)) {
+  if (!(group && heading && link && logo)) {
     throw new Error(
-      "expected the header, title and tutorial link to be laid out"
+      "expected the header, title, mark and tutorial link to be laid out"
     );
   }
 
-  // The regression this pins: the mark carries width/height attributes of 512
-  // and the class list set only `h-10`. CSS height overrode the attribute but
-  // nothing overrode the width, so the box stayed 512px wide with the mark
-  // letterboxed inside it -- the logo looked correct and shoved the title 524px
-  // off the left edge. A tolerance in tens of pixels catches that and tolerates
-  // ordinary spacing changes.
-  expect(heading.x - (group.x + group.width - heading.width)).toBeLessThan(2);
+  // The regression this pins: the mark carries width and height attributes of
+  // 512, and the class list set only `h-10`. CSS height overrode the height
+  // attribute, but nothing overrode the width, so the box stayed 512px wide
+  // with the mark letterboxed inside it. The logo looked correct and shoved
+  // the title 524px off the left edge.
+  //
+  // Asserted on the image's own box, because that is what was wrong. Comparing
+  // the title's left edge against the *group's* right edge would prove nothing
+  // -- the title is the group's last child, so those coincide by construction
+  // whatever width the image takes.
+  expect(logo.width).toBeLessThan(64);
+  expect(Math.abs(logo.width - logo.height)).toBeLessThan(2);
+
+  // Both flush left: the group at the container edge, the title just past the
+  // mark rather than halfway across the header.
+  expect(group.x).toBeLessThan(64);
   expect(heading.x).toBeLessThan(160);
 
   // And the right-hand controls are actually on the right.
