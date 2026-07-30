@@ -14,6 +14,8 @@ This application provides a graphical user interface for the creation and calibr
 - Windows
 - macOS (Intel and Apple Silicon)
 - Ubuntu
+- **Any modern browser.** The same code runs as a website with nothing
+  installed at all; see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ## Getting Started
 

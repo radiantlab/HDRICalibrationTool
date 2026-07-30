@@ -332,6 +332,31 @@ export default function SettingsPage() {
                 ) : null}
               </dl>
             )}
+
+            {/*
+              Required, not decorative. Serving .wasm is conveying object code
+              under GPL-3, and section 6(d) wants "clear directions next to the
+              object code" for obtaining the Corresponding Source. A link in
+              the repository is not next to the object code; this is. See
+              licenses/DECISIONS.md.
+            */}
+            <p className="mt-5 border-border border-t pt-4 text-muted-foreground text-sm">
+              This application is free software, licensed{" "}
+              <strong>GPL-3.0</strong>. The complete source, including the
+              forks the tools above are built from, is at{" "}
+              <button
+                className="underline hover:text-foreground"
+                onClick={() =>
+                  openExternal(
+                    "https://github.com/radiantlab/HDRICalibrationTool"
+                  )
+                }
+                type="button"
+              >
+                github.com/radiantlab/HDRICalibrationTool
+              </button>
+              .
+            </p>
           </div>
         </div>
       </main>
