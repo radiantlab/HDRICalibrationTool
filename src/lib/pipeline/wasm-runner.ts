@@ -58,6 +58,9 @@ export type ModuleFactory = (
 /** Resolves a tool name to its Emscripten factory. */
 export type ModuleLoader = (tool: string) => Promise<ModuleFactory>;
 
+/** Compiles a tool's `.wasm` once, so instances can be made from it cheaply. */
+export type ModuleCompiler = (tool: string) => Promise<WebAssembly.Module>;
+
 /**
  * Loads `<baseUrl>/<tool>.js` as an ES module.
  *
@@ -92,6 +95,56 @@ export function urlModuleLoader(baseUrl: string): ModuleLoader {
   };
 }
 
+/**
+ * Compiled modules, shared across every runner in the page.
+ *
+ * Keyed by URL rather than held on a runner, because a runner is created per
+ * pipeline run and another per RAW preview -- caching inside one would still
+ * recompile dcraw_emu for every thumbnail. A compiled `WebAssembly.Module` is
+ * immutable and carries no instance state, so sharing it is safe; the instances
+ * made from it are what stay per-call.
+ */
+const compiledModules = new Map<string, Promise<WebAssembly.Module>>();
+
+/**
+ * Compiles `<baseUrl>/<tool>.wasm`, streaming where the host allows it.
+ *
+ * `compileStreaming` needs the response served as `application/wasm`; a host
+ * that gets the MIME type wrong rejects it, so this falls back to compiling
+ * from an ArrayBuffer rather than failing the run outright.
+ */
+export function urlModuleCompiler(baseUrl: string): ModuleCompiler {
+  return (tool: string) => {
+    const url = `${baseUrl}/${tool}.wasm`;
+    const cached = compiledModules.get(url);
+    if (cached) {
+      return cached;
+    }
+    const compiling = compileFrom(url, tool).catch((error: unknown) => {
+      // A failure must not be remembered, or the tool can never be retried.
+      compiledModules.delete(url);
+      throw error;
+    });
+    compiledModules.set(url, compiling);
+    return compiling;
+  };
+}
+
+async function compileFrom(
+  url: string,
+  tool: string
+): Promise<WebAssembly.Module> {
+  try {
+    return await WebAssembly.compileStreaming(fetch(url));
+  } catch {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`${tool}: ${url} returned ${response.status}`);
+    }
+    return await WebAssembly.compile(await response.arrayBuffer());
+  }
+}
+
 async function assertReachable(url: string, tool: string): Promise<void> {
   let response: Response;
   try {
@@ -119,6 +172,23 @@ function describe(error: unknown): string {
 }
 
 export interface WasmRunnerOptions {
+  /**
+   * Compiles each tool's `.wasm` once.
+   *
+   * Optional, and worth a great deal when supplied. A fresh module instance is
+   * created for every stage -- `EXIT_RUNTIME=1` allows one `main()` each -- and
+   * left to itself the Emscripten glue re-fetches and re-compiles the binary on
+   * every one of them. Measured over six instantiations of hdrgen: six network
+   * requests and 9.1 ms each, against zero requests and 1.2 ms each when the
+   * compiled module is reused. Locally that fetch comes from cache and only
+   * looks like overhead; on a host that serves `public/` with
+   * `must-revalidate` it is a round trip per stage, on a 2.6 MB file.
+   *
+   * Note that passing `wasmBinary` does *not* work: these builds declare the
+   * variable and never read it back off the module argument, so it is silently
+   * ignored. `instantiateWasm` is the hook the glue actually honours.
+   */
+  compile?: ModuleCompiler;
   load: ModuleLoader;
   /** Reports each tool's peak wasm heap, for surfacing memory pressure. */
   onHeapPeak?: (tool: string, bytes: number) => void;
@@ -130,6 +200,9 @@ const CAPTURE_PATH = `${WORK_DIR}/.stdout`;
 export class WasmToolRunner implements ToolRunner {
   private readonly files = new Map<string, Uint8Array>();
   private readonly load: ModuleLoader;
+  private readonly compile: ModuleCompiler | undefined;
+  /** Compiled modules are cached; the *instances* made from them never are. */
+  private readonly compiled = new Map<string, Promise<WebAssembly.Module>>();
   private readonly onHeapPeak:
     | ((tool: string, bytes: number) => void)
     | undefined;
@@ -138,6 +211,7 @@ export class WasmToolRunner implements ToolRunner {
 
   constructor(options: WasmRunnerOptions) {
     this.load = options.load;
+    this.compile = options.compile;
     this.onHeapPeak = options.onHeapPeak;
   }
 
@@ -200,7 +274,26 @@ export class WasmToolRunner implements ToolRunner {
     const factory = await this.factoryFor(tool);
 
     const stderr: string[] = [];
+    const compiled = await this.compiledFor(tool);
     const instance = await factory({
+      // Hands the glue an already-compiled module rather than letting it fetch
+      // and compile its own. Emscripten calls this instead of everything else
+      // when present.
+      ...(compiled
+        ? {
+            instantiateWasm: (
+              imports: WebAssembly.Imports,
+              done: (
+                instance: WebAssembly.Instance,
+                module: WebAssembly.Module
+              ) => void
+            ) => {
+              WebAssembly.instantiate(compiled, imports).then((instantiated) => {
+                done(instantiated, compiled);
+              });
+            },
+          }
+        : {}),
       // stderr is small (warnings, usage errors), so collecting it line by line
       // is fine. stdout is not -- an intermediate runs to tens of megabytes --
       // which is why it goes to a file instead.
@@ -232,6 +325,21 @@ export class WasmToolRunner implements ToolRunner {
     this.collectOutputs(instance, staged);
 
     return { code, stderr: stderr.join("\n"), stdout };
+  }
+
+  private compiledFor(
+    tool: string
+  ): Promise<WebAssembly.Module | undefined> {
+    if (!this.compile) {
+      return Promise.resolve(undefined);
+    }
+    const cached = this.compiled.get(tool);
+    if (cached) {
+      return cached;
+    }
+    const compiling = this.compile(tool);
+    this.compiled.set(tool, compiling);
+    return compiling;
   }
 
   private factoryFor(tool: string): Promise<ModuleFactory> {

@@ -26,7 +26,11 @@
 
 import { dcrawArgs, workPath } from "./pipeline/stages";
 import type { ModuleLoader } from "./pipeline/wasm-runner";
-import { urlModuleLoader, WasmToolRunner } from "./pipeline/wasm-runner";
+import {
+  urlModuleCompiler,
+  urlModuleLoader,
+  WasmToolRunner,
+} from "./pipeline/wasm-runner";
 
 /** Where the browser builds are served from. See `public/wasm/README.md`. */
 const WASM_BASE_URL = "/wasm";
@@ -160,6 +164,7 @@ async function convert(
 ): Promise<Uint8Array<ArrayBuffer>> {
   const bytes = await io.readFile(path);
   const runner = new WasmToolRunner({
+    compile: io.load ? undefined : urlModuleCompiler(WASM_BASE_URL),
     load: io.load ?? urlModuleLoader(WASM_BASE_URL),
   });
 

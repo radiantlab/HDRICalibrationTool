@@ -27,7 +27,11 @@ import type {
   ToolRunner,
 } from "@/lib/pipeline/types";
 import { PipelineError } from "@/lib/pipeline/types";
-import { urlModuleLoader, WasmToolRunner } from "@/lib/pipeline/wasm-runner";
+import {
+  urlModuleCompiler,
+  urlModuleLoader,
+  WasmToolRunner,
+} from "@/lib/pipeline/wasm-runner";
 import { tauriRawIo } from "@/lib/host/raw-io";
 import { rawToTiff } from "@/lib/raw-preview";
 
@@ -171,7 +175,10 @@ export async function runWasmPipeline({
   host = tauriHost,
   now = () => new Date(),
   makeRunner = () =>
-    new WasmToolRunner({ load: urlModuleLoader(WASM_BASE_URL) }),
+    new WasmToolRunner({
+      compile: urlModuleCompiler(WASM_BASE_URL),
+      load: urlModuleLoader(WASM_BASE_URL),
+    }),
   run = runPipeline,
 }: RunWasmPipelineOptions): Promise<string[]> {
   const runner = makeRunner();
