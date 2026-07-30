@@ -53,11 +53,29 @@ jobs:
       - name: Unit tests
         run: npm test -- --ci
 
-      - name: Verify the recorded tool versions match the shipped WebAssembly
-        # `public/wasm/versions.json` is what the Settings page reports. If it
-        # drifts from the binaries next to it, the app confidently tells you it
-        # ran a Radiance it did not run.
-        run: npm run wasm:versions:check
+      - name: Check versions.json is present and well formed
+        # Not `npm run wasm:versions:check`, which was here and wrong.
+        # That regenerates the file from sibling *fork checkouts*
+        # (`../LibRaw`, `../Radiance`, `../hdrgen`) and compares -- a tool for
+        # whoever rebuilt the artifacts, run from the tree they were built in.
+        # CI has no such checkouts and should not: cloning three forks to
+        # re-derive a committed file would be checking the clone, not the
+        # build. The real check belongs with the rebuild job in #244, which
+        # has those sources by construction.
+        #
+        # What is worth checking here is that the file the Settings page reads
+        # actually shipped and parses, since an export missing it renders fine
+        # and simply stops saying which Radiance produced your luminance map.
+        run: |
+          node -e "
+            const v = require('./public/wasm/versions.json');
+            const tools = Object.keys(v.tools ?? {});
+            if (tools.length === 0) { throw new Error('versions.json lists no tools'); }
+            for (const [name, tool] of Object.entries(v.tools)) {
+              if (!tool.version) { throw new Error(name + ' has no version'); }
+            }
+            console.log('versions.json describes ' + tools.length + ' tools:', tools.join(', '));
+          "
 
   build:
     name: Static export
