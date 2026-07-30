@@ -36,3 +36,6 @@ yarn-error.log*
 next-env.d.ts
 
 /.vscode/.playwright-mcp/
+
+# Playwright screenshots taken while verifying the browser build
+*.png.tmp
