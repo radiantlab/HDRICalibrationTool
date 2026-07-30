@@ -18,6 +18,7 @@
 
 import { afterEach, describe, expect, it } from "@jest/globals";
 import type { PipelineParams } from "@/lib/pipeline/types";
+import { clearSessionFiles, readVirtual, registerSessionFile } from "@/lib/vfs";
 
 declare const jest: typeof import("@jest/globals").jest;
 
@@ -217,6 +218,25 @@ describe("staging bytes for the worker", () => {
     // would be no fix at all, so what arrived is asserted as well as what
     // survived.
     expect(received[0]).toEqual({ "/session/1/a.jpg": [1, 2, 3] });
+  });
+
+  // The store above is a stand-in, and a stand-in can only prove the client
+  // does not damage something shaped like the session filesystem. This runs the
+  // real one, which is the chain that broke: a file is registered when the user
+  // picks it, staged by path, and read again afterwards by whatever needs it.
+  it("leaves the real session filesystem readable", async () => {
+    installWorkerDouble();
+    const path = registerSessionFile("a.jpg", new Uint8Array([1, 2, 3]));
+
+    await executeInWorker({
+      onStatus: () => undefined,
+      params: params({ inputImages: [path] }),
+      read: readVirtual,
+      wasmBaseUrl: "http://localhost/wasm",
+    });
+
+    await expect(readVirtual(path)).resolves.toEqual(new Uint8Array([1, 2, 3]));
+    clearSessionFiles();
   });
 
   it("leaves a peeked RAW conversion in the cache", async () => {

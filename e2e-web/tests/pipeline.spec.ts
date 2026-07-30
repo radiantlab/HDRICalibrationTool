@@ -9,10 +9,13 @@
 
 import { expect, test } from "@playwright/test";
 import {
+  applyPreset,
   collectDownloads,
   configureRun,
+  generate,
   loadJpegBracket,
   readDownload,
+  savePreset,
 } from "./support";
 
 /** Long enough for a cold WebAssembly compile plus the full stage sequence. */
@@ -54,6 +57,72 @@ test("generates two HDR pictures from the JPEG bracket", async ({ page }) => {
   // Non-empty and actually a Radiance picture. A zero-byte download would
   // still satisfy the event, and a failed stage that wrote a stub would too.
   for (const download of downloads) {
+    const bytes = await readDownload(download);
+    expect(bytes.byteLength).toBeGreaterThan(1024);
+    expect(bytes.subarray(0, 10).toString("latin1")).toContain("#?RADIANCE");
+  }
+});
+
+/**
+ * The reported sequence, start to finish: save a preset, generate, look at the
+ * picture, come back, reapply the preset, generate again.
+ *
+ * The second run used to be impossible. Staging handed the worker the session
+ * filesystem's own arrays and transferred them, and a transfer moves a buffer
+ * rather than copying it, so the first run left every input reading as zero
+ * bytes. Pressing Generate again threw `DataCloneError: An ArrayBuffer is
+ * detached and could not be cloned` before the worker started, and the progress
+ * dialog sat on "Processing set 1 of 1". Reapplying the preset also warned that
+ * its calibration files had changed on disk, because the sources it hashes had
+ * been emptied by the same transfer.
+ *
+ * Only a real browser can catch this. `postMessage` is where the detachment
+ * happens, and a test double can imitate the move but not the message.
+ *
+ * The trip through the viewer is navigated rather than loaded. A browser's
+ * session filesystem lives in the page, so `goto` would drop the very files
+ * the second run has to find, and the bug would vanish with them.
+ */
+test("generates a second time after the preset is reapplied", async ({
+  page,
+}) => {
+  await page.goto("/home-page");
+  await loadJpegBracket(page);
+  await configureRun(page);
+
+  const downloads = collectDownloads(page);
+
+  await savePreset(page, "Bracket");
+  await generate(page);
+  await expect.poll(() => downloads.length, { timeout: RUN_TIMEOUT }).toBe(2);
+
+  // The progress dialog stays up until it is closed, and while it is open the
+  // rest of the page is inert.
+  const progress = page.getByRole("dialog");
+  await progress.getByRole("button", { name: "Close" }).click();
+  await expect(progress).toBeHidden();
+
+  await page.locator("nav").getByRole("link", { name: "Image Viewer" }).click();
+  await expect(page).toHaveURL(/image-viewer/);
+  await page
+    .locator("nav")
+    .getByRole("link", { name: "Image Generator" })
+    .click();
+  await expect(page).toHaveURL(/home-page/);
+
+  await applyPreset(page, "Bracket");
+
+  // Nothing has touched the calibration files, so nothing should say they have
+  // changed. The warning was the first visible symptom of the emptied sources,
+  // and it appeared before the run that then failed.
+  await expect(page.getByText(/changed on disk/)).toHaveCount(0);
+
+  await generate(page);
+  await expect.poll(() => downloads.length, { timeout: RUN_TIMEOUT }).toBe(4);
+
+  // A second run that produced two more files but wrote nothing into them
+  // would satisfy the count and none of the point.
+  for (const download of downloads.slice(2)) {
     const bytes = await readDownload(download);
     expect(bytes.byteLength).toBeGreaterThan(1024);
     expect(bytes.subarray(0, 10).toString("latin1")).toContain("#?RADIANCE");

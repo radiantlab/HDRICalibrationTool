@@ -171,9 +171,10 @@ export async function executeInWorker(
           Object.values(files).map((bytes) => bytes.buffer as ArrayBuffer)
         );
       } catch (error) {
-        // The throw is synchronous, so it rejects the promise on its own. The
-        // interval is not covered by that, and one left running would keep
-        // calling `shouldStop` for the life of the page.
+        // Caught rather than left to reject the promise on its own, which a
+        // synchronous throw in an executor does: that path would leave the
+        // interval running, and one nobody clears keeps calling `shouldStop`
+        // for the life of the page.
         clearInterval(stopCheck);
         reject(error);
       }
