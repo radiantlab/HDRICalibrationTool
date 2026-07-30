@@ -806,7 +806,9 @@ function ImageViewerCanvasContent({
         centerOnInit
         key={viewerData.texture.uuid}
         limitToBounds={false}
-        onTransformed={(_, state) => {
+        // Renamed from `onTransformed` in react-zoom-pan-pinch 4. Same
+        // arguments, same timing; only the name changed.
+        onTransform={(_ref, state) => {
           setCurrentPosition(state);
         }}
         panning={{ disabled: isSelectionInputEnabled }}
