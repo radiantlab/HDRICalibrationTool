@@ -75,12 +75,13 @@
     "lint": "ultracite check",
     "tauri": "tauri",
     "test": "jest",
-    "test:e2e": "npm --prefix e2e-tests test",
     "test:e2e:watch": "npm --prefix e2e-tests run test:watch",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "wasm:versions": "node scripts/wasm-versions.mjs",
-    "wasm:versions:check": "node scripts/wasm-versions.mjs --check"
+    "wasm:versions:check": "node scripts/wasm-versions.mjs --check",
+    "test:e2e:web": "npm run build && npm --prefix e2e-web test",
+    "test:e2e:desktop": "npm --prefix e2e-tests test"
   },
   "version": "4.0.0",
   "private": true,
