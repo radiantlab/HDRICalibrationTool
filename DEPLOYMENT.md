@@ -64,6 +64,28 @@ reasoning is in [`licenses/DECISIONS.md`](./licenses/DECISIONS.md).
   no durable handle to a picked file, so the app registers what it was handed
   and that ends with the tab. Presets are unaffected: they store their
   calibration files, so they survive.
-- **Safari and mobile are untested at scale.** A 10-frame CR2 bracket peaks
-  near 700 MB of JS heap, comfortable on desktop Chromium (a ~4.2 GB limit)
-  and unmeasured elsewhere. JPEG sets are far smaller.
+- **Mobile is untested at scale.** A 10-frame CR2 bracket peaks near 700 MB of
+  JS heap, comfortable on desktop Chromium (a ~4.2 GB limit) and unmeasured on
+  a phone. JPEG sets are far smaller.
+
+- **Downloads are spaced 300ms apart on purpose.** WebKit drops a download
+  outright if another starts in the same task, and it keeps the *later* one, so
+  a run that saved the picture and then the false-colour map delivered only the
+  false-colour map while reporting success for both. Measured directly: at a
+  0ms gap WebKit raised one download event of two, at 250ms it raised both, and
+  Chromium raised both either way. `src/lib/host/save.ts` queues them; do not
+  remove the spacing.
+
+## Safari
+
+Safari is a first-class target and the browser suite runs WebKit first, because
+Safari implements no part of the File System Access API and therefore takes the
+plain file-input and download path — which is what this application ships to
+everyone.
+
+The full pipeline is verified end to end in WebKit: the reference JPEG bracket
+completes in about 40 seconds and produces both outputs.
+
+One thing to expect rather than discover: Safari asks "Do you want to allow
+downloads on this website?" the first time a run finishes. Both files arrive
+once that is allowed.

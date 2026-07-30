@@ -49,11 +49,48 @@ export async function saveOutput(
     return { downloaded: false, location, name };
   }
 
-  download(name, bytes);
+  await queueDownload(name, bytes);
   // Also kept in the session filesystem. The download is the user's copy and
   // the app cannot read it back, so without this the viewer would have nothing
   // to open after a run that just succeeded.
   return { downloaded: true, location: registerOutputFile(name, bytes), name };
+}
+
+/**
+ * Minimum spacing between two downloads.
+ *
+ * WebKit drops a download outright if another starts in the same task, and it
+ * keeps the *later* one -- so a run that saved the picture and then the
+ * false-colour map delivered only the false-colour map, while reporting
+ * success for both. Measured directly: at a 0ms gap WebKit raised one download
+ * event of two, at 250ms it raised both, and Chromium raised both either way.
+ * 300ms carries a margin over the smallest gap that worked without being long
+ * enough to notice.
+ */
+const DOWNLOAD_SPACING_MS = 300;
+
+let downloadChain: Promise<void> = Promise.resolve();
+let lastDownloadStartedAt = 0;
+
+/**
+ * Starts a download, never closer than `DOWNLOAD_SPACING_MS` to the last.
+ *
+ * Chained rather than a bare check, so that concurrent callers queue instead
+ * of both reading the same timestamp and firing together -- which is the exact
+ * situation the spacing exists to prevent.
+ */
+function queueDownload(name: string, bytes: Uint8Array): Promise<void> {
+  downloadChain = downloadChain.then(async () => {
+    const since = Date.now() - lastDownloadStartedAt;
+    if (since < DOWNLOAD_SPACING_MS) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, DOWNLOAD_SPACING_MS - since)
+      );
+    }
+    download(name, bytes);
+    lastDownloadStartedAt = Date.now();
+  });
+  return downloadChain;
 }
 
 function download(name: string, bytes: Uint8Array): void {
