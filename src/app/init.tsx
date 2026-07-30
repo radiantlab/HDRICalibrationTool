@@ -8,13 +8,10 @@
  */
 "use client";
 
-import { documentDir, join } from "@tauri-apps/api/path";
-import { mkdir } from "@tauri-apps/plugin-fs";
-import { platform } from "@tauri-apps/plugin-os";
 import type React from "react";
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { migrateTauriFiles } from "@/lib/storage/migrate-tauri-files";
+import { isTauri, platformName } from "@/lib/host/env";
 import { useSettingsStore } from "./stores/settings-store";
 
 // Debug flag to enable console logging
@@ -42,32 +39,47 @@ const Initialization: React.FC = () => {
         // app and the browser build. Existing users have real presets and real
         // history on disk; this imports them once. It runs before anything
         // reads storage, and reports rather than swallowing what it skipped.
+        //
+        // Desktop only, and imported dynamically: it is the one module in
+        // storage/ that touches @tauri-apps, and there is nothing on a browser
+        // filesystem to import from.
         try {
-          const report = await migrateTauriFiles();
-          if (report.presetsImported > 0 || report.historyImported) {
-            console.log("Imported existing presets and run history", report);
-          }
-          if (report.emptyFiles.length > 0) {
-            toast.warning(
-              "These preset calibration files were empty and were not imported, " +
-                "so those corrections would have done nothing: " +
-                `${report.emptyFiles.join(", ")}. Re-save the preset from an ` +
-                "intact source file."
-            );
+          const { migrateTauriFiles } = isTauri()
+            ? await import("@/lib/storage/migrate-tauri-files")
+            : { migrateTauriFiles: null };
+          const report = await migrateTauriFiles?.();
+          if (report) {
+            if (report.presetsImported > 0 || report.historyImported) {
+              console.log("Imported existing presets and run history", report);
+            }
+            if (report.emptyFiles.length > 0) {
+              toast.warning(
+                "These preset calibration files were empty and were not " +
+                  "imported, so those corrections would have done nothing: " +
+                  `${report.emptyFiles.join(", ")}. Re-save the preset from ` +
+                  "an intact source file."
+              );
+            }
           }
         } catch (error) {
           console.error("Initialization: storage migration failed:", error);
         }
 
-        const osPlatform = platform();
+        const osPlatform = await platformName();
 
         if (DEBUG) {
           console.log("OS platform successfully queried:", osPlatform);
         }
 
+        // A browser has no default output directory and no way to create one:
+        // where a download lands is the browser's decision, not the app's.
+        // Leaving it empty is what tells the rest of the UI to offer downloads
+        // rather than ask for a path.
         let outputDefaultPath = settings.outputPath;
-        if (!outputDefaultPath) {
+        if (!outputDefaultPath && isTauri()) {
           try {
+            const { documentDir, join } = await import("@tauri-apps/api/path");
+            const { mkdir } = await import("@tauri-apps/plugin-fs");
             const docsDir = await documentDir();
             const targetDir = await join(docsDir, "HDRICalibrationInterface");
             await mkdir(targetDir, { recursive: true });

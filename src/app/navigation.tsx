@@ -8,10 +8,10 @@
  */
 "use client";
 
-import { getName } from "@tauri-apps/api/app";
-import { openUrl } from "@tauri-apps/plugin-opener";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { appInfo } from "@/lib/host/env";
+import { openExternal } from "@/lib/host/open-external";
 import { useEffect, useState } from "react";
 
 /**
@@ -29,7 +29,7 @@ export default function Navigation() {
     // there is room to list the image-processing tools alongside them; three
     // more lines in the header would have crowded it for no gain.
     async function fetchAppInfo() {
-      setAppName(await getName());
+      setAppName((await appInfo()).name);
     }
 
     fetchAppInfo();
@@ -58,7 +58,7 @@ export default function Navigation() {
               <button
                 className="underline hover:text-gray-900"
                 onClick={() =>
-                  openUrl(
+                  openExternal(
                     "https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319"
                   )
                 }

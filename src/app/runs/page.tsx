@@ -1,6 +1,6 @@
 "use client";
 
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { revealFile } from "@/lib/host/reveal";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -187,7 +187,7 @@ export default function RunsPage() {
                         onClick={() => {
                           const [first] = record.outputs;
                           if (first) {
-                            revealItemInDir(first);
+                            revealFile(first);
                           }
                         }}
                       >

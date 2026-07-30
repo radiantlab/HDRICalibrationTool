@@ -1,5 +1,5 @@
 import { PlusIcon } from "@heroicons/react/24/solid";
-import { stat } from "@tauri-apps/plugin-fs";
+import { fileInfo } from "@/lib/host/file-info";
 import { Trash2 } from "lucide-react";
 import path from "path";
 import prettyBytes from "pretty-bytes";
@@ -40,7 +40,7 @@ export function ImageSetPreview({
   onClick: (image: string) => void;
 }) {
   const fileStats = useMemo(
-    () => Promise.all(files.map((f) => stat(f))),
+    () => Promise.all(files.map((f) => fileInfo(f))),
     [files]
   );
 

@@ -1,0 +1,147 @@
+- generic [active] [ref=e1]:
+  - navigation [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - img "Logo" [ref=e6]
+        - heading "HDRI Calibration Tool" [level=1] [ref=e7]
+      - button "Luminance Maps tutorial" [ref=e10]
+    - generic [ref=e11]:
+      - link "Image Generator" [ref=e12]:
+        - /url: /home-page
+      - link "Settings" [ref=e13] [cursor=pointer]:
+        - /url: /settings-page
+      - link "Runs" [ref=e14] [cursor=pointer]:
+        - /url: /runs
+      - link "Image Viewer" [ref=e15] [cursor=pointer]:
+        - /url: /image-viewer
+  - region "Notifications alt+T"
+  - generic [ref=e17]:
+    - group [ref=e20]:
+      - button [ref=e22]:
+        - generic [ref=e24] [cursor=pointer]:
+          - paragraph [ref=e28]: Drag and drop images here
+          - paragraph [ref=e29]: RAW files (CR2, NEF, DNG and similar) give more accurate results than JPEG, and need no camera response function.
+    - separator [ref=e30]
+    - generic [ref=e41]:
+      - generic [ref=e43]:
+        - generic [ref=e44]: Preset
+        - combobox [ref=e45]:
+          - generic: No preset selected
+        - combobox [ref=e48]
+        - button "Save" [ref=e49]
+        - button "Preset actions" [disabled]
+      - generic [ref=e50]:
+        - generic [ref=e51]:
+          - heading [level=3] [ref=e52]:
+            - button "HDR Generation" [ref=e53]
+          - region "HDR Generation":
+            - generic:
+              - generic:
+                - checkbox [checked]
+                - checkbox [checked]
+                - generic: Keep only useful exposures
+              - generic:
+                - generic: Camera response
+                - group:
+                  - generic:
+                    - generic:
+                      - textbox "Select or paste a .rsp file…"
+                    - button "Select…"
+                    - button "None" [pressed]
+        - generic [ref=e56]:
+          - heading [level=3] [ref=e57]:
+            - button "Cropping and Resizing" [ref=e58]
+          - region "Cropping and Resizing":
+            - generic:
+              - group:
+                - generic: Target width/height
+                - generic:
+                  - spinbutton "Value in pixels": "1000"
+                - alert:
+                  - list
+              - generic:
+                - generic: Lens mask
+                - paragraph: No image selected
+        - generic [ref=e61]:
+          - heading [level=3] [ref=e62]:
+            - button "Fisheye correction" [ref=e63]
+          - region "Fisheye correction":
+            - generic:
+              - group:
+                - generic:
+                  - generic:
+                    - textbox "Select or paste a .cal file…"
+                  - button "Select…"
+                  - button "None" [pressed]
+        - generic [ref=e66]:
+          - heading [level=3] [ref=e67]:
+            - button "Vignetting correction" [ref=e68]
+          - region "Vignetting correction":
+            - generic:
+              - group:
+                - generic:
+                  - generic:
+                    - textbox "Select or paste a .cal file…"
+                  - button "Select…"
+                  - button "None" [pressed]
+        - generic [ref=e71]:
+          - heading [level=3] [ref=e72]:
+            - button "Neutral density correction" [ref=e73]
+          - region "Neutral density correction":
+            - generic:
+              - group:
+                - generic:
+                  - generic:
+                    - textbox "Select or paste a .cal file…"
+                  - button "Select…"
+                  - button "None" [pressed]
+        - generic [ref=e76]:
+          - heading [level=3] [ref=e77]:
+            - button "Calibration factor correction" [ref=e78]
+          - region "Calibration factor correction":
+            - generic:
+              - group:
+                - generic:
+                  - generic:
+                    - textbox "Select or paste a .cal file…"
+                  - button "Select…"
+                  - button "None" [pressed]
+        - generic [ref=e81]:
+          - heading [level=3] [ref=e82]:
+            - button "Output Header Editing" [ref=e83]
+          - region "Output Header Editing":
+            - generic:
+              - group:
+                - generic: Projection type
+                - generic:
+                  - combobox:
+                    - generic: Equidistant (-vta)
+                  - combobox
+                - paragraph: Written to the picture header as the view type. A non-fisheye view skips the validity check, because evalglare requires an angular fisheye view.
+              - group:
+                - generic: Fisheye view angles
+                - generic:
+                  - generic:
+                    - generic: °
+                    - spinbutton "Vertical view angle": "180"
+                  - generic:
+                    - generic: °
+                    - spinbutton "Horizontal view angle": "180"
+                - alert:
+                  - list
+        - generic [ref=e86]:
+          - heading [level=3] [ref=e87]:
+            - button "Validity Check" [ref=e88]
+          - region "Validity Check":
+            - generic:
+              - group:
+                - generic: Measured vertical illuminance
+                - generic:
+                  - generic:
+                    - generic: lx
+                    - spinbutton "Optional"
+                - paragraph: Compared against the illuminance evalglare derives from the finished image. Under 10% error is expected; over 25% the tutorial recommends rejecting the image. With a non-fisheye projection the value is recorded in the header but not compared, because evalglare requires an angular fisheye view.
+                - alert:
+                  - list
+      - button "Generate HDR Image" [ref=e92]
+  - alert [ref=e93]

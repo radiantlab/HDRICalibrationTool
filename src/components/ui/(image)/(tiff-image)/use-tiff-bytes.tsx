@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { tauriRawIo } from "@/lib/raw-io-tauri";
+import { tauriRawIo } from "@/lib/host/raw-io";
 import { rawToTiff } from "@/lib/raw-preview";
 
 /**

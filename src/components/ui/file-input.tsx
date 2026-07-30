@@ -1,6 +1,7 @@
 "use client";
 
-import { type DialogFilter, open } from "@tauri-apps/plugin-dialog";
+import type { DialogFilter } from "@tauri-apps/plugin-dialog";
+import { pickDirectoryFiles, pickFiles } from "@/lib/host/pick";
 import { anyFileExists } from "@/lib/host-fs-tauri";
 import {
   type Control,
@@ -107,12 +108,13 @@ export function FileInput<
     if (disabled) {
       return;
     }
-    const selection = await open({
-      directory,
-      filters,
-      multiple: false,
-    });
-    if (typeof selection === "string") {
+    // A directory selection yields its files rather than the directory, so
+    // this control takes the first: it holds a single path, and in a browser
+    // there is no directory path to hold.
+    const [selection] = directory
+      ? await pickDirectoryFiles({ filters })
+      : await pickFiles({ filters, multiple: false });
+    if (selection) {
       field.onChange(selection);
       field.onBlur();
     }

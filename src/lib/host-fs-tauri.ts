@@ -1,5 +1,5 @@
 /**
- * Reading and writing paths on the desktop, virtual or real.
+ * Reading paths, virtual or real, in whichever host is running.
  *
  * A path reaching the pipeline is now one of two things. Input images and
  * files the user picked are real, and go to Tauri's filesystem. A preset's
@@ -11,18 +11,26 @@
  * preset fails with ENOENT on a file that is present and correct.
  */
 
-import { exists, readFile, writeFile } from "@tauri-apps/plugin-fs";
+import { isTauri } from "./host/env";
 import { isVirtualPath, readVirtual, virtualExists } from "./vfs";
 
-export function readAnyFile(path: string): Promise<Uint8Array> {
-  return isVirtualPath(path) ? readVirtual(path) : readFile(path);
+export async function readAnyFile(path: string): Promise<Uint8Array> {
+  if (isVirtualPath(path) || !isTauri()) {
+    return await readVirtual(path);
+  }
+  const { readFile } = await import("@tauri-apps/plugin-fs");
+  return await readFile(path);
 }
 
-export function anyFileExists(path: string): Promise<boolean> {
-  return isVirtualPath(path) ? virtualExists(path) : exists(path);
-}
-
-/** Outputs always go to a real directory the user chose. */
-export function writeRealFile(path: string, data: Uint8Array): Promise<void> {
-  return writeFile(path, data);
+export async function anyFileExists(path: string): Promise<boolean> {
+  if (isVirtualPath(path)) {
+    return await virtualExists(path);
+  }
+  if (!isTauri()) {
+    // A browser only ever holds virtual paths. Anything else came from a
+    // record written on the desktop, and it is genuinely not here.
+    return false;
+  }
+  const { exists } = await import("@tauri-apps/plugin-fs");
+  return await exists(path);
 }

@@ -1,0 +1,4 @@
+[     286ms] [LOG] OS platform successfully queried: browser @ http://127.0.0.1:8787/_next/static/chunks/app/layout-c484a56a424f6e53.js:0
+[     289ms] [LOG] OS platform successfully queried: browser @ http://127.0.0.1:8787/_next/static/chunks/app/layout-c484a56a424f6e53.js:0
+[     307ms] [ERROR] Failed to load resource: the server responded with a status of 404 (File not found) @ http://127.0.0.1:8787/favicon.ico:0
+[  310120ms] [LOG] configForm submitted {cameraResponseLocation: null, correctionFiles: Object, fisheyeView: Object, inputSets: Array(1), lensMask: Object} @ http://127.0.0.1:8787/_next/static/chunks/app/home-page/page-f49ff1f9c7e387c3.js:0

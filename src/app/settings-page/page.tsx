@@ -15,12 +15,12 @@
  */
 "use client";
 
-import { getName, getTauriVersion, getVersion } from "@tauri-apps/api/app";
-import { open } from "@tauri-apps/plugin-dialog";
-import { openPath } from "@tauri-apps/plugin-opener";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { appInfo, canWriteToChosenDirectory } from "@/lib/host/env";
+import { openExternal } from "@/lib/host/open-external";
+import { pickOutputDirectory } from "@/lib/host/pick";
 import {
   TOOL_LABELS,
   TOOL_ORDER,
@@ -32,7 +32,7 @@ import { useSettingsStore } from "../stores/settings-store";
 import SettingsButtonBar from "./settings-button-bar";
 
 const handleExternalLink = async (url: string) => {
-  await openPath(url);
+  await openExternal(url);
 };
 
 /**
@@ -51,6 +51,9 @@ export default function SettingsPage() {
   const [appName, setAppName] = useState<string>("");
   const [tauriVersion, setTauriVersion] = useState<string>("");
   const [tools, setTools] = useState<WasmVersions | null>(null);
+  // Resolved in an effect rather than inline: this is a static export, so the
+  // first render happens at build time where there is no window to ask.
+  const [canChooseOutput, setCanChooseOutput] = useState(true);
   const [toolsError, setToolsError] = useState<string | null>(null);
   useEffect(() => {
     /**
@@ -58,12 +61,14 @@ export default function SettingsPage() {
      * and updates the component state
      */
     async function fetchAppInfo() {
-      setAppVersion(await getVersion());
-      setAppName(await getName());
-      setTauriVersion(await getTauriVersion());
+      const info = await appInfo();
+      setAppVersion(info.version);
+      setAppName(info.name);
+      setTauriVersion(info.tauriVersion ?? "");
     }
 
     fetchAppInfo();
+    setCanChooseOutput(canWriteToChosenDirectory());
     // Surfaced rather than swallowed: a missing versions.json means the wasm
     // artifacts were refreshed without regenerating it, and the numbers shown
     // would otherwise silently describe a different build.
@@ -110,14 +115,10 @@ export default function SettingsPage() {
    * @param label - Label for the dialog title
    * @param isDirectory - Whether to select a directory (true) or a file (false)
    */
-  const dialog = async (id: string, label: string, isDirectory = false) => {
-    const selectedPath = await open({
-      directory: isDirectory,
-      multiple: false,
-      title: `Select${label}Path`,
-    });
+  const dialog = async (id: string, label: string, _isDirectory = false) => {
+    const selectedPath = await pickOutputDirectory(`Select${label}Path`);
     if (selectedPath !== null) {
-      handleUpdatePath(id, selectedPath as string);
+      handleUpdatePath(id, selectedPath);
     }
   };
   /**
@@ -140,20 +141,31 @@ export default function SettingsPage() {
           {/* Left: External Utilities */}
           <div className="rounded-lg border border-gray-300 p-5">
             <h2 className="mb-4 flex items-center font-bold text-xl">
-              Paths
+              {canChooseOutput ? "Paths" : "Output"}
             </h2>
+
+            {canChooseOutput ? null : (
+              <p className="mb-4 text-gray-600 text-sm">
+                Generated images are downloaded, so where they are saved is
+                your browser's setting rather than this app's. There is nothing
+                to configure here.
+              </p>
+            )}
 
             {/*
               Mapping through the settings fields to create input sections for each
             */}
-            {[
-              {
-                id: "outputPath",
-                label: "HDRI Output",
-                placeholder: "This path is required",
-                value: localSettings.outputPath,
-              },
-            ].map(({ id, label, value, placeholder }) => (
+            {(canChooseOutput
+              ? [
+                  {
+                    id: "outputPath",
+                    label: "HDRI Output",
+                    placeholder: "This path is required",
+                    value: localSettings.outputPath,
+                  },
+                ]
+              : []
+            ).map(({ id, label, value, placeholder }) => (
               <div className="mb-4" key={id}>
                 <label className="mb-1 block font-semibold" htmlFor={id}>
                   {label}
@@ -268,8 +280,12 @@ export default function SettingsPage() {
             <dl className="mb-5 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 text-sm">
               <dt className="font-semibold">{appName || "Application"}</dt>
               <dd>{appVersion || "\u2014"}</dd>
-              <dt className="font-semibold">Tauri</dt>
-              <dd>{tauriVersion || "\u2014"}</dd>
+              {tauriVersion ? (
+                <>
+                  <dt className="font-semibold">Tauri</dt>
+                  <dd>{tauriVersion}</dd>
+                </>
+              ) : null}
             </dl>
 
             <h3 className="mb-1 font-semibold">Image processing tools</h3>

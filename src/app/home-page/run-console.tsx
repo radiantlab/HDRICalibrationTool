@@ -1,6 +1,6 @@
 "use client";
 
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { revealFile } from "@/lib/host/reveal";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -129,7 +129,7 @@ export function RunConsole({
               disabled={!lastEmittedOutput}
               onClick={() => {
                 if (lastEmittedOutput) {
-                  revealItemInDir(lastEmittedOutput.path);
+                  revealFile(lastEmittedOutput.path);
                 }
               }}
               type="button"

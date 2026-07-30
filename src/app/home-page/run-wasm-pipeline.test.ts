@@ -79,9 +79,14 @@ function fakeHost(): HostFilesystem & {
     },
     reads,
     statuses,
-    write: (path) => {
-      writes.push(path);
-      return Promise.resolve();
+    // The host decides where an output lands: a real path on the desktop, a
+    // filename in a browser where the download folder is not the app's to
+    // choose. The fake mirrors the desktop, since that is what the assertions
+    // about announced paths are about.
+    save: (directory: string, name: string) => {
+      const location = `${directory}/${name}`;
+      writes.push(location);
+      return Promise.resolve({ location });
     },
     writes,
   };
@@ -184,9 +189,9 @@ describe("outputs", () => {
         order.push(`announce:${path}`);
         return Promise.resolve();
       },
-      write: (path, data) => {
-        order.push(`write:${path}`);
-        return host.write(path, data);
+      save: (directory, name, data) => {
+        order.push(`write:${directory}/${name}`);
+        return host.save(directory, name, data);
       },
     };
 

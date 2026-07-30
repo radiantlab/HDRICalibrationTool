@@ -1,5 +1,17 @@
 /** @type {import('next').NextConfig} */
+const pkg = require("./package.json");
+
+/**
+ * Inlined at build time. The browser build has no Tauri app API to ask for a
+ * name or version, and reading package.json at runtime is not possible from a
+ * static export, so these are baked in where they cannot drift from what
+ * shipped. See src/lib/host/env.ts.
+ */
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_APP_NAME: "HDRI Calibration Tool",
+    NEXT_PUBLIC_APP_VERSION: pkg.version,
+  },
   output: "export",
   // These dependencies ship ESM-only builds, so they need Next's (and next/jest's) transpilation step.
   transpilePackages: [

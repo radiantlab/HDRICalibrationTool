@@ -13,9 +13,8 @@
  */
 "use client";
 
-import { documentDir, join } from "@tauri-apps/api/path";
-import { mkdir, writeTextFile } from "@tauri-apps/plugin-fs";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { isTauri } from "@/lib/host/env";
+import { revealFile } from "@/lib/host/reveal";
 import {
   AlertTriangle,
   Aperture,
@@ -193,11 +192,24 @@ function normalizePipelineError(error: unknown) {
   return error;
 }
 
+/**
+ * Writes a diagnostic trace beside the outputs when a run fails.
+ *
+ * Desktop only. A browser has nowhere to put it that the user would find
+ * again, and silently downloading a JSON file after a failure would be
+ * startling. The failure itself is still surfaced in the UI and the run log
+ * either way; this is the extra detail for a bug report.
+ */
 async function writePipelineTrace(
   input: Record<string, unknown>,
   error: unknown,
   outputPath: string
 ) {
+  if (!isTauri()) {
+    return null;
+  }
+  const { documentDir, join } = await import("@tauri-apps/api/path");
+  const { mkdir, writeTextFile } = await import("@tauri-apps/plugin-fs");
   const createdAt = new Date().toISOString();
   const baseDir =
     outputPath || (await join(await documentDir(), "HDRICalibrationInterface"));
@@ -412,7 +424,7 @@ export default function Home() {
                   ? {
                       label: "Show in folder",
                       onClick: () =>
-                        toast.promise(revealItemInDir(tracePath), {
+                        toast.promise(revealFile(tracePath), {
                           error: "Failed to reveal in folder",
                           loading: "Revealing in folder...",
                           success: "Revealed in folder",

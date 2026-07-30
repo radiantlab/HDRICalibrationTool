@@ -5,7 +5,7 @@ import {
   FolderOpenIcon,
   PhotoIcon,
 } from "@heroicons/react/24/solid";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
+import { revealFile } from "@/lib/host/reveal";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -82,7 +82,7 @@ export function PipelineStatus({
               disabled={!lastEmittedOutput}
               onClick={() => {
                 if (lastEmittedOutput) {
-                  revealItemInDir(lastEmittedOutput.path);
+                  revealFile(lastEmittedOutput.path);
                 }
               }}
             >

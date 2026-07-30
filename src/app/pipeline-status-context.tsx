@@ -1,6 +1,6 @@
 "use client";
 
-import { listen } from "@tauri-apps/api/event";
+import { onPipelineEvent } from "@/lib/host/events";
 import type React from "react";
 import {
   createContext,
@@ -134,16 +134,16 @@ export function PipelineStatusProvider({
   const [setTotal, setSetTotal] = useState<number | null>(null);
 
   useEffect(() => {
-    const unlistenProgressPromise = listen(
+    const unlistenProgress = onPipelineEvent(
       "pipeline-progress",
-      (event: { payload: unknown }) => {
-        setProgress(z.number().parse(event.payload));
+      (progressPayload: unknown) => {
+        setProgress(z.number().parse(progressPayload));
       }
     );
-    const unlistenStatusPromise = listen(
+    const unlistenStatus = onPipelineEvent(
       "pipeline-status",
-      (event: { payload: unknown }) => {
-        const nextPayload = pipelineStatusSchema.parse(event.payload);
+      (statusPayload: unknown) => {
+        const nextPayload = pipelineStatusSchema.parse(statusPayload);
         setPayload(nextPayload);
 
         const text = statusTextFor(nextPayload);
@@ -169,10 +169,10 @@ export function PipelineStatusProvider({
         }
       }
     );
-    const unlistenOutputPromise = listen(
+    const unlistenOutput = onPipelineEvent(
       "pipeline-output",
-      (event: { payload: unknown }) => {
-        const output = pipelineOutputSchema.parse(event.payload);
+      (outputPayload: unknown) => {
+        const output = pipelineOutputSchema.parse(outputPayload);
         setLastEmittedOutput(output);
         if (!outputsRef.current.includes(output.path)) {
           outputsRef.current = [...outputsRef.current, output.path];
@@ -181,10 +181,14 @@ export function PipelineStatusProvider({
       }
     );
 
+    // Synchronous now: subscribing to an EventTarget returns its unsubscribe
+    // directly, where Tauri's listen returned a promise for one. That closed a
+    // real gap -- an unmount before the promise settled used to leave the
+    // listener attached.
     return () => {
-      unlistenProgressPromise.then((unlisten) => unlisten());
-      unlistenStatusPromise.then((unlisten) => unlisten());
-      unlistenOutputPromise.then((unlisten) => unlisten());
+      unlistenProgress();
+      unlistenStatus();
+      unlistenOutput();
     };
   }, []);
 

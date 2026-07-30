@@ -32,7 +32,7 @@ import {
   type GenericImageMetadata,
   useGenericImageMetadata,
 } from "@/lib/generic-image-metadata";
-import { tauriPresetIo } from "@/lib/preset-io-tauri";
+import { tauriPresetIo } from "@/lib/host/preset-io";
 import {
   changedSources,
   deletePreset,

@@ -11,8 +11,9 @@
  * was removed at #233.
  */
 
-import { emit } from "@tauri-apps/api/event";
-import { readAnyFile, writeRealFile } from "@/lib/host-fs-tauri";
+import { readAnyFile } from "@/lib/host-fs-tauri";
+import { emitPipelineEvent } from "@/lib/host/events";
+import { joinPath, saveOutput } from "@/lib/host/save";
 import type { DecodedImage } from "@/lib/pipeline/filter-images";
 import { runPipeline } from "@/lib/pipeline/orchestrator";
 import {
@@ -27,11 +28,8 @@ import type {
 } from "@/lib/pipeline/types";
 import { PipelineError } from "@/lib/pipeline/types";
 import { urlModuleLoader, WasmToolRunner } from "@/lib/pipeline/wasm-runner";
-import { tauriRawIo } from "@/lib/raw-io-tauri";
+import { tauriRawIo } from "@/lib/host/raw-io";
 import { rawToTiff } from "@/lib/raw-preview";
-
-/** A trailing slash or backslash on the output directory. */
-const TRAILING_SEPARATOR = /[\\/]+$/;
 
 /** Where the browser builds are served from. See `public/wasm/README.md`. */
 const WASM_BASE_URL = "/wasm";
@@ -97,20 +95,32 @@ export interface HostFilesystem {
   emitOutput: (path: string) => Promise<void>;
   emitStatus: (payload: PipelineStatusPayload) => Promise<void>;
   read: (path: string) => Promise<Uint8Array>;
-  write: (path: string, data: Uint8Array) => Promise<void>;
+  /** Returns where the output actually went, which a browser decides. */
+  save: (
+    directory: string,
+    name: string,
+    data: Uint8Array
+  ) => Promise<{ location: string }>;
 }
 
 const tauriHost: HostFilesystem = {
-  emitOutput: (path) => emit("pipeline-output", { path }),
-  // The existing status UI listens for Tauri events, so emitting one here
-  // means pipeline-status-context.tsx needs no changes at all: it cannot tell
-  // which pipeline produced the event.
-  emitStatus: (payload) => emit("pipeline-status", payload),
+  emitOutput: (path) => {
+    emitPipelineEvent("pipeline-output", { path });
+    return Promise.resolve();
+  },
+  // The pipeline runs in the page now, on the same side as the UI listening to
+  // it, so these no longer cross a process boundary. The channel is an
+  // EventTarget rather than Tauri's event system, which is what makes the
+  // status UI work unchanged in a browser.
+  emitStatus: (payload) => {
+    emitPipelineEvent("pipeline-status", payload);
+    return Promise.resolve();
+  },
   // Virtual as well as real: a preset's calibration files have no disk entry,
   // so reading them through Tauri's filesystem would fail with ENOENT on a
   // file that is present and correct.
   read: (path) => readAnyFile(path),
-  write: (path, data) => writeRealFile(path, data),
+  save: (directory, name, data) => saveOutput(directory, name, data),
 };
 
 /**
@@ -212,9 +222,12 @@ export async function runWasmPipeline({
   ];
 
   for (const [source, name, announce] of outputs) {
-    const destination = joinOutputPath(params.outputPath, name);
-    // biome-ignore lint/performance/noAwaitInLoops: each output is announced only after it is on disk, which is what lets a failed set be attributed correctly
-    await host.write(destination, await runner.readFile(source));
+    // biome-ignore lint/performance/noAwaitInLoops: each output is announced only after it has been written, which is what lets a failed set be attributed correctly
+    const { location: destination } = await host.save(
+      params.outputPath,
+      name,
+      await runner.readFile(source)
+    );
     if (announce) {
       // Announced after the write, matching the Rust pipeline: a set that
       // failed has announced no outputs, which is what run history relies on.
@@ -265,15 +278,5 @@ async function decodeImage(path: string): Promise<DecodedImage> {
   }
 }
 
-/**
- * Joins an output directory and a filename.
- *
- * `node:path` is not usable here -- next.config.js aliases `path` to
- * path-browserify for tiff.js -- and the separator is whichever the host
- * already used, so a Windows path stays a Windows path.
- */
-export function joinOutputPath(directory: string, name: string): string {
-  const trimmed = directory.replace(TRAILING_SEPARATOR, "");
-  const separator = trimmed.includes("\\") ? "\\" : "/";
-  return `${trimmed}${separator}${name}`;
-}
+/** Re-exported: the join moved to `host/save.ts` with the writing. */
+export const joinOutputPath = joinPath;

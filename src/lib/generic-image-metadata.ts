@@ -1,7 +1,7 @@
-import { convertFileSrc } from "@tauri-apps/api/core";
 import path from "path";
 import { useMemo } from "react";
-import { tauriRawIo } from "./raw-io-tauri";
+import { imageSrc } from "./host/image-src";
+import { tauriRawIo } from "./host/raw-io";
 import { rawToTiff } from "./raw-preview";
 import { getTiffMetadata } from "./tiff-worker-client";
 
@@ -47,7 +47,9 @@ function getJpegImageMetadata(fsPath: string): Promise<GenericImageMetadata> {
     img.onerror = () => {
       reject(new Error("Failed to load image"));
     };
-    img.src = convertFileSrc(fsPath);
+    imageSrc(fsPath).then((src) => {
+      img.src = src;
+    }, reject);
   });
 }
 
