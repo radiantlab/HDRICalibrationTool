@@ -18,7 +18,7 @@
  * Nothing imports this module yet. Wiring it into the UI is #232/#233; until
  * then the Rust pipeline remains the only one the app uses.
  *
- * See radiantlab/HDRICalibrationTool#231.
+ * See radiantlab/LumiLab#231.
  */
 
 /** Where a tool's stdin comes from and where its stdout goes. */

@@ -15,6 +15,20 @@
  * webview and in every target browser, so one implementation serves both.
  */
 
+/**
+ * Deliberately still the old name, and it must stay that way.
+ *
+ * The app was renamed from HDRI Calibration Tool to LumiLab; this was not,
+ * because an IndexedDB database is addressed by name. Renaming it does not
+ * migrate anything -- it opens a *different*, empty database, and every
+ * existing user silently loses their presets, run history and settings while
+ * the app looks like it has simply forgotten them.
+ *
+ * The same reasoning applies to `hdr-settings` in `stores/settings-store.ts`
+ * and to `identifier` in `tauri.conf.json`, which is what the desktop app data
+ * directory (and therefore this database's file on disk) is derived from.
+ * Cosmetic renames are free; addresses are not.
+ */
 const DATABASE = "hdri-calibration";
 const DATABASE_VERSION = 1;
 

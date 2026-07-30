@@ -14,7 +14,7 @@ wasm build. `src/lib/pipeline/falsecolor.ts` reimplements it by driving
 `pcomb`, `pcompos`, `psign` and `pextrem`.
 
 `dcraw_emu` converts RAW inputs to TIFF before hdrgen sees them
-([#237](https://github.com/radiantlab/HDRICalibrationTool/issues/237)). It peaks
+([#237](https://github.com/radiantlab/LumiLab/issues/237)). It peaks
 at 266 MiB on a 5796x3870 CR2, about 6.5% of the wasm32 ceiling, and takes
 roughly 2 s per frame. Note the pipeline skips image filtering when the input is
 RAW, matching the Rust implementation.

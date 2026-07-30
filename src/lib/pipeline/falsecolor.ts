@@ -4,10 +4,10 @@
  * Port of `src/px/falsecolor.pl` (Radiance 6.0), which is a Perl script and so
  * has no WebAssembly build. It shells out to `pcomb`, `pcompos`, `psign` and
  * `pextrem`, all of which do -- so this drives those through the `ToolRunner`
- * instead of a shell. See radiantlab/HDRICalibrationTool#230.
+ * instead of a shell. See radiantlab/LumiLab#230.
  *
  * **Scope is deliberately narrow.** Only the two invocation shapes
- * HDRICalibrationTool produces are supported:
+ * LumiLab produces are supported:
  *
  *   falsecolor -e -i <picture>
  *   falsecolor -s <limit> -l <label> -n <levels> -e [-lw W -lh H] -i <picture>

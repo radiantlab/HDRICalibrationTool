@@ -2,7 +2,7 @@
  * A `ToolRunner` backed by Emscripten modules.
  *
  * The mechanism here is not guesswork -- every piece of it was measured in
- * radiantlab/HDRICalibrationTool#234 against real brackets in Chromium and
+ * radiantlab/LumiLab#234 against real brackets in Chromium and
  * WebKit:
  *
  *  - **One fresh module instance per invocation.** The builds set

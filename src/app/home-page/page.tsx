@@ -1,5 +1,5 @@
 /**
- * Home Page Component for the HDRI Calibration Tool.
+ * Home Page Component for the LumiLab.
  *
  * This component serves as the main page for configuring and generating HDR images.
  * It integrates various subcomponents for:
@@ -211,8 +211,7 @@ async function writePipelineTrace(
   const { documentDir, join } = await import("@tauri-apps/api/path");
   const { mkdir, writeTextFile } = await import("@tauri-apps/plugin-fs");
   const createdAt = new Date().toISOString();
-  const baseDir =
-    outputPath || (await join(await documentDir(), "HDRICalibrationInterface"));
+  const baseDir = outputPath || (await join(await documentDir(), "LumiLab"));
   const traceDir = await join(baseDir, "pipeline-traces");
   await mkdir(traceDir, { recursive: true });
   const safeTimestamp = createdAt.replace(/[:.]/g, "-");

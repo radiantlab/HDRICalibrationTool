@@ -4,7 +4,7 @@
  *
  * Holding the tools fixed is the point: any difference is this port's logic
  * rather than a tool-version or wasm effect. Those are covered separately in
- * radiantlab/HDRICalibrationTool#229.
+ * radiantlab/LumiLab#229.
  *
  * Skipped unless both a Radiance install and the reference picture are
  * present, so it never breaks CI or a fresh checkout. Point it elsewhere with

@@ -1,11 +1,11 @@
 [package]
-name = "HDRICalibrationInterface"
+name = "LumiLab"
 version = "4.0.0"
 description = "GUI to calibrate HDR images using Radiance, hdrgen, and dcraw_emu."
 authors = ["Clotilde Pierson", "Alexander Ulbrich"]
 license = "GNU General Public License v3.0"
-repository = "https://github.com/radiantlab/HDRICalibrationTool"
-default-run = "HDRICalibrationInterface"
+repository = "https://github.com/radiantlab/LumiLab"
+default-run = "LumiLab"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

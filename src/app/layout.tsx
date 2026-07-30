@@ -1,5 +1,5 @@
 /**
- * Root layout component for the HDRI Calibration Tool application.
+ * Root layout component for the LumiLab application.
  *
  * This component serves as the main wrapper for all pages in the application.
  * It includes the global font settings, metadata for the app, initialization component,
@@ -19,7 +19,7 @@ import { ThemeProvider } from "./theme-provider";
 // Define metadata for the application
 export const metadata: Metadata = {
   description: "Tool for calibrating High Dynamic Range Images",
-  title: "HDRI Calibration Tool",
+  title: "LumiLab",
 };
 
 /**

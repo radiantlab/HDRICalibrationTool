@@ -2,7 +2,7 @@
 
 **Status:** implemented and manually verified, 2026-07-28
 **Date:** 2026-07-27
-**Issue:** [#224](https://github.com/radiantlab/HDRICalibrationTool/issues/224)
+**Issue:** [#224](https://github.com/radiantlab/LumiLab/issues/224)
 
 ## The problem
 

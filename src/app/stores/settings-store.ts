@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Settings store module for the HDRI Calibration Tool.
+ * Settings store module for the LumiLab.
  *
  * This module defines a global state store using Zustand to manage application settings
  * such as paths to various binaries and tools needed for HDRI processing.
@@ -78,6 +78,9 @@ export const useSettingsStore = create<SettingsStore>()(
       // `useWasmPipeline` in particular must not be revived as a dispatch:
       // anyone who explicitly set it false still has false persisted, and
       // there is no longer another pipeline to fall back to.
+      // Not renamed with the app. A localStorage key is an address, not a
+      // label: calling it "lumilab-settings" would read an empty slot rather
+      // than migrate the old one. See the note in `lib/storage/kv.ts`.
       name: "hdr-settings",
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);

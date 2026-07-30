@@ -14,8 +14,6 @@ describe("openableOutputs", () => {
   it("drops the output directory that older records stored", () => {
     // The pipeline command resolves to the output directory, and that is what
     // early records captured. Handing it to the viewer fails to load.
-    expect(
-      openableOutputs(record(["/Users/me/HDRICalibrationInterface"]))
-    ).toEqual([]);
+    expect(openableOutputs(record(["/Users/me/LumiLab"]))).toEqual([]);
   });
 });

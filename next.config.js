@@ -9,7 +9,7 @@ const pkg = require("./package.json");
  */
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_APP_NAME: "HDRI Calibration Tool",
+    NEXT_PUBLIC_APP_NAME: "LumiLab",
     NEXT_PUBLIC_APP_VERSION: pkg.version,
   },
   output: "export",

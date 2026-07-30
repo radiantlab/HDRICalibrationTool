@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { $, browser } from "@wdio/globals";
 import { describe, it } from "mocha";
 
-const E2E_DROP_EVENT = "__hdricalibrationtool_e2e_drop__";
+const E2E_DROP_EVENT = "__lumilab_e2e_drop__";
 const jpegInputDirectory = fileURLToPath(
   new URL("../inputs/JPEG", import.meta.url)
 );
@@ -43,9 +43,7 @@ const lensInformationPath = fileURLToPath(
 const expectedJpegFileCount = readdirSync(jpegInputDirectory).filter(
   (fileName) => [".jpg", ".jpeg"].includes(path.extname(fileName).toLowerCase())
 ).length;
-const tempOutputDirectory = mkdtempSync(
-  path.join(os.tmpdir(), "hdricalibrationtool-e2e-")
-);
+const tempOutputDirectory = mkdtempSync(path.join(os.tmpdir(), "lumilab-e2e-"));
 assert.deepEqual(
   readdirSync(tempOutputDirectory),
   [],
@@ -316,7 +314,7 @@ function getPipelineFailureMessage(outputDir: string): string | null {
   return `Pipeline trace detected at ${newestTracePath}\n${traceContents}`;
 }
 
-describe("HDRI Calibration Tool", () => {
+describe("LumiLab", () => {
   it("opens to the home page", async () => {
     await browser.waitUntil(
       async () => (await browser.getUrl()).endsWith("/home-page"),

@@ -1,5 +1,5 @@
 /**
- * Settings Page Component for the HDRI Calibration Tool.
+ * Settings Page Component for the LumiLab.
  *
  * This component allows users to configure application settings including:
  * - Output file location
@@ -347,13 +347,11 @@ export default function SettingsPage() {
               <button
                 className="underline hover:text-foreground"
                 onClick={() =>
-                  openExternal(
-                    "https://github.com/radiantlab/HDRICalibrationTool"
-                  )
+                  openExternal("https://github.com/radiantlab/LumiLab")
                 }
                 type="button"
               >
-                github.com/radiantlab/HDRICalibrationTool
+                github.com/radiantlab/LumiLab
               </button>
               .
             </p>

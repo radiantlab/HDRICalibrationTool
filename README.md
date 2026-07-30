@@ -5,7 +5,9 @@
   </picture>
 </p>
 
-<h1 align="center">HDRI Calibration Tool</h1>
+<h1 align="center">LumiLab</h1>
+
+<p align="center"><sub>previously HDRI Calibration Tool</sub></p>
 
 <p align="center"><em>Calibrated luminance maps from a bracketed set of photographs, in your browser or on your desktop.</em></p>
 
@@ -28,7 +30,7 @@ reimplemented per platform.
 
 |  | Desktop | Browser |
 |---|---|---|
-| How you get it | Installer from [Releases](https://github.com/radiantlab/HDRICalibrationTool/releases/latest) | Open the URL. Nothing to install. |
+| How you get it | Installer from [Releases](https://github.com/radiantlab/LumiLab/releases/latest) | Open the URL. Nothing to install. |
 | Shell | Tauri 2 (a native window around the same pages) | The tab you opened |
 | Image pipeline | Identical WebAssembly, in a Web Worker | Identical WebAssembly, in a Web Worker |
 | Where images go | Written to the output folder you choose | Downloaded; the browser picks the folder |
@@ -58,7 +60,7 @@ is; see [DEPLOYMENT.md](./DEPLOYMENT.md) for the web build's limits in detail.
 **In a browser**, open the deployed site. There is nothing to install and
 nothing to configure; skip to [Use](#use).
 
-**On the desktop**, install the [HDRI Calibration Interface](https://github.com/radiantlab/HDRICalibrationTool/releases/latest) for your operating system. That is the whole of it.
+**On the desktop**, install the [LumiLab](https://github.com/radiantlab/LumiLab/releases/latest) for your operating system. That is the whole of it.
 
 **There is nothing else to install and no paths to configure.** Radiance, `hdrgen` and `dcraw_emu` all ship inside the application, compiled to WebAssembly, and run there. Earlier versions required you to install Radiance and `hdrgen` yourself and tell the app where they were; that step is gone. The Settings page reports which version of each is in use.
 
@@ -130,7 +132,7 @@ Every PR must be reviewed by at least one team member and successfully build. On
 
 ### Development
 
-In order to create a working environment, first clone the repository, and `cd` into `HDRICalibrationTool`.
+In order to create a working environment, first clone the repository, and `cd` into `LumiLab`.
 
 Make sure you have the latest [Node.js](https://nodejs.org/en) and [Rust](https://www.rust-lang.org/) installed.
 
