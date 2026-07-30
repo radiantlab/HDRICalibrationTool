@@ -13,10 +13,6 @@
  */
 "use client";
 
-import { invoke } from "@tauri-apps/api/core";
-import { documentDir, join } from "@tauri-apps/api/path";
-import { mkdir, writeTextFile } from "@tauri-apps/plugin-fs";
-import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import {
   AlertTriangle,
   Aperture,
@@ -70,6 +66,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useGenericImageMetadata } from "@/lib/generic-image-metadata";
+import { isTauri } from "@/lib/host/env";
+import { revealFile } from "@/lib/host/reveal";
 import { appendRun, classifyOutcome } from "@/lib/run-history";
 import { useMotionValueFormState } from "@/lib/use-motion-value-form-state";
 import { usePipelineStatus } from "../pipeline-status-context";
@@ -92,6 +90,7 @@ import {
   RunConfirmDialog,
 } from "./run-confirm-dialog";
 import { RunConsole } from "./run-console";
+import { runWasmPipeline } from "./run-wasm-pipeline";
 import { useSelectedImage } from "./selected-image-context";
 import { usePendingConfirmation } from "./use-pending-confirmation";
 
@@ -193,11 +192,24 @@ function normalizePipelineError(error: unknown) {
   return error;
 }
 
+/**
+ * Writes a diagnostic trace beside the outputs when a run fails.
+ *
+ * Desktop only. A browser has nowhere to put it that the user would find
+ * again, and silently downloading a JSON file after a failure would be
+ * startling. The failure itself is still surfaced in the UI and the run log
+ * either way; this is the extra detail for a bug report.
+ */
 async function writePipelineTrace(
   input: Record<string, unknown>,
   error: unknown,
   outputPath: string
 ) {
+  if (!isTauri()) {
+    return null;
+  }
+  const { documentDir, join } = await import("@tauri-apps/api/path");
+  const { mkdir, writeTextFile } = await import("@tauri-apps/plugin-fs");
   const createdAt = new Date().toISOString();
   const baseDir =
     outputPath || (await join(await documentDir(), "HDRICalibrationInterface"));
@@ -334,12 +346,7 @@ export default function Home() {
             // The log still holds the previous run's transcript at this point,
             // since clearLog only runs once the checks have passed.
             const logAtSubmit = logRef.current.length;
-            const toolSettings = {
-              dcrawEmuPath: settings.dcrawEmuPath,
-              hdrgenPath: settings.hdrgenPath,
-              outputPath: settings.outputPath,
-              radiancePath: settings.radiancePath,
-            };
+            const toolSettings = { outputPath: settings.outputPath };
 
             // Every attempt is recorded, including ones turned away before the
             // backend ran: those are the ones worth looking back at when an
@@ -374,11 +381,6 @@ export default function Home() {
                 presetName: null,
                 reason: failure,
                 startedAt,
-                toolPaths: {
-                  dcrawEmu: settings.dcrawEmuPath,
-                  hdrgen: settings.hdrgenPath,
-                  radiance: settings.radiancePath,
-                },
               }).catch(() => undefined);
             };
 
@@ -399,7 +401,7 @@ export default function Home() {
                   [position - 1]: knownHdrgenIssue,
                 }));
                 toast.error("HDRGen could not merge the selected image set.", {
-                  icon: <AlertTriangle className="size-4 text-red-500" />,
+                  icon: <AlertTriangle className="size-4 text-destructive" />,
                 });
                 return;
               }
@@ -422,19 +424,20 @@ export default function Home() {
                   ? {
                       label: "Show in folder",
                       onClick: () =>
-                        toast.promise(revealItemInDir(tracePath), {
+                        toast.promise(revealFile(tracePath), {
                           error: "Failed to reveal in folder",
                           loading: "Revealing in folder...",
                           success: "Revealed in folder",
                         }),
                     }
                   : undefined,
-                icon: <AlertTriangle className="size-4 text-red-500" />,
+                icon: <AlertTriangle className="size-4 text-destructive" />,
               });
             };
 
             // Undefined until an image is selected, in which case there are no
             // dimensions to check the mask against yet.
+            //
             const maskSize = (await maskPreviewMetadata)?.size ?? null;
             // Runs once, against the global configuration, because that is
             // what every set is run with. Deliberately not per set: the mask
@@ -516,7 +519,10 @@ export default function Home() {
                     set.name
                   );
                   try {
-                    await invoke<string>("pipeline", params);
+                    await runWasmPipeline({
+                      params,
+                      shouldStop: () => stopRequestedRef.current,
+                    });
                     await recordAttempt(
                       null,
                       getOutputs().slice(outputsBefore),

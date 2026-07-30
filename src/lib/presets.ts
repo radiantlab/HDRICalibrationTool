@@ -1,13 +1,19 @@
-import { join } from "@tauri-apps/api/path";
-import {
-  copyFile,
-  exists,
-  mkdir,
-  readFile,
-  remove,
-} from "@tauri-apps/plugin-fs";
 import type { pipelineConfig } from "@/app/home-page/(pipeline-configuration)/config-provider";
-import { readJson, storagePath, writeJson } from "./app-storage";
+import { readJson, writeJson } from "./app-storage";
+import { deleteFile, fileKeys, putFile } from "./storage/kv";
+import { presetPath, storedKey } from "./vfs";
+
+/**
+ * Reads a source calibration file.
+ *
+ * Injected so this module imports no `@tauri-apps/*`: the desktop build reads
+ * the user's chosen path off disk, and the browser build resolves it through
+ * the virtual filesystem. Both hand back bytes, which is all a preset needs.
+ */
+export interface PresetSourceIo {
+  exists: (path: string) => Promise<boolean>;
+  readFile: (path: string) => Promise<Uint8Array>;
+}
 
 export type PresetFileSlot =
   | "calibrationFactor"
@@ -19,6 +25,14 @@ export type PresetFileSlot =
 export interface PresetFile {
   fileName: string;
   sha256: string;
+  /**
+   * Where the file came from when the preset was saved.
+   *
+   * Kept for `changedSources`, which reports a calibration that has been
+   * re-derived since. It is a record, not a dependency: the contents live in
+   * storage, so a preset still applies when the original is gone. In a browser
+   * build there may be no meaningful source path, and that is fine.
+   */
   sourcePath: string;
 }
 
@@ -105,19 +119,26 @@ function sourcePaths(
 }
 
 /**
- * Copies every supplied calibration file into presets/<id>/ so the preset
- * survives the originals being moved or deleted, recording each source path and
- * content hash so a re-derived calibration can be detected later.
+ * Stores the contents of every supplied calibration file with the preset.
+ *
+ * The contents, not a copy on disk beside a record pointing at it. That
+ * arrangement let the two disagree: a copy that landed short still recorded
+ * the hash of what the source should have contained, so the preset looked
+ * intact while the file behind it was empty. Calibration files kept on a cloud
+ * drive did exactly that, and an empty `.cal` turns its correction into a
+ * silent no-op, so runs varied with nothing in the UI to explain it.
+ *
+ * Every calibration file in the reference set totals about 3 KB, so a preset
+ * carrying all five slots inline is on the order of 10 KB. It also makes a
+ * preset self-contained, which is what it always claimed to be.
  */
 export async function savePreset(
   id: string,
   name: string,
   config: pipelineConfig,
-  lensMaskImageSize: [number, number] | null
+  lensMaskImageSize: [number, number] | null,
+  io: PresetSourceIo
 ): Promise<Preset> {
-  const dir = await storagePath("presets", id);
-  await mkdir(dir, { recursive: true });
-
   const slots = (
     Object.entries(sourcePaths(config)) as [PresetFileSlot, string | null][]
   ).filter((entry): entry is [PresetFileSlot, string] => entry[1] !== null);
@@ -125,10 +146,21 @@ export async function savePreset(
   const copied = await Promise.all(
     slots.map(async ([slot, sourcePath]) => {
       const fileName = SLOT_FILENAMES[slot];
-      await copyFile(sourcePath, await join(dir, fileName));
+      // Read once, then store those same bytes and hash them. Reading twice
+      // is what allowed the stored copy and its recorded hash to describe
+      // different content.
+      const bytes = await io.readFile(sourcePath);
+      if (bytes.length === 0) {
+        throw new Error(
+          `${sourcePath} is empty, so it cannot be saved as the ${slot} file. ` +
+            "If it is stored in a cloud folder, open it once so the file is " +
+            "downloaded rather than a placeholder, then save the preset again."
+        );
+      }
+      await putFile(storedKey(presetPath(id, fileName)), bytes);
       const file: PresetFile = {
         fileName,
-        sha256: await sha256Hex(await readFile(sourcePath)),
+        sha256: await sha256Hex(bytes),
         sourcePath,
       };
       return [slot, file] as const;
@@ -167,7 +199,8 @@ export async function savePreset(
  * why presets copy their files in the first place.
  */
 export async function changedSources(
-  preset: Preset
+  preset: Preset,
+  io: PresetSourceIo
 ): Promise<PresetFileSlot[]> {
   const entries = Object.entries(preset.files) as [
     PresetFileSlot,
@@ -176,10 +209,10 @@ export async function changedSources(
 
   const results = await Promise.all(
     entries.map(async ([slot, file]) => {
-      if (!(await exists(file.sourcePath))) {
+      if (!(await io.exists(file.sourcePath))) {
         return null;
       }
-      const current = await sha256Hex(await readFile(file.sourcePath));
+      const current = await sha256Hex(await io.readFile(file.sourcePath));
       return current === file.sha256 ? null : slot;
     })
   );
@@ -187,24 +220,25 @@ export async function changedSources(
   return results.filter((slot): slot is PresetFileSlot => slot !== null);
 }
 
-/** Removes a preset and the calibration files copied into it. */
+/** Removes a preset and the calibration files stored with it. */
 export async function deletePreset(id: string): Promise<void> {
   const presets = await readPresets();
   await writeJson(PRESETS_FILE, {
     presets: presets.filter((entry) => entry.id !== id),
   });
 
-  const dir = await storagePath("presets", id);
-  if (await exists(dir)) {
-    await remove(dir, { recursive: true });
-  }
+  // The index is written first. A crash between the two leaves orphaned blobs,
+  // which are inert; the reverse order would leave a preset that lists files
+  // it can no longer resolve.
+  const keys = await fileKeys(storedKey(presetPath(id, "")));
+  await Promise.all(keys.map((key) => deleteFile(key)));
 }
 
 /**
  * Renames a preset in place.
  *
- * The directory keeps its original id, so the copied calibration files do not
- * have to move and nothing can be lost partway through.
+ * The id is unchanged, so the stored calibration files keep their keys and
+ * nothing can be lost partway through.
  */
 export async function renamePreset(id: string, name: string): Promise<void> {
   const presets = await readPresets();
@@ -215,14 +249,17 @@ export async function renamePreset(id: string, name: string): Promise<void> {
   });
 }
 
-/** Absolute path of a preset's stored copy, used when applying it. */
-export async function presetFilePath(
+/**
+ * The path a preset's calibration file is applied under.
+ *
+ * Virtual: nothing is on disk. It is derived from the preset id and the slot's
+ * fixed filename, so it is the same string in every session, which is what
+ * lets a preset saved today still resolve tomorrow.
+ */
+export function presetFilePath(
   preset: Preset,
   slot: PresetFileSlot
-): Promise<string | null> {
+): string | null {
   const file = preset.files[slot];
-  if (!file) {
-    return null;
-  }
-  return await storagePath("presets", preset.id, file.fileName);
+  return file ? presetPath(preset.id, file.fileName) : null;
 }

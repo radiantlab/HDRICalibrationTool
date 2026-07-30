@@ -1,0 +1,14 @@
+norm : mult/scale/le(1);
+
+v = map(li(1)*norm);
+
+vleft = map(li(1,-1,0)*norm);
+vright = map(li(1,1,0)*norm);
+vabove = map(li(1,0,1)*norm);
+vbelow = map(li(1,0,-1)*norm);
+
+map(x) = x;
+
+ra = ri(nfiles);
+ga = gi(nfiles);
+ba = bi(nfiles);

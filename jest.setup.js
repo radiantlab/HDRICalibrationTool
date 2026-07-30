@@ -15,6 +15,12 @@ class ResizeObserverMock {
 }
 global.ResizeObserver = global.ResizeObserver || ResizeObserverMock;
 
+// jsdom does not expose TextEncoder/TextDecoder, which browsers and workers
+// both do. The pipeline's Radiance header parsing uses them.
+const { TextDecoder, TextEncoder } = require("node:util");
+global.TextEncoder = global.TextEncoder || TextEncoder;
+global.TextDecoder = global.TextDecoder || TextDecoder;
+
 // jsdom exposes crypto but not crypto.subtle, which preset hashing uses.
 const { webcrypto } = require("node:crypto");
 if (!globalThis.crypto?.subtle) {

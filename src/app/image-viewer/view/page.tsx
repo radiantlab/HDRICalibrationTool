@@ -1,6 +1,5 @@
 "use client";
 
-import { invoke } from "@tauri-apps/api/core";
 import { LocateFixed, SquareX } from "lucide-react";
 import { redirect } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
@@ -43,6 +42,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import { errorMessage } from "@/lib/error-message";
+import {
+  type HdrMetadata as ParsedHdrMetadata,
+  parseHdrMetadata,
+} from "@/lib/hdr-metadata";
+import { readAnyFile } from "@/lib/host-fs-tauri";
 import { cn } from "@/lib/utils";
 import {
   computeFalsecolorLuminance,
@@ -86,14 +91,15 @@ const HDR_RESOLUTION_LINE_REGEX = /([+-][XY])\s+(\d+)\s+([+-][XY])\s+(\d+)/;
 
 interface LoadedHdrData {
   exposure: number;
+  hdrMetadata: HdrMetadata;
   rgbaData: Float32Array | null;
   texture: DataTexture;
 }
 
-interface HdrMetadata {
-  FORMAT: string;
-  [key: string]: string;
-}
+// FORMAT used to be declared required here, but nothing reads it as a
+// property -- it appears only as a lookup key in illuminance-details.tsx --
+// and the Rust command it came from made no such guarantee either.
+type HdrMetadata = ParsedHdrMetadata;
 
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
@@ -232,8 +238,13 @@ function isTransformAwayFromBaseline(
 }
 
 async function loadHdrData(filePath: string): Promise<LoadedHdrData> {
-  const { readFile } = await import("@tauri-apps/plugin-fs");
-  const fileData = await readFile(filePath);
+  // Virtual as well as real: in a browser the picture the pipeline just made
+  // was downloaded, and what the app can still read is the copy kept in the
+  // session filesystem.
+  const fileData = await readAnyFile(filePath);
+  // Parsed from the bytes already in hand. The Rust command this replaced
+  // opened the file a second time to read the same few hundred bytes.
+  const hdrMetadata = parseHdrMetadata(fileData);
 
   // Parse the HDR file ourselves since RGBELoader.parse() has bugs
   // with Radiance headers that contain long lines
@@ -264,6 +275,7 @@ async function loadHdrData(filePath: string): Promise<LoadedHdrData> {
 
   return {
     exposure,
+    hdrMetadata,
     rgbaData: floatData,
     texture,
   };
@@ -378,10 +390,6 @@ function parseRadianceHDR(data: Uint8Array) {
   return { exposure, height, rgbeData, width };
 }
 
-async function readHdrMetadata(filePath: string): Promise<HdrMetadata> {
-  return invoke<HdrMetadata>("read_hdr_metadata", { path: filePath });
-}
-
 type ImageViewerData = LoadedHdrData & {
   hdrMetadata: HdrMetadata | null;
   imageWidth: number;
@@ -390,10 +398,8 @@ type ImageViewerData = LoadedHdrData & {
 };
 
 async function loadImageViewerData(filePath: string): Promise<ImageViewerData> {
-  const [loadedHdrData, hdrMetadata] = await Promise.all([
-    loadHdrData(filePath),
-    readHdrMetadata(filePath).catch(() => null),
-  ]);
+  const loadedHdrData = await loadHdrData(filePath);
+  const { hdrMetadata } = loadedHdrData;
   const imageWidth = loadedHdrData.texture.image.width;
   const imageHeight = loadedHdrData.texture.image.height;
   let luminanceMatrix: FalsecolorLuminanceMatrix | null = null;
@@ -436,7 +442,7 @@ function ImageViewerErrorState({ error }: FallbackProps) {
       <Card className="absolute w-full max-w-md">
         <CardHeader>
           <CardTitle>Failed to load image</CardTitle>
-          <CardDescription>{error.message}</CardDescription>
+          <CardDescription>{errorMessage(error)}</CardDescription>
         </CardHeader>
       </Card>
     </div>
@@ -798,7 +804,9 @@ function ImageViewerCanvasContent({
         centerOnInit
         key={viewerData.texture.uuid}
         limitToBounds={false}
-        onTransformed={(_, state) => {
+        // Renamed from `onTransformed` in react-zoom-pan-pinch 4. Same
+        // arguments, same timing; only the name changed.
+        onTransform={(_ref, state) => {
           setCurrentPosition(state);
         }}
         panning={{ disabled: isSelectionInputEnabled }}
@@ -848,8 +856,12 @@ function ImageViewerCanvasContent({
           </div>
         </TransformComponent>
       </TransformWrapper>
-      <div className="absolute top-4 left-4 z-30 flex items-start gap-2">
-        <div className="pointer-events-none w-56">
+      <div className="absolute top-4 left-4 z-30 flex max-h-[calc(100%-2rem)] items-start gap-2">
+        {/* Bounded and scrollable: a picture carrying the full hdrgen
+            provenance chain has far more header than fits beside it, and the
+            overflow was simply cut off. Pointer events are enabled so it can
+            actually be scrolled, which costs drag-to-pan over this corner. */}
+        <div className="max-h-[calc(100vh-14rem)] w-56 overflow-y-auto">
           <HdrMetadataDetails metadata={viewerData.hdrMetadata} />
         </div>
         <div className="pointer-events-auto flex shrink-0 items-start gap-1">

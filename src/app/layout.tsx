@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import Initialization from "./init";
 import Navigation from "./navigation";
 import { PipelineStatusProvider } from "./pipeline-status-context";
+import { ThemeProvider } from "./theme-provider";
 
 // Define metadata for the application
 export const metadata: Metadata = {
@@ -36,20 +37,40 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={cn(
-          "flex h-screen w-screen flex-col overflow-hidden font-sans"
+          "flex h-screen w-screen flex-col overflow-hidden bg-background font-sans text-foreground"
         )}
       >
-        {/* Initialize the application settings */}
-        <Initialization />
-        {/* Render the navigation bar */}
-        <Navigation />
-        {/* Render the current page content */}
-        <Toaster position="bottom-left" />
-        <NuqsAdapter>
-          <PipelineStatusProvider>
-            <TooltipProvider>{children}</TooltipProvider>
-          </PipelineStatusProvider>
-        </NuqsAdapter>
+        <ThemeProvider>
+          {/*
+            TooltipProvider wraps the navigation as well as the pages. It used
+            to sit inside, which meant a tooltip anywhere in the header threw
+            "Tooltip must be used within TooltipProvider" -- at build time, in
+            a static export, so it failed the build rather than the page.
+          */}
+          <TooltipProvider>
+            {/* Initialize the application settings */}
+            <Initialization />
+            {/* Render the navigation bar */}
+            <Navigation />
+            <Toaster position="bottom-left" />
+            <NuqsAdapter>
+              <PipelineStatusProvider>
+                {/*
+                  Every page gets a bounded box rather than being left to size
+                  itself against the viewport. The body is `h-screen
+                  overflow-hidden` so the generator page can drive its own
+                  resizable panels, which meant any other page taller than the
+                  screen was silently clipped instead of scrolling. `min-h-0`
+                  is the part that matters: without it a flex child refuses to
+                  shrink below its content and hands nothing to overflow.
+                */}
+                <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                  {children}
+                </div>
+              </PipelineStatusProvider>
+            </NuqsAdapter>
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

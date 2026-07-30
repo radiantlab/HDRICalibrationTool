@@ -75,10 +75,28 @@ function MaskViewportImage({
 }) {
   const { size } = use(metadata);
 
+  // Fit inside the viewport without ever violating the image's aspect ratio.
+  //
+  // This was `h-full max-w-full` plus an aspect-ratio, which is height-driven:
+  // the width derives from the height, and on a tall window that derived width
+  // exceeds the dialog, so `max-w-full` clamps it -- and a clamped width with a
+  // fixed height means the box is no longer the image's shape. The overlay
+  // positions the circle and its handle as percentages *of this box*, so the
+  // moment the box stops matching the image, the red circle and the blue
+  // handle drift off the picture. It only showed on taller screens because
+  // that is when the clamp engages.
+  //
+  // `min(100%, 100cqh * ratio)` is the constraint stated directly instead:
+  // as wide as the viewport allows, but never taller than it. Both axes are
+  // satisfied by construction, so nothing clamps and the ratio always holds.
+  const ratio = size[0] / size[1];
+
   return (
     <div
-      className="h-full max-w-full"
-      style={{ aspectRatio: `${size[0]} / ${size[1]}` }}
+      style={{
+        aspectRatio: `${size[0]} / ${size[1]}`,
+        width: `min(100%, calc(100cqh * ${ratio.toFixed(6)}))`,
+      }}
     >
       <ScaledCircularMaskSelection
         centerX={values.centerX}
@@ -129,7 +147,9 @@ export function LensMaskEditor({
         </DialogHeader>
 
         <div
-          className="flex min-h-0 flex-1 items-center justify-center overflow-hidden"
+          // container-type: size so the image box below can size itself
+          // against this box's height in cqh units.
+          className="flex min-h-0 flex-1 items-center justify-center overflow-hidden [container-type:size]"
           data-testid="mask-viewport"
         >
           <Suspense fallback={<Spinner />}>

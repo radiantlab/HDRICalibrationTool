@@ -1,6 +1,6 @@
 import { ArrowDownOnSquareStackIcon } from "@heroicons/react/24/solid";
-import { type DialogFilter, open } from "@tauri-apps/plugin-dialog";
-import { type DirEntry, readDir, stat } from "@tauri-apps/plugin-fs";
+import type { DialogFilter } from "@tauri-apps/plugin-dialog";
+import type { DirEntry } from "@tauri-apps/plugin-fs";
 import path from "path";
 import { useCallback } from "react";
 import {
@@ -22,6 +22,8 @@ import {
   type DropzoneChildrenProps,
   TauriDropzone,
 } from "@/components/ui/tauri-dropzone";
+import { isTauri } from "@/lib/host/env";
+import { pickFiles, pickImageSets } from "@/lib/host/pick";
 import { imageFileExtensions } from "@/lib/image-file-extensions";
 import { cn } from "@/lib/utils";
 import { Field, FieldContent, FieldError } from "./field";
@@ -107,6 +109,31 @@ export function ImageMatrixInput<
         return;
       }
 
+      // Only Tauri produces real paths here: a browser drop registers its
+      // files first and hands over session paths, which are already files and
+      // have no directory to expand. Grouping them by "directory" would be
+      // meaningless, so they become one set named for what was dropped.
+      if (!isTauri()) {
+        field.onChange([
+          ...(value ?? []),
+          {
+            files: files.filter((candidate) => {
+              const extension = path.extname(candidate).slice(1).toLowerCase();
+              const accepted = imageFileExtensions.includes(extension);
+              if (!accepted) {
+                toast.error(
+                  `'${path.basename(candidate)}' is not an acceptable image file`
+                );
+              }
+              return accepted;
+            }),
+            name: "Images",
+          },
+        ]);
+        return;
+      }
+      const { readDir, stat } = await import("@tauri-apps/plugin-fs");
+
       // group by top-level directory name (first segment of path)
       const groups = new Map<string, ImageSet>();
       for (const rawPath of files.toSorted((a, b) => a.localeCompare(b))) {
@@ -144,27 +171,27 @@ export function ImageMatrixInput<
     [field, value, filterForAcceptance]
   );
 
+  // Grouping into sets happens in `pickImageSets`, because it is the part that
+  // differs by host: a directory on the desktop, `webkitRelativePath` in a
+  // browser. `onDrop` below still handles real dropped paths, which only Tauri
+  // produces.
+  const addSets = useCallback(
+    (sets: { files: string[]; name: string }[]) => {
+      if (sets.length === 0) {
+        return;
+      }
+      field.onChange([...(value ?? []), ...sets]);
+    },
+    [field, value]
+  );
+
   const selectFiles = useCallback(async () => {
-    const selectedFiles = await open({
-      directory: false,
-      filters: imageFilters,
-      multiple: true,
-    });
-    if (selectedFiles) {
-      onDrop(selectedFiles);
-    }
-  }, [onDrop]);
+    addSets(await pickImageSets({ directory: false, filters: imageFilters }));
+  }, [addSets]);
 
   const selectMultipleDirectories = useCallback(async () => {
-    const selectedDirectories = await open({
-      directory: true,
-      filters: imageFilters,
-      multiple: true,
-    });
-    if (selectedDirectories) {
-      onDrop(selectedDirectories);
-    }
-  }, [onDrop]);
+    addSets(await pickImageSets({ directory: true, filters: imageFilters }));
+  }, [addSets]);
 
   const { setSelectedImage } = useSelectedImage();
 
@@ -187,12 +214,11 @@ export function ImageMatrixInput<
                 files={row.files.toSorted((a, b) => a.localeCompare(b))}
                 name={row.name}
                 onAdd={async () => {
-                  const newFiles = await open({
-                    directory: false,
+                  const newFiles = await pickFiles({
                     filters: imageFilters,
                     multiple: true,
                   });
-                  if (!newFiles) {
+                  if (newFiles.length === 0) {
                     return;
                   }
 

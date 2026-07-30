@@ -1,6 +1,5 @@
 "use client";
 
-import { open } from "@tauri-apps/plugin-dialog";
 import {
   type Control,
   type FieldValues,
@@ -8,6 +7,7 @@ import {
   useController,
 } from "react-hook-form";
 import { Button, type ButtonProps } from "@/components/ui/button";
+import { pickDirectoryFiles, pickFiles } from "@/lib/host/pick";
 
 interface TauriFileDialogFilter {
   extensions: string[];
@@ -42,16 +42,16 @@ export function TauriFileButtonInput<TFieldValues extends FieldValues>({
     if (disabled) {
       return;
     }
-    const selection = await open({ directory, filters, multiple });
-    if (Array.isArray(selection)) {
-      field.onChange(selection);
-      field.onBlur();
+    // Directory picking returns the files inside rather than the directory
+    // itself: a browser cannot produce a directory path, and every caller
+    // enumerated it immediately anyway.
+    const selection = directory
+      ? await pickDirectoryFiles({ filters })
+      : await pickFiles({ filters, multiple });
+    if (selection.length === 0) {
       return;
     }
-    if (selection === null) {
-      return;
-    }
-    field.onChange(directory || multiple ? [selection] : selection);
+    field.onChange(directory || multiple ? selection : selection[0]);
     field.onBlur();
   }
 

@@ -1,22 +1,21 @@
 import { describe, expect, it } from "@jest/globals";
 import { act, render, screen } from "@testing-library/react";
-
-// Captures the listener the provider registers so the test can push events.
-const listeners: Record<string, (event: { payload: unknown }) => void> = {};
-
-jest.mock("@tauri-apps/api/event", () => ({
-  listen: (name: string, handler: (event: { payload: unknown }) => void) => {
-    listeners[name] = handler;
-    return Promise.resolve(() => undefined);
-  },
-}));
-
-declare const jest: typeof import("@jest/globals").jest;
-
 import {
   PipelineStatusProvider,
   usePipelineStatus,
 } from "../src/app/pipeline-status-context";
+import {
+  emitPipelineEvent,
+  type PipelineEventName,
+} from "../src/lib/host/events";
+
+/**
+ * Status events used to cross a process boundary from the Rust pipeline, so
+ * this had to mock Tauri's `listen` and capture the handler. The pipeline runs
+ * in the page now and the channel is a plain EventTarget, so the test drives
+ * the real one -- which also means it would catch the provider failing to
+ * subscribe at all, where mocking the transport could not.
+ */
 
 function LogView() {
   const { log } = usePipelineStatus();
@@ -52,11 +51,7 @@ function BatchView() {
 }
 
 function emit(name: string, payload: unknown) {
-  const handler = listeners[name];
-  if (!handler) {
-    throw new Error(`no listener registered for ${name}`);
-  }
-  handler({ payload });
+  emitPipelineEvent(name as PipelineEventName, payload);
 }
 
 async function renderProvider() {

@@ -1,0 +1,171 @@
+# Checks the web build: lint, types, unit tests, the static export, and the
+# Playwright suite that drives it in a real browser.
+#
+# This is the one that runs on every push and pull request, because it is the
+# one that covers the whole application. The pipeline is WebAssembly and the
+# frontend is a static export, so a browser exercises the same code the
+# desktop app runs -- the desktop job exists to prove the Tauri shell around it
+# still builds, not to test the pipeline a second time.
+
+name: CI (web)
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  # A newer push makes an in-flight run irrelevant. Not applied to `main`,
+  # where every commit's result is worth keeping.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+  group: ci-web-${{ github.ref }}
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Lint, types and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          # Both lockfiles. Keyed on the root one alone, the Playwright
+          # install in the e2e job is uncached on every run.
+          cache-dependency-path: |
+            package-lock.json
+            e2e-web/package-lock.json
+          node-version: lts/*
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run check
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Unit tests
+        run: npm test -- --ci
+
+      - name: Check versions.json is present and well formed
+        # Not `npm run wasm:versions:check`, which was here and wrong.
+        # That regenerates the file from sibling *fork checkouts*
+        # (`../LibRaw`, `../Radiance`, `../hdrgen`) and compares -- a tool for
+        # whoever rebuilt the artifacts, run from the tree they were built in.
+        # CI has no such checkouts and should not: cloning three forks to
+        # re-derive a committed file would be checking the clone, not the
+        # build. The real check belongs with the rebuild job in #244, which
+        # has those sources by construction.
+        #
+        # What is worth checking here is that the file the Settings page reads
+        # actually shipped and parses, since an export missing it renders fine
+        # and simply stops saying which Radiance produced your luminance map.
+        run: |
+          node -e "
+            const v = require('./public/wasm/versions.json');
+            const tools = Object.keys(v.tools ?? {});
+            if (tools.length === 0) { throw new Error('versions.json lists no tools'); }
+            for (const [name, tool] of Object.entries(v.tools)) {
+              if (!tool.version) { throw new Error(name + ' has no version'); }
+            }
+            console.log('versions.json describes ' + tools.length + ' tools:', tools.join(', '));
+          "
+
+  build:
+    name: Static export
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          # Both lockfiles. Keyed on the root one alone, the Playwright
+          # install in the e2e job is uncached on every run.
+          cache-dependency-path: |
+            package-lock.json
+            e2e-web/package-lock.json
+          node-version: lts/*
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Check the export is actually servable
+        # A static export with no index.html 404s at the root, which is the
+        # first thing a visitor sees and the last thing a build log mentions.
+        run: |
+          test -f out/index.html
+          test -f out/home-page.html
+          test -f out/wasm/versions.json
+          test -f out/wasm/hdrgen.wasm
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-build
+          path: out
+          retention-days: 7
+
+  e2e:
+    name: End-to-end (${{ matrix.project }})
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # WebKit first in the list and first in the config, deliberately.
+        # Safari implements no part of the File System Access API, so it takes
+        # the plain file-input and download path -- which is the path this
+        # application ships to everyone.
+        project: [webkit, chromium]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          cache: npm
+          # Both lockfiles. Keyed on the root one alone, the Playwright
+          # install in the e2e job is uncached on every run.
+          cache-dependency-path: |
+            package-lock.json
+            e2e-web/package-lock.json
+          node-version: lts/*
+
+      - name: Reuse the export from the build job
+        # Rather than rebuilding per browser. It is the same bytes either way,
+        # and this is the artifact that would actually be deployed.
+        uses: actions/download-artifact@v8
+        with:
+          name: web-build
+          path: out
+
+      # `working-directory` rather than `npm --prefix`. `--prefix` moves where
+      # npm resolves packages, not the working directory, so Playwright looked
+      # for its config at the repository root, found none, and reported
+      # `Available projects: ""`.
+      - name: Install
+        run: npm ci
+        working-directory: e2e-web
+
+      - name: Install browsers
+        run: npx playwright install --with-deps ${{ matrix.project }}
+        working-directory: e2e-web
+
+      - name: Run
+        run: npx playwright test --project=${{ matrix.project }}
+        working-directory: e2e-web
+
+      - if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-${{ matrix.project }}
+          path: |
+            e2e-web/playwright-report
+            e2e-web/test-results
+          retention-days: 7
