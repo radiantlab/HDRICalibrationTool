@@ -1,7 +1,7 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { readFile } from "@tauri-apps/plugin-fs";
 import path from "path";
 import { useMemo } from "react";
+import { tauriRawIo } from "./raw-io-tauri";
 import { rawToTiff } from "./raw-preview";
 import { getTiffMetadata } from "./tiff-worker-client";
 
@@ -57,7 +57,7 @@ function getTiffImageMetadata(
   // Shares `raw-preview`'s cache with the on-screen preview, so opening an
   // image does not convert it twice -- once for its dimensions and once to
   // draw it.
-  return rawToTiff(fsPath, (source) => readFile(source)).then(async (u8) => {
+  return rawToTiff(fsPath, tauriRawIo).then(async (u8) => {
     const { buffer } = u8;
     const { width, height } = await getTiffMetadata(buffer, {
       memoryBytes: Math.max(

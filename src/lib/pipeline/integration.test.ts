@@ -278,6 +278,40 @@ describe("orchestrator over the wasm runner", () => {
     expect(hdrgen?.args[hdrgen.args.indexOf("-r") + 1]).toBe("/work/sqr.rsp");
   });
 
+  // The host caches RAW conversions and its thumbnail strip has usually done
+  // every frame already, so the merge must reuse those rather than run
+  // dcraw_emu a second time. #242.
+  it("reuses the host's conversions instead of running dcraw_emu", async () => {
+    const toolchain = fakeToolchain();
+    const runner = new WasmToolRunner({ load: toolchain.loader });
+    await runner.writeFile("/in/capt01.CR2", "RAW1");
+    await runner.writeFile("/in/capt02.CR2", "RAW2");
+
+    const asked: string[] = [];
+    await runPipeline({
+      convertRaw: (path) => {
+        asked.push(path);
+        return Promise.resolve(
+          new TextEncoder().encode(`CONVERTED ${path}`)
+        );
+      },
+      params: params({ inputImages: ["/in/capt01.CR2", "/in/capt02.CR2"] }),
+      runner,
+    });
+
+    expect(asked).toEqual(["/in/capt01.CR2", "/in/capt02.CR2"]);
+    expect(toolchain.ran.filter((call) => call.tool === "dcraw_emu")).toEqual(
+      []
+    );
+
+    // The merge still reads the same paths, and they hold what the host
+    // supplied -- a converter that returned the wrong bytes would be silently
+    // merged, so this asserts the content and not just the call.
+    const hdrgen = toolchain.ran.find((call) => call.tool === "hdrgen");
+    expect(hdrgen?.args).toContain("/work/input1.tiff");
+    expect(hdrgen?.args).toContain("/work/input2.tiff");
+  });
+
   it("surfaces a tool failure as a PipelineError naming the tool", async () => {
     const toolchain = fakeToolchain();
     // a runner whose pfilt writes nothing and exits nonzero

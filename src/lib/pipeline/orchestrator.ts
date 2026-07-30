@@ -113,6 +113,20 @@ class Progress {
 
 export interface RunOptions {
   /**
+   * Converts one RAW file to TIFF, if the host has a shared way to do it.
+   *
+   * Optional, and this module runs `dcraw_emu` itself when it is absent, so
+   * nothing here depends on the host having a cache. What it buys when present
+   * is that the app's thumbnail strip has usually already converted every
+   * frame in the set -- `image-set-preview.tsx` renders one per file -- and
+   * without this the merge would convert all of them a second time, ~20 s and
+   * 673 MB of repetition on a 10-frame CR2 bracket. See #242.
+   *
+   * The result must be byte-identical to running `dcrawArgs` here, because it
+   * is what hdrgen merges and therefore what the measurement is made of.
+   */
+  convertRaw?: (path: string) => Promise<Uint8Array>;
+  /**
    * Decodes a JPEG to RGBA. Required only when `filterImages` is set, since
    * that is the one stage needing pixels rather than a wasm tool. Injected so
    * this module stays host-agnostic: the app supplies `createImageBitmap`.
@@ -131,6 +145,7 @@ export async function runPipeline({
   emit = () => undefined,
   shouldStop = () => false,
   decodeImage,
+  convertRaw,
 }: RunOptions): Promise<PipelineResult> {
   validate(params);
 
@@ -161,7 +176,8 @@ export async function runPipeline({
     runner,
     params,
     emit,
-    decodeImage
+    decodeImage,
+    convertRaw
   );
   await run(
     runner,
@@ -474,7 +490,8 @@ async function prepareInputs(
   runner: ToolRunner,
   params: PipelineParams,
   emit: StatusEmitter,
-  decodeImage?: DecodeImage
+  decodeImage?: DecodeImage,
+  convertRaw?: (path: string) => Promise<Uint8Array>
 ): Promise<{
   /** Paths the merge reads and nothing after it does. */
   consumed: string[];
@@ -501,8 +518,14 @@ async function prepareInputs(
   for (const image of params.inputImages) {
     index += 1;
     const output = workPath(`input${index}.tiff`);
-    // biome-ignore lint/performance/noAwaitInLoops: each conversion holds a full frame; running them one at a time is what lets each module instance be discarded and its memory reclaimed
-    await run(runner, "dcraw_emu", dcrawArgs(image, output));
+    if (convertRaw) {
+      // Staged by reference rather than copied, so a frame the host already
+      // converted for its thumbnail costs nothing to reuse here.
+      // biome-ignore lint/performance/noAwaitInLoops: same reason as below -- one full frame resident at a time
+      await runner.writeFile(output, await convertRaw(image));
+    } else {
+      await run(runner, "dcraw_emu", dcrawArgs(image, output));
+    }
     converted.push(output);
   }
 

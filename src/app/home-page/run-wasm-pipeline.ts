@@ -14,6 +14,8 @@
 import { emit } from "@tauri-apps/api/event";
 import { readFile, writeFile } from "@tauri-apps/plugin-fs";
 import type { DecodedImage } from "@/lib/pipeline/filter-images";
+import { tauriRawIo } from "@/lib/raw-io-tauri";
+import { rawToTiff } from "@/lib/raw-preview";
 import { runPipeline } from "@/lib/pipeline/orchestrator";
 import {
   completionMessage,
@@ -170,6 +172,11 @@ export async function runWasmPipeline({
   }
 
   const result = await run({
+    // The thumbnail strip has usually converted every frame in the set
+    // already, so this is a cache hit per frame rather than a second pass of
+    // dcraw_emu. Same function, same flags, so the bytes hdrgen merges are the
+    // bytes the user was shown. See #242.
+    convertRaw: (path) => rawToTiff(path, tauriRawIo),
     decodeImage,
     // Deliberately not awaited: a status event is a notification, and making
     // every stage wait on the UI would serialise the run behind rendering.
