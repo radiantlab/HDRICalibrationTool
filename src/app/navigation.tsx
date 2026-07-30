@@ -10,10 +10,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { appInfo } from "@/lib/host/env";
-import { ThemeToggle } from "./theme-toggle";
-import { openExternal } from "@/lib/host/open-external";
 import { useEffect, useState } from "react";
+import { appInfo } from "@/lib/host/env";
+import { openExternal } from "@/lib/host/open-external";
+import { ThemeToggle } from "./theme-toggle";
 
 /**
  * Main navigation component for the application
@@ -40,8 +40,8 @@ export default function Navigation() {
       {/* Top header with app logo and version information */}
       <div className="h-20 w-full bg-card">
         <div className="mr-8 ml-8 flex h-full items-center justify-between border-border border-b">
-          {/* Logo and app name */}
-          <div className="flex items-center" id="logo">
+          {/* Logo and app name, flush left */}
+          <div className="flex min-w-0 items-center gap-3" id="logo">
             {/*
               Two files rather than one, swapped on the theme class. The mark's
               darkest blade is near-black, which measures 1.11:1 against the
@@ -52,41 +52,45 @@ export default function Navigation() {
 
               The src is absolute. It was relative, which resolved against the
               current directory and so 404'd on /image-viewer/view.
+
+              `w-10` matters as much as `h-10`. The width attribute is 512, and
+              a CSS height alone does not override it, so the box stayed 512px
+              wide with `object-contain` letterboxing the mark inside it. The
+              logo looked right and pushed the title 524px off the left edge.
             */}
             <img
               alt=""
-              className="mr-3 h-10 object-contain dark:hidden"
+              className="h-10 w-10 shrink-0 dark:hidden"
               height={512}
               src="/logo/a-exposure-stack.svg"
               width={512}
             />
             <img
               alt=""
-              className="mr-3 hidden h-10 object-contain dark:block"
+              className="hidden h-10 w-10 shrink-0 dark:block"
               height={512}
               src="/logo/a-exposure-stack-dark.svg"
               width={512}
             />
-            <h1 className="font-bold text-2xl">{appName}</h1>
+            <h1 className="truncate font-bold text-2xl">{appName}</h1>
           </div>
-          <div className="flex items-center gap-3 text-right text-muted-foreground text-sm">
+          {/* Theme toggle and tutorial link, flush right */}
+          <div className="flex shrink-0 items-center gap-4 text-muted-foreground text-sm">
             <ThemeToggle />
             {/* The pipeline follows this tutorial step by step, and several
                 fields cite its sections, so the open-access original has to be
                 reachable from inside the app for those citations to be useful. */}
-            <div>
-              <button
-                className="underline hover:text-foreground"
-                onClick={() =>
-                  openExternal(
-                    "https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319"
-                  )
-                }
-                type="button"
-              >
-                Luminance Maps tutorial
-              </button>
-            </div>
+            <button
+              className="underline hover:text-foreground"
+              onClick={() =>
+                openExternal(
+                  "https://www.tandfonline.com/doi/full/10.1080/15502724.2019.1684319"
+                )
+              }
+              type="button"
+            >
+              Luminance Maps tutorial
+            </button>
           </div>
         </div>
       </div>
