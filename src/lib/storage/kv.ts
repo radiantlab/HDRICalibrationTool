@@ -103,6 +103,42 @@ export function deleteDocument(key: string): Promise<unknown> {
 }
 
 /**
+ * Reads, changes and writes a document inside one transaction.
+ *
+ * `run()` issues a single request per transaction, so `getDocument` followed
+ * by `putDocument` is two transactions with a window between them. The RAW
+ * cache index is written by the worker on every conversion and cleared from
+ * the settings page, and a lost update there means a leaked blob nothing will
+ * ever evict.
+ */
+export function updateDocument<T>(
+  key: string,
+  change: (current: T | undefined) => T
+): Promise<T> {
+  return open().then(
+    (database) =>
+      new Promise<T>((resolve, reject) => {
+        const transaction = database.transaction(DOCUMENTS, "readwrite");
+        const store = transaction.objectStore(DOCUMENTS);
+        const read = store.get(key);
+        let written: T;
+        read.onsuccess = () => {
+          written = change(read.result as T | undefined);
+          store.put(written, key);
+        };
+        read.onerror = () =>
+          reject(read.error ?? new Error(`${DOCUMENTS}: read failed`));
+        // Resolved on the transaction, not the put: the write is only durable
+        // once the transaction commits, and a quota abort can follow a
+        // successful request.
+        transaction.oncomplete = () => resolve(written);
+        transaction.onabort = () =>
+          reject(transaction.error ?? new Error(`${DOCUMENTS}: aborted`));
+      })
+  );
+}
+
+/**
  * Reads a stored file.
  *
  * Returns a fresh view each time. IndexedDB structured-clones on the way out,

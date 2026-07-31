@@ -21,6 +21,14 @@ const { TextDecoder, TextEncoder } = require("node:util");
 global.TextEncoder = global.TextEncoder || TextEncoder;
 global.TextDecoder = global.TextDecoder || TextDecoder;
 
+// jsdom does not implement structuredClone, which fake-indexeddb uses to
+// clone values into and out of the store, the same way a browser's real
+// IndexedDB does. v8's own serializer round-trip clones the same set of
+// types the structured clone algorithm does, so it stands in faithfully.
+const v8 = require("node:v8");
+global.structuredClone =
+  global.structuredClone || ((value) => v8.deserialize(v8.serialize(value)));
+
 // jsdom exposes crypto but not crypto.subtle, which preset hashing uses.
 const { webcrypto } = require("node:crypto");
 if (!globalThis.crypto?.subtle) {
