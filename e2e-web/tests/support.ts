@@ -26,6 +26,13 @@ export const jpegFiles = readdirSync(jpegDirectory)
   .toSorted()
   .map((name) => path.join(jpegDirectory, name));
 
+export const cr2Directory = path.join(inputsDirectory, "CR2");
+
+export const cr2Files = readdirSync(cr2Directory)
+  .filter((name) => path.extname(name).toLowerCase() === ".cr2")
+  .toSorted()
+  .map((name) => path.join(cr2Directory, name));
+
 export const responseFunction = path.join(
   inputsDirectory,
   "response_function_files",
@@ -162,6 +169,22 @@ export async function loadJpegBracket(page: Page): Promise<void> {
   await expect(
     page.locator('[data-testid="image-set-preview"] .generic-image-container')
   ).toHaveCount(jpegFiles.length, { timeout: 30_000 });
+}
+
+/**
+ * Loads the first `count` frames of the CR2 bracket and waits for thumbnails.
+ *
+ * A subset rather than all ten. Each frame is 21.7 MB and takes about 1.9 s to
+ * demosaic, so the full bracket is ~290 MB and ~19 s -- more than this test
+ * needs to say what it is asserting. Three frames is ~6 s of conversion, which
+ * a main-thread implementation cannot hide from a 100 ms heartbeat.
+ */
+export async function loadCr2Frames(page: Page, count: number): Promise<void> {
+  const frames = cr2Files.slice(0, count);
+  await choose(page, () => page.locator("#image-matrix-input").click(), frames);
+  await expect(
+    page.locator('[data-testid="image-set-preview"] .generic-image-container')
+  ).toHaveCount(frames.length, { timeout: 180_000 });
 }
 
 /**
