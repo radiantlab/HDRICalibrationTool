@@ -140,8 +140,10 @@ test(`${MODE} against ${TARGET}`, async ({ page }) => {
 
     // The point of #243, measured rather than asserted: reload, re-import the
     // same frames, and the conversion should not happen again. Same files, so
-    // the content hash matches; a new tab, so the session tier is empty and
-    // only the persistent tier can produce the saving.
+    // the content hash matches; a reload discards the JS realm, so
+    // raw-preview.ts's module-level session cache and the RAW worker both
+    // start fresh -- leaving the persistent tier as the only possible source
+    // of a saving.
     await page.reload({ waitUntil: "load" });
     const secondStart = Date.now();
     await loadCr2Frames(page, FRAMES);

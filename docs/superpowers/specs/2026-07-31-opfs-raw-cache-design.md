@@ -457,9 +457,14 @@ inflated numbers, which applies to `npm run build`'s Turbopack dev server too).
 | ratio (second / first) | 21.5% | 20.2% |
 | `requests.wasm` | 4 | 4 |
 
-Three repeated 3-frame runs are reported individually because a single sample
-was not enough to trust against the 5968 ms baseline below; ten frames was run
-once, at ~26 s for the pair, well within reasonable time.
+Three 3-frame runs are reported individually because a single sample was not
+enough to trust against the 5968 ms baseline below; ten frames was run once,
+at ~26 s for the pair, well within reasonable time. A fourth 3-frame run's raw
+JSON was lost to output truncation before it was saved -- its `requests.wasm`
+shape was confirmed identical (one `dcraw_emu.js`, one `dcraw_emu.wasm`, two
+`versions.json`) but its `runMs`/`secondImportMs` pair was not recovered, so
+it is excluded rather than guessed at. The averages above are three runs, not
+four.
 
 **`secondImportMs` falls to about a fifth of `runMs`, at both frame counts.**
 The demosaic (~1.9 s/frame) is skipped entirely; what remains is the
@@ -489,17 +494,30 @@ the second `versions.json` above shows `kb: 0`, a cache hit that still
 produced an event -- so the *absence* of a second `dcraw_emu.wasm` entry is
 not the listener missing a cached fetch, it is `convertRaw` never running.
 
-**A control run confirms the comparison is real.** Temporarily reverting
-`raw-worker.ts` to its pre-cache form (`git show 390bbf2^:src/lib/raw-worker.ts`)
-and rebuilding gives, for 3 frames: `runMs` 8036 ms, `secondImportMs` 7944 ms
--- equal within noise, because nothing is cached, and `dcraw_emu.js`/`.wasm`
-each fetched twice (once per import, the second served from the HTTP cache at
-`kb: 0`). This is also the closest available reproduction of the pre-cache
-baseline: this sandbox's `runMs` runs 8000-9200 ms for 3 frames on both the
-cached and uncached worker, well above the 5968 ms recorded elsewhere, so the
-gap from 5968 is environment speed, not the persistent tier's write cost --
-the write happens on every first-import frame here too and the number is the
-same with and without it.
+**A control run confirms the reload comparison is real.** Temporarily
+reverting `raw-worker.ts` to its pre-cache form
+(`git show 390bbf2^:src/lib/raw-worker.ts`) and rebuilding gives, for 3
+frames: `runMs` 8036 ms, `secondImportMs` 7944 ms -- equal within noise,
+because nothing is cached, and `dcraw_emu.js`/`.wasm` each fetched twice
+(once per import, the second served from the HTTP cache at `kb: 0`). That is
+the acceptance-criterion comparison this task exists to make, and it holds.
+
+**What the control does *not* settle: why `runMs` itself (8456-10094 ms,
+3-frame) runs above the 5968 ms baseline measured earlier today.** The
+control's 8036 ms is a **single sample**, and it happens to be the fastest of
+all four cache-on/cache-off runs recorded in this session -- one data point
+below a three-run cache-on spread does not distinguish "this environment
+generally runs slower than whatever host measured 5968 ms" from "the
+persistent write adds a modest cost to the first import that the control
+happened to under-sample." Both are consistent with what was measured; only
+the first is consistent with the *design*, since the write is documented at
+~100 ms/frame (see "Cost" above `crypto.subtle.digest`'s estimate, and the
+"Step 4 must precede step 5" note), which would be too small to explain a
+~1200-2100 ms gap on its own -- but "too small on paper" is not the same as
+measured. Settling it would need several more cache-off control runs at the
+same n as the cache-on runs, ideally on the same host that produced 5968 ms,
+which this pass did not attempt because it would not change the reload
+result above. Left here as an open question rather than resolved.
 
 ## What does not change
 
