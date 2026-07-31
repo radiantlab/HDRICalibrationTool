@@ -190,10 +190,11 @@ test("the page stays responsive while the pipeline runs", async ({ page }) => {
  * mount in 152 ms (measured, worker build, three frames) -- long before any
  * conversion finishes. The completion signal this test actually needs is the
  * `<canvas>` each thumbnail appends once it has converted and decoded (below).
- * Measured with the conversion forced back onto the main thread (`git
- * checkout HEAD~2 -- src/lib/raw-preview.ts`, see task 4's report for the
- * exact commit): worst gap 4954.8 ms. With the worker: 121 ms in WebKit,
- * 100.9 ms in Chromium.
+ * Measured with the conversion forced back onto the main thread (commit
+ * `fac1907`, the last commit where `raw-preview.ts` still called
+ * `inlineTiffFor` synchronously instead of the worker): worst gap 4954.8 ms.
+ * With the worker: 121 ms in WebKit, 100.9 ms in Chromium -- both comfortably
+ * under the 1000 ms bound below, which is why that bound is the right one.
  */
 test("the page stays responsive while RAW thumbnails are converted", async ({
   page,
