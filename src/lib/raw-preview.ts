@@ -4,7 +4,7 @@
  * This is the only place a RAW file is demosaiced. Both consumers go through
  * it: the viewer's thumbnails and the pipeline's merge stage. The conversion
  * itself, and the `dcrawArgs` that drive it, live in `raw-convert.ts`; this
- * file reaches them through `convertRaw` (by default -- see `inlineTiffFor`
+ * file reaches them through `convertRaw` (by default -- see `workerTiffFor`
  * below) rather than restating them, so the TIFF the preview shows and the
  * TIFF hdrgen merges are byte-identical (verified: sha256 8137c98a... from the
  * browser preview path, the pipeline, and a native build alike). There is one
@@ -26,15 +26,24 @@
  * for a preview-only shortcut to reach for.
  */
 
-import {
-  urlModuleCompiler,
-  urlModuleLoader,
-  WasmToolRunner,
-} from "./pipeline/wasm-runner";
-import { convertRaw } from "./raw-convert";
+import { convertRawInWorker } from "./raw-worker-client";
 
-/** Where the browser builds are served from. See `public/wasm/README.md`. */
-const WASM_BASE_URL = "/wasm";
+/**
+ * Where the browser builds are served from. See `public/wasm/README.md`.
+ *
+ * Resolved against the document rather than left relative, because a worker's
+ * own base URL is the chunk it was loaded from, which is not where the
+ * artifacts live.
+ */
+function wasmBaseUrl(): string {
+  return new URL("/wasm", globalThis.location?.href ?? "http://localhost/")
+    .href;
+}
+
+/** The default converter: the worker. Tests inject their own. */
+function workerTiffFor(path: string, bytes: Uint8Array): Promise<Uint8Array> {
+  return convertRawInWorker(path, bytes, wasmBaseUrl());
+}
 
 /**
  * How much converted TIFF to keep.
@@ -66,10 +75,10 @@ export interface RawSourceIo {
   /**
    * Converts one frame, given its path and its bytes.
    *
-   * This is the seam, rather than the `ModuleLoader` it replaced, because a
-   * later change moves conversion into a worker and a function cannot cross
-   * `postMessage`. Defaults to a runner in this thread (`inlineTiffFor`); the
-   * worker replaces that default in the next task. Tests inject their own.
+   * This is the seam, rather than the `ModuleLoader` it replaced, because
+   * conversion runs in a worker and a function cannot cross `postMessage`.
+   * Defaults to `workerTiffFor`, which drives that worker. Tests inject their
+   * own.
    *
    * Named for what it returns rather than what it does: under #243 it will
    * often answer from OPFS without converting anything.
@@ -171,33 +180,13 @@ async function convert(
   io: RawSourceIo
 ): Promise<Uint8Array<ArrayBuffer>> {
   const bytes = await io.readFile(path);
-  const tiff = await (io.tiffFor ?? inlineTiffFor)(path, bytes);
+  const tiff = await (io.tiffFor ?? workerTiffFor)(path, bytes);
   // MEMFS hands back a plain ArrayBuffer-backed view, never a SharedArrayBuffer
   // -- these builds are single-threaded, which is what keeps them hostable
   // without COOP/COEP headers, and a page served without those headers does
   // not even define SharedArrayBuffer. Narrowed here so callers can pass
   // `.buffer` straight to the tiff worker instead of copying it.
   return tiff as Uint8Array<ArrayBuffer>;
-}
-
-/**
- * The default converter: a runner in this thread.
- *
- * Replaced by the worker in the next task. It exists as its own function so
- * that swap is a one-line change rather than a rewrite of `convert`.
- */
-async function inlineTiffFor(
-  path: string,
-  bytes: Uint8Array
-): Promise<Uint8Array> {
-  const runner = new WasmToolRunner({
-    compile: urlModuleCompiler(WASM_BASE_URL),
-    load: urlModuleLoader(WASM_BASE_URL),
-  });
-  const tiff = await convertRaw(runner, path, bytes);
-  // Frees the source and the runner's own reference.
-  runner.clear();
-  return tiff;
 }
 
 /**
