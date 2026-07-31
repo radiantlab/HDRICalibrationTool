@@ -177,54 +177,98 @@ static export (`npm run build`, then `npx playwright test
 tests/storage-probe.spec.ts --project=<name>` from `e2e-web`). Two of the five
 engines the decision rules need; the other three are below.
 
-| Host | opfsAvailable | opfsRoundTrips | opfsWriteMs | opfsSync.available | opfsSync.writeMs | quota | idbWriteMs | errors |
-|---|---|---|---|---|---|---|---|---|
-| WebKit (Playwright, macOS) | true | false | -- | true | -- | 1000 MB | 186 | `UnknownError: The operation failed for an unknown transient reason (e.g. out of memory).` -- identical on both write paths |
-| Chromium (Playwright, macOS) | true | true | 78 | true | 115 | 4096 MB | 41 | none |
-| WKWebView (macOS, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
-| WebView2 (Windows, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
-| WebKitGTK (Linux, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
+The spec now runs each OPFS write path twice: once as a single call across the
+whole 67 MB blob, once as 8 MB slices through the same handle
+(`opfsChunkedWriteMs`, `opfsSyncChunked`). Chunking is the standard mitigation
+for a large OPFS write, and a chunked pass that survives where the
+single-shot one failed would point at the call shape rather than at OPFS
+itself -- see the spec's module docstring.
 
-**Chromium round-trips cleanly.** Both write paths succeed, and the 67 MB
-readback matches the source byte-for-byte.
+| Host | opfsAvailable | opfsRoundTrips | opfsWriteMs | opfsChunkedRoundTrips | opfsChunkedWriteMs | opfsSync.writeMs | opfsSyncChunked.writeMs | quota | idbWriteMs | errors |
+|---|---|---|---|---|---|---|---|---|---|---|
+| WebKit (Playwright, macOS) | true | false | -- | inconclusive | -- | -- | -- | 1000 MB | 169-296 | see below -- host-level, not a finding about OPFS |
+| Chromium (Playwright, macOS) | true | true | 78-103 | true | 97 | 115-179 | 120 | 3072-4096 MB | 41-66 | none |
+| WKWebView (macOS, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
+| WebView2 (Windows, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
+| WebKitGTK (Linux, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
 
-**WebKit's OPFS write fails, on both paths, with the same error.** Not a
-missing API -- `opfsAvailable` and `opfsSync.available` both report `true` --
-and not naive quota exhaustion at 67 MB under a reported 1000 MB quota. The
-main-thread `createWritable` call and the worker's `createSyncAccessHandle`
-call raise the identical `UnknownError` independently, which points at
-something WebKit's OPFS implementation does at this blob size rather than at
-either API path specifically. This is Playwright's bundled WebKit on macOS in
-an ephemeral profile, not WKWebView -- the row the "OPFS fails on any engine
--> B" rule actually needs. If it reproduces on WKWebView, that rule fires and
-the backend is B. If WKWebView round-trips cleanly, the WebKit-only failure
-does not by itself decide anything, since the rule is stated per engine and
-WebKit is not one of the five it names.
+Chromium and WebKit each show a range because the spec was run more than
+once while diagnosing the WebKit result below; the numbers move host-load to
+host-load but the pass/fail outcome was stable across every Chromium run and
+every WebKit run.
 
-**The write-path timing is not comparable as instrumented.** `opfsSync.writeMs`
-brackets only `access.write` + `flush` inside the worker, on a freshly
-allocated all-zero buffer; `opfsWriteMs` brackets `write` + `close` on the main
-thread, on the patterned source buffer. Different spans, different payloads.
-Chromium's 115 ms vs. 78 ms cannot be read as "`createWritable` is faster" or
-fed into the 2x rule under "Write path" above -- a rerun timing the same span
-over the same bytes would be needed before that comparison means anything.
+**Chromium round-trips cleanly on all four paths, single-shot and chunked,
+main thread and worker.** All four writes -- `createWritable` single-shot,
+`createWritable` chunked, `createSyncAccessHandle` single-shot,
+`createSyncAccessHandle` chunked -- complete and read back byte-identical.
+This is the one clean chunked-vs-single-shot comparison available so far: the
+chunked writer's code path is correct, and on an engine that already handles
+the single-shot write, chunking neither breaks anything nor buys much
+(97 ms vs. 78-103 ms for `createWritable`; 120 ms vs. 115-179 ms for
+`createSyncAccessHandle` -- see the timing-comparability caveat below before
+reading either pair as a real speed difference).
+
+**The WebKit row above needs correction from what an earlier version of this
+document said, and the correction is the more important result of this
+pass.** The original single-shot run (recorded when this section was first
+written) failed with `UnknownError: The operation failed for an unknown
+transient reason (e.g. out of memory).` on a 67 MB write, and that entry read
+this as "not naive quota exhaustion at 67 MB," reasoning from the blob size
+against a reported 1000 MB quota. Chasing whether chunking fixed that led to
+a machine-level check that overturns the "at 67 MB" framing entirely: a
+follow-up run of a **4-byte** OPFS write, on the same host, in the same
+session, failed with the *identical* `UnknownError`, at the *same* stage
+(`navigator.storage.getDirectory()`, before any write is attempted at all).
+`memory_pressure` on the host at the time showed roughly 60-230 MB of a 16 GB
+machine free across repeated checks, with 9.3M page-outs already recorded --
+this is a real desktop under its owner's normal multi-app load, not a CI
+runner reserved for the test. A host that cannot open the OPFS root directory
+for 4 bytes cannot tell you anything about whether it can write 67 MB in one
+call versus eight -- both the original single-shot number and the new chunked
+one are **confounded by host memory pressure, not evidence about WebKit's
+OPFS implementation**. Both are marked accordingly in the table rather than
+left to read as findings.
+
+This is Playwright's bundled WebKit on macOS in an ephemeral profile, not
+WKWebView -- the row the "OPFS fails on any engine -> B" rule actually needs,
+and it needs a result from an unloaded host (CI, or this same machine at
+rest) before it counts as one. If WKWebView fails the same way on a host that
+also fails a 4-byte control write, that is the same confound repeated, not
+independent confirmation. If WKWebView fails while a same-session 4-byte
+control succeeds, that is a real, engine-level finding and the "any engine"
+rule fires. If WKWebView round-trips cleanly, the WebKit-only result does not
+decide anything on its own, since the rule is stated per engine and WebKit is
+not one of the five it names.
+
+**The write-path timing is not comparable as instrumented, independent of the
+confound above.** `opfsSync.writeMs` brackets only `access.write` + `flush`
+inside the worker, on a freshly allocated all-zero buffer; `opfsWriteMs`
+brackets `write` + `close` on the main thread, on the patterned source buffer.
+Different spans, different payloads. The same gap exists between
+`opfsSyncChunked.writeMs` and `opfsChunkedWriteMs`. None of Chromium's four
+numbers should be fed into the 2x rule under "Write path" above -- a rerun
+timing the same span over the same bytes would be needed before any pair of
+them means anything.
 
 **`idbRoundTrips` is not in the table above deliberately.** The probe never
 reads the value back from IndexedDB; it treats the write transaction's
 `oncomplete` as success. Both engines report a completed write and no
-`idbError`, which is weaker than OPFS's actual byte comparison and shouldn't
-be read as equivalent verification.
+`idbError` on every run, which is weaker than OPFS's actual byte comparison
+and shouldn't be read as equivalent verification.
 
-**Still needed:** all three Tauri webviews. `e2e-tests/test/specs/storage-probe.e2e.ts`
-exists, ports the same probe body to `browser.execute`, and type-checks
-(`npx tsc --noEmit` from `e2e-tests`), but has not run anywhere -- it needs the
-debug Tauri binary that `wdio.conf.js`'s `onPrepare` builds
+**Still needed:** an unloaded rerun of the WebKit case (the current numbers
+are confounded, not negative), plus all three Tauri webviews.
+`e2e-tests/test/specs/storage-probe.e2e.ts` exists, ports the same probe body
+(including the chunked paths) to `browser.execute`, and type-checks
+(`npx tsc --noEmit` from `e2e-tests`), but has not run anywhere -- it needs
+the debug Tauri binary that `wdio.conf.js`'s `onPrepare` builds
 (`npm run tauri build -- --debug --no-bundle --features e2e-driver`), which
 this pass did not produce. WKWebView can run locally afterward with
 `npm run test:e2e:desktop` on macOS; WebView2 and WebKitGTK need the
-`e2e-tests` CI job on its Windows and Ubuntu runners. Until those three rows
-are filled in, neither the backend (A vs. B) nor the write path can be decided
--- this section is what the decision needs, not the decision itself.
+`e2e-tests` CI job on its Windows and Ubuntu runners. Until those rows are
+filled in from a host that also passes the 4-byte control, neither the
+backend (A vs. B) nor the write path can be decided -- this section is what
+the decision needs, not the decision itself.
 
 ## Components
 
