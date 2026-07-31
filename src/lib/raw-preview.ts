@@ -24,19 +24,16 @@
  * pipeline measures. Hence one `dcrawArgs`, used by both.
  */
 
-import { dcrawArgs, workPath } from "./pipeline/stages";
 import type { ModuleLoader } from "./pipeline/wasm-runner";
 import {
   urlModuleCompiler,
   urlModuleLoader,
   WasmToolRunner,
 } from "./pipeline/wasm-runner";
+import { convertRaw } from "./raw-convert";
 
 /** Where the browser builds are served from. See `public/wasm/README.md`. */
 const WASM_BASE_URL = "/wasm";
-
-/** Either separator, so a Windows path keeps working unchanged. */
-const PATH_SEPARATOR = /[\\/]/;
 
 /**
  * How much converted TIFF to keep.
@@ -168,21 +165,7 @@ async function convert(
     load: io.load ?? urlModuleLoader(WASM_BASE_URL),
   });
 
-  // The name is kept because a path outside /work would need its parent
-  // directories created, and dcraw_emu reports errors against it.
-  const input = workPath(baseName(path));
-  const output = workPath("preview.tiff");
-
-  await runner.writeFile(input, bytes);
-  const result = await runner.run("dcraw_emu", dcrawArgs(input, output));
-  if (result.code !== 0) {
-    throw new Error(
-      `dcraw_emu could not convert ${path} (exit ${result.code})` +
-        (result.stderr ? `: ${result.stderr.trim()}` : "")
-    );
-  }
-
-  const tiff = await runner.readFile(output);
+  const tiff = await convertRaw(runner, path, bytes);
   // Frees the source and the runner's own reference. What the cache hands out
   // afterwards is this same buffer, never a copy.
   runner.clear();
@@ -229,9 +212,4 @@ export function clearRawPreviewCache(): void {
 /** Bytes of converted TIFF currently held. Exposed for tests and diagnostics. */
 export function rawCacheBytes(): number {
   return held;
-}
-
-function baseName(path: string): string {
-  const parts = path.split(PATH_SEPARATOR);
-  return parts.at(-1) || "input.raw";
 }
