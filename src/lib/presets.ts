@@ -1,7 +1,11 @@
 import type { pipelineConfig } from "@/app/home-page/(pipeline-configuration)/config-provider";
 import { readJson, writeJson } from "./app-storage";
+// biome-ignore lint/style/noExportedImports: the module uses this internally and re-exports for backward compatibility
+import { sha256Hex } from "./hash";
 import { deleteFile, fileKeys, putFile } from "./storage/kv";
 import { presetPath, storedKey } from "./vfs";
+
+export { sha256Hex };
 
 /**
  * Reads a source calibration file.
@@ -74,13 +78,6 @@ export function presetId(name: string): string {
     .replace(NON_SLUG, "-")
     .replace(EDGE_DASHES, "");
   return slug || "preset";
-}
-
-export async function sha256Hex(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes as BufferSource);
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 /**
