@@ -30,12 +30,14 @@
  * Cosmetic renames are free; addresses are not.
  */
 const DATABASE = "hdri-calibration";
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 
 /** JSON documents: settings, the preset index, run history. */
 const DOCUMENTS = "documents";
 /** Binary blobs: calibration files and response functions, by virtual path. */
 const FILES = "files";
+/** Converted RAW frames, by content-addressed key. See `raw-cache.ts`. */
+const BLOBS = "blobs";
 
 let connection: Promise<IDBDatabase> | undefined;
 
@@ -49,6 +51,9 @@ function open(): Promise<IDBDatabase> {
       }
       if (!database.objectStoreNames.contains(FILES)) {
         database.createObjectStore(FILES);
+      }
+      if (!database.objectStoreNames.contains(BLOBS)) {
+        database.createObjectStore(BLOBS);
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -180,6 +185,47 @@ export async function fileKeys(prefix: string): Promise<string[]> {
   return keys
     .filter((key): key is string => typeof key === "string")
     .filter((key) => key.startsWith(prefix));
+}
+
+/**
+ * Reads a cached blob.
+ *
+ * Separate from `getFile` despite the identical shape, because these live in
+ * their own store: the RAW cache evicts on a budget and is cleared wholesale
+ * from the settings page, and neither may touch a preset's calibration files.
+ */
+export async function getBlob(key: string): Promise<Uint8Array | undefined> {
+  const stored = await run<ArrayBuffer | undefined>(
+    BLOBS,
+    "readonly",
+    (store) => store.get(key)
+  );
+  return stored ? new Uint8Array(stored) : undefined;
+}
+
+export function putBlob(key: string, bytes: Uint8Array): Promise<unknown> {
+  // Stored as ArrayBuffer for the reason `putFile` gives: a view carries its
+  // offset and length, so a subarray of a larger buffer would be cloned whole.
+  return run(BLOBS, "readwrite", (store) =>
+    store.put(
+      bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength
+      ) as ArrayBuffer,
+      key
+    )
+  );
+}
+
+export function deleteBlob(key: string): Promise<unknown> {
+  return run(BLOBS, "readwrite", (store) => store.delete(key));
+}
+
+export async function blobKeys(): Promise<string[]> {
+  const keys = await run<IDBValidKey[]>(BLOBS, "readonly", (store) =>
+    store.getAllKeys()
+  );
+  return keys.filter((key): key is string => typeof key === "string");
 }
 
 /** Drops the cached connection. Tests only; the app opens once per session. */
