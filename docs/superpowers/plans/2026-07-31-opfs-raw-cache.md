@@ -97,6 +97,54 @@ test("OPFS and IndexedDB accept a converted-frame-sized blob", async ({
 
     out.opfsAvailable = typeof navigator.storage?.getDirectory === "function";
     if (out.opfsAvailable) {
+      // Measured inside a dedicated worker, because `createSyncAccessHandle`
+      // exists nowhere else -- which is the whole reason the persistent tier
+      // sits in a worker. Timed against `createWritable` below so the choice
+      // between them is made on numbers rather than on reasoning.
+      const workerSource = `
+        self.onmessage = async (event) => {
+          const size = event.data;
+          try {
+            const root = await navigator.storage.getDirectory();
+            const handle = await root.getFileHandle("probe-sync.bin", { create: true });
+            if (typeof handle.createSyncAccessHandle !== "function") {
+              self.postMessage({ available: false });
+              return;
+            }
+            const access = await handle.createSyncAccessHandle();
+            const bytes = new Uint8Array(size);
+            const started = performance.now();
+            access.write(bytes, { at: 0 });
+            access.flush();
+            const written = access.getSize();
+            access.close();
+            self.postMessage({
+              available: true,
+              writeMs: Math.round(performance.now() - started),
+              written,
+            });
+            await root.removeEntry("probe-sync.bin");
+          } catch (error) {
+            self.postMessage({ available: true, error: String(error) });
+          }
+        };
+      `;
+      const worker = new Worker(
+        URL.createObjectURL(new Blob([workerSource], { type: "text/javascript" }))
+      );
+      out.opfsSync = await new Promise((resolve) => {
+        const timer = setTimeout(
+          () => resolve({ error: "timed out after 60s" }),
+          60_000
+        );
+        worker.onmessage = (event) => {
+          clearTimeout(timer);
+          resolve(event.data);
+        };
+        worker.postMessage(size);
+      });
+      worker.terminate();
+
       try {
         const root = await navigator.storage.getDirectory();
         const handle = await root.getFileHandle("probe.bin", { create: true });
@@ -150,10 +198,14 @@ test("OPFS and IndexedDB accept a converted-frame-sized blob", async ({
     `\n===STORAGE_PROBE===\n${JSON.stringify(report, null, 2)}\n===END===\n`
   );
 
-  // The only real assertion: a backend that reports success must not corrupt.
-  if (report.opfsAvailable && !report.opfsError) {
-    expect(report.opfsRoundTrips, "OPFS bytes read back identical").toBe(true);
-  }
+  // Absence fails loudly rather than passing quietly. A green test on a host
+  // with no OPFS would read as "verified" when nothing was verified at all,
+  // and this run exists precisely to find out which hosts those are. A failure
+  // here is a result to record, not a bug to fix.
+  expect(report.opfsAvailable, "OPFS is available on this host").toBe(true);
+  expect(report.opfsError, "OPFS write/read raised nothing").toBeUndefined();
+  expect(report.opfsRoundTrips, "OPFS bytes read back identical").toBe(true);
+  expect(report.idbError, "IndexedDB accepted a 67 MB value").toBeUndefined();
 });
 ```
 
@@ -179,11 +231,30 @@ For WebView2 (Windows) and WebKitGTK (Linux), push the branch and read the `e2e-
 
 - [ ] **Step 4: Record the results and decide**
 
-Add a "Probe results" section to the design doc with a row per host: `opfsAvailable`, `opfsRoundTrips`, `opfsWriteMs`, `quota`, `idbWriteMs`, and any error strings.
+Add a "Probe results" section to the design doc with a row per host:
+`opfsAvailable`, `opfsRoundTrips`, `opfsWriteMs`, `opfsSync.available`,
+`opfsSync.writeMs`, `quota`, `idbWriteMs`, and any error strings.
 
-Decision rule, stated in advance so the result is not rationalised after the fact:
-- OPFS round-trips correctly on **all four** engines (WebKit, Chromium, WKWebView, WebView2, WebKitGTK) → **approach A**.
+Decision rules, stated in advance so results are not rationalised after the fact.
+
+**Backend:**
+- OPFS round-trips correctly on **all five** engines (WebKit, Chromium, WKWebView, WebView2, WebKitGTK) → **approach A**.
 - OPFS fails or corrupts on **any** engine → **approach B**, and note which.
+
+**Write path**, if approach A wins:
+- `createSyncAccessHandle` unavailable or erroring on any engine → `createWritable`.
+- Available everywhere **and** more than 2x faster than `createWritable` on any
+  engine → `createSyncAccessHandle`, and the implementer must never hold the
+  handle across an `await`.
+- Available everywhere but within 2x → `createWritable`, because the lock
+  hazard buys nothing.
+
+**Also amend the design doc's rationale for worker placement.** It currently
+says the tier is in the worker *because* `createSyncAccessHandle` is worker-only.
+That holds only if the sync path wins. The placement is correct regardless --
+the worker already holds the source bytes, and hashing 22 MB on the main thread
+would jank the UI the RAW worker exists to keep responsive -- so state that as
+the primary reason and the API restriction as an additional one.
 
 - [ ] **Step 5: Commit**
 
@@ -1086,8 +1157,14 @@ stops a rebuilt dcraw_emu from silently serving the previous demosaic."
 **Run Task 1 first.** Implement whichever approach the probe chose. The steps below are approach **A** (OPFS); if the probe chose **B**, create `src/lib/raw-cache-idb.ts` exporting `idbBlobStore()` with the same `BlobStore` shape, backed by a new `blobs` object store in `kv.ts`, and adapt the commit message.
 
 **Files:**
-- Create: `src/lib/raw-cache-opfs.ts`
-- Test: covered by Task 1's probe and Task 10's end-to-end; not unit-tested, because jsdom has no OPFS and a mock of it would assert only that the mock works.
+- Create: `src/lib/raw-cache-opfs.ts`, `src/lib/raw-cache-opfs.test.ts`
+
+**On what the unit test is for.** It cannot prove OPFS works — that is Task 1's
+job, in a real browser. It proves *our use of the API* is right: the correct
+method names, `create: true` where a file must be made, and `close()` on the
+failure path as well as the success one. Those are the mistakes that produce a
+zero-length file that later reads as a corrupt hit rather than a miss, and they
+are invisible to a test that only exercises the happy path.
 
 **Interfaces:**
 - Consumes: `BlobStore` (Task 4).
@@ -1186,12 +1263,155 @@ export function opfsBlobStore(directoryName = DIRECTORY): BlobStore {
 }
 ```
 
-- [ ] **Step 2: Verify it type-checks and lints**
+- [ ] **Step 2: Write the usage test against a fake handle**
 
-Run: `npx tsc --noEmit && npm run check`
-Expected: no errors.
+```ts
+// src/lib/raw-cache-opfs.test.ts
+import { opfsBlobStore } from "./raw-cache-opfs";
 
-- [ ] **Step 3: Commit**
+/**
+ * A minimal stand-in for the OPFS handles this store drives.
+ *
+ * Not a claim that OPFS behaves this way -- Task 1's probe is what establishes
+ * that, in real browsers. This exists to catch the mistakes a happy-path test
+ * cannot see: a missing `create: true`, a writable left unclosed on the error
+ * path, a wrong method name.
+ */
+function fakeOpfs() {
+  const files = new Map<string, Uint8Array>();
+  const closed: string[] = [];
+  let failNextWrite = false;
+
+  const fileHandle = (name: string) => ({
+    createWritable: () =>
+      Promise.resolve({
+        close: () => {
+          closed.push(name);
+          return Promise.resolve();
+        },
+        write: (bytes: Uint8Array) => {
+          if (failNextWrite) {
+            failNextWrite = false;
+            return Promise.reject(new Error("quota exceeded"));
+          }
+          files.set(name, bytes);
+          return Promise.resolve();
+        },
+      }),
+    getFile: () =>
+      Promise.resolve({
+        arrayBuffer: () => {
+          const stored = files.get(name);
+          if (!stored) {
+            return Promise.reject(new Error("NotFoundError"));
+          }
+          return Promise.resolve(
+            stored.buffer.slice(
+              stored.byteOffset,
+              stored.byteOffset + stored.byteLength
+            )
+          );
+        },
+      }),
+  });
+
+  const directory = {
+    getFileHandle: (name: string, options?: { create?: boolean }) => {
+      if (!(files.has(name) || options?.create)) {
+        return Promise.reject(new Error("NotFoundError"));
+      }
+      if (options?.create && !files.has(name)) {
+        files.set(name, new Uint8Array());
+      }
+      return Promise.resolve(fileHandle(name));
+    },
+    keys: async function* () {
+      for (const name of Array.from(files.keys())) {
+        yield name;
+      }
+    },
+    removeEntry: (name: string) => {
+      files.delete(name);
+      return Promise.resolve();
+    },
+  };
+
+  Object.defineProperty(globalThis, "navigator", {
+    configurable: true,
+    value: {
+      storage: {
+        getDirectory: () =>
+          Promise.resolve({
+            getDirectoryHandle: () => Promise.resolve(directory),
+          }),
+      },
+    },
+  });
+
+  return {
+    closed,
+    files,
+    failWriteOnce: () => {
+      failNextWrite = true;
+    },
+  };
+}
+
+describe("the OPFS blob store", () => {
+  it("round-trips bytes through write and read", async () => {
+    fakeOpfs();
+    const store = opfsBlobStore();
+    await store.write("a", new Uint8Array([1, 2, 3]));
+    expect(Array.from((await store.read("a")) ?? [])).toEqual([1, 2, 3]);
+  });
+
+  it("returns undefined for a key that was never written", async () => {
+    fakeOpfs();
+    expect(await opfsBlobStore().read("absent")).toBeUndefined();
+  });
+
+  it("closes the writable even when the write fails", async () => {
+    const opfs = fakeOpfs();
+    const store = opfsBlobStore();
+    opfs.failWriteOnce();
+
+    await expect(store.write("b", new Uint8Array([1]))).rejects.toThrow(
+      "quota exceeded"
+    );
+
+    // The point of the test. An unclosed writable leaves a zero-length file
+    // that a later read reports as a hit, serving empty pixels.
+    expect(opfs.closed).toContain("b");
+  });
+
+  it("lists and removes keys", async () => {
+    fakeOpfs();
+    const store = opfsBlobStore();
+    await store.write("a", new Uint8Array([1]));
+    await store.write("b", new Uint8Array([2]));
+    expect((await store.keys()).toSorted()).toEqual(["a", "b"]);
+
+    await store.remove("a");
+    expect(await store.keys()).toEqual(["b"]);
+  });
+
+  it("swallows a removal of something absent", async () => {
+    fakeOpfs();
+    await expect(opfsBlobStore().remove("absent")).resolves.toBeUndefined();
+  });
+});
+```
+
+- [ ] **Step 3: Run the test and verify it type-checks**
+
+Run: `npx jest src/lib/raw-cache-opfs.test.ts && npx tsc --noEmit && npm run check`
+Expected: PASS, five tests, no type or lint errors.
+
+Note the `write` test expects a rejection: the store lets a write error
+propagate so `raw-cache.ts` can swallow it in one place, rather than swallowing
+it twice.
+
+- [ ] **Step 4: Commit**
 
 ```bash
 git add src/lib/raw-cache-opfs.ts
