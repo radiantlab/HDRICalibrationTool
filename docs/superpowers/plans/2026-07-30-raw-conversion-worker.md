@@ -38,7 +38,9 @@ Pure move. No behaviour change, still on the main thread. This is the split that
 
 - [ ] **Step 1: Write the failing test**
 
-Create `src/lib/raw-convert.test.ts`. The `fakeLoader` here is lifted verbatim from `raw-preview.test.ts:21-72` — it is a fake Emscripten module, and these two tests are the only ones that still need one.
+Create `src/lib/raw-convert.test.ts`. The `fakeLoader` here is lifted verbatim from `raw-preview.test.ts:21-72`.
+
+**The duplication is deliberate and lasts exactly one task.** `raw-preview.test.ts` still needs its copy for the five cache tests that remain after this task; Task 2 rewrites that file and deletes its copy, leaving this as the only one. Extracting a shared fixture module instead would leave a single-consumer helper behind after Task 2, so the copy is the cheaper path through. Do not extract it, and do not delete the original here — the suite must stay green at the end of every task.
 
 ```ts
 /**
@@ -1125,26 +1127,31 @@ test("the page stays responsive while RAW thumbnails are converted", async ({
 
 - [ ] **Step 3: Verify it fails against the old behaviour**
 
-This is the step that proves the test is worth having. Revert the worker, rebuild, and run it:
+This is the step that proves the test is worth having. Revert **only the worker wiring** and rebuild, leaving the new test in place:
 
 ```bash
-git stash
-git checkout HEAD~1 -- src/lib/raw-preview.ts
+# From the repository root. Do NOT stash: the new spec is uncommitted, and
+# stashing it would leave `-g "RAW thumbnails"` matching no test at all,
+# which reports "no tests found" rather than the failure you are looking for.
+git checkout HEAD~1 -- src/lib/raw-preview.ts   # Task 2's main-thread converter
 npm run build
 cd e2e-web && npx playwright test -g "RAW thumbnails" --project=chromium
 ```
 
 Expected: FAIL on `worst` — a main-thread conversion of three frames records a gap of several thousand milliseconds.
 
-Then restore:
+Then restore, and confirm the tree is clean apart from the two test files:
 
 ```bash
 cd /Users/ulbrical/GitHub/HDRICalibrationTool
 git checkout HEAD -- src/lib/raw-preview.ts
-git stash pop
+git status --short   # expect only e2e-web/tests/*.ts modified
 ```
 
-Note: `npm run build` and `npx playwright test` both need `dangerouslyDisableSandbox` — the Next build binds a port, which the sandbox denies with `Operation not permitted (os error 1)`.
+Two environment notes:
+
+- `npm run build` and `npx playwright test` both need `dangerouslyDisableSandbox` — the Next build binds a port, which the sandbox denies with `Operation not permitted (os error 1)`.
+- The shell's working directory persists between commands. After `cd e2e-web`, later commands are still there. Use absolute paths, or `cd` back explicitly as shown.
 
 - [ ] **Step 4: Verify it passes with the worker**
 
