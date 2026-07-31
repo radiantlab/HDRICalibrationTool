@@ -1,12 +1,14 @@
 /**
- * Converts RAW files to TIFF once, and shares the result.
+ * Caches RAW-to-TIFF conversions and shares the result across callers.
  *
  * This is the only place a RAW file is demosaiced. Both consumers go through
- * it: the viewer's thumbnails and the pipeline's merge stage. They can share
- * because they want *the same bytes* -- `dcrawArgs` is one definition and both
- * use it, so the TIFF the preview shows and the TIFF hdrgen merges are
- * byte-identical (verified: sha256 8137c98a... from the browser preview path,
- * the pipeline, and a native build alike).
+ * it: the viewer's thumbnails and the pipeline's merge stage. The conversion
+ * itself, and the `dcrawArgs` that drive it, live in `raw-convert.ts`; this
+ * file reaches them through `convertRaw` (by default -- see `inlineTiffFor`
+ * below) rather than restating them, so the TIFF the preview shows and the
+ * TIFF hdrgen merges are byte-identical (verified: sha256 8137c98a... from the
+ * browser preview path, the pipeline, and a native build alike). There is one
+ * `dcrawArgs`, not two flag sets that could quietly drift apart.
  *
  * Sharing matters more than it first looks. `image-set-preview.tsx` renders a
  * thumbnail for every file in a set, so uploading a 10-frame CR2 bracket
@@ -17,14 +19,13 @@
  * measured in Chromium. That is per instance and reclaimed when the instance
  * is dropped.
  *
- * If the two flag sets ever diverge, sharing silently stops being correct.
  * `-q 3` is the slowest demosaic and overkill for a thumbnail, so there is a
- * standing temptation to speed previews up with `-q 0`. That would leave both
- * call sites looking right while the preview no longer showed what the
- * pipeline measures. Hence one `dcrawArgs`, used by both.
+ * standing temptation to speed previews up with `-q 0`. Because `raw-convert.ts`
+ * owns the only `dcrawArgs`, that temptation has nowhere to go without also
+ * changing what the pipeline measures -- there is no second, faster flag set
+ * for a preview-only shortcut to reach for.
  */
 
-import type { ModuleLoader } from "./pipeline/wasm-runner";
 import {
   urlModuleCompiler,
   urlModuleLoader,
@@ -61,9 +62,19 @@ export interface RawSourceIo {
    * and mtime are far cheaper and catch the same case.
    */
   fingerprint?: (path: string) => Promise<string>;
-  /** Resolves wasm modules. Defaults to fetching them from `/wasm`; injected in tests. */
-  load?: ModuleLoader;
   readFile: (path: string) => Promise<Uint8Array>;
+  /**
+   * Converts one frame, given its path and its bytes.
+   *
+   * This is the seam, rather than the `ModuleLoader` it replaced, because a
+   * later change moves conversion into a worker and a function cannot cross
+   * `postMessage`. Defaults to a runner in this thread (`inlineTiffFor`); the
+   * worker replaces that default in the next task. Tests inject their own.
+   *
+   * Named for what it returns rather than what it does: under #243 it will
+   * often answer from OPFS without converting anything.
+   */
+  tiffFor?: (path: string, bytes: Uint8Array) => Promise<Uint8Array>;
 }
 
 interface Entry {
@@ -160,21 +171,33 @@ async function convert(
   io: RawSourceIo
 ): Promise<Uint8Array<ArrayBuffer>> {
   const bytes = await io.readFile(path);
-  const runner = new WasmToolRunner({
-    compile: io.load ? undefined : urlModuleCompiler(WASM_BASE_URL),
-    load: io.load ?? urlModuleLoader(WASM_BASE_URL),
-  });
-
-  const tiff = await convertRaw(runner, path, bytes);
-  // Frees the source and the runner's own reference. What the cache hands out
-  // afterwards is this same buffer, never a copy.
-  runner.clear();
+  const tiff = await (io.tiffFor ?? inlineTiffFor)(path, bytes);
   // MEMFS hands back a plain ArrayBuffer-backed view, never a SharedArrayBuffer
   // -- these builds are single-threaded, which is what keeps them hostable
   // without COOP/COEP headers, and a page served without those headers does
   // not even define SharedArrayBuffer. Narrowed here so callers can pass
   // `.buffer` straight to the tiff worker instead of copying it.
   return tiff as Uint8Array<ArrayBuffer>;
+}
+
+/**
+ * The default converter: a runner in this thread.
+ *
+ * Replaced by the worker in the next task. It exists as its own function so
+ * that swap is a one-line change rather than a rewrite of `convert`.
+ */
+async function inlineTiffFor(
+  path: string,
+  bytes: Uint8Array
+): Promise<Uint8Array> {
+  const runner = new WasmToolRunner({
+    compile: urlModuleCompiler(WASM_BASE_URL),
+    load: urlModuleLoader(WASM_BASE_URL),
+  });
+  const tiff = await convertRaw(runner, path, bytes);
+  // Frees the source and the runner's own reference.
+  runner.clear();
+  return tiff;
 }
 
 /**
