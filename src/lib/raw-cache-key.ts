@@ -41,8 +41,10 @@ export function toolTag(wasmBaseUrl: string): Promise<string> {
     return cached;
   }
   const deriving = derive(wasmBaseUrl).catch((error: unknown) => {
-    // Not remembered, so a transient fetch failure does not pin an
-    // "unknown" tag for the life of the worker.
+    // Not remembered, so a transient fetch failure -- or a versions.json that
+    // is missing the commit it must report -- does not pin a failure for the
+    // life of the worker; a later call with a healthy response can still
+    // succeed.
     tags.delete(wasmBaseUrl);
     throw error;
   });
@@ -56,7 +58,19 @@ async function derive(wasmBaseUrl: string): Promise<string> {
     throw new Error(`${wasmBaseUrl}/versions.json returned ${response.status}`);
   }
   const versions = (await response.json()) as VersionsDocument;
-  const commit = versions.tools?.dcraw_emu?.commit ?? "unknown";
+  const commit = versions.tools?.dcraw_emu?.commit;
+  if (!commit) {
+    // Substituting a placeholder here would let two builds that both fail to
+    // report a commit -- the likely case, since one build-script bug affects
+    // every artifact -- collide on the same tag and share a cache entry, each
+    // serving the other's pixels. Throwing instead is safe: the caller (see
+    // raw-worker.ts, task 8) falls through to converting without a cache hit
+    // or write, so the conversion still succeeds and only the persistent
+    // cache is lost for the session.
+    throw new Error(
+      `${wasmBaseUrl}/versions.json is missing tools.dcraw_emu.commit`
+    );
+  }
   // Placeholder paths, so the tag tracks the flags and does not vary per frame.
   const args = dcrawArgs("in", "out").join(" ");
   const digest = await sha256Hex(new TextEncoder().encode(`${commit}:${args}`));

@@ -78,7 +78,7 @@ does.
 
 ```
 key     = sha256(source bytes) + "-" + toolTag
-toolTag = first 12 hex of sha256(dcrawCommit + "\0" + dcrawArgs("in", "out").join(" "))
+toolTag = first 12 hex of sha256(dcrawCommit + ":" + dcrawArgs("in", "out").join(" "))
 ```
 
 `dcrawCommit` is `tools.dcraw_emu.commit` from `versions.json`. The args are
