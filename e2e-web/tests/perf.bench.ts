@@ -44,11 +44,11 @@ const FRAMES = Number(process.env.FRAMES ?? cr2Files.length);
 const RUN_TIMEOUT = 280_000;
 
 interface Req {
-  url: string;
-  status: number;
   bytes: number;
   ms: number;
   startedAt: number;
+  status: number;
+  url: string;
 }
 
 test(`${MODE} against ${TARGET}`, async ({ page }) => {
@@ -156,37 +156,37 @@ test(`${MODE} against ${TARGET}`, async ({ page }) => {
     list.reduce((total, r) => total + pick(r), 0);
 
   const report = {
-    target: TARGET,
-    mode: MODE,
-    work: runLabel,
     coldLoadMs,
-    warmLoadMs,
+    mode: MODE,
     nav,
-    runMs,
     requests: {
-      total: requests.length,
       duringRun: requests.length - requestsBeforeRun,
+      total: requests.length,
+      totalBytes: sum(requests, (r) => r.bytes),
       wasm: wasmRequests.length,
       wasmBytes: sum(wasmRequests, (r) => r.bytes),
       wasmTotalMs: Math.round(sum(wasmRequests, (r) => r.ms)),
-      totalBytes: sum(requests, (r) => r.bytes),
     },
+    runMs,
     slowestRequests: [...requests]
       .sort((a, b) => b.ms - a.ms)
       .slice(0, 15)
       .map((r) => ({
-        ms: Math.round(r.ms),
         kb: Math.round(r.bytes / 1024),
+        ms: Math.round(r.ms),
         url: r.url.replace(TARGET, ""),
       })),
+    target: TARGET,
+    warmLoadMs,
     // One line per tool load. More than one entry per tool would mean the
     // compiled-module cache in `wasm-runner.ts` is not holding.
     wasmRequestDetail: wasmRequests.map((r) => ({
       at: r.startedAt,
-      ms: Math.round(r.ms),
       kb: Math.round(r.bytes / 1024),
+      ms: Math.round(r.ms),
       url: r.url.split("/").pop(),
     })),
+    work: runLabel,
   };
 
   process.stdout.write(
