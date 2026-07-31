@@ -200,4 +200,33 @@ describe("driving the RAW worker", () => {
     pending[2]?.respond(new Uint8Array([9]));
     await expect(third).resolves.toEqual(new Uint8Array([9]));
   });
+
+  it("settles the in-flight frame when the worker is reset externally", async () => {
+    install();
+
+    const first = convertRawInWorker("/in/a.CR2", new Uint8Array([1]), "/wasm");
+    const second = convertRawInWorker(
+      "/in/b.CR2",
+      new Uint8Array([2]),
+      "/wasm"
+    );
+    await settle();
+
+    // `terminate()` fires neither `message` nor `error`, so without a way to
+    // settle the frame it was holding, this call would leave `first` (and
+    // `second`, chained behind it) wedged forever -- an `onError` calling
+    // this itself already has its own `reject`, but this call comes from
+    // outside that path, exactly as the docstring invites.
+    resetRawWorker();
+    await expect(first).rejects.toThrow("the RAW worker was dropped");
+
+    await settle();
+    // `second` still completes, on a fresh worker: an external reset costs
+    // only the frame that was in flight, the same as a worker dying on its
+    // own.
+    expect(built).toHaveLength(2);
+    expect(built[1]?.posts).toBe(1);
+    pending[1]?.respond(new Uint8Array([6]));
+    await expect(second).resolves.toEqual(new Uint8Array([6]));
+  });
 });
