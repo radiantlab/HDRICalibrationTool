@@ -47,9 +47,11 @@ describe("the version 1 to 2 upgrade", () => {
       request.onerror = () => reject(request.error);
     });
 
-    // kv.ts caches its connection at module load; drop it so the next call
-    // opens the database above at version 2 and runs onupgradeneeded fresh,
-    // the same way a real app relaunch would.
+    // kv.ts opens lazily on first call, not at module load, and nothing in
+    // this file has called into it yet -- so there is no cached connection
+    // for this to drop. It is kept anyway, defensively: it costs nothing,
+    // and it stops this test from silently depending on being the first
+    // caller if a later change adds one before it.
     resetConnectionForTests();
 
     await expect(getDocument("doc")).resolves.toEqual({ name: "existing" });

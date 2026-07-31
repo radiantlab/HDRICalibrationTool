@@ -56,7 +56,16 @@ function open(): Promise<IDBDatabase> {
         database.createObjectStore(BLOBS);
       }
     };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => {
+      const database = request.result;
+      // Fires in an older tab when a newer tab's open() needs to upgrade.
+      // Closing here lets that upgrade proceed instead of leaving the newer
+      // tab's request permanently blocked -- DATABASE_VERSION could not
+      // change before this database had a second version to move between,
+      // so this branch was unreachable until the blob store was added.
+      database.onversionchange = () => database.close();
+      resolve(database);
+    };
     request.onerror = () =>
       reject(request.error ?? new Error("could not open IndexedDB"));
     // Fires when another tab holds an older version open. Rejecting is better
@@ -67,6 +76,16 @@ function open(): Promise<IDBDatabase> {
           "another tab is holding an older version of the database open"
         )
       );
+  }).catch((error: unknown) => {
+    // Not remembered: `??=` above means the first call to open() after a
+    // failure decides the value for every caller until the process reloads.
+    // A cached rejection would leave storage broken -- presets and settings,
+    // not just this cache -- until then, for a failure that may have been
+    // transient (an onblocked race resolved by the other tab closing, for
+    // one). `raw-cache-key.ts`'s `toolTag` and `wasm-runner.ts`'s compiled
+    // module cache clear their memo entries on failure for the same reason.
+    connection = undefined;
+    throw error;
   });
   return connection;
 }
