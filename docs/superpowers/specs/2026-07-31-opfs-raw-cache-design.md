@@ -55,16 +55,24 @@ Three tiers, checked in order:
 
 ### Why the persistent tier lives in the worker
 
-`FileSystemFileHandle.createSyncAccessHandle()` is callable only from a
-dedicated Web Worker -- not the main thread, not an iframe, not a SharedWorker.
-It is excluded there deliberately, because synchronous I/O on the main thread
-blocks rendering.
+Primarily because the worker already holds the bytes. It receives them in
+order to convert them, so hashing there costs no second read, and the content
+hash never has to cross back to the page. Doing that hash on the main thread
+instead would mean shipping a 22 MB frame across `postMessage` just to jank
+the UI the RAW worker exists to keep responsive -- the same class of stall
+`e2e-web/tests/pipeline.spec.ts` guards against for conversion itself.
 
-That constraint turns out to be a gift rather than a tax. The worker already
-receives the source bytes in order to convert them, so it can hash them without
-a second read, and the content hash never has to cross back to the page. The
-`tiffFor` seam established by the RAW worker design needs no change at all --
-which is why that seam is named for what it returns rather than what it does.
+`FileSystemFileHandle.createSyncAccessHandle()` being callable only from a
+dedicated Web Worker -- not the main thread, not an iframe, not a
+SharedWorker -- is an additional reason, not the deciding one. That
+restriction is why synchronous I/O on the main thread is excluded at all, but
+it only bears on this placement if the probe below sends the write path to
+`createSyncAccessHandle`; if `createWritable` wins instead, the placement
+holds anyway, on the first reason alone.
+
+The `tiffFor` seam established by the RAW worker design needs no change at all
+-- which is why that seam is named for what it returns rather than what it
+does.
 
 ## The cache key
 
@@ -161,6 +169,62 @@ Reconsider only if the probe shows OPFS working on some hosts but not others.
 OPFS is used nowhere in the codebase today, and its behaviour in the Tauri
 webviews has never been tested -- `PRD.md:132` records that plainly. WebKitGTK
 is the doubtful one, and Safari has a history of OPFS write bugs.
+
+## Probe results
+
+Measured 2026-07-31 with `e2e-web/tests/storage-probe.spec.ts` against the
+static export (`npm run build`, then `npx playwright test
+tests/storage-probe.spec.ts --project=<name>` from `e2e-web`). Two of the five
+engines the decision rules need; the other three are below.
+
+| Host | opfsAvailable | opfsRoundTrips | opfsWriteMs | opfsSync.available | opfsSync.writeMs | quota | idbWriteMs | errors |
+|---|---|---|---|---|---|---|---|---|
+| WebKit (Playwright, macOS) | true | false | -- | true | -- | 1000 MB | 186 | `UnknownError: The operation failed for an unknown transient reason (e.g. out of memory).` -- identical on both write paths |
+| Chromium (Playwright, macOS) | true | true | 78 | true | 115 | 4096 MB | 41 | none |
+| WKWebView (macOS, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
+| WebView2 (Windows, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
+| WebKitGTK (Linux, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
+
+**Chromium round-trips cleanly.** Both write paths succeed, and the 67 MB
+readback matches the source byte-for-byte.
+
+**WebKit's OPFS write fails, on both paths, with the same error.** Not a
+missing API -- `opfsAvailable` and `opfsSync.available` both report `true` --
+and not naive quota exhaustion at 67 MB under a reported 1000 MB quota. The
+main-thread `createWritable` call and the worker's `createSyncAccessHandle`
+call raise the identical `UnknownError` independently, which points at
+something WebKit's OPFS implementation does at this blob size rather than at
+either API path specifically. This is Playwright's bundled WebKit on macOS in
+an ephemeral profile, not WKWebView -- the row the "OPFS fails on any engine
+-> B" rule actually needs. If it reproduces on WKWebView, that rule fires and
+the backend is B. If WKWebView round-trips cleanly, the WebKit-only failure
+does not by itself decide anything, since the rule is stated per engine and
+WebKit is not one of the five it names.
+
+**The write-path timing is not comparable as instrumented.** `opfsSync.writeMs`
+brackets only `access.write` + `flush` inside the worker, on a freshly
+allocated all-zero buffer; `opfsWriteMs` brackets `write` + `close` on the main
+thread, on the patterned source buffer. Different spans, different payloads.
+Chromium's 115 ms vs. 78 ms cannot be read as "`createWritable` is faster" or
+fed into the 2x rule under "Write path" above -- a rerun timing the same span
+over the same bytes would be needed before that comparison means anything.
+
+**`idbRoundTrips` is not in the table above deliberately.** The probe never
+reads the value back from IndexedDB; it treats the write transaction's
+`oncomplete` as success. Both engines report a completed write and no
+`idbError`, which is weaker than OPFS's actual byte comparison and shouldn't
+be read as equivalent verification.
+
+**Still needed:** all three Tauri webviews. `e2e-tests/test/specs/storage-probe.e2e.ts`
+exists, ports the same probe body to `browser.execute`, and type-checks
+(`npx tsc --noEmit` from `e2e-tests`), but has not run anywhere -- it needs the
+debug Tauri binary that `wdio.conf.js`'s `onPrepare` builds
+(`npm run tauri build -- --debug --no-bundle --features e2e-driver`), which
+this pass did not produce. WKWebView can run locally afterward with
+`npm run test:e2e:desktop` on macOS; WebView2 and WebKitGTK need the
+`e2e-tests` CI job on its Windows and Ubuntu runners. Until those three rows
+are filled in, neither the backend (A vs. B) nor the write path can be decided
+-- this section is what the decision needs, not the decision itself.
 
 ## Components
 
