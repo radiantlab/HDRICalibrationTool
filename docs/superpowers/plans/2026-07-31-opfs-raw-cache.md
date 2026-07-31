@@ -1152,241 +1152,121 @@ stops a rebuilt dcraw_emu from silently serving the previous demosaic."
 
 ---
 
-### Task 7: The blob store implementation
+### Task 7: The blob store — IndexedDB (approach B, decided by Task 1)
 
-**Run Task 1 first.** Implement whichever approach the probe chose. The steps below are approach **A** (OPFS); if the probe chose **B**, create `src/lib/raw-cache-idb.ts` exporting `idbBlobStore()` with the same `BlobStore` shape, backed by a new `blobs` object store in `kv.ts`, and adapt the commit message.
+**Task 1 decided this.** The probe found `navigator.storage.getDirectory` **absent** in both WebKit (Playwright, CI) and WebKitGTK 605.1.15 (Tauri's Linux webview): `opfsAvailable: false`, `quota: null`. That is not a quota or memory failure — the API does not exist. OPFS worked in Chromium and WebView2. By the rule stated in advance ("OPFS fails or corrupts on **any** engine -> approach B"), two of five engines have no OPFS at all, so approach A is dead. Approach C (OPFS with an IndexedDB fallback) stays rejected: #243 warns that a second caching implementation is the thing that drifts.
+
+IndexedDB round-tripped 67 MB on every engine tested, including both WebKits.
 
 **Files:**
-- Create: `src/lib/raw-cache-opfs.ts`, `src/lib/raw-cache-opfs.test.ts`
-
-**On what the unit test is for.** It cannot prove OPFS works — that is Task 1's
-job, in a real browser. It proves *our use of the API* is right: the correct
-method names, `create: true` where a file must be made, and `close()` on the
-failure path as well as the success one. Those are the mistakes that produce a
-zero-length file that later reads as a corrupt hit rather than a miss, and they
-are invisible to a test that only exercises the happy path.
+- Create: `src/lib/raw-cache-idb.ts`, `src/lib/raw-cache-idb.test.ts`
+- Modify: `src/lib/storage/kv.ts` (a third object store)
 
 **Interfaces:**
 - Consumes: `BlobStore` (Task 4).
-- Produces: `opfsBlobStore(directoryName?: string): BlobStore`, `opfsAvailable(): boolean`.
+- Produces: `idbBlobStore(): BlobStore`, `blobStoreAvailable(): boolean`.
 
-- [ ] **Step 1: Implement**
+**On what the unit test is for.** It proves our *use* of the API: that a written blob reads back identical, that a missing key is `undefined` rather than a throw, and that `keys()` and `remove()` behave. `fake-indexeddb` is already wired (Task 3), so this is testable in Jest directly — unlike OPFS, which was the original reason this task was going to go untested.
+
+- [ ] **Step 1: Add the object store**
+
+In `src/lib/storage/kv.ts`, add beside `DOCUMENTS` and `FILES`:
 
 ```ts
-// src/lib/raw-cache-opfs.ts
+/** Converted RAW frames, by content-addressed key. See `raw-cache.ts`. */
+const BLOBS = "blobs";
+```
+
+Bump the version and create it. The existing `onupgradeneeded` already guards each store with `contains`, so the same handler serves a fresh database and an upgrade from version 1:
+
+```ts
+const DATABASE_VERSION = 2;
+```
+
+```ts
+      if (!database.objectStoreNames.contains(BLOBS)) {
+        database.createObjectStore(BLOBS);
+      }
+```
+
+Then export the three operations the seam needs:
+
+```ts
 /**
- * OPFS backing for the persistent RAW cache.
+ * Reads a cached blob.
  *
- * The only file in the app that touches OPFS, so nothing else has to care
- * that it exists -- and Jest never imports it, since `navigator.storage` is
- * absent under jsdom and a mocked OPFS would only prove the mock works. It is
- * covered by `e2e-web/tests/storage-probe.spec.ts` and by the reload measured
- * in `perf.bench.ts`.
- *
- * Writes go through `createWritable` rather than `createSyncAccessHandle`.
- * The sync handle is faster and is why this tier had to live in a worker at
- * all, but it locks the file for the handle's lifetime, and a lock held across
- * an await is how two callers deadlock. Conversions are already serialised by
- * `raw-worker-client.ts`, so the throughput difference does not reach the user,
- * whereas the deadlock would.
+ * Separate from `getFile` despite the identical shape, because these live in
+ * their own store: the RAW cache evicts on a budget and is cleared wholesale
+ * from the settings page, and neither may touch a preset's calibration files.
  */
-
-import type { BlobStore } from "./raw-cache.types";
-
-const DIRECTORY = "raw-tiff-cache";
-
-/** Whether this host offers OPFS at all. Checked before a store is built. */
-export function opfsAvailable(): boolean {
-  return typeof navigator !== "undefined" &&
-    typeof navigator.storage?.getDirectory === "function";
+export async function getBlob(key: string): Promise<Uint8Array | undefined> {
+  const stored = await run<ArrayBuffer | undefined>(BLOBS, "readonly", (store) =>
+    store.get(key)
+  );
+  return stored ? new Uint8Array(stored) : undefined;
 }
 
-export function opfsBlobStore(directoryName = DIRECTORY): BlobStore {
-  let directory: Promise<FileSystemDirectoryHandle> | undefined;
+export function putBlob(key: string, bytes: Uint8Array): Promise<unknown> {
+  // Stored as ArrayBuffer for the reason `putFile` gives: a view carries its
+  // offset and length, so a subarray of a larger buffer would be cloned whole.
+  return run(BLOBS, "readwrite", (store) =>
+    store.put(
+      bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength
+      ) as ArrayBuffer,
+      key
+    )
+  );
+}
 
-  function open(): Promise<FileSystemDirectoryHandle> {
-    directory ??= navigator.storage
-      .getDirectory()
-      .then((root) => root.getDirectoryHandle(directoryName, { create: true }))
-      .catch((error: unknown) => {
-        // Not remembered: a first failure must not make the cache permanently
-        // unusable for the life of the worker.
-        directory = undefined;
-        throw error;
-      });
-    return directory;
-  }
+export function deleteBlob(key: string): Promise<unknown> {
+  return run(BLOBS, "readwrite", (store) => store.delete(key));
+}
 
-  return {
-    async keys(): Promise<string[]> {
-      const handle = await open();
-      const found: string[] = [];
-      // `keys()` is an async iterator on the directory handle.
-      for await (const name of (
-        handle as unknown as { keys(): AsyncIterable<string> }
-      ).keys()) {
-        found.push(name);
-      }
-      return found;
-    },
-
-    async read(key: string): Promise<Uint8Array | undefined> {
-      const handle = await open();
-      try {
-        const file = await handle.getFileHandle(key);
-        return new Uint8Array(await (await file.getFile()).arrayBuffer());
-      } catch {
-        // NotFoundError is the ordinary miss, and any other read failure is
-        // treated as one: the caller converts, which is always correct.
-        return;
-      }
-    },
-
-    async remove(key: string): Promise<void> {
-      const handle = await open();
-      await handle.removeEntry(key).catch(() => undefined);
-    },
-
-    async write(key: string, bytes: Uint8Array): Promise<void> {
-      const handle = await open();
-      const file = await handle.getFileHandle(key, { create: true });
-      const writable = await file.createWritable();
-      try {
-        await writable.write(bytes as BufferSource);
-      } finally {
-        // Closed on both paths: an unclosed writable leaves a zero-length file
-        // that later reads as a corrupt hit rather than a miss.
-        await writable.close();
-      }
-    },
-  };
+export async function blobKeys(): Promise<string[]> {
+  const keys = await run<IDBValidKey[]>(BLOBS, "readonly", (store) =>
+    store.getAllKeys()
+  );
+  return keys.filter((key): key is string => typeof key === "string");
 }
 ```
 
-- [ ] **Step 2: Write the usage test against a fake handle**
+- [ ] **Step 2: Write the failing test**
 
 ```ts
-// src/lib/raw-cache-opfs.test.ts
-import { opfsBlobStore } from "./raw-cache-opfs";
+// src/lib/raw-cache-idb.test.ts
+import "fake-indexeddb/auto";
+import { beforeEach, describe, expect, it } from "@jest/globals";
+import { idbBlobStore } from "./raw-cache-idb";
 
-/**
- * A minimal stand-in for the OPFS handles this store drives.
- *
- * Not a claim that OPFS behaves this way -- Task 1's probe is what establishes
- * that, in real browsers. This exists to catch the mistakes a happy-path test
- * cannot see: a missing `create: true`, a writable left unclosed on the error
- * path, a wrong method name.
- */
-function fakeOpfs() {
-  const files = new Map<string, Uint8Array>();
-  const closed: string[] = [];
-  let failNextWrite = false;
-
-  const fileHandle = (name: string) => ({
-    createWritable: () =>
-      Promise.resolve({
-        close: () => {
-          closed.push(name);
-          return Promise.resolve();
-        },
-        write: (bytes: Uint8Array) => {
-          if (failNextWrite) {
-            failNextWrite = false;
-            return Promise.reject(new Error("quota exceeded"));
-          }
-          files.set(name, bytes);
-          return Promise.resolve();
-        },
-      }),
-    getFile: () =>
-      Promise.resolve({
-        arrayBuffer: () => {
-          const stored = files.get(name);
-          if (!stored) {
-            return Promise.reject(new Error("NotFoundError"));
-          }
-          return Promise.resolve(
-            stored.buffer.slice(
-              stored.byteOffset,
-              stored.byteOffset + stored.byteLength
-            )
-          );
-        },
-      }),
+describe("the IndexedDB blob store", () => {
+  beforeEach(async () => {
+    const store = idbBlobStore();
+    for (const key of await store.keys()) {
+      await store.remove(key);
+    }
   });
 
-  const directory = {
-    getFileHandle: (name: string, options?: { create?: boolean }) => {
-      if (!(files.has(name) || options?.create)) {
-        return Promise.reject(new Error("NotFoundError"));
-      }
-      if (options?.create && !files.has(name)) {
-        files.set(name, new Uint8Array());
-      }
-      return Promise.resolve(fileHandle(name));
-    },
-    keys: async function* () {
-      for (const name of Array.from(files.keys())) {
-        yield name;
-      }
-    },
-    removeEntry: (name: string) => {
-      files.delete(name);
-      return Promise.resolve();
-    },
-  };
-
-  Object.defineProperty(globalThis, "navigator", {
-    configurable: true,
-    value: {
-      storage: {
-        getDirectory: () =>
-          Promise.resolve({
-            getDirectoryHandle: () => Promise.resolve(directory),
-          }),
-      },
-    },
-  });
-
-  return {
-    closed,
-    files,
-    failWriteOnce: () => {
-      failNextWrite = true;
-    },
-  };
-}
-
-describe("the OPFS blob store", () => {
   it("round-trips bytes through write and read", async () => {
-    fakeOpfs();
-    const store = opfsBlobStore();
+    const store = idbBlobStore();
     await store.write("a", new Uint8Array([1, 2, 3]));
     expect(Array.from((await store.read("a")) ?? [])).toEqual([1, 2, 3]);
   });
 
   it("returns undefined for a key that was never written", async () => {
-    fakeOpfs();
-    expect(await opfsBlobStore().read("absent")).toBeUndefined();
+    expect(await idbBlobStore().read("absent")).toBeUndefined();
   });
 
-  it("closes the writable even when the write fails", async () => {
-    const opfs = fakeOpfs();
-    const store = opfsBlobStore();
-    opfs.failWriteOnce();
-
-    await expect(store.write("b", new Uint8Array([1]))).rejects.toThrow(
-      "quota exceeded"
-    );
-
-    // The point of the test. An unclosed writable leaves a zero-length file
-    // that a later read reports as a hit, serving empty pixels.
-    expect(opfs.closed).toContain("b");
+  it("overwrites an existing key rather than appending", async () => {
+    const store = idbBlobStore();
+    await store.write("a", new Uint8Array([1, 2, 3]));
+    await store.write("a", new Uint8Array([9]));
+    expect(Array.from((await store.read("a")) ?? [])).toEqual([9]);
   });
 
   it("lists and removes keys", async () => {
-    fakeOpfs();
-    const store = opfsBlobStore();
+    const store = idbBlobStore();
     await store.write("a", new Uint8Array([1]));
     await store.write("b", new Uint8Array([2]));
     expect((await store.keys()).toSorted()).toEqual(["a", "b"]);
@@ -1396,30 +1276,98 @@ describe("the OPFS blob store", () => {
   });
 
   it("swallows a removal of something absent", async () => {
-    fakeOpfs();
-    await expect(opfsBlobStore().remove("absent")).resolves.toBeUndefined();
+    await expect(idbBlobStore().remove("absent")).resolves.toBeUndefined();
+  });
+
+  it("stores a view of a larger buffer without dragging the whole buffer in", async () => {
+    // The defect `putFile` documents: a subarray carries its parent's buffer,
+    // so storing the view rather than a slice would persist far more than was
+    // asked for -- and read back the wrong bytes.
+    const backing = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
+    await idbBlobStore().write("view", backing.subarray(2, 5));
+    expect(Array.from((await idbBlobStore().read("view")) ?? [])).toEqual([
+      3, 4, 5,
+    ]);
   });
 });
 ```
 
-- [ ] **Step 3: Run the test and verify it type-checks**
+- [ ] **Step 3: Run and watch it fail**
 
-Run: `npx jest src/lib/raw-cache-opfs.test.ts && npx tsc --noEmit && npm run check`
-Expected: PASS, five tests, no type or lint errors.
+Run: `npx jest src/lib/raw-cache-idb.test.ts`
+Expected: FAIL — `Cannot find module './raw-cache-idb'`.
 
-Note the `write` test expects a rejection: the store lets a write error
-propagate so `raw-cache.ts` can swallow it in one place, rather than swallowing
-it twice.
+- [ ] **Step 4: Implement**
 
-- [ ] **Step 4: Commit**
+```ts
+// src/lib/raw-cache-idb.ts
+/**
+ * IndexedDB backing for the persistent RAW cache.
+ *
+ * IndexedDB rather than OPFS, and that was measured rather than assumed.
+ * #243 specified OPFS for its `createSyncAccessHandle` fast path; the probe in
+ * `e2e-web/tests/storage-probe.spec.ts` found `navigator.storage.getDirectory`
+ * **absent** in WebKit and in WebKitGTK 605.1.15, the webview Tauri uses on
+ * Linux -- not slow, not quota-limited, simply not implemented. An OPFS cache
+ * would have silently never worked for Safari users or Linux desktop users.
+ * IndexedDB round-tripped a 67 MB blob on every engine tested.
+ *
+ * The cost is a structured clone on each read and write, against roughly 2 s
+ * of demosaic per frame that it avoids. `perf.bench.ts` measures the result
+ * rather than assuming it.
+ *
+ * A second consequence worth knowing: blobs and index now live in the same
+ * database, so the reconciliation in `raw-cache.ts` guards a narrower window
+ * than it was designed for. It is kept because the two are still written in
+ * separate transactions, so a crash between them remains possible.
+ */
+
+import type { BlobStore } from "./raw-cache.types";
+import { blobKeys, deleteBlob, getBlob, putBlob } from "./storage/kv";
+
+/**
+ * Whether this host can back the cache at all.
+ *
+ * Always true where the app runs -- IndexedDB is what presets, settings and
+ * run history already depend on -- but the caller reads better for asking,
+ * and a host without it degrades to converting every time rather than
+ * throwing.
+ */
+export function blobStoreAvailable(): boolean {
+  return typeof indexedDB !== "undefined";
+}
+
+export function idbBlobStore(): BlobStore {
+  return {
+    keys: () => blobKeys(),
+    read: (key) => getBlob(key),
+    remove: async (key) => {
+      await deleteBlob(key);
+    },
+    write: async (key, bytes) => {
+      await putBlob(key, bytes);
+    },
+  };
+}
+```
+
+- [ ] **Step 5: Run the tests**
+
+Run: `npx jest src/lib/raw-cache-idb.test.ts && npm test && npx tsc --noEmit && npm run check`
+Expected: PASS, six new tests, no regressions, no type or lint errors.
+
+**Check the version bump did not break existing data.** `src/lib/storage/migrate-tauri-files.ts` and the preset tests exercise the same database; confirm they still pass, since a botched `onupgradeneeded` would lose a user's presets rather than fail loudly.
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add src/lib/raw-cache-opfs.ts
-git commit -m "feat(raw): back the persistent cache with OPFS
+git add src/lib/raw-cache-idb.ts src/lib/raw-cache-idb.test.ts src/lib/storage/kv.ts
+git commit -m "feat(raw): back the persistent cache with IndexedDB
 
-createWritable rather than createSyncAccessHandle: the sync handle locks the
-file for its lifetime and a lock held across an await deadlocks. Conversions
-are already serialised, so the throughput difference never reaches the user."
+#243 specified OPFS. The probe found navigator.storage.getDirectory absent in
+WebKit and in WebKitGTK 605.1.15, the webview Tauri uses on Linux -- not slow,
+not quota-limited, absent. An OPFS cache would have silently never worked for
+Safari or Linux desktop users. IndexedDB round-tripped 67 MB everywhere."
 ```
 
 ---
