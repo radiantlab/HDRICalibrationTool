@@ -15,6 +15,7 @@
  */
 "use client";
 
+import prettyBytes from "pretty-bytes";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -28,6 +29,8 @@ import {
 import { appInfo, canWriteToChosenDirectory } from "@/lib/host/env";
 import { openExternal } from "@/lib/host/open-external";
 import { pickOutputDirectory } from "@/lib/host/pick";
+import { BUDGET_BYTES, createRawCache } from "@/lib/raw-cache";
+import { blobStoreAvailable, idbBlobStore } from "@/lib/raw-cache-idb";
 import { useSettingsStore } from "../stores/settings-store";
 import SettingsButtonBar from "./settings-button-bar";
 
@@ -55,6 +58,9 @@ export default function SettingsPage() {
   // first render happens at build time where there is no window to ask.
   const [canChooseOutput, setCanChooseOutput] = useState(true);
   const [toolsError, setToolsError] = useState<string | null>(null);
+  // Null distinguishes "no persistent tier on this host" from "empty cache",
+  // since the row below hides on null and would misleadingly read 0 B on 0.
+  const [cacheBytes, setCacheBytes] = useState<number | null>(null);
   useEffect(() => {
     /**
      * Retrieves app name, app version, and tauri version from Tauri API
@@ -77,6 +83,15 @@ export default function SettingsPage() {
       .catch((error: unknown) => {
         setToolsError(error instanceof Error ? error.message : String(error));
       });
+
+    // Absent on a host without IndexedDB, where there is no persistent tier to
+    // report. Zero would claim an empty cache rather than no cache.
+    if (blobStoreAvailable()) {
+      createRawCache({ store: idbBlobStore() })
+        .usage()
+        .then(setCacheBytes)
+        .catch(() => setCacheBytes(null));
+    }
   }, []);
 
   // Update local settings when global settings change
@@ -106,6 +121,20 @@ export default function SettingsPage() {
   const handleUpdatePath = (id: string, path: string) => {
     setLocalSettings({ ...localSettings, [id]: path });
     setSaveDisabled(false); // Enable the save button since changes were made
+  };
+
+  /** Empties the persistent RAW cache and re-reads its size. */
+  const handleClearCache = async () => {
+    const cache = createRawCache({ store: idbBlobStore() });
+    try {
+      await cache.clear();
+      setCacheBytes(await cache.usage());
+      toast.success("RAW conversion cache cleared");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Could not clear the cache"
+      );
+    }
   };
 
   /**
@@ -356,6 +385,34 @@ export default function SettingsPage() {
               .
             </p>
           </div>
+
+          {/* Its own card rather than folded into "About this build": a
+              clearable disk cache is not part of what the build is made of,
+              and interposing it there would sit between the tool versions
+              and the GPL notice, which the comment above needs adjacent to
+              the tools it documents. */}
+          {cacheBytes !== null && (
+            <div className="rounded-lg border border-border p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="font-bold text-xl">RAW conversion cache</h2>
+                  <p className="mt-1 text-muted-foreground text-sm">
+                    {prettyBytes(cacheBytes)} of {prettyBytes(BUDGET_BYTES)}{" "}
+                    used. Converted frames are reused instead of demosaiced
+                    again.
+                  </p>
+                </div>
+                <button
+                  className="rounded bg-secondary px-2 py-1 font-semibold text-secondary-foreground hover:bg-secondary/80"
+                  disabled={cacheBytes === 0}
+                  onClick={handleClearCache}
+                  type="button"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
