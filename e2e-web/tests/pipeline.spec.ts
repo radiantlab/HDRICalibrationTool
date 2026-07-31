@@ -13,6 +13,7 @@ import {
   collectDownloads,
   configureRun,
   generate,
+  loadCr2Frames,
   loadJpegBracket,
   readDownload,
   savePreset,
@@ -166,6 +167,75 @@ test("the page stays responsive while the pipeline runs", async ({ page }) => {
   // A 100ms heartbeat, so anything under ~1s of gap is scheduler noise rather
   // than a blocked thread. A main-thread pipeline produced single gaps of tens
   // of seconds, so the margin here is enormous and the check is still sharp.
+  expect(beats).toBeGreaterThan(20);
+  expect(worst).toBeLessThan(1000);
+});
+
+/**
+ * Converting a RAW frame must not block the page either.
+ *
+ * The pipeline moved into a worker and this spec's sibling has guarded that
+ * ever since. The preview path was left behind: thumbnails convert every frame
+ * in a set through `rawToTiff`, `callMain` is synchronous, and a 5796x3870 CR2
+ * takes about 1.9 s -- so loading a bracket froze the tab for as long as it
+ * took to demosaic all of it.
+ *
+ * The instrument is the same 100 ms heartbeat, pointed at loading rather than
+ * running.
+ *
+ * `loadCr2Frames` only waits for the three `.generic-image-container` divs to
+ * mount, and mounting is not gated on conversion: `TiffImage`
+ * (`src/components/ui/(image)/(tiff-image)/tiff-image.tsx`) fires `rawToTiff`
+ * from a `useMemo` and only Suspends the inner pixel view on it, so the divs
+ * mount in 152 ms (measured, worker build, three frames) -- long before any
+ * conversion finishes. The completion signal this test actually needs is the
+ * `<canvas>` each thumbnail appends once it has converted and decoded (below).
+ * Measured with the conversion forced back onto the main thread (`git
+ * checkout HEAD~2 -- src/lib/raw-preview.ts`, see task 4's report for the
+ * exact commit): worst gap 4954.8 ms. With the worker: 121 ms in WebKit,
+ * 100.9 ms in Chromium.
+ */
+test("the page stays responsive while RAW thumbnails are converted", async ({
+  page,
+}) => {
+  // Three 21.7 MB frames to upload and demosaic, well past the default budget.
+  test.setTimeout(300_000);
+
+  await page.goto("/home-page");
+
+  await page.evaluate(() => {
+    const w = window as unknown as { __beats: number[] };
+    w.__beats = [];
+    let last = performance.now();
+    setInterval(() => {
+      const now = performance.now();
+      w.__beats.push(now - last);
+      last = now;
+    }, 100);
+  });
+
+  await loadCr2Frames(page, 3);
+
+  // The real completion signal. A thumbnail only gets a `<canvas>` once
+  // `TiffImageInner` (same directory as `tiff-image.tsx`) has both converted
+  // the RAW frame and decoded the resulting TIFF -- the div count from
+  // `loadCr2Frames` reaches three long before that. `decodeTiff` runs in a
+  // second, separate worker, so this window covers both conversions; only
+  // `putImageData` itself still runs on the main thread, and the assertion
+  // below is what confirms that residue stays under the 1 s margin.
+  await expect(
+    page.locator(
+      '[data-testid="image-set-preview"] .generic-image-container canvas'
+    )
+  ).toHaveCount(3, { timeout: 180_000 });
+
+  const { beats, worst } = await page.evaluate(() => {
+    const w = window as unknown as { __beats: number[] };
+    return { beats: w.__beats.length, worst: Math.max(...w.__beats) };
+  });
+
+  // Same margin as the pipeline's own responsiveness check: under ~1s of gap
+  // is scheduler noise, where a blocked main thread produced tens of seconds.
   expect(beats).toBeGreaterThan(20);
   expect(worst).toBeLessThan(1000);
 });
