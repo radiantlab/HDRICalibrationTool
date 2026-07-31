@@ -66,9 +66,17 @@ export function convertRawInWorker(
   wasmBaseUrl: string
 ): Promise<Uint8Array> {
   const conversion = queue.then(() => send(path, bytes, wasmBaseUrl));
-  // Swallowed on the queue only: a failed frame must not stop the ones behind
-  // it, but its own caller still sees the rejection through `conversion`.
-  queue = conversion.catch(() => undefined);
+  // Discards the value on both paths, not just the error: `p.catch(fn)` is
+  // `p.then(undefined, fn)`, so a fulfilled `conversion` would pass its ~67 MB
+  // TIFF straight through and `queue` would pin it at module scope until the
+  // next call replaces it -- a whole frame outliving the cache entry it came
+  // from, with nothing ever reading it (the only consumer is `queue.then(()
+  // => send(...))`, which ignores its argument). Dropping the value on success
+  // too keeps `queue` a pure ordering signal.
+  queue = conversion.then(
+    () => undefined,
+    () => undefined
+  );
   return conversion;
 }
 

@@ -48,8 +48,9 @@ describe("shared RAW conversion", () => {
     ]);
 
     expect(source.converted).toHaveLength(1);
-    // The same buffer, not an equal copy: that is what makes staging a cached
-    // frame into the pipeline cost no extra memory.
+    // The same buffer, not an equal copy: that is what makes the cache share
+    // one conversion across every caller asking for the same frame, rather
+    // than each caller paying for its own.
     expect(b).toBe(a);
     expect(c).toBe(a);
   });

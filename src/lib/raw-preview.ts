@@ -2,13 +2,16 @@
  * Caches RAW-to-TIFF conversions and shares the result across callers.
  *
  * This is the only place a RAW file is demosaiced. Both consumers go through
- * it: the viewer's thumbnails and the pipeline's merge stage. The conversion
- * itself, and the `dcrawArgs` that drive it, live in `raw-convert.ts`; this
- * file reaches them through `convertRaw` (by default -- see `workerTiffFor`
- * below) rather than restating them, so the TIFF the preview shows and the
- * TIFF hdrgen merges are byte-identical (verified: sha256 8137c98a... from the
- * browser preview path, the pipeline, and a native build alike). There is one
- * `dcrawArgs`, not two flag sets that could quietly drift apart.
+ * it: the viewer's thumbnails and the pipeline's merge stage. The cache lives
+ * here, on the page; the conversion itself runs off the page, in a worker.
+ * This file reaches it by default through `workerTiffFor`, which drives the
+ * worker via `convertRawInWorker` (`raw-worker-client.ts`); the worker in turn
+ * calls `convertRaw` and the single `dcrawArgs` that drive it, both defined in
+ * `raw-convert.ts`. Restating neither here is what keeps the TIFF the preview
+ * shows and the TIFF hdrgen merges byte-identical (verified: sha256
+ * 8137c98a... from the browser preview path, the pipeline, and a native build
+ * alike). There is one `dcrawArgs`, not two flag sets that could quietly
+ * drift apart.
  *
  * Sharing matters more than it first looks. `image-set-preview.tsx` renders a
  * thumbnail for every file in a set, so uploading a 10-frame CR2 bracket
@@ -54,9 +57,12 @@ function workerTiffFor(path: string, bytes: Uint8Array): Promise<Uint8Array> {
  * the case that matters -- preview then run -- and lets a longer session evict
  * its oldest frames rather than growing without bound.
  *
- * Entries are held by reference, not copied. `WasmToolRunner.writeFile` stores
- * the array it is handed, so staging a cached frame into the pipeline costs no
- * additional memory: the cache and the runner point at the same buffer.
+ * Entries are held by reference, not copied, but staging one into the
+ * pipeline still costs a copy: `pipeline-worker-client.ts`'s `owned()` slices
+ * a cached frame before `postMessage`, because transferring the cache's own
+ * buffer emptied it -- the defect fixed in 93ba5fc. The saving here is not
+ * "zero copies at staging time", it is one conversion shared by every caller
+ * that wants the same frame.
  */
 const BUDGET_BYTES = 768 * 1024 * 1024;
 
@@ -181,11 +187,14 @@ async function convert(
 ): Promise<Uint8Array<ArrayBuffer>> {
   const bytes = await io.readFile(path);
   const tiff = await (io.tiffFor ?? workerTiffFor)(path, bytes);
-  // MEMFS hands back a plain ArrayBuffer-backed view, never a SharedArrayBuffer
-  // -- these builds are single-threaded, which is what keeps them hostable
-  // without COOP/COEP headers, and a page served without those headers does
-  // not even define SharedArrayBuffer. Narrowed here so callers can pass
-  // `.buffer` straight to the tiff worker instead of copying it.
+  // Never a SharedArrayBuffer -- these builds are single-threaded, which is
+  // what keeps them hostable without COOP/COEP headers, and a page served
+  // without those headers does not even define SharedArrayBuffer. The value
+  // now arrives by structured clone from the RAW worker rather than straight
+  // from MEMFS, but a cloned or transferred view is always ArrayBuffer-backed
+  // either way, so the narrowing still holds. Callers still owe `decodeTiff`
+  // a copy of `.buffer`, not a bare handoff: it does `buffer.slice(0)` before
+  // posting to the tiff worker.
   return tiff as Uint8Array<ArrayBuffer>;
 }
 
