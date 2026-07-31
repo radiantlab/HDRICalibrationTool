@@ -12,6 +12,13 @@
  * therefore run twice: once as one call across the whole blob, once as 8 MB
  * slices through the same handle. A chunked pass that survives where the
  * single-shot one didn't points at the call shape, not the backend.
+ *
+ * That same WebKit run turned out to be neither of those things: a follow-up
+ * 4-byte write failed with the identical error, on a host that `memory_pressure`
+ * showed was down to double-digit megabytes free. A host that cannot write 4
+ * bytes cannot tell you whether it can write 67 MB in one call or eight, so a
+ * trivial control write now runs first and gates how the rest of the report
+ * is read -- see the assertions at the bottom.
  */
 import { expect, test } from "@playwright/test";
 
@@ -44,6 +51,31 @@ test("OPFS and IndexedDB accept a converted-frame-sized blob", async ({
 
       out.opfsAvailable = typeof navigator.storage?.getDirectory === "function";
       if (out.opfsAvailable) {
+        // A trivial write that must succeed before the 67 MB numbers below
+        // are trusted as an OPFS finding. Discovered the hard way: a host
+        // under enough memory pressure fails a 4-byte write with the exact
+        // same error a 67 MB write produces, at the same
+        // `getDirectory()` stage, before either write is attempted --
+        // indistinguishable from OPFS itself being broken unless something
+        // this small is checked first.
+        try {
+          const root = await navigator.storage.getDirectory();
+          const handle = await root.getFileHandle("control.bin", {
+            create: true,
+          });
+          const writable = await handle.createWritable();
+          await writable.write(new Uint8Array([1, 2, 3, 4]));
+          await writable.close();
+          const back = new Uint8Array(
+            await (await handle.getFile()).arrayBuffer()
+          );
+          out.controlOk = back.length === 4 && back[3] === 4;
+          await root.removeEntry("control.bin");
+        } catch (error) {
+          out.controlOk = false;
+          out.controlError = String(error);
+        }
+
         // Measured inside a dedicated worker, because `createSyncAccessHandle`
         // exists nowhere else -- which is the whole reason the persistent tier
         // sits in a worker. Timed against `createWritable` below so the choice
@@ -253,6 +285,17 @@ test("OPFS and IndexedDB accept a converted-frame-sized blob", async ({
   // and this run exists precisely to find out which hosts those are. A failure
   // here is a result to record, not a bug to fix.
   expect(report.opfsAvailable, "OPFS is available on this host").toBe(true);
+
+  // Checked before the real OPFS assertions, deliberately: if this one fails,
+  // it should be the assertion that fails, so the report reads as "this run
+  // is inconclusive" rather than "OPFS is broken here" -- the exact
+  // conflation that produced a wrong finding on the first pass through this
+  // spec.
+  expect(
+    report.controlOk,
+    `host-level OPFS control write must succeed before the numbers below mean anything about OPFS (control error: ${report.controlError}). A failure here means this run is inconclusive, not a negative finding -- retry on an unloaded host.`
+  ).toBe(true);
+
   expect(report.opfsError, "OPFS write/read raised nothing").toBeUndefined();
   expect(report.opfsRoundTrips, "OPFS bytes read back identical").toBe(true);
   expect(report.idbError, "IndexedDB accepted a 67 MB value").toBeUndefined();

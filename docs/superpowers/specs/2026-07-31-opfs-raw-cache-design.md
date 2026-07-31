@@ -184,18 +184,36 @@ for a large OPFS write, and a chunked pass that survives where the
 single-shot one failed would point at the call shape rather than at OPFS
 itself -- see the spec's module docstring.
 
-| Host | opfsAvailable | opfsRoundTrips | opfsWriteMs | opfsChunkedRoundTrips | opfsChunkedWriteMs | opfsSync.writeMs | opfsSyncChunked.writeMs | quota | idbWriteMs | errors |
-|---|---|---|---|---|---|---|---|---|---|---|
-| WebKit (Playwright, macOS) | true | false | -- | inconclusive | -- | -- | -- | 1000 MB | 169-296 | see below -- host-level, not a finding about OPFS |
-| Chromium (Playwright, macOS) | true | true | 78-103 | true | 97 | 115-179 | 120 | 3072-4096 MB | 41-66 | none |
-| WKWebView (macOS, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
-| WebView2 (Windows, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
-| WebKitGTK (Linux, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
+It also now runs a **control write** first on every host: 4 bytes, main
+thread, `createWritable`, read back and compared, before anything else is
+attempted. This was added after the WebKit row below was first recorded and
+turned out to be wrong -- see the correction below the table. `controlOk`
+must be `true` before any other cell in that host's row means anything about
+OPFS; the spec's own assertions are ordered the same way, control first, so a
+run that fails the control reports itself as inconclusive rather than as an
+OPFS verdict.
+
+| Host | controlOk | opfsAvailable | opfsRoundTrips | opfsWriteMs | opfsChunkedRoundTrips | opfsChunkedWriteMs | opfsSync.writeMs | opfsSyncChunked.writeMs | quota | idbWriteMs | errors |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| WebKit (Playwright, macOS) | **false** (inferred -- see below) | true | -- (never compared) | -- | -- (never compared) | -- | -- | -- | 1000 MB | 169-296 | `UnknownError: ... out of memory` at `getDirectory()`, before any write -- host-level, not a finding about OPFS |
+| Chromium (Playwright, macOS) | true | true | true | 78-103 | true | 84-97 | 115-179 | 93-120 | 3072-4096 MB | 41-66 | none |
+| WKWebView (macOS, Tauri) | needs a local Tauri debug build | -- | -- | -- | -- | -- | -- | -- | -- | -- | not yet run |
+| WebView2 (Windows, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
+| WebKitGTK (Linux, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
 
 Chromium and WebKit each show a range because the spec was run more than
 once while diagnosing the WebKit result below; the numbers move host-load to
 host-load but the pass/fail outcome was stable across every Chromium run and
-every WebKit run.
+every WebKit run. Chromium's `controlOk: true` and full round-trip are from
+the most recent run, after the control write and the chunked paths were both
+added -- confirming neither addition regressed the already-passing case.
+
+WebKit's `controlOk` is marked **false (inferred)** rather than measured: the
+control write did not exist as a spec assertion during any of the WebKit runs
+recorded here, but a same-session throwaway diagnostic (a bare 4-byte
+`createWritable` write, described below) failed identically, which is exactly
+what the permanent control write now checks. Not run again to confirm --
+see "Still needed."
 
 **Chromium round-trips cleanly on all four paths, single-shot and chunked,
 main thread and worker.** All four writes -- `createWritable` single-shot,
@@ -204,7 +222,7 @@ main thread and worker.** All four writes -- `createWritable` single-shot,
 This is the one clean chunked-vs-single-shot comparison available so far: the
 chunked writer's code path is correct, and on an engine that already handles
 the single-shot write, chunking neither breaks anything nor buys much
-(97 ms vs. 78-103 ms for `createWritable`; 120 ms vs. 115-179 ms for
+(84-97 ms vs. 78-103 ms for `createWritable`; 93-120 ms vs. 115-179 ms for
 `createSyncAccessHandle` -- see the timing-comparability caveat below before
 reading either pair as a real speed difference).
 
@@ -229,16 +247,24 @@ one are **confounded by host memory pressure, not evidence about WebKit's
 OPFS implementation**. Both are marked accordingly in the table rather than
 left to read as findings.
 
-This is Playwright's bundled WebKit on macOS in an ephemeral profile, not
-WKWebView -- the row the "OPFS fails on any engine -> B" rule actually needs,
-and it needs a result from an unloaded host (CI, or this same machine at
-rest) before it counts as one. If WKWebView fails the same way on a host that
-also fails a 4-byte control write, that is the same confound repeated, not
-independent confirmation. If WKWebView fails while a same-session 4-byte
-control succeeds, that is a real, engine-level finding and the "any engine"
-rule fires. If WKWebView round-trips cleanly, the WebKit-only result does not
-decide anything on its own, since the rule is stated per engine and WebKit is
-not one of the five it names.
+This is Playwright's bundled WebKit on macOS, in an ephemeral profile. The
+task brief's backend decision rule names five engines explicitly -- "WebKit,
+Chromium, WKWebView, WebView2, WebKitGTK" -- and WebKit is the first of them,
+so the rule does apply to this row; the point is not that WebKit falls
+outside it. The point is that this row's **evidence is invalid**, not that
+the rule doesn't reach it: `controlOk: false` means the host could not write
+4 bytes, so nothing this run reports distinguishes "OPFS is broken in
+WebKit" from "this host was thrashing." Applying the brief's "OPFS fails on
+any engine -> approach B" rule to invalid evidence would be deciding the
+architecture on a measurement that was never actually taken -- the run must
+be regathered on an unloaded host (CI, or this same machine at rest, with
+`controlOk: true`) before the rule can be applied to WebKit at all. Once a
+valid WebKit result exists, three outcomes follow directly from the brief's
+rule, independent of what WKWebView separately shows: a valid failure on
+WebKit itself fires "fails on any engine -> B" outright; a valid pass leaves
+the decision to whatever the other four engines show; and a second invalid
+run (`controlOk: false` again) means try again on a different host, not a
+finding either way.
 
 **The write-path timing is not comparable as instrumented, independent of the
 confound above.** `opfsSync.writeMs` brackets only `access.write` + `flush`
@@ -246,7 +272,8 @@ inside the worker, on a freshly allocated all-zero buffer; `opfsWriteMs`
 brackets `write` + `close` on the main thread, on the patterned source buffer.
 Different spans, different payloads. The same gap exists between
 `opfsSyncChunked.writeMs` and `opfsChunkedWriteMs`. None of Chromium's four
-numbers should be fed into the 2x rule under "Write path" above -- a rerun
+numbers should be fed into the brief's write-path rule (`createSyncAccessHandle`
+over `createWritable` only if more than 2x faster on every engine) -- a rerun
 timing the same span over the same bytes would be needed before any pair of
 them means anything.
 
