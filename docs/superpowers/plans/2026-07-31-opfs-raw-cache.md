@@ -1379,7 +1379,7 @@ Safari or Linux desktop users. IndexedDB round-tripped 67 MB everywhere."
 - Test: `src/lib/raw-worker.test.ts` (create)
 
 **Interfaces:**
-- Consumes: `createRawCache` (Task 4), `rawCacheKey`/`toolTag` (Task 6), `opfsBlobStore`/`opfsAvailable` (Task 7).
+- Consumes: `createRawCache` (Task 4), `rawCacheKey`/`toolTag` (Task 6), `idbBlobStore`/`blobStoreAvailable` (Task 7).
 - Produces: no new exports. Behaviour: identical bytes convert once across reloads.
 
 - [ ] **Step 1: Write the failing test**
@@ -1485,7 +1485,7 @@ In `src/lib/raw-worker.ts`, add the imports:
 ```ts
 import { createRawCache, type RawCache } from "./raw-cache";
 import { rawCacheKey, toolTag } from "./raw-cache-key";
-import { opfsAvailable, opfsBlobStore } from "./raw-cache-opfs";
+import { blobStoreAvailable, idbBlobStore } from "./raw-cache-idb";
 ```
 
 Add the cache accessor beside `runnerFor`:
@@ -1494,16 +1494,16 @@ Add the cache accessor beside `runnerFor`:
 let cache: RawCache | undefined;
 
 /**
- * The persistent tier, or nothing on a host without OPFS.
+ * The persistent tier, or nothing on a host without IndexedDB.
  *
  * Absence is not an error: the conversion path is unchanged and only slower,
  * which is exactly what every host did before this existed.
  */
 function cacheFor(): RawCache | undefined {
-  if (!opfsAvailable()) {
+  if (!blobStoreAvailable()) {
     return;
   }
-  cache ??= createRawCache({ store: opfsBlobStore() });
+  cache ??= createRawCache({ store: idbBlobStore() });
   return cache;
 }
 ```
@@ -1604,7 +1604,7 @@ conversion, so the cache can never be why a frame fails."
 - Modify: `src/app/settings-page/page.tsx`
 
 **Interfaces:**
-- Consumes: `createRawCache`, `BUDGET_BYTES` (Task 4), `opfsAvailable`/`opfsBlobStore` (Task 7).
+- Consumes: `createRawCache`, `BUDGET_BYTES` (Task 4), `blobStoreAvailable`/`idbBlobStore` (Task 7).
 - Produces: no exports.
 
 - [ ] **Step 1: Add the state and loader**
@@ -1614,7 +1614,7 @@ In `src/app/settings-page/page.tsx`, add imports:
 ```ts
 import prettyBytes from "pretty-bytes";
 import { BUDGET_BYTES, createRawCache } from "@/lib/raw-cache";
-import { opfsAvailable, opfsBlobStore } from "@/lib/raw-cache-opfs";
+import { blobStoreAvailable, idbBlobStore } from "@/lib/raw-cache-idb";
 ```
 
 Inside `SettingsPage`, beside the other `useState` calls:
@@ -1626,10 +1626,10 @@ Inside `SettingsPage`, beside the other `useState` calls:
 In the existing mount `useEffect`, after the `wasmVersions()` block:
 
 ```ts
-    // Absent on a host without OPFS, where there is no persistent tier to
+    // Absent on a host without IndexedDB, where there is no persistent tier to
     // report. Zero would claim an empty cache rather than no cache.
-    if (opfsAvailable()) {
-      createRawCache({ store: opfsBlobStore() })
+    if (blobStoreAvailable()) {
+      createRawCache({ store: idbBlobStore() })
         .usage()
         .then(setCacheBytes)
         .catch(() => setCacheBytes(null));
@@ -1643,7 +1643,7 @@ Beside `handleUpdatePath`:
 ```ts
   /** Empties the persistent RAW cache and re-reads its size. */
   const handleClearCache = async () => {
-    const cache = createRawCache({ store: opfsBlobStore() });
+    const cache = createRawCache({ store: idbBlobStore() });
     try {
       await cache.clear();
       setCacheBytes(await cache.usage());
@@ -1697,7 +1697,7 @@ git add src/app/settings-page/page.tsx
 git commit -m "feat(settings): show and clear the RAW conversion cache
 
 A 2 GB cache that a user cannot see or reclaim short of clearing site data is
-not an honest default. Hidden entirely where there is no OPFS, since zero
+not an honest default. Hidden entirely where there is no IndexedDB, since zero
 would claim an empty cache rather than no cache."
 ```
 
@@ -1754,7 +1754,7 @@ npm run build
 MODE=cr2 FRAMES=3 npm --prefix e2e-web run bench
 ```
 
-Expected: `secondImportMs` falls to a small fraction of `runMs` — the demosaic is skipped and only the OPFS read and TIFF decode remain. `requests.wasm` should stay at 2; a rise would mean the worker is being rebuilt.
+Expected: `secondImportMs` falls to a small fraction of `runMs` — the demosaic is skipped and only the IndexedDB read and TIFF decode remain. `requests.wasm` should stay at 2; a rise would mean the worker is being rebuilt.
 
 - [ ] **Step 4: Record the numbers**
 
