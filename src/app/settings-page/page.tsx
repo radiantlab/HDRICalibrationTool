@@ -128,12 +128,19 @@ export default function SettingsPage() {
     const cache = createRawCache({ store: idbBlobStore() });
     try {
       await cache.clear();
-      setCacheBytes(await cache.usage());
       toast.success("RAW conversion cache cleared");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Could not clear the cache"
       );
+    } finally {
+      // Re-read on both paths: a partial failure still changes what's on
+      // disk, so the figure shown must match reality rather than the last
+      // success -- otherwise an error toast sits next to a stale number.
+      await cache
+        .usage()
+        .then(setCacheBytes)
+        .catch(() => undefined);
     }
   };
 
@@ -404,7 +411,6 @@ export default function SettingsPage() {
                 </div>
                 <button
                   className="rounded bg-secondary px-2 py-1 font-semibold text-secondary-foreground hover:bg-secondary/80"
-                  disabled={cacheBytes === 0}
                   onClick={handleClearCache}
                   type="button"
                 >

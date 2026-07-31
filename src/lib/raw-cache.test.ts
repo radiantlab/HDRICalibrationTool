@@ -28,6 +28,8 @@ function fakeStore(): BlobStore & { blobs: Map<string, Uint8Array> } {
   };
 }
 
+const ONE_FAILED_ENTRY = /1/;
+
 /** A distinct clock, so "least recently used" is decided rather than raced. */
 function clock() {
   let time = 1000;
@@ -110,6 +112,48 @@ describe("the persistent RAW cache", () => {
     await cache.clear();
     expect(store.blobs.size).toBe(0);
     expect(await cache.usage()).toBe(0);
+  });
+
+  it("keeps an entry in the index when its blob cannot be removed, and rejects", async () => {
+    const store = fakeStore();
+    const cache = createRawCache({ now: clock(), store });
+    await cache.put("keeps", new Uint8Array(10));
+    await cache.put("goes", new Uint8Array(15));
+
+    // Only "keeps" fails to remove, so a naive implementation that keeps
+    // everything (rather than exactly the failed entry) would still pass a
+    // test that merely checks usage() is nonzero.
+    const flaky: BlobStore = {
+      ...store,
+      remove: (key) =>
+        key === "keeps"
+          ? Promise.reject(new Error("locked"))
+          : store.remove(key),
+    };
+    const flakyCache = createRawCache({ now: clock(), store: flaky });
+
+    await expect(flakyCache.clear()).rejects.toThrow();
+    expect(store.blobs.has("keeps")).toBe(true);
+    expect(store.blobs.has("goes")).toBe(false);
+    expect(await flakyCache.usage()).toBe(10);
+  });
+
+  it("names how many entries could not be removed", async () => {
+    const store = fakeStore();
+    const cache = createRawCache({ now: clock(), store });
+    await cache.put("keeps", new Uint8Array(10));
+    await cache.put("goes", new Uint8Array(15));
+
+    const flaky: BlobStore = {
+      ...store,
+      remove: (key) =>
+        key === "keeps"
+          ? Promise.reject(new Error("locked"))
+          : store.remove(key),
+    };
+    const flakyCache = createRawCache({ now: clock(), store: flaky });
+
+    await expect(flakyCache.clear()).rejects.toThrow(ONE_FAILED_ENTRY);
   });
 
   it("defaults to a 2 GB budget", () => {

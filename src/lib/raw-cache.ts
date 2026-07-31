@@ -153,10 +153,31 @@ export function createRawCache(options: RawCacheOptions): RawCache {
 
   async function clear(): Promise<void> {
     const present = await store.keys().catch(() => [] as string[]);
-    await Promise.all(
-      present.map((key) => store.remove(key).catch(() => undefined))
+    const results = await Promise.allSettled(
+      present.map((key) => store.remove(key))
     );
-    await updateIndex(() => ({}));
+    const failed = present.filter((_, i) => results[i]?.status === "rejected");
+
+    // Keep exactly the entries whose blobs survived removal. Emptying the
+    // index unconditionally is how a partial failure used to turn into a
+    // false "cleared": usage() would read 0 while the un-removed blobs sat
+    // on disk, and the settings page would report success over both.
+    const failedKeys = new Set(failed);
+    await updateIndex((current) => {
+      const next: CacheIndex = {};
+      for (const key of Object.keys(current)) {
+        const entry = current[key];
+        if (entry && failedKeys.has(key)) {
+          next[key] = entry;
+        }
+      }
+      return next;
+    });
+
+    if (failed.length > 0) {
+      const noun = failed.length === 1 ? "entry" : "entries";
+      throw new Error(`Could not clear ${failed.length} cache ${noun}`);
+    }
   }
 
   return { clear, get, put, sweep, usage };
