@@ -37,6 +37,8 @@ export interface RawCache {
   clear: () => Promise<void>;
   get: (key: string) => Promise<Uint8Array | undefined>;
   put: (key: string, bytes: Uint8Array) => Promise<void>;
+  /** Deletes blobs the index does not know about. Runs once per instance. */
+  sweep: () => Promise<void>;
   usage: () => Promise<number>;
 }
 
@@ -49,7 +51,32 @@ export function createRawCache(options: RawCacheOptions): RawCache {
     return (await getDocument<CacheIndex>(INDEX_KEY)) ?? {};
   }
 
+  /**
+   * Blobs with no index entry, deleted.
+   *
+   * A write that landed but whose index update did not is invisible to
+   * eviction, so it would consume disk for the life of the origin. About
+   * thirty keys at this budget, so listing them is cheap.
+   */
+  async function sweep(): Promise<void> {
+    const index = await readIndex();
+    const present = await store.keys().catch(() => [] as string[]);
+    await Promise.all(
+      present
+        .filter((key) => !index[key])
+        .map((key) => store.remove(key).catch(() => undefined))
+    );
+  }
+
+  /** Once per instance: a sweep on every lookup would list the store per frame. */
+  let swept: Promise<void> | undefined;
+  function sweepOnce(): Promise<void> {
+    swept ??= sweep().catch(() => undefined);
+    return swept;
+  }
+
   async function get(key: string): Promise<Uint8Array | undefined> {
+    await sweepOnce();
     const index = await readIndex();
     if (!index[key]) {
       return;
@@ -78,6 +105,8 @@ export function createRawCache(options: RawCacheOptions): RawCache {
   }
 
   async function put(key: string, bytes: Uint8Array): Promise<void> {
+    await sweepOnce();
+
     // A blob bigger than the whole budget would evict everything and then
     // itself, so it is never stored at all.
     if (bytes.byteLength > budget) {
@@ -130,7 +159,7 @@ export function createRawCache(options: RawCacheOptions): RawCache {
     await updateIndex(() => ({}));
   }
 
-  return { clear, get, put, usage };
+  return { clear, get, put, sweep, usage };
 }
 
 function updateIndex(
