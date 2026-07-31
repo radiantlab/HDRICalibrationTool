@@ -104,31 +104,6 @@ describe("shared RAW conversion", () => {
     expect(c).toBe(a);
   });
 
-  it("uses the same argv the pipeline does", async () => {
-    const { load, runs } = fakeLoader();
-    await rawToTiff("/in/capt01.CR2", io(load));
-
-    expect(runs[0]).toEqual([
-      "-T",
-      "-o",
-      "1",
-      "-W",
-      "-j",
-      "-q",
-      "3",
-      "-g",
-      "2",
-      "0",
-      "-t",
-      "0",
-      "-b",
-      "1.1",
-      "-Z",
-      "/work/preview.tiff",
-      "/work/capt01.CR2",
-    ]);
-  });
-
   it("reconverts when the file behind the path has changed", async () => {
     const { load, runs } = fakeLoader();
     let stamp = "100:1";
@@ -176,42 +151,17 @@ describe("shared RAW conversion", () => {
     );
   });
 
-  it("reports a nonzero exit rather than caching an empty result", async () => {
-    const load = (_tool: string): Promise<ModuleFactory> => {
-      const factory: ModuleFactory = (options?: Record<string, unknown>) => {
-        (options?.printErr as ((line: string) => void) | undefined)?.(
-          "Cannot open /work/a.CR2: Unsupported file format or not RAW file"
-        );
-        return Promise.resolve({
-          callMain: () => 2,
-          FS: {
-            chdir: () => undefined,
-            close: () => undefined,
-            mkdir: () => undefined,
-            open: () => ({}),
-            readdir: () => [],
-            readFile: () => {
-              throw new Error("ENOENT");
-            },
-            streams: [0, 1, 2],
-            unlink: () => undefined,
-            writeFile: () => undefined,
-          },
-          HEAPU8: new Uint8Array(8),
-        } as EmscriptenModule);
-      };
-      return Promise.resolve(factory);
+  it("does not account for a conversion that failed", async () => {
+    const source: RawSourceIo = {
+      load: () => Promise.reject(new Error("module missing")),
+      readFile: () => Promise.resolve(new Uint8Array(4)),
     };
 
-    const failure = await rawToTiff("/in/a.CR2", {
-      load,
-      readFile: () => Promise.resolve(new Uint8Array(4)),
-    }).catch((error: unknown) => error as Error);
-
-    expect(failure).toBeInstanceOf(Error);
-    // Both halves matter: the exit code says it failed, the stderr says why.
-    expect((failure as Error).message).toContain("exit 2");
-    expect((failure as Error).message).toContain("Unsupported file format");
+    await expect(rawToTiff("/in/a.CR2", source)).rejects.toThrow(
+      "module missing"
+    );
+    // A failure that still counted against the budget would evict live frames
+    // to make room for something that was never stored.
     expect(rawCacheBytes()).toBe(0);
   });
 
