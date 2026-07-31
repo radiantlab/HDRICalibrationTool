@@ -16,6 +16,12 @@ describe("recovering from a failed open()", () => {
     // kv.ts cached that rejected promise, every subsequent call in the
     // session -- getDocument, putDocument, presets, settings -- would reject
     // forever with this same error, not just the call that hit it.
+    // A plain object standing in for IDBOpenDBRequest, exercising only the
+    // `on*` property-assignment style kv.ts currently uses. Real
+    // IDBOpenDBRequest is an EventTarget and also supports
+    // addEventListener/dispatchEvent; if kv.ts ever moved to that API this
+    // mock would stop reflecting reality without failing loudly -- it would
+    // just silently stop exercising the failure path this test is for.
     const openSpy = jest.spyOn(indexedDB, "open").mockImplementationOnce(() => {
       const request = {
         error: new Error("simulated open failure"),

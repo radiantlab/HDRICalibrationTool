@@ -63,7 +63,21 @@ function open(): Promise<IDBDatabase> {
       // tab's request permanently blocked -- DATABASE_VERSION could not
       // change before this database had a second version to move between,
       // so this branch was unreachable until the blob store was added.
-      database.onversionchange = () => database.close();
+      //
+      // `connection` is cleared *before* `close()`, not after: this tab's
+      // cached promise still resolves to `database`, and once it is closed
+      // every later `getDocument`/`putDocument` against it fails with
+      // `InvalidStateError` -- permanently, since nothing else would ever
+      // clear the cache. `app-storage.ts`'s `readJson` swallows read errors
+      // and returns the fallback, so that failure would not surface as an
+      // error; it would render as an empty app -- no presets, no settings,
+      // no run history -- until the tab is reloaded. Clearing first means
+      // the next call to `open()` reopens instead of reusing the dying
+      // handle.
+      database.onversionchange = () => {
+        connection = undefined;
+        database.close();
+      };
       resolve(database);
     };
     request.onerror = () =>

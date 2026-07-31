@@ -47,28 +47,51 @@ describe("the IndexedDB blob store", () => {
   it("stores a view of a larger buffer without dragging the whole buffer in", async () => {
     // The defect `putFile` documents: a subarray carries its parent's buffer,
     // so storing the view rather than a slice would persist far more than was
-    // asked for. Asserting on the *read-back value* would not catch this --
-    // IndexedDB's structured clone preserves a view's offset and length over
-    // the cloned buffer, so `read()`'s `new Uint8Array(stored)` would come
-    // back `[3, 4, 5]` either way, view or slice. What a bad implementation
-    // gets wrong is how much gets **stored**: an 8-byte buffer instead of the
-    // 3 bytes asked for. Read the raw record directly, bypassing `read()`'s
-    // conversion, to check the size that actually landed in the database.
+    // asked for. Two things must both hold for a correct write, and a naive
+    // "forgot to slice" bug (`store.put(bytes, key)`, storing the Uint8Array
+    // itself) breaks neither on its own:
+    //
+    //  - The read-back *value* is `[3, 4, 5]` either way. Structured clone
+    //    reconstructs a view with the same offset and length it was given,
+    //    so `read()`'s `new Uint8Array(stored)` looks identical from a
+    //    stored slice or a stored view -- `.byteLength` on a view reflects
+    //    the view's length, not its retained backing buffer.
+    //  - `stored?.byteLength` alone is not enough either: a stored *view*
+    //    that happens to be exactly 3 bytes would also pass a bare
+    //    `byteLength === 3` check while still being the wrong kind of
+    //    record and still retaining the 8-byte buffer behind it.
+    //
+    // What actually distinguishes a correct write is that the record is a
+    // **plain `ArrayBuffer`** of length 3, not a view over something larger.
+    // Read the raw record directly, bypassing `read()`'s conversion, to
+    // check both.
     const backing = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8]);
     await idbBlobStore().write("view", backing.subarray(2, 5));
 
     const stored = await rawBlobRecord("view");
-    expect(stored?.byteLength).toBe(3);
+    // `instanceof ArrayBuffer` is not reliable here: fake-indexeddb's clone
+    // reconstructs the value in a different realm, so a genuinely correct
+    // ArrayBuffer record fails `instanceof` against this file's global
+    // `ArrayBuffer` too. `Object.prototype.toString` and `ArrayBuffer.isView`
+    // read an object's internal slot rather than walking its prototype
+    // chain, so both stay accurate across realms -- verified by hand: a
+    // stored `ArrayBuffer` reports `"[object ArrayBuffer]"` and
+    // `isView() === false`, a stored `Uint8Array` reports
+    // `"[object Uint8Array]"` and `isView() === true`, regardless of realm.
+    expect(Object.prototype.toString.call(stored)).toBe("[object ArrayBuffer]");
+    expect(ArrayBuffer.isView(stored)).toBe(false);
+    expect((stored as ArrayBuffer).byteLength).toBe(3);
   });
 });
 
 /**
  * Reads a blob record straight off the store, without `read()`'s
  * `new Uint8Array(stored)` conversion, so a test can inspect what was
- * actually persisted rather than what a correctly-shaped read would produce
- * from either a correct or a defective write.
+ * actually persisted -- including its *type*, not just a value shaped like
+ * the one `read()` would have produced from either a correct or a defective
+ * write.
  */
-function rawBlobRecord(key: string): Promise<ArrayBuffer | undefined> {
+function rawBlobRecord(key: string): Promise<unknown> {
   return new Promise((resolve, reject) => {
     // Same database and store `kv.ts` opens; hardcoded because this reaches
     // underneath that module's API on purpose, to see what it actually wrote.
@@ -81,7 +104,7 @@ function rawBlobRecord(key: string): Promise<ArrayBuffer | undefined> {
         .get(key);
       read.onsuccess = () => {
         database.close();
-        resolve(read.result as ArrayBuffer | undefined);
+        resolve(read.result);
       };
       read.onerror = () => {
         database.close();
