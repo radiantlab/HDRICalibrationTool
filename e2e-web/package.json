@@ -6,6 +6,7 @@
   "scripts": {
     "test": "playwright test",
     "test:headed": "playwright test --headed",
+    "bench": "playwright test -c perf.config.ts",
     "report": "playwright show-report"
   },
   "devDependencies": {
