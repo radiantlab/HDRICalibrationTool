@@ -1,15 +1,17 @@
 /**
  * Converting one frame, with no cache in the way.
  *
- * These two assertions used to live in `raw-preview.test.ts`, where the cache
- * tests paid for the converter's Emscripten fake. They belong to the module
- * that runs the tool, which is now this one.
+ * The two `convertRaw` assertions used to live in `raw-preview.test.ts`,
+ * where the cache tests paid for the converter's Emscripten fake. They
+ * belong to the module that runs the tool, which is now this one. `baseName`
+ * is tested alongside them for the same reason: it is `raw-convert.ts`'s own
+ * helper.
  */
 
 import { describe, expect, it } from "@jest/globals";
 import type { EmscriptenModule, ModuleFactory } from "./pipeline/wasm-runner";
 import { WasmToolRunner } from "./pipeline/wasm-runner";
-import { convertRaw } from "./raw-convert";
+import { baseName, convertRaw } from "./raw-convert";
 
 /** Records the argv every `callMain` was given. */
 function fakeLoader(outputBytes = 1024) {
@@ -133,5 +135,13 @@ describe("converting one RAW frame", () => {
     // Both halves matter: the exit code says it failed, the stderr says why.
     expect((failure as Error).message).toContain("exit 2");
     expect((failure as Error).message).toContain("Unsupported file format");
+  });
+});
+
+describe("naming the staged file", () => {
+  it("keeps a Windows path working by splitting on either separator", () => {
+    // The forward-slash case alone would not exercise `PATH_SEPARATOR`'s
+    // alternation, since `String.split("/")` would already isolate it.
+    expect(baseName("C:\\in\\capt01.CR2")).toBe("capt01.CR2");
   });
 });

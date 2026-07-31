@@ -22,6 +22,9 @@ import {
 /** Long enough for a cold WebAssembly compile plus the full stage sequence. */
 const RUN_TIMEOUT = 280_000;
 
+/** How many CR2 frames the RAW responsiveness test loads and waits for. */
+const CR2_FRAMES = 3;
+
 test("generates two HDR pictures from the JPEG bracket", async ({ page }) => {
   await page.goto("/home-page");
   await loadJpegBracket(page);
@@ -199,9 +202,11 @@ test("the page stays responsive while the pipeline runs", async ({ page }) => {
 test("the page stays responsive while RAW thumbnails are converted", async ({
   page,
 }) => {
-  // Three 21.7 MB frames to upload and demosaic, well past the default budget.
-  test.setTimeout(300_000);
-
+  // No `test.setTimeout` here: three 21.7 MB frames to upload and demosaic
+  // takes single-digit seconds (see the module docstring), so the global
+  // 300_000 ms from playwright.config.ts is comfortably enough on its own --
+  // the 180_000 ms bound on the canvas-count assertion below is the tighter,
+  // more relevant limit for this test.
   await page.goto("/home-page");
 
   await page.evaluate(() => {
@@ -215,7 +220,7 @@ test("the page stays responsive while RAW thumbnails are converted", async ({
     }, 100);
   });
 
-  await loadCr2Frames(page, 3);
+  await loadCr2Frames(page, CR2_FRAMES);
 
   // The real completion signal. A thumbnail only gets a `<canvas>` once
   // `TiffImageInner` (same directory as `tiff-image.tsx`) has both converted
@@ -228,7 +233,7 @@ test("the page stays responsive while RAW thumbnails are converted", async ({
     page.locator(
       '[data-testid="image-set-preview"] .generic-image-container canvas'
     )
-  ).toHaveCount(3, { timeout: 180_000 });
+  ).toHaveCount(CR2_FRAMES, { timeout: 180_000 });
 
   const { beats, worst } = await page.evaluate(() => {
     const w = window as unknown as { __beats: number[] };

@@ -28,6 +28,13 @@ declare const self: DedicatedWorkerGlobalScope;
 let runner: WasmToolRunner | undefined;
 
 function runnerFor(wasmBaseUrl: string): WasmToolRunner {
+  // `??=` means every request after the first keeps the original runner and
+  // silently ignores whatever `wasmBaseUrl` it arrived with. That is safe
+  // only because the URL is fixed for the life of the worker: `raw-preview.ts`
+  // resolves it once, against the document, and every `convertRawInWorker`
+  // call this session makes passes that same value. If a second, different
+  // base URL ever became a real request, it would need to be a key here
+  // rather than a discard.
   runner ??= new WasmToolRunner({
     compile: urlModuleCompiler(wasmBaseUrl),
     load: urlModuleLoader(wasmBaseUrl),
