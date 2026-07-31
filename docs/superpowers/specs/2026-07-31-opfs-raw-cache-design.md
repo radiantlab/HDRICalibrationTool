@@ -438,8 +438,68 @@ injected converter ran exactly once -- the counting-injection pattern
 **4. End to end, with a number rather than a claim.** `e2e-web`'s benchmark
 already measures this path: `MODE=cr2` reports 5968 ms for 3 frames with 2 wasm
 fetches. Adding a reload-and-reimport pass gives the acceptance criterion
-directly -- the second import should fall by roughly the conversion time while
-wasm fetches stay at 2.
+directly -- the second import should fall by roughly the conversion time. See
+"Measured result" below for what "wasm fetches stay at 2" turns into once the
+benchmark actually reloads the page.
+
+## Measured result
+
+Measured 2026-07-31 with the reload pass added to `e2e-web/tests/perf.bench.ts`
+in Task 10, against the local static build (`npm run build`, then `MODE=cr2
+FRAMES=<n> npm --prefix e2e-web run bench`, `dangerouslyDisableSandbox` needed
+for both in this agent's sandbox -- see the module docstring's note on
+inflated numbers, which applies to `npm run build`'s Turbopack dev server too).
+
+| | 3 frames | 10 frames |
+|---|---|---|
+| `runMs` (first import, cache miss + write) | 10094 / 8456 / 9074 (avg 9208) | 25715 |
+| `secondImportMs` (reload, reimport, cache hit) | 2012 / 1949 / 1970 (avg 1977) | 5198 |
+| ratio (second / first) | 21.5% | 20.2% |
+| `requests.wasm` | 4 | 4 |
+
+Three repeated 3-frame runs are reported individually because a single sample
+was not enough to trust against the 5968 ms baseline below; ten frames was run
+once, at ~26 s for the pair, well within reasonable time.
+
+**`secondImportMs` falls to about a fifth of `runMs`, at both frame counts.**
+The demosaic (~1.9 s/frame) is skipped entirely; what remains is the
+IndexedDB read of ~67 MB/frame plus the TIFF decode. This is the acceptance
+criterion in #243, measured rather than asserted.
+
+**`requests.wasm` is 4, not 2 -- expected, once broken down, not a
+regression.** The pre-reload baseline counted `/wasm/` requests across *one*
+page load; this benchmark now spans two (initial load, then `page.reload()`).
+`wasmRequestDetail` for a representative 3-frame run:
+
+```
+versions.json   (1 KB)   -- first import: computing the cache key's tool tag
+dcraw_emu.js   (20 KB)   -- first import: cache miss, converting
+dcraw_emu.wasm (312 KB)  -- first import: cache miss, converting
+versions.json   (0 KB)   -- second import: computing the cache key's tool tag
+```
+
+`dcraw_emu.js`/`.wasm` appear exactly **once**, on the first import only, at
+both 3 and 10 frames. On the second import, `convertWithCache`'s `key()` call
+fetches `versions.json` to build the tag, finds a persistent-cache hit, and
+returns without ever calling `convertRaw` -- so `runnerFor`'s compiled
+`dcraw_emu` module is not just reused, it is never touched a second time. This
+is stronger evidence than a flat fetch count: the benchmark's own listener
+(`page.on("requestfinished")`) fires for HTTP-cache-served requests too --
+the second `versions.json` above shows `kb: 0`, a cache hit that still
+produced an event -- so the *absence* of a second `dcraw_emu.wasm` entry is
+not the listener missing a cached fetch, it is `convertRaw` never running.
+
+**A control run confirms the comparison is real.** Temporarily reverting
+`raw-worker.ts` to its pre-cache form (`git show 390bbf2^:src/lib/raw-worker.ts`)
+and rebuilding gives, for 3 frames: `runMs` 8036 ms, `secondImportMs` 7944 ms
+-- equal within noise, because nothing is cached, and `dcraw_emu.js`/`.wasm`
+each fetched twice (once per import, the second served from the HTTP cache at
+`kb: 0`). This is also the closest available reproduction of the pre-cache
+baseline: this sandbox's `runMs` runs 8000-9200 ms for 3 frames on both the
+cached and uncached worker, well above the 5968 ms recorded elsewhere, so the
+gap from 5968 is environment speed, not the persistent tier's write cost --
+the write happens on every first-import frame here too and the number is the
+same with and without it.
 
 ## What does not change
 

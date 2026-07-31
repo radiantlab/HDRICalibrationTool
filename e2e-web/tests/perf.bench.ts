@@ -116,6 +116,7 @@ test(`${MODE} against ${TARGET}`, async ({ page }) => {
   // --- The work itself -----------------------------------------------------
   let runMs: number;
   let runLabel: string;
+  let secondImportMs: number | undefined;
 
   if (MODE === "cr2") {
     // The completion signal is the `<canvas>` each thumbnail appends once it
@@ -136,6 +137,20 @@ test(`${MODE} against ${TARGET}`, async ({ page }) => {
     ).toHaveCount(FRAMES, { timeout: RUN_TIMEOUT });
     runMs = Date.now() - runStart;
     runLabel = `import ${FRAMES} RAW frames to thumbnails`;
+
+    // The point of #243, measured rather than asserted: reload, re-import the
+    // same frames, and the conversion should not happen again. Same files, so
+    // the content hash matches; a new tab, so the session tier is empty and
+    // only the persistent tier can produce the saving.
+    await page.reload({ waitUntil: "load" });
+    const secondStart = Date.now();
+    await loadCr2Frames(page, FRAMES);
+    await expect(
+      page.locator(
+        '[data-testid="image-set-preview"] .generic-image-container canvas'
+      )
+    ).toHaveCount(FRAMES, { timeout: RUN_TIMEOUT });
+    secondImportMs = Date.now() - secondStart;
   } else {
     await loadJpegBracket(page);
     await configureRun(page);
@@ -168,6 +183,7 @@ test(`${MODE} against ${TARGET}`, async ({ page }) => {
       wasmTotalMs: Math.round(sum(wasmRequests, (r) => r.ms)),
     },
     runMs,
+    secondImportMs,
     slowestRequests: [...requests]
       .sort((a, b) => b.ms - a.ms)
       .slice(0, 15)
