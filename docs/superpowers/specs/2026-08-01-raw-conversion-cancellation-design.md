@@ -227,11 +227,21 @@ held += data.byteLength;
 conversion resolves adds to `held` and never subtracts. `held` drifts upward
 permanently and the 768 MB budget starts evicting far too eagerly.
 
-This is pre-existing and today needs an eviction to land on a pending entry,
-which is rare. **This design makes forgetting a pending entry the normal
-path**, so it would turn a latent leak into an everyday one. The fix belongs
-here rather than in a follow-up: the `.then` accounts only if the entry is
-still the live one for its key.
+Dropping itself does **not** reach this. Under the three-state model only an
+entry that never started is forgotten, and such an entry rejects rather than
+resolving, so its accounting branch never runs. An earlier draft of this spec
+claimed dropping made the leak routine; that was true of the two-state design
+it was written against and is not true of this one.
+
+What reaches it is the flow this feature exists to serve. `evictDownToBudget`
+does not skip pending entries, and `BUDGET_BYTES` is 768 MB against a
+ten-frame bracket's 673 MB — so it takes two brackets in play at once for
+eviction to land on a frame that is still converting. Dropping one set and
+adding another is exactly that, and it is the scenario #248 opens with. The
+fix belongs here because this feature is what makes the flow common, not
+because dropping performs it.
+
+The `.then` accounts only if the entry is still the live one for its key.
 
 ```ts
 .then((data) => {
@@ -339,11 +349,12 @@ In `raw-preview.test.ts`:
   `tiffFor` was called once, not that the entry still exists, so a design that
   forgets in-flight entries fails it.
 - A completed entry is not forgotten, so a re-add is served from memory.
-- `rawCacheBytes()` returns to zero after a dropped frame's conversion
-  settles. This is the guard on the accounting fix. It cannot be written
-  against today's code, which has no way to drop anything, so it must be
-  checked against a copy of the finished implementation with the
-  `cache.get(key) !== entry` guard removed — otherwise it pins nothing.
+- `rawCacheBytes()` stays at zero when a conversion settles after its entry
+  has left the map. This is the guard on the accounting fix, and it is driven
+  through `clearRawPreviewCache()` rather than through eviction: reaching
+  `evictDownToBudget` honestly would mean allocating past a 768 MB budget in a
+  unit test. The entry point is tests-only, but the guard it exercises is the
+  same one the eviction path needs, and it fails against today's code.
 
 The `image-matrix-input.tsx` wiring is not unit-tested; the behaviour worth
 pinning lives in the two library modules, and the component change is a
