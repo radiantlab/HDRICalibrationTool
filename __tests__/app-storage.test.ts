@@ -10,23 +10,42 @@ import { describe, expect, it } from "@jest/globals";
 
 const documents = new Map<string, unknown>();
 
-jest.mock("../src/lib/storage/kv", () => ({
-  getDocument: (key: string) => {
-    const value = documents.get(key);
-    if (value === "THROW") {
-      return Promise.reject(new Error("store unavailable"));
+jest.mock("../src/lib/storage/kv", () => {
+  // A real subclass, not a bare object shape: F1's fix to `readJson` tells
+  // this class apart with `instanceof`, and a mock that only matched by
+  // duck-typing would leave that check untested against the one thing it
+  // actually has to distinguish. Assigned rather than declared with `class
+  // DatabaseVersionError`, which would shadow the real export this file also
+  // imports by that name for its own assertions.
+  const MockDatabaseVersionError = class extends Error {
+    constructor() {
+      super("stored data is newer than this build can open");
+      this.name = "DatabaseVersionError";
     }
-    return Promise.resolve(value);
-  },
-  putDocument: (key: string, value: unknown) => {
-    documents.set(key, value);
-    return Promise.resolve();
-  },
-}));
+  };
+  return {
+    DatabaseVersionError: MockDatabaseVersionError,
+    getDocument: (key: string) => {
+      const value = documents.get(key);
+      if (value === "THROW") {
+        return Promise.reject(new Error("store unavailable"));
+      }
+      if (value === "VERSION_ERROR") {
+        return Promise.reject(new MockDatabaseVersionError());
+      }
+      return Promise.resolve(value);
+    },
+    putDocument: (key: string, value: unknown) => {
+      documents.set(key, value);
+      return Promise.resolve();
+    },
+  };
+});
 
 declare const jest: typeof import("@jest/globals").jest;
 
 import { readJson, STORAGE_VERSION, writeJson } from "../src/lib/app-storage";
+import { DatabaseVersionError } from "../src/lib/storage/kv";
 
 describe("app storage", () => {
   it("round-trips a value and stamps the version", async () => {
@@ -61,5 +80,17 @@ describe("app storage", () => {
     expect(await readJson("history/old.json", { runs: [] })).toEqual({
       runs: [],
     });
+  });
+
+  it("rethrows DatabaseVersionError instead of returning the fallback", async () => {
+    // F1: a stored-data-is-newer-than-this-build condition is not "nothing
+    // stored badly" -- the data is intact, and papering over it with the
+    // fallback is what used to make a rolled-back deploy render as an empty
+    // app with nothing to explain why.
+    documents.set("history/newer.json", "VERSION_ERROR");
+
+    await expect(
+      readJson("history/newer.json", { runs: [] })
+    ).rejects.toBeInstanceOf(DatabaseVersionError);
   });
 });

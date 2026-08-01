@@ -30,12 +30,41 @@
  * Cosmetic renames are free; addresses are not.
  */
 const DATABASE = "hdri-calibration";
-const DATABASE_VERSION = 1;
+const DATABASE_VERSION = 2;
 
 /** JSON documents: settings, the preset index, run history. */
 const DOCUMENTS = "documents";
 /** Binary blobs: calibration files and response functions, by virtual path. */
 const FILES = "files";
+/** Converted RAW frames, by content-addressed key. See `raw-cache.ts`. */
+const BLOBS = "blobs";
+
+/**
+ * A stored database newer than this build knows how to open.
+ *
+ * IndexedDB does not negotiate a downgrade: opening at a version below what
+ * is already on disk fails the request with a `VersionError`, every time,
+ * for as long as the on-disk version stays ahead of `DATABASE_VERSION`. That
+ * is not a hypothetical -- a rolled-back web deploy, a browser still serving
+ * an old bundle from its HTTP cache, or a Tauri user reinstalling an older
+ * release all produce it for real, against data that is fully intact on
+ * disk. Left as a generic rejection, it looks identical to any other open
+ * failure: `app-storage.ts`'s `readJson` would swallow it and hand back the
+ * empty-state fallback, so the app would render as if the user had never
+ * used it, with no error anywhere to explain why. Giving it a name is what
+ * lets a caller refuse to paper over this one class of failure the way it is
+ * free to paper over the others.
+ */
+export class DatabaseVersionError extends Error {
+  constructor() {
+    super(
+      "This browser holds app data written by a newer version of LumiLab " +
+        "than this build can open. Reload the page, or update the app, to " +
+        "read it."
+    );
+    this.name = "DatabaseVersionError";
+  }
+}
 
 let connection: Promise<IDBDatabase> | undefined;
 
@@ -50,10 +79,48 @@ function open(): Promise<IDBDatabase> {
       if (!database.objectStoreNames.contains(FILES)) {
         database.createObjectStore(FILES);
       }
+      if (!database.objectStoreNames.contains(BLOBS)) {
+        database.createObjectStore(BLOBS);
+      }
     };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () =>
-      reject(request.error ?? new Error("could not open IndexedDB"));
+    request.onsuccess = () => {
+      const database = request.result;
+      // Fires in an older tab when a newer tab's open() needs to upgrade.
+      // Closing here lets that upgrade proceed instead of leaving the newer
+      // tab's request permanently blocked -- DATABASE_VERSION could not
+      // change before this database had a second version to move between,
+      // so this branch was unreachable until the blob store was added.
+      //
+      // `connection` is cleared *before* `close()`, not after: this tab's
+      // cached promise still resolves to `database`, and once it is closed
+      // every later `getDocument`/`putDocument` against it fails with
+      // `InvalidStateError` -- permanently, since nothing else would ever
+      // clear the cache. `app-storage.ts`'s `readJson` swallows read errors
+      // and returns the fallback, so that failure would not surface as an
+      // error; it would render as an empty app -- no presets, no settings,
+      // no run history -- until the tab is reloaded. Clearing first means
+      // the next call to `open()` reopens instead of reusing the dying
+      // handle.
+      database.onversionchange = () => {
+        connection = undefined;
+        database.close();
+      };
+      resolve(database);
+    };
+    request.onerror = () => {
+      // A downgrade attempt surfaces here, not in onupgradeneeded: IndexedDB
+      // refuses it outright rather than running an upgrade transaction.
+      // Recognised by name rather than assumed from context, because this
+      // handler also catches every other open failure (onblocked losing a
+      // race is not modeled as an error here, but a future browser quirk
+      // could route through onerror too) and only this one is permanent for
+      // the life of the build.
+      reject(
+        request.error?.name === "VersionError"
+          ? new DatabaseVersionError()
+          : (request.error ?? new Error("could not open IndexedDB"))
+      );
+    };
     // Fires when another tab holds an older version open. Rejecting is better
     // than hanging: the caller reports it rather than the app appearing frozen.
     request.onblocked = () =>
@@ -62,6 +129,24 @@ function open(): Promise<IDBDatabase> {
           "another tab is holding an older version of the database open"
         )
       );
+  }).catch((error: unknown) => {
+    // Not remembered: `??=` above means the first call to open() after a
+    // failure decides the value for every caller until the process reloads.
+    // A cached rejection would leave storage broken -- presets and settings,
+    // not just this cache -- until then, for a failure that may have been
+    // transient (an onblocked race resolved by the other tab closing, for
+    // one). `raw-cache-key.ts`'s `toolTag` and `wasm-runner.ts`'s compiled
+    // module cache clear their memo entries on failure for the same reason.
+    //
+    // `DatabaseVersionError` is the one exception to "transient": the
+    // on-disk version really is ahead of `DATABASE_VERSION`, so retrying
+    // `open()` again fails identically until the running build changes.
+    // Clearing the cache here anyway is still correct -- it means a caller
+    // gets the same distinguishable error type on every retry rather than a
+    // stale cached rejection of a different shape -- and it costs nothing,
+    // since the retry that follows fails the same way either.
+    connection = undefined;
+    throw error;
   });
   return connection;
 }
@@ -100,6 +185,42 @@ export function putDocument(key: string, value: unknown): Promise<unknown> {
 
 export function deleteDocument(key: string): Promise<unknown> {
   return run(DOCUMENTS, "readwrite", (store) => store.delete(key));
+}
+
+/**
+ * Reads, changes and writes a document inside one transaction.
+ *
+ * `run()` issues a single request per transaction, so `getDocument` followed
+ * by `putDocument` is two transactions with a window between them. The RAW
+ * cache index is written by the worker on every conversion and cleared from
+ * the settings page, and a lost update there means a leaked blob nothing will
+ * ever evict.
+ */
+export function updateDocument<T>(
+  key: string,
+  change: (current: T | undefined) => T
+): Promise<T> {
+  return open().then(
+    (database) =>
+      new Promise<T>((resolve, reject) => {
+        const transaction = database.transaction(DOCUMENTS, "readwrite");
+        const store = transaction.objectStore(DOCUMENTS);
+        const read = store.get(key);
+        let written: T;
+        read.onsuccess = () => {
+          written = change(read.result as T | undefined);
+          store.put(written, key);
+        };
+        read.onerror = () =>
+          reject(read.error ?? new Error(`${DOCUMENTS}: read failed`));
+        // Resolved on the transaction, not the put: the write is only durable
+        // once the transaction commits, and a quota abort can follow a
+        // successful request.
+        transaction.oncomplete = () => resolve(written);
+        transaction.onabort = () =>
+          reject(transaction.error ?? new Error(`${DOCUMENTS}: aborted`));
+      })
+  );
 }
 
 /**
@@ -144,6 +265,47 @@ export async function fileKeys(prefix: string): Promise<string[]> {
   return keys
     .filter((key): key is string => typeof key === "string")
     .filter((key) => key.startsWith(prefix));
+}
+
+/**
+ * Reads a cached blob.
+ *
+ * Separate from `getFile` despite the identical shape, because these live in
+ * their own store: the RAW cache evicts on a budget and is cleared wholesale
+ * from the settings page, and neither may touch a preset's calibration files.
+ */
+export async function getBlob(key: string): Promise<Uint8Array | undefined> {
+  const stored = await run<ArrayBuffer | undefined>(
+    BLOBS,
+    "readonly",
+    (store) => store.get(key)
+  );
+  return stored ? new Uint8Array(stored) : undefined;
+}
+
+export function putBlob(key: string, bytes: Uint8Array): Promise<unknown> {
+  // Stored as ArrayBuffer for the reason `putFile` gives: a view carries its
+  // offset and length, so a subarray of a larger buffer would be cloned whole.
+  return run(BLOBS, "readwrite", (store) =>
+    store.put(
+      bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength
+      ) as ArrayBuffer,
+      key
+    )
+  );
+}
+
+export function deleteBlob(key: string): Promise<unknown> {
+  return run(BLOBS, "readwrite", (store) => store.delete(key));
+}
+
+export async function blobKeys(): Promise<string[]> {
+  const keys = await run<IDBValidKey[]>(BLOBS, "readonly", (store) =>
+    store.getAllKeys()
+  );
+  return keys.filter((key): key is string => typeof key === "string");
 }
 
 /** Drops the cached connection. Tests only; the app opens once per session. */
