@@ -161,12 +161,23 @@ function run<T>(
       new Promise<T>((resolve, reject) => {
         const transaction = database.transaction(store, mode);
         const request = action(transaction.objectStore(store));
-        request.onsuccess = () => resolve(request.result);
-        // Both are needed: a request can fail on its own, and a transaction
-        // can abort underneath a request that already succeeded (quota, for
-        // one), which would otherwise resolve a write that never landed.
+        let value: T;
+        request.onsuccess = () => {
+          value = request.result;
+        };
         request.onerror = () =>
           reject(request.error ?? new Error(`${store}: request failed`));
+        // Resolved on the transaction, not the request: a request succeeding
+        // and its transaction committing are separate events, in that order,
+        // and a quota abort lands between them. Resolving on the request would
+        // report a write that never landed, and the later `onabort` would be a
+        // no-op on an already-settled promise. `updateDocument` does the same.
+        //
+        // Reads go through here too, and that is deliberate rather than
+        // incidental: a readonly transaction commits straight after its last
+        // request, so waiting for it costs a tick and keeps one code path
+        // instead of two that differ in when they are allowed to settle.
+        transaction.oncomplete = () => resolve(value);
         transaction.onabort = () =>
           reject(
             transaction.error ?? new Error(`${store}: transaction aborted`)
