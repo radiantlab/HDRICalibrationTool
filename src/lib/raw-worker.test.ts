@@ -6,6 +6,7 @@ function fakeCache(seed: Record<string, Uint8Array> = {}) {
   const blobs = new Map(Object.entries(seed));
   const cache: RawCache & { blobs: Map<string, Uint8Array> } = {
     blobs,
+    budget: () => Promise.resolve(0),
     clear: () => Promise.resolve(),
     get: (key) => Promise.resolve(blobs.get(key)),
     put: (key, bytes) => {

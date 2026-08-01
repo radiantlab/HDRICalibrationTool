@@ -78,12 +78,18 @@ does.
 
 ```
 key     = sha256(source bytes) + "-" + toolTag
-toolTag = first 12 hex of sha256(dcrawCommit + ":" + dcrawArgs("in", "out").join(" "))
+toolTag = first 12 hex of sha256(dcrawCommit + ":" + emscripten + ":" + dcrawArgs("in", "out").join(" "))
 ```
 
-`dcrawCommit` is `tools.dcraw_emu.commit` from `versions.json`. The args are
-serialised by calling `dcrawArgs` with fixed placeholder paths, so the tag
-tracks the *flags* and changes when they do, without varying per frame.
+`dcrawCommit` is `tools.dcraw_emu.commit` from `versions.json`, and
+`emscripten` is that document's top-level `emscripten` field -- the toolchain
+version, not a LibRaw property. Both are folded in, not just the commit:
+review found that keying on the commit alone let a rebuild from the same
+LibRaw source on a bumped Emscripten (what #244 automates) produce an
+identical key over potentially different bytes, serving a stale TIFF as a
+valid hit. The args are serialised by calling `dcrawArgs` with fixed
+placeholder paths, so the tag tracks the *flags* and changes when they do,
+without varying per frame.
 
 ### Why content hash, not path
 
@@ -306,13 +312,24 @@ the decision needs, not the decision itself.
 | `src/lib/raw-cache.ts` | The tier: lookup, store, index, eviction. Storage injected. |
 | `src/lib/raw-cache-opfs.ts` | `opfsBlobStore()`. The only file touching OPFS, so Jest never imports it and the probe can exercise it alone. **Under B this is `raw-cache-idb.ts` instead; exactly one of the two exists.** |
 | `src/lib/raw-cache.types.ts` | `BlobStore` and index records, importable without the implementation. |
+| `src/lib/raw-cache-quota.ts` | `estimateQuotaBytes()` and `persistStorageBestEffort()`. Added in the F2 review fix: the one file that touches `navigator.storage`, for the same Jest-testability reason `raw-cache-idb.ts` is the one file that touches IndexedDB for blobs. |
 
 ### Modified
 
 - `src/lib/raw-worker.ts` -- hash, consult the cache, store on miss.
 - `src/lib/storage/kv.ts` -- add `updateDocument(key, fn)`, a get+put inside one
-  transaction. See Concurrency.
-- The Settings page -- usage read-out and Clear button.
+  transaction. See Concurrency. Also, from the F1 review fix, `DatabaseVersionError`:
+  a downgrade -- opening at `DATABASE_VERSION` against a database a newer build
+  already upgraded -- is now a named, distinguishable error rather than a
+  generic one, so `readJson` in `app-storage.ts` can refuse to swallow it into
+  the empty-state fallback the way it does every other read failure.
+- `src/lib/app-storage.ts` -- `readJson` rethrows `DatabaseVersionError` instead
+  of returning the fallback for it.
+- `src/app/init.tsx` -- a startup probe that surfaces `DatabaseVersionError` as
+  a persistent toast (mounted app-wide via the root layout, so every page gets
+  it), and a best-effort `persistStorageBestEffort()` call.
+- The Settings page -- usage and effective-budget read-out, and the Clear
+  button.
 
 ### The storage seam
 
@@ -359,12 +376,32 @@ on a 67 MB TIFF and removes the hazard entirely.
 
 ## Eviction
 
-Budget **2 GB**, fixed. LRU by `lastUsed`, evicting until total is at or under
-budget, never the entry just added. Mirrors `evictDownToBudget` in
-`raw-preview.ts` so both tiers read alike.
+Budget **2 GB nominal, clamped against the origin's real quota.** LRU by
+`lastUsed`, evicting until total is at or under budget, never the entry just
+added. Mirrors `evictDownToBudget` in `raw-preview.ts` so both tiers read
+alike.
+
+Not fixed at 2 GB in practice, and review is why: on a host whose actual
+`navigator.storage.estimate().quota` is smaller than 2 GB, a fixed budget
+means the index never looks full even though the disk already is, so the
+eviction loop above never runs -- writes simply start failing once the real
+quota is hit, with the index accounting none the wiser. The effective budget
+is instead `min(2 GB, 50% of estimate().quota)` when a quota is reported, and
+2 GB unchanged when it isn't (Jest, or a host that declines to answer).
+Settings reports this effective figure, not the nominal one -- see below.
 
 One guard the session tier does not need: a blob larger than the whole budget
 is not cached at all, rather than evicting everything and then itself.
+
+The 50% share, not 100%: this origin also holds presets, settings and run
+history, and a persistent RAW cache that claimed the *entire* quota would
+start evicting only once nothing was left for anything else sharing it.
+
+The app also calls `navigator.storage.persist()` once, best-effort, on
+startup and again on the worker's first cache use. This cache can add up to
+a couple of gigabytes to an origin that had never asked not to be reclaimed
+under storage pressure -- and that pressure does not distinguish the RAW
+cache from the presets sitting next to it in the same database.
 
 ## Reconciliation
 
@@ -400,9 +437,20 @@ Two real cases remain:
 Asymmetric, deliberately:
 
 - A cache **read** failure is treated as a miss, and the frame is converted.
-- A cache **write** failure is logged and swallowed. The conversion already
-  succeeded and the user should get their image whether or not the disk
-  cooperated.
+- A cache **write** failure evicts the LRU entries needed to free roughly what
+  was about to be written, independent of the budget figure, and retries the
+  write once. A failure that survives the retry is logged and swallowed --
+  the conversion already succeeded and the user should get their image
+  whether or not the disk cooperated.
+
+  The retry exists because review found the naive version -- swallow on the
+  first failure, no attempt to make room -- wedges permanently on a host
+  whose real quota is under the clamped budget: the index can sit
+  comfortably under that budget while the store is already full, so nothing
+  ever gets evicted and every write from then on fails the same way. Freeing
+  space unconditionally on a write failure (rather than only when the index
+  itself looks over budget) is what turns that into a slower cache instead
+  of a dead one.
 
 **The cache may never be the reason a conversion fails.**
 
@@ -413,6 +461,14 @@ One row beside the tool versions the page already carries:
 ```
 RAW conversion cache        1.2 GB of 2 GB used     [Clear]
 ```
+
+The right-hand figure is the *effective* budget from "Eviction" above, not
+the nominal 2 GB -- on a host with a smaller quota it reads smaller than
+2 GB, and showing the nominal figure there would just be a different way of
+lying about how much room is actually left. Usage and the effective budget
+are both async (the latter needs a `navigator.storage.estimate()` round
+trip) and are read together, in the same effect, so the row never paints a
+frame pairing real usage against the still-nominal budget or vice versa.
 
 Usage reads the index document directly from the page. Clearing from the page
 is fine: only `createSyncAccessHandle()` is worker-restricted;
@@ -428,8 +484,15 @@ through IndexedDB. Output is a per-host table answering the three questions
 above.
 
 **2. Unit** (Jest, fake `BlobStore`): hit, miss, eviction order, budget guard,
-phantom self-heal, orphan sweep, write-failure swallowed, and a changed tool tag
-causing a miss.
+phantom self-heal, orphan sweep, a changed tool tag causing a miss, and, from
+the F2 review fix, quota-clamped budget resolution and a write failure that
+evicts and retries once (discriminated from budget-gated eviction: a case
+with the index comfortably under budget, where only the unconditional
+failure-path eviction frees anything). From the F3 review fix, a changed
+Emscripten version also causing a miss, alongside the existing commit-change
+case. From the F1 review fix (`storage/kv.ts`, `app-storage.ts`), a downgrade
+open rejecting with `DatabaseVersionError` and `readJson` rethrowing it
+instead of returning the fallback.
 
 **3. Integration**: convert once, request identical bytes again, assert the
 injected converter ran exactly once -- the counting-injection pattern

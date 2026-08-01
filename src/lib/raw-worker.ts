@@ -23,6 +23,10 @@ import {
 import { createRawCache, type RawCache } from "./raw-cache";
 import { blobStoreAvailable, idbBlobStore } from "./raw-cache-idb";
 import { rawCacheKey, toolTag } from "./raw-cache-key";
+import {
+  estimateQuotaBytes,
+  persistStorageBestEffort,
+} from "./raw-cache-quota";
 import { convertRaw } from "./raw-convert";
 import type { RawConvertRequest, RawWorkerMessage } from "./raw-worker.types";
 
@@ -57,7 +61,19 @@ function cacheFor(): RawCache | undefined {
   if (!blobStoreAvailable()) {
     return;
   }
-  cache ??= createRawCache({ store: idbBlobStore() });
+  if (!cache) {
+    cache = createRawCache({
+      estimateQuota: estimateQuotaBytes,
+      store: idbBlobStore(),
+    });
+    // Fire-and-forget, once per worker lifetime: `persistStorageBestEffort`
+    // never rejects, and blocking the first conversion on it would trade a
+    // best-effort storage hint for the responsiveness this worker exists to
+    // protect. `app/init.tsx` also calls it from the page, since
+    // `persist()` -- unlike `estimate()` -- has a history of being
+    // unavailable from a worker on some engines.
+    persistStorageBestEffort();
+  }
   return cache;
 }
 

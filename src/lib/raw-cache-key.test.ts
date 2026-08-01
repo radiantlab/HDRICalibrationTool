@@ -79,6 +79,27 @@ describe("the RAW cache key", () => {
     expect(after).not.toBe(before);
   });
 
+  it("changes the tag when the emscripten version changes", async () => {
+    // F3: rebuilding dcraw_emu.wasm from the same LibRaw commit on a bumped
+    // Emscripten toolchain (what #244 automates) must miss rather than reuse
+    // a stale TIFF -- the commit alone can't see that kind of rebuild.
+    mockFetch(VERSIONS);
+    const before = await toolTag("https://example.test/wasm");
+
+    resetToolTagForTests();
+    mockFetch({ ...VERSIONS, emscripten: "6.0.9" });
+    const after = await toolTag("https://example.test/wasm");
+
+    expect(after).not.toBe(before);
+  });
+
+  it("throws rather than substitute a placeholder when emscripten is missing", async () => {
+    mockFetch({ ...VERSIONS, emscripten: undefined });
+    await expect(toolTag("https://example.test/wasm")).rejects.toThrow(
+      "https://example.test/wasm/versions.json is missing emscripten"
+    );
+  });
+
   it("changes the tag when dcrawArgs's flags change", async () => {
     // Guards the repair to the brief's truncated template literal: a version
     // that silently drops the args from the hash again would pass every

@@ -31,6 +31,7 @@ import { openExternal } from "@/lib/host/open-external";
 import { pickOutputDirectory } from "@/lib/host/pick";
 import { BUDGET_BYTES, createRawCache } from "@/lib/raw-cache";
 import { blobStoreAvailable, idbBlobStore } from "@/lib/raw-cache-idb";
+import { estimateQuotaBytes } from "@/lib/raw-cache-quota";
 import { useSettingsStore } from "../stores/settings-store";
 import SettingsButtonBar from "./settings-button-bar";
 
@@ -61,6 +62,13 @@ export default function SettingsPage() {
   // Null distinguishes "no persistent tier on this host" from "empty cache",
   // since the row below hides on null and would misleadingly read 0 B on 0.
   const [cacheBytes, setCacheBytes] = useState<number | null>(null);
+  // F2: never actually painted -- the row above is gated on `cacheBytes !==
+  // null`, and the effect below sets both this and `cacheBytes` together
+  // from the same `Promise.all` resolution, so there is no frame where one
+  // is real and the other is still this initial value. Set to BUDGET_BYTES
+  // anyway rather than 0 or null: it is a harmless placeholder for the
+  // instant before that effect runs, not a figure this component ever shows.
+  const [cacheBudget, setCacheBudget] = useState<number>(BUDGET_BYTES);
   useEffect(() => {
     /**
      * Retrieves app name, app version, and tauri version from Tauri API
@@ -87,9 +95,19 @@ export default function SettingsPage() {
     // Absent on a host without IndexedDB, where there is no persistent tier to
     // report. Zero would claim an empty cache rather than no cache.
     if (blobStoreAvailable()) {
-      createRawCache({ store: idbBlobStore() })
-        .usage()
-        .then(setCacheBytes)
+      const cache = createRawCache({
+        estimateQuota: estimateQuotaBytes,
+        store: idbBlobStore(),
+      });
+      // Read together and set together: usage and budget are two independent
+      // promises, and setting one before the other resolves would paint a
+      // frame reporting real usage against the still-nominal budget (or vice
+      // versa) -- back to reporting a number this row doesn't mean.
+      Promise.all([cache.usage(), cache.budget()])
+        .then(([bytes, effectiveBudget]) => {
+          setCacheBytes(bytes);
+          setCacheBudget(effectiveBudget);
+        })
         .catch(() => setCacheBytes(null));
     }
   }, []);
@@ -125,7 +143,10 @@ export default function SettingsPage() {
 
   /** Empties the persistent RAW cache and re-reads its size. */
   const handleClearCache = async () => {
-    const cache = createRawCache({ store: idbBlobStore() });
+    const cache = createRawCache({
+      estimateQuota: estimateQuotaBytes,
+      store: idbBlobStore(),
+    });
     try {
       await cache.clear();
       toast.success("RAW conversion cache cleared");
@@ -404,7 +425,7 @@ export default function SettingsPage() {
                 <div>
                   <h2 className="font-bold text-xl">RAW conversion cache</h2>
                   <p className="mt-1 text-muted-foreground text-sm">
-                    {prettyBytes(cacheBytes)} of {prettyBytes(BUDGET_BYTES)}{" "}
+                    {prettyBytes(cacheBytes)} of {prettyBytes(cacheBudget)}{" "}
                     used. Converted frames are reused instead of demosaiced
                     again.
                   </p>

@@ -8,10 +8,12 @@
  *    same path names different bytes across visits and a path-keyed cache
  *    would serve the wrong image.
  *  - **A tool tag**, derived from the `dcraw_emu` commit the wasm was built
- *    from and the flags it is run with. Without it, rebuilding the artifacts
- *    (#244 automates exactly that) would serve pixels produced by a different
- *    demosaic while reporting success -- undoing the byte-identical guarantee
- *    `raw-preview.ts` exists to hold.
+ *    from, the Emscripten toolchain version it was compiled with, and the
+ *    flags it is run with. All three, not just the commit: #244 automates
+ *    rebuilding from the same LibRaw commit on a bumped Emscripten, and a tag
+ *    that only hashed the commit would call that an identical build and serve
+ *    a stale TIFF as a hit over potentially different bytes -- undoing the
+ *    byte-identical guarantee `raw-preview.ts` exists to hold.
  *
  * Folded into the key rather than checked on read, so a tool change simply
  * misses, stale entries age out by LRU, and a rollback re-hits its own entries
@@ -22,6 +24,7 @@ import { sha256Hex } from "./hash";
 import { dcrawArgs } from "./pipeline/stages";
 
 interface VersionsDocument {
+  emscripten?: string;
   tools?: Record<string, { commit?: string } | undefined>;
 }
 
@@ -71,9 +74,21 @@ async function derive(wasmBaseUrl: string): Promise<string> {
       `${wasmBaseUrl}/versions.json is missing tools.dcraw_emu.commit`
     );
   }
+  const { emscripten } = versions;
+  if (!emscripten) {
+    // Same reasoning as the missing-commit guard above: a placeholder would
+    // let two builds that both fail to report it collide on one tag instead
+    // of missing safely.
+    throw new Error(`${wasmBaseUrl}/versions.json is missing emscripten`);
+  }
   // Placeholder paths, so the tag tracks the flags and does not vary per frame.
   const args = dcrawArgs("in", "out").join(" ");
-  const digest = await sha256Hex(new TextEncoder().encode(`${commit}:${args}`));
+  // Emscripten folded in alongside the commit: rebuilding dcraw_emu.wasm from
+  // the same LibRaw commit on a bumped toolchain (#244 automates this) can
+  // still change the emitted bytes, and the commit alone can't see that.
+  const digest = await sha256Hex(
+    new TextEncoder().encode(`${commit}:${emscripten}:${args}`)
+  );
   return digest.slice(0, 12);
 }
 

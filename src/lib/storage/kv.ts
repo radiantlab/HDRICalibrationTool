@@ -39,6 +39,33 @@ const FILES = "files";
 /** Converted RAW frames, by content-addressed key. See `raw-cache.ts`. */
 const BLOBS = "blobs";
 
+/**
+ * A stored database newer than this build knows how to open.
+ *
+ * IndexedDB does not negotiate a downgrade: opening at a version below what
+ * is already on disk fails the request with a `VersionError`, every time,
+ * for as long as the on-disk version stays ahead of `DATABASE_VERSION`. That
+ * is not a hypothetical -- a rolled-back web deploy, a browser still serving
+ * an old bundle from its HTTP cache, or a Tauri user reinstalling an older
+ * release all produce it for real, against data that is fully intact on
+ * disk. Left as a generic rejection, it looks identical to any other open
+ * failure: `app-storage.ts`'s `readJson` would swallow it and hand back the
+ * empty-state fallback, so the app would render as if the user had never
+ * used it, with no error anywhere to explain why. Giving it a name is what
+ * lets a caller refuse to paper over this one class of failure the way it is
+ * free to paper over the others.
+ */
+export class DatabaseVersionError extends Error {
+  constructor() {
+    super(
+      "This browser holds app data written by a newer version of LumiLab " +
+        "than this build can open. Reload the page, or update the app, to " +
+        "read it."
+    );
+    this.name = "DatabaseVersionError";
+  }
+}
+
 let connection: Promise<IDBDatabase> | undefined;
 
 function open(): Promise<IDBDatabase> {
@@ -80,8 +107,20 @@ function open(): Promise<IDBDatabase> {
       };
       resolve(database);
     };
-    request.onerror = () =>
-      reject(request.error ?? new Error("could not open IndexedDB"));
+    request.onerror = () => {
+      // A downgrade attempt surfaces here, not in onupgradeneeded: IndexedDB
+      // refuses it outright rather than running an upgrade transaction.
+      // Recognised by name rather than assumed from context, because this
+      // handler also catches every other open failure (onblocked losing a
+      // race is not modeled as an error here, but a future browser quirk
+      // could route through onerror too) and only this one is permanent for
+      // the life of the build.
+      reject(
+        request.error?.name === "VersionError"
+          ? new DatabaseVersionError()
+          : (request.error ?? new Error("could not open IndexedDB"))
+      );
+    };
     // Fires when another tab holds an older version open. Rejecting is better
     // than hanging: the caller reports it rather than the app appearing frozen.
     request.onblocked = () =>
@@ -98,6 +137,14 @@ function open(): Promise<IDBDatabase> {
     // transient (an onblocked race resolved by the other tab closing, for
     // one). `raw-cache-key.ts`'s `toolTag` and `wasm-runner.ts`'s compiled
     // module cache clear their memo entries on failure for the same reason.
+    //
+    // `DatabaseVersionError` is the one exception to "transient": the
+    // on-disk version really is ahead of `DATABASE_VERSION`, so retrying
+    // `open()` again fails identically until the running build changes.
+    // Clearing the cache here anyway is still correct -- it means a caller
+    // gets the same distinguishable error type on every retry rather than a
+    // stale cached rejection of a different shape -- and it costs nothing,
+    // since the retry that follows fails the same way either.
     connection = undefined;
     throw error;
   });

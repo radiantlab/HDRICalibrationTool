@@ -13,7 +13,7 @@
  * separate, in `storage/migrate-tauri-files.ts`, and runs on desktop only.
  */
 
-import { getDocument, putDocument } from "./storage/kv";
+import { DatabaseVersionError, getDocument, putDocument } from "./storage/kv";
 
 /** Bumped only when a stored shape changes incompatibly. */
 export const STORAGE_VERSION = 1;
@@ -23,6 +23,14 @@ export const STORAGE_VERSION = 1;
  *
  * History and presets are records, not state the app depends on, so a corrupt
  * or future-versioned document must never stop the app from starting.
+ *
+ * One exception: `DatabaseVersionError` is not "corrupt or unreadable", it is
+ * "the data is intact and this build is the one that's behind." Falling back
+ * to empty for that case is how a rolled-back deploy or a stale HTTP-cached
+ * bundle would render as "you have no presets, no settings, no run history"
+ * with nothing telling the user their data is still there. Rethrowing instead
+ * gives a caller the chance to say so -- see `app/init.tsx`'s startup probe,
+ * which is what actually shows it.
  */
 export async function readJson<T>(key: string, fallback: T): Promise<T> {
   try {
@@ -31,7 +39,10 @@ export async function readJson<T>(key: string, fallback: T): Promise<T> {
       return fallback;
     }
     return stored as T;
-  } catch {
+  } catch (error) {
+    if (error instanceof DatabaseVersionError) {
+      throw error;
+    }
     return fallback;
   }
 }
