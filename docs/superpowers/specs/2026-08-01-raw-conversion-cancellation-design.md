@@ -48,7 +48,8 @@ That observation also implies a second, larger change — resolving cache hits
 *before* they queue — which is deliberately **out of scope here**. It means
 moving key derivation and the IndexedDB read out of the worker onto the page,
 or adding a peek message, and it reworks the boundary #243 has just
-established. It gets its own issue.
+established. Filed as
+[#252](https://github.com/radiantlab/LumiLab/issues/252).
 
 ## What "cancel" means here
 
@@ -97,16 +98,22 @@ API belongs there.
 
 ### `raw-worker-client.ts`
 
-`convertRawInWorker` gains an optional `signal`:
+`convertRawInWorker` gains an optional `options` argument carrying the signal
+and an `onStart` callback:
 
 ```ts
 const conversion = queue.then(() => {
-  if (signal?.aborted) {
+  if (options?.signal?.aborted) {
     throw new DOMException("Aborted", "AbortError");
   }
+  options?.onStart?.();
   return send(path, bytes, wasmBaseUrl);
 });
 ```
+
+The two lines are adjacent on purpose: the moment a frame is past the point of
+being skipped is the moment it counts as started, and nothing may run between
+them that could throw and leave the two disagreeing.
 
 Checked at the front of the queue rather than at call time, which is the whole
 point: the work being skipped is work that has been waiting. A signal already
@@ -120,7 +127,34 @@ and no termination.
 
 ### `raw-preview.ts`
 
-`Entry` gains two fields:
+A frame has **three** states, not two, and dropping treats each differently.
+Collapsing the middle one into the first is the mistake this section exists to
+avoid:
+
+| State | `started` | `done` | On drop |
+|---|---|---|---|
+| Queued, never sent | `false` | `false` | Abort and forget |
+| In flight | `true` | `false` | **Leave entirely alone** |
+| Finished | `true` | `true` | Leave entirely alone |
+
+The middle row is the one that bites. Aborting an in-flight frame is already a
+no-op, since the queue check has passed — but *forgetting* it takes the entry
+out of the map while its conversion is still running. Re-add the same set,
+which is exactly what #248 describes ("drop a set and add a different one",
+or the same one from the right folder), and the frame is a miss, so a
+**second** conversion of bytes already converting joins the queue. That is the
+duplication `rawToTiff` caches the promise rather than the result to prevent,
+in the module whose header calls itself "the only place a RAW file is
+demosaiced".
+
+Leaning on the existing `catch → forget` at `:127` instead of forgetting at
+drop time does not work either, and for the opposite reason: a *queued* frame
+that is dropped and immediately re-added would hit the still-present entry and
+inherit its pending `AbortError`, showing a failed thumbnail for a file the
+user just asked for. Forget-at-drop is right for queued and wrong for
+in-flight, so the two states have to be distinguishable.
+
+`Entry` therefore gains three fields:
 
 ```ts
 interface Entry {
@@ -128,6 +162,8 @@ interface Entry {
   controller: AbortController;
   /** Set once the conversion settles, either way. */
   done: boolean;
+  /** Set when the frame leaves the queue and reaches the worker. */
+  started: boolean;
   tiff: Promise<Uint8Array<ArrayBuffer>>;
 }
 ```
@@ -137,13 +173,23 @@ sharing intact: there is exactly one conversion per frame and exactly one
 thing that can call it off, so no consumer can cancel a frame out from under
 the other two.
 
-`rawToTiff` passes `controller.signal` into `io.tiffFor`, whose signature gains
-the optional signal:
+`started` cannot be inferred on this side of the seam — only the queue knows
+when a frame leaves it — so the seam carries a callback back. `RawSourceIo`'s
+`tiffFor` takes an options object rather than growing a third positional
+parameter:
 
 ```ts
-tiffFor?: (path: string, bytes: Uint8Array, signal?: AbortSignal)
-  => Promise<Uint8Array>;
+tiffFor?: (
+  path: string,
+  bytes: Uint8Array,
+  options?: { signal?: AbortSignal; onStart?: () => void }
+) => Promise<Uint8Array>;
 ```
+
+`workerTiffFor` at `raw-preview.ts:47` is the default implementation and must
+forward the options to `convertRawInWorker` — the signal reaches the queue
+check and `onStart` fires just past it. A test injecting its own `tiffFor` may
+ignore both, which is what makes the cache tests independent of the worker.
 
 New export:
 
@@ -151,14 +197,21 @@ New export:
 export function dropRawConversions(paths: string[]): void
 ```
 
-For each path, it matches cache keys by `key === path || key.startsWith(
-`${path}|`)` — keys are `path` or `path|fingerprint` — then, **only if the
-entry is not `done`**, aborts the controller and calls `forget(key)`.
+For each path it matches cache keys by `key === path || key.startsWith(
+`${path}|`)` — keys are `path` or `path|fingerprint` — and then applies the
+table above: an entry that has not `started` is aborted and forgotten;
+anything else is left untouched.
 
-A finished conversion is deliberately kept. It costs nothing beyond the LRU
-budget that already governs it, and keeping it makes re-adding the same file
-instant instead of a re-queue. Non-RAW paths match no key, so callers need not
-filter by extension.
+A finished conversion is deliberately kept rather than evicted. It costs
+nothing beyond the LRU budget that already governs it, and keeping it makes
+re-adding the same file instant instead of a re-queue. Non-RAW paths match no
+key, so callers need not filter by extension.
+
+`forget` becomes identity-aware, taking the entry it means to remove and
+deleting only if `cache.get(key) === entry`. Without that, a dropped frame's
+`AbortError` arriving at the `catch` on `:127` *after* the user has re-added
+the file would delete the replacement entry, orphaning a conversion that is
+already running and sending the next consumer to a third one.
 
 ### The accounting bug this uncovers
 
@@ -221,7 +274,8 @@ than separately because the wiring is not correct without it: dropping the
 conversion for `sorted[i]` while the form removes `unsorted[i]` leaves the
 cache and the UI disagreeing about which frame is gone.
 
-Sort once and use the same array for both:
+Sort once, and resolve the index against that same array to a *file*, then
+remove that file by identity:
 
 ```tsx
 const sorted = row.files.toSorted((a, b) => a.localeCompare(b));
@@ -229,15 +283,24 @@ const sorted = row.files.toSorted((a, b) => a.localeCompare(b));
 <ImageSetPreview
   files={sorted}
   onRemoveIndex={(i) => {
-    dropRawConversions([sorted[i]]);
-    value[index] = { ...row, files: sorted.filter((_, n) => n !== i) };
+    const removed = sorted[i];
+    dropRawConversions([removed]);
+    value[index] = { ...row, files: row.files.filter((f) => f !== removed) };
     field.onChange([...value]);
   }}
 />
 ```
 
-An issue is filed recording it independently, since it is worth a changelog
-line of its own and did not arrive with this feature.
+Filtering `row.files` by identity rather than writing `sorted` back is
+deliberate. Writing the sorted array back would also *normalize the stored
+order* on the first removal, which is a behaviour change beyond the bug —
+`onAdd` appends, so the stored array would flip between sorted and unsorted
+depending on which action the user took last. The index bug is fixed by making
+the index mean one thing; stored order is left exactly as it was.
+
+Filed independently as
+[#251](https://github.com/radiantlab/LumiLab/issues/251), since it is worth a
+changelog line of its own and did not arrive with this feature.
 
 ## Error handling
 
@@ -269,8 +332,12 @@ the serial invariant:
 
 In `raw-preview.test.ts`:
 
-- A dropped pending entry is forgotten, so a later request for the same path
+- A dropped queued entry is forgotten, so a later request for the same path
   converts again rather than returning the rejected promise.
+- **A frame dropped while in flight is converted exactly once even if it is
+  re-added.** This is the test for the three-state model: assert the injected
+  `tiffFor` was called once, not that the entry still exists, so a design that
+  forgets in-flight entries fails it.
 - A completed entry is not forgotten, so a re-add is served from memory.
 - `rawCacheBytes()` returns to zero after a dropped frame's conversion
   settles. This is the guard on the accounting fix. It cannot be written
@@ -284,7 +351,8 @@ two-line call plus the index fix.
 
 ## Out of scope
 
-- Resolving persistent-cache hits before they queue. Its own issue.
+- Resolving persistent-cache hits before they queue —
+  [#252](https://github.com/radiantlab/LumiLab/issues/252).
 - Terminating in-flight conversions, and reference-counting cache entries.
   Both rejected above, with reasons.
 - Any change to `raw-cache.ts`, `raw-cache-idb.ts`, or the worker's own
