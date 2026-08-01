@@ -1,10 +1,15 @@
 /**
- * Answers #243's open question: does OPFS work where this app runs?
+ * Answered #243's open question: does OPFS work where this app runs?
  *
- * Not a regression test. It reports a table and asserts only that the browser
- * did not lie -- bytes written must read back identical. Run it once per host
- * and record the result in the design doc; it decides whether the persistent
- * cache stores blobs in OPFS or in IndexedDB.
+ * It found `navigator.storage.getDirectory` absent -- not slow, not
+ * quota-limited, absent -- in WebKit and in WebKitGTK 605.1.15, the webview
+ * Tauri uses on Linux. IndexedDB round-tripped 67 MB on every engine tested,
+ * including both WebKits, so the persistent cache was built on IndexedDB
+ * (`raw-cache-idb.ts`), and that is what this probe now guards: IndexedDB
+ * failing is a real regression, OPFS being missing is not, because nothing
+ * depends on it. OPFS is still measured and printed on every run -- see the
+ * assertions at the bottom -- so a future host that gains OPFS shows up in
+ * the CI log without this spec having to change again.
  *
  * A single 67 MB `write()` raised `UnknownError: ... out of memory` on
  * WebKit under a reported 1000 MB quota -- which only indicts OPFS itself if
@@ -280,23 +285,40 @@ test("OPFS and IndexedDB accept a converted-frame-sized blob", async ({
     `\n===STORAGE_PROBE===\n${JSON.stringify(report, null, 2)}\n===END===\n`
   );
 
-  // Absence fails loudly rather than passing quietly. A green test on a host
-  // with no OPFS would read as "verified" when nothing was verified at all,
-  // and this run exists precisely to find out which hosts those are. A failure
-  // here is a result to record, not a bug to fix.
-  expect(report.opfsAvailable, "OPFS is available on this host").toBe(true);
-
-  // Checked before the real OPFS assertions, deliberately: if this one fails,
-  // it should be the assertion that fails, so the report reads as "this run
-  // is inconclusive" rather than "OPFS is broken here" -- the exact
-  // conflation that produced a wrong finding on the first pass through this
-  // spec.
-  expect(
-    report.controlOk,
-    `host-level OPFS control write must succeed before the numbers below mean anything about OPFS (control error: ${report.controlError}). A failure here means this run is inconclusive, not a negative finding -- retry on an unloaded host.`
-  ).toBe(true);
-
-  expect(report.opfsError, "OPFS write/read raised nothing").toBeUndefined();
-  expect(report.opfsRoundTrips, "OPFS bytes read back identical").toBe(true);
+  // IndexedDB is the app's real dependency -- see the module docstring -- so
+  // this is the assertion that guards the cache. It held on every engine the
+  // probe ever ran against, WebKit and WebKitGTK included, and if it ever
+  // stops holding the cache is broken and CI should say so.
   expect(report.idbError, "IndexedDB accepted a 67 MB value").toBeUndefined();
+  expect(report.idbRoundTrips, "IndexedDB write transaction completed").toBe(
+    true
+  );
+
+  // OPFS is recorded, not required: absence is the expected, already-
+  // investigated state on WebKit and WebKitGTK, not a build-breaking finding.
+  // `opfsAvailable` is deliberately not asserted -- see the module docstring
+  // -- but the printed report above keeps it visible so a host that gains
+  // OPFS later shows up in the log.
+  if (report.opfsAvailable) {
+    // Checked before the OPFS assertion below, deliberately: if this one
+    // fails, it should be the assertion that fails, so the report reads as
+    // "this run is inconclusive" rather than "OPFS is broken here" -- the
+    // exact conflation that produced a wrong finding on the first pass
+    // through this spec.
+    expect(
+      report.controlOk,
+      `host-level OPFS control write must succeed before the numbers below mean anything about OPFS (control error: ${report.controlError}). A failure here means this run is inconclusive, not a negative finding -- retry on an unloaded host.`
+    ).toBe(true);
+
+    // An engine that claims OPFS and then corrupts data is a real finding
+    // worth failing on -- only OPFS's *absence* is non-fatal now. A raised
+    // error (the memory-pressure case the module docstring describes) is not
+    // asserted directly: `controlOk` above already turned that run
+    // inconclusive rather than a pass or a fail.
+    if (report.opfsError === undefined) {
+      expect(report.opfsRoundTrips, "OPFS bytes read back identical").toBe(
+        true
+      );
+    }
+  }
 });

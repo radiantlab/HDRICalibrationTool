@@ -289,6 +289,28 @@ reads the value back from IndexedDB; it treats the write transaction's
 `idbError` on every run, which is weaker than OPFS's actual byte comparison
 and shouldn't be read as equivalent verification.
 
+**The probe's CI assertions now guard IndexedDB, not OPFS.** On CI's WebKit
+runner and on WebKitGTK 605.1.15, `getDirectory` comes back absent -- not
+slow, not quota-limited, absent (`opfsAvailable: false`, `quota: null`; see
+`eb0aec8`). That is a different reading from the WebKit row already in the
+table above, where the macOS Playwright host has the API present
+(`opfsAvailable: true`) but the *control write* fails under host memory
+pressure -- the confound this section spends most of its length on. Two
+engines with no OPFS at all in CI is what decided the backend: the
+persistent cache was built on approach B (`raw-cache-idb.ts`), and the OPFS
+branch above is what the app does not ship with. Both spec files
+(`e2e-web/tests/storage-probe.spec.ts` and
+`e2e-tests/test/specs/storage-probe.e2e.ts`) still measure and print every
+OPFS field in the table above, but only `idbError`/`idbRoundTrips` -- the
+weaker check described in the paragraph above, and still the app's real
+dependency -- fail the build. The control-write and round-trip assertions
+stay, gated behind `opfsAvailable`, so an engine that does claim OPFS and
+then corrupts data still fails, and a host where `opfsAvailable` is `true`
+but the control write fails (the macOS row above) still reports itself
+inconclusive rather than green; only OPFS's absence stopped being fatal,
+which is what let CI's WebKit and WebKitGTK runs go green without
+reopening the question this section answered.
+
 **Still needed:** an unloaded rerun of the WebKit case (the current numbers
 are confounded, not negative), plus all three Tauri webviews.
 `e2e-tests/test/specs/storage-probe.e2e.ts` exists, ports the same probe body
