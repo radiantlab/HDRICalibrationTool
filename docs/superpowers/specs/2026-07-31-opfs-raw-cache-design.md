@@ -205,7 +205,7 @@ OPFS verdict.
 | Chromium (Playwright, macOS) | true | true | true | 78-103 | true | 84-97 | 115-179 | 93-120 | 3072-4096 MB | 41-66 | none |
 | WKWebView (macOS, Tauri) | needs a local Tauri debug build | -- | -- | -- | -- | -- | -- | -- | -- | -- | not yet run |
 | WebView2 (Windows, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
-| WebKitGTK (Linux, Tauri) | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI | pending CI |
+| WebKitGTK (Linux, Tauri) | -- (API absent) | false | -- | -- | -- | -- | -- | -- | pending CI | pending CI | `navigator.storage.getDirectory` is not a function -- see `eb0aec8` |
 
 Chromium and WebKit each show a range because the spec was run more than
 once while diagnosing the WebKit result below; the numbers move host-load to
@@ -312,17 +312,20 @@ which is what let CI's WebKit and WebKitGTK runs go green without
 reopening the question this section answered.
 
 **Still needed:** an unloaded rerun of the WebKit case (the current numbers
-are confounded, not negative), plus all three Tauri webviews.
-`e2e-tests/test/specs/storage-probe.e2e.ts` exists, ports the same probe body
-(including the chunked paths) to `browser.execute`, and type-checks
-(`npx tsc --noEmit` from `e2e-tests`), but has not run anywhere -- it needs
-the debug Tauri binary that `wdio.conf.js`'s `onPrepare` builds
-(`npm run tauri build -- --debug --no-bundle --features e2e-driver`), which
-this pass did not produce. WKWebView can run locally afterward with
-`npm run test:e2e:desktop` on macOS; WebView2 and WebKitGTK need the
-`e2e-tests` CI job on its Windows and Ubuntu runners. Until those rows are
-filled in from a host that also passes the 4-byte control, neither the
-backend (A vs. B) nor the write path can be decided -- this section is what
+are confounded, not negative), plus WKWebView and WebView2.
+`e2e-tests/test/specs/storage-probe.e2e.ts` exists and ports the same probe
+body (including the chunked paths) to `browser.execute`; it has since run in
+the `e2e-tests` CI job on the Ubuntu runner, giving the WebKitGTK row above
+(`opfsAvailable: false`), but not yet on Windows or locally on macOS. It
+needs the debug Tauri binary that `wdio.conf.js`'s `onPrepare` builds
+(`npm run tauri build -- --debug --no-bundle --features e2e-driver`). WKWebView
+can run locally with `npm run test:e2e:desktop` on macOS; WebView2 needs the
+`e2e-tests` CI job on its Windows runner. Until those rows are filled in from
+a host that also passes the 4-byte control where OPFS is present, neither the
+backend (A vs. B) nor the write path can be decided from this table alone --
+though the backend question is already settled: two engines report no OPFS
+API at all, which is enough to send this to approach B under the rule stated
+above, independent of what WKWebView and WebView2 still show. This section is what
 the decision needs, not the decision itself.
 
 ## Components
