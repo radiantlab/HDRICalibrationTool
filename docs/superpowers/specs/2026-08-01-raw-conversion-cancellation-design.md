@@ -154,16 +154,23 @@ inherit its pending `AbortError`, showing a failed thumbnail for a file the
 user just asked for. Forget-at-drop is right for queued and wrong for
 in-flight, so the two states have to be distinguishable.
 
-`Entry` therefore gains three fields:
+`Entry` therefore gains a controller and two flags. The flags live in their own
+object rather than directly on the entry, because `convert` has to be handed
+something to write `started` into *before* the entry exists -- the entry needs
+the promise `convert` returns:
 
 ```ts
-interface Entry {
-  bytes: number;
-  controller: AbortController;
+interface EntryFlags {
   /** Set once the conversion settles, either way. */
   done: boolean;
   /** Set when the frame leaves the queue and reaches the worker. */
   started: boolean;
+}
+
+interface Entry {
+  bytes: number;
+  controller: AbortController;
+  flags: EntryFlags;
   tiff: Promise<Uint8Array<ArrayBuffer>>;
 }
 ```
@@ -199,16 +206,26 @@ export function dropRawConversions(paths: string[]): void
 
 For each path it matches cache keys by `key === path || key.startsWith(
 `${path}|`)` — keys are `path` or `path|fingerprint` — and then applies the
-table above: an entry that has not `started` is aborted and forgotten;
-anything else is left untouched.
+table above: an entry that has neither `started` nor `done` is aborted and
+forgotten; anything else is left untouched.
+
+Both flags are tested, not `started` alone. A converter is free to resolve
+without ever calling `onStart` -- #243's OPFS path will do exactly that when it
+answers from a cached TIFF instead of converting -- and such a converter would
+leave `started` false on an entry that has already finished its work. Checking
+`started` alone would abort and forget that entry, throwing away a conversion
+that is complete.
 
 A finished conversion is deliberately kept rather than evicted. It costs
 nothing beyond the LRU budget that already governs it, and keeping it makes
 re-adding the same file instant instead of a re-queue. Non-RAW paths match no
 key, so callers need not filter by extension.
 
-`forget` becomes identity-aware, taking the entry it means to remove and
-deleting only if `cache.get(key) === entry`. Without that, a dropped frame's
+`forget` becomes identity-aware, taking the flags of the entry it means to
+remove and deleting only if `cache.get(key)?.flags === flags`. Identifying by
+the flags rather than by the entry lets a conversion's own `catch` call it
+without a forward reference to the entry it has not finished building; the two
+are one-to-one, so the check is the same. Without that check, a dropped frame's
 `AbortError` arriving at the `catch` on `:127` *after* the user has re-added
 the file would delete the replacement entry, orphaning a conversion that is
 already running and sending the next consumer to a third one.
@@ -245,18 +262,18 @@ The `.then` accounts only if the entry is still the live one for its key.
 
 ```ts
 .then((data) => {
-  entry.done = true;
-  if (cache.get(key) !== entry) {
+  flags.done = true;
+  const live = cache.get(key);
+  if (live?.flags !== flags) {
     return;               // dropped or evicted while converting
   }
-  entry.bytes = data.byteLength;
+  live.bytes = data.byteLength;
   held += data.byteLength;
   evictDownToBudget(key);
 })
 .catch(() => {
-  // Already handled at `:127`; this sets `done` on the failure path and
-  // prevents an unhandled rejection, as it did before.
-  entry.done = true;
+  // Handled at `:127`, which is also where `done` is set on the failure
+  // path; this only prevents an unhandled rejection, as it did before.
 })
 ```
 
@@ -323,11 +340,46 @@ drop time, and the existing `catch → forget` at `raw-preview.ts:127` covers
 the rejection that follows. A frame dropped and then re-added converts afresh
 rather than inheriting a rejected promise.
 
-No new unhandled-rejection surface: `raw-preview.ts:137` keeps a handler on
-the cached promise itself, and `tiff-image.tsx:50` already catches its derived
-promise because an aborted decode was always expected there. The thumbnail
-unmounts when its file is removed, so the `AbortError` does not reach the
-`ErrorBoundary` at `tiff-image.tsx:69`.
+**This section originally claimed there was no new unhandled-rejection
+surface, and it was wrong.** It enumerated two handlers -- `raw-preview.ts`'s
+own, on the cached promise, and `tiff-image.tsx:50`, on the derived decode
+promise -- and concluded that every consumer was covered. It missed a third
+consumer that also derives a promise from the cached one:
+`generic-image-metadata.ts`'s `getTiffImageMetadata`, which chains
+`rawToTiff(...).then(...)` to read the mask preview's dimensions. That promise
+had no rejection path at all, and making `AbortError` a routine outcome is
+exactly what turned the omission into two user-visible failures:
+
+- The submit handler at `page.tsx:440` awaits that promise outside its own
+  `try`, and it is memoized on the path -- so once it rejects, pressing Run did
+  nothing at all, with no toast and no recorded attempt, for as long as the
+  removed file stayed selected.
+- `lens-mask-input.tsx` and `fs-circular-mas-selection.tsx` read it with
+  `use()` inside a `Suspense` that has no `ErrorBoundary` above it anywhere.
+
+The cause underneath both is not the drop. It is that `selectedImage` was never
+cleared when the file it names is removed, so a path the form no longer
+contains went on driving the mask preview. What is true after the fix:
+
+- `image-matrix-input.tsx` clears the selection in `onRemove` and
+  `onRemoveIndex` when it points at a file being removed, so no consumer asks
+  for the metadata of a removed frame in the first place. The clear is as
+  narrow as the removal: removing some other set or sibling frame leaves the
+  selection alone.
+- `useGenericImageMetadata` attaches a swallowing handler where it memoizes the
+  promise, in the same spirit as `tiff-image.tsx:50`, so a metadata promise
+  created before the removal cannot surface as an unhandled rejection after the
+  selection has moved on. It returns the original promise, not the handled one:
+  a genuine conversion failure must still reject rather than look like an image
+  with no dimensions.
+
+The thumbnail itself unmounts when its file is removed, so the `AbortError`
+still does not reach the `ErrorBoundary` at `tiff-image.tsx:69`.
+
+No `ErrorBoundary` was added over the mask preview. One would be worth having
+on its own merits, but it addresses neither failure above -- the submit-handler
+one never throws during render -- and it is left as separate work rather than
+smuggled in as a fix for this.
 
 ## Testing
 
@@ -356,9 +408,16 @@ In `raw-preview.test.ts`:
   unit test. The entry point is tests-only, but the guard it exercises is the
   same one the eviction path needs, and it fails against today's code.
 
-The `image-matrix-input.tsx` wiring is not unit-tested; the behaviour worth
-pinning lives in the two library modules, and the component change is a
-two-line call plus the index fix.
+The `image-matrix-input.tsx` drop wiring itself is not unit-tested; the
+behaviour worth pinning there lives in the two library modules, and the
+component change is a two-line call plus the index fix.
+
+The selection clear that removal now performs *is* tested, in
+`__tests__/image-matrix-selection-clear.test.tsx`, against the same
+RTL-plus-react-hook-form harness `image-matrix-lock.test.tsx` uses. Four cases:
+the selection is cleared when its whole set is removed and when that one frame
+is removed, and it survives the removal of another set and of a sibling frame.
+The last two are what stop an unconditional clear from passing.
 
 ## Out of scope
 

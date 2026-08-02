@@ -194,7 +194,7 @@ export function ImageMatrixInput<
     addSets(await pickImageSets({ directory: true, filters: imageFilters }));
   }, [addSets]);
 
-  const { setSelectedImage } = useSelectedImage();
+  const { selectedImage, setSelectedImage } = useSelectedImage();
 
   return (
     <Field className={className} data-invalid={fieldState.invalid}>
@@ -237,6 +237,17 @@ export function ImageMatrixInput<
                 }}
                 onClick={setSelectedImage}
                 onRemove={() => {
+                  // The mask preview points at a file, not at a set, so it has
+                  // to let go of one the user is deleting. Left alone it would
+                  // keep asking for the dimensions of a frame the form no
+                  // longer holds, and a RAW frame dropped from the queue below
+                  // never produces any.
+                  if (
+                    selectedImage !== undefined &&
+                    row.files.includes(selectedImage)
+                  ) {
+                    setSelectedImage(undefined);
+                  }
                   dropRawConversions(row.files);
                   field.onChange(value.filter((_, i) => i !== index));
                 }}
@@ -247,6 +258,11 @@ export function ImageMatrixInput<
                   // `noUncheckedIndexedAccess` needs to see.
                   if (removed === undefined) {
                     return;
+                  }
+                  // Same reason as `onRemove`, for the single frame this
+                  // removes.
+                  if (selectedImage === removed) {
+                    setSelectedImage(undefined);
                   }
                   dropRawConversions([removed]);
                   value[index] = {

@@ -4,7 +4,15 @@ import { createContext, useContext, useMemo, useState } from "react";
 
 interface SelectedImageContextValue {
   selectedImage: string | undefined;
-  setSelectedImage: (image: string) => void;
+  /**
+   * Accepts `undefined` so a caller can clear the selection. Removing the file
+   * that is selected has to be able to say so: a path the form no longer
+   * contains must not go on driving the mask preview, whose metadata promise
+   * would then be resolved against a frame the user threw away -- and, for a
+   * RAW frame whose queued conversion was dropped with it, never resolve at
+   * all.
+   */
+  setSelectedImage: (image: string | undefined) => void;
 }
 
 const selectedImageContext = createContext<

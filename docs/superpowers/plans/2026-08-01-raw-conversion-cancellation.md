@@ -295,7 +295,9 @@ EOF
 |---|---|---|---|
 | Queued, never sent | `false` | `false` | Abort and forget |
 | In flight | `true` | `false` | Leave entirely alone |
-| Finished | `true` | `true` | Leave entirely alone |
+| Finished | `true` or `false` | `true` | Leave entirely alone |
+
+`started` is not guaranteed on a finished frame: a converter may resolve without ever calling `onStart`, which is what #243's OPFS path does when it answers from a cached TIFF instead of converting. So `done` is what recognizes a finished entry, and the drop check has to test both flags rather than `started` alone.
 
 Forgetting an in-flight entry takes it out of the map while its conversion is still running, so re-adding the same set queues a *second* conversion of the same frame — the duplication this module caches the promise, rather than the result, to prevent. Leaning on the existing `catch → forget` instead fails the other way: a queued frame dropped and instantly re-added would hit the surviving entry and inherit its pending `AbortError`, showing a broken thumbnail for a file the user just asked for.
 
@@ -554,7 +556,11 @@ And the new export:
  * because forgetting it would make a re-added set a cache miss and convert
  * the same bytes a second time. A finished frame is kept too -- it costs
  * nothing the LRU budget does not already govern, and it makes re-adding the
- * same file instant.
+ * same file instant. `flags.done` is what recognizes it: a converter is free
+ * to resolve without ever calling `onStart` -- #243's OPFS path will do
+ * exactly that when it answers from a cached TIFF instead of converting --
+ * and such a converter would otherwise leave `flags.started` false on a
+ * completed entry, indistinguishable from one still queued.
  *
  * Paths that were never converted, including every non-RAW one, match no key
  * and cost a scan.
@@ -565,7 +571,7 @@ export function dropRawConversions(paths: string[]): void {
       if (key !== path && !key.startsWith(`${path}|`)) {
         continue;
       }
-      if (entry.flags.started) {
+      if (entry.flags.started || entry.flags.done) {
         continue;
       }
       entry.controller.abort();
@@ -641,10 +647,11 @@ Add `dropRawConversions` to the file's existing import from `./raw-preview`.
 
 - [ ] **Step 7: Verify the accounting case actually discriminates**
 
-The last case must fail without its guard. Temporarily delete these three lines from `rawToTiff`'s `.then`:
+The last case must fail without its guard. Temporarily delete the identity check from `rawToTiff`'s `.then` (keeping whatever the rest of the block needs to still compile):
 
 ```ts
-      if (cache.get(key) !== entry) {
+      const live = cache.get(key);
+      if (live?.flags !== flags) {
         return;
       }
 ```
