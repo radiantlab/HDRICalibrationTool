@@ -100,7 +100,9 @@ export interface RawSourceIo {
    * `options.onStart` is the converter's half of that bargain: it says the
    * frame can no longer be skipped, which is the only way this module can
    * tell a queued frame from one already converting. A converter that never
-   * calls it leaves its frames droppable for their whole life.
+   * calls it leaves its frames droppable until they finish -- see
+   * `dropRawConversions`, which keeps a settled entry by its `done` flag
+   * regardless of `started`.
    */
   tiffFor?: (
     path: string,
@@ -276,10 +278,11 @@ async function convert(
  * because forgetting it would make a re-added set a cache miss and convert
  * the same bytes a second time. A finished frame is kept too -- it costs
  * nothing the LRU budget does not already govern, and it makes re-adding the
- * same file instant. `flags.done` is what recognizes it: a converter that
- * resolves without ever calling `onStart` -- `countingIo` in the tests --
- * would otherwise leave `flags.started` false on a completed entry,
- * indistinguishable from one still queued.
+ * same file instant. `flags.done` is what recognizes it: a converter is free
+ * to resolve without ever calling `onStart` -- #243's OPFS path will do
+ * exactly that when it answers from a cached TIFF instead of converting --
+ * and such a converter would otherwise leave `flags.started` false on a
+ * completed entry, indistinguishable from one still queued.
  *
  * Paths that were never converted, including every non-RAW one, match no key
  * and cost a scan.

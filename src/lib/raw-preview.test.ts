@@ -233,6 +233,43 @@ describe("shared RAW conversion", () => {
     expect(source.converted).toHaveLength(1);
   });
 
+  it("does not let a frame dropped and instantly re-added inherit the dropped entry's rejection or lose its own cache slot", async () => {
+    const io = deferredIo();
+    const path = "/in/capt01.CR2";
+
+    const dropped = rawToTiff(path, io);
+    // Two turns so `tiffFor` has run and the abort listener is attached
+    // before the drop, exactly as in the "forgets a frame dropped before it
+    // started" case above.
+    await Promise.resolve();
+    await Promise.resolve();
+    dropRawConversions([path]);
+    // No await between the drop and the re-add: that gap is what the earlier
+    // "forgets a frame dropped..." test could not exercise, because it
+    // awaited `dropped`'s rejection first, giving `rawToTiff`'s own
+    // `catch -> forget` time to clear the entry before the re-add ever ran.
+    const again = rawToTiff(path, io);
+    await expect(dropped).rejects.toThrow(ABORT_MESSAGE);
+
+    await Promise.resolve();
+    await Promise.resolve();
+    io.start(path);
+    io.finish(path);
+    await expect(again).resolves.toHaveLength(1024);
+    expect(io.converted).toHaveLength(2);
+
+    // The replacement entry `again` created must still be the live cache
+    // entry for this key. Deliberately not awaited: if it were lost -- the
+    // dropped entry's late `forget` deleting it regardless of identity --
+    // this call starts a third, real conversion that nothing here ever
+    // finishes, and awaiting it would hang for 5 s instead of failing
+    // cleanly on `io.converted`'s length.
+    rawToTiff(path, io);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(io.converted).toHaveLength(2);
+  });
+
   it("does not count a conversion that finished after its entry was gone", async () => {
     const io = deferredIo();
 
