@@ -23,6 +23,7 @@ interface Pending {
 /** Every worker the client has constructed, in order. */
 const built: FakeWorker[] = [];
 const pending: Pending[] = [];
+const ABORT_MESSAGE = /abort/i;
 
 class FakeWorker {
   private readonly listeners = new Map<string, ((event: unknown) => void)[]>();
@@ -228,5 +229,92 @@ describe("driving the RAW worker", () => {
     expect(built[1]?.posts).toBe(1);
     pending[1]?.respond(new Uint8Array([6]));
     await expect(second).resolves.toEqual(new Uint8Array([6]));
+  });
+
+  it("never sends a queued frame whose signal was aborted", async () => {
+    install();
+    const controller = new AbortController();
+
+    const first = convertRawInWorker("/in/a.CR2", new Uint8Array([1]), "/wasm");
+    const dropped = convertRawInWorker(
+      "/in/b.CR2",
+      new Uint8Array([2]),
+      "/wasm",
+      { signal: controller.signal }
+    );
+    const third = convertRawInWorker("/in/c.CR2", new Uint8Array([3]), "/wasm");
+    await settle();
+
+    // Only `first` has been sent; the other two are still chained behind it.
+    expect(built[0]?.posts).toBe(1);
+
+    controller.abort();
+    pending[0]?.respond(new Uint8Array([9]));
+    await first;
+    await settle();
+    pending[1]?.respond(new Uint8Array([7]));
+    await settle();
+
+    // Two frames reached the worker, not three: `b` was skipped, so the
+    // second `postMessage` was `c`. Asserted on the count the worker actually
+    // saw rather than on a flag, so a frame that is merely *marked* dropped
+    // still fails here.
+    expect(built[0]?.posts).toBe(2);
+    await expect(dropped).rejects.toThrow(ABORT_MESSAGE);
+    await expect(third).resolves.toEqual(new Uint8Array([7]));
+  });
+
+  it("leaves a frame already in flight alone", async () => {
+    install();
+    const controller = new AbortController();
+
+    const conversion = convertRawInWorker(
+      "/in/a.CR2",
+      new Uint8Array([1]),
+      "/wasm",
+      { signal: controller.signal }
+    );
+    await settle();
+    expect(built[0]?.posts).toBe(1);
+
+    // Past the queue check, so the signal has nothing left to act on. The
+    // frame is shared -- the pipeline and the metadata reader may both be
+    // waiting on it -- so one consumer losing interest must not cancel it.
+    controller.abort();
+    pending[0]?.respond(new Uint8Array([9]));
+
+    await expect(conversion).resolves.toEqual(new Uint8Array([9]));
+    expect(built[0]?.terminated).toBe(false);
+  });
+
+  it("reports each frame as it leaves the queue", async () => {
+    install();
+    const started: string[] = [];
+
+    const first = convertRawInWorker(
+      "/in/a.CR2",
+      new Uint8Array([1]),
+      "/wasm",
+      { onStart: () => started.push("a") }
+    );
+    const second = convertRawInWorker(
+      "/in/b.CR2",
+      new Uint8Array([2]),
+      "/wasm",
+      { onStart: () => started.push("b") }
+    );
+    await settle();
+
+    // `b` is queued, not started. That distinction is what lets the cache
+    // forget a frame it can still skip and keep one it cannot.
+    expect(started).toEqual(["a"]);
+
+    pending[0]?.respond(new Uint8Array([9]));
+    await first;
+    await settle();
+    expect(started).toEqual(["a", "b"]);
+
+    pending[1]?.respond(new Uint8Array([8]));
+    await expect(second).resolves.toEqual(new Uint8Array([8]));
   });
 });
