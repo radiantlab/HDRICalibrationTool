@@ -16,7 +16,7 @@
 - **TDD, strictly.** Write the test, run it, watch it fail *for the stated reason*, then implement. A test that passes on first run is testing something that already worked — fix the test.
 - **Prose uses `--`, not an em dash.** Every comment in `src/lib/raw-*.ts` follows this. Match it.
 - **Comments explain why, not what.** This codebase's comments carry reasoning and consequences (see `raw-worker-client.ts:17-28`). Match that density; do not add narration.
-- **Run `npx jest <path>` for a single suite** and `npx jest` for all 58 suites before any commit.
+- **Run `npx jest <path>` for a single suite** and `npx jest` for the whole suite before any commit. The baseline on this branch before Task 1 is **57 suites / 384 tests**; each task should add tests and regress none. Do not derive the suite count from `--listTests`, which picks up shell-completion noise on this machine.
 - **Run `npx ultracite check <files>` and `npx tsc --noEmit` before every commit.** Jest uses SWC and strips types without checking them, so a type error will not fail a test run.
 - **Conventional commits**, with the `Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>` trailer.
 - **Branch:** work on `fix/raw-conversion-drop`, cut from `origin/main`.
@@ -239,7 +239,7 @@ npx jest
 npx ultracite check src/lib/raw-worker-client.ts src/lib/raw-worker-client.test.ts
 npx tsc --noEmit
 ```
-Expected: 58 suites pass (61 tests in total is not the number to check — check that nothing regressed), no lint findings, no type errors.
+Expected: no regressions against the 57-suite / 384-test baseline (this task adds 3 tests), no lint findings, no type errors.
 
 - [ ] **Step 7: Commit**
 
@@ -661,7 +661,7 @@ npx jest
 npx ultracite check src/lib/raw-preview.ts src/lib/raw-preview.test.ts
 npx tsc --noEmit
 ```
-Expected: all 58 suites pass, no findings, no type errors.
+Expected: no regressions against the baseline, no findings, no type errors.
 
 - [ ] **Step 9: Commit**
 
@@ -776,7 +776,7 @@ npx ultracite check src/components/ui/image-matrix-input.tsx
 npx tsc --noEmit
 npx jest
 ```
-Expected: no findings, no type errors, all 58 suites pass.
+Expected: no findings, no type errors, no regressions against the baseline.
 
 - [ ] **Step 5: Verify by hand against the reference bracket**
 
