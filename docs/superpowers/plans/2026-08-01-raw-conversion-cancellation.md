@@ -30,7 +30,7 @@
 |---|---|---|
 | `src/lib/raw-worker-client.ts` | The single worker and its serial queue | Accept `RawConvertOptions`; check `signal` and fire `onStart` at the front of the queue |
 | `src/lib/raw-worker-client.test.ts` | Pins the serial invariant against a `FakeWorker` | Add three cases |
-| `src/lib/raw-preview.ts` | Session cache: dedup, fingerprint, LRU, accounting | Add `controller`/`started`/`done` to `Entry`; add `dropRawConversions`; make `forget` identity-aware; fix `held` accounting |
+| `src/lib/raw-preview.ts` | Session cache: dedup, fingerprint, LRU, accounting | Add `controller` and an `EntryFlags` (`started`/`done`) to `Entry`; add `dropRawConversions`; make `forget` identity-aware; fix `held` accounting |
 | `src/lib/raw-preview.test.ts` | Pins the sharing guarantees | Add a deferred IO helper and four cases |
 | `src/components/ui/image-matrix-input.tsx` | Renders image sets and owns the form value | Fix the sorted/unsorted index bug; call `dropRawConversions` on both removal paths |
 
@@ -291,7 +291,7 @@ EOF
 
 **Background the implementer needs.** A frame has three states, and dropping treats the middle one *opposite* to how it treats the first:
 
-| State | `started` | `done` | On drop |
+| State | `flags.started` | `flags.done` | On drop |
 |---|---|---|---|
 | Queued, never sent | `false` | `false` | Abort and forget |
 | In flight | `true` | `false` | Leave entirely alone |
@@ -416,56 +416,67 @@ function workerTiffFor(
 
 with `import { convertRawInWorker, type RawConvertOptions } from "./raw-worker-client";`.
 
-Widen `Entry`:
+Widen `Entry`. The two mutable flags live in their own object so that
+`convert` can be handed something to write into *before* the entry exists —
+the entry needs the promise `convert` returns, so passing the entry itself
+would be circular and force a cast:
 
 ```ts
+/**
+ * What a conversion has done so far, separate from the entry so `convert`
+ * can be given it before the entry it will belong to exists.
+ */
+interface EntryFlags {
+  /** Set once the conversion settles, either way. */
+  done: boolean;
+  /** Set when the frame leaves the queue and reaches the worker. */
+  started: boolean;
+}
+
 interface Entry {
   /** Zero until the conversion resolves, so a pending entry evicts nothing. */
   bytes: number;
   /** Aborting this skips the frame, but only while it is still queued. */
   controller: AbortController;
-  /** Set once the conversion settles, either way. */
-  done: boolean;
-  /** Set when the frame leaves the queue and reaches the worker. */
-  started: boolean;
+  flags: EntryFlags;
   tiff: Promise<Uint8Array<ArrayBuffer>>;
 }
 ```
 
-`rawToTiff` builds the entry before starting the conversion, because `convert` needs to write `started` into it:
+`rawToTiff` then builds the flags and the controller first, and the entry once
+it has the promise:
 
 ```ts
-  const entry: Entry = {
-    bytes: 0,
-    controller: new AbortController(),
-    done: false,
-    started: false,
-    tiff: undefined as unknown as Promise<Uint8Array<ArrayBuffer>>,
-  };
+  const controller = new AbortController();
+  const flags: EntryFlags = { done: false, started: false };
 
-  const tiff = convert(path, io, entry).catch((error: unknown) => {
-    // A failure must not be remembered as a result, or the file could never
-    // be retried without a reload.
-    entry.done = true;
-    forget(key, entry);
-    throw error;
-  });
-  entry.tiff = tiff;
+  const tiff = convert(path, io, flags, controller.signal).catch(
+    (error: unknown) => {
+      // A failure must not be remembered as a result, or the file could never
+      // be retried without a reload.
+      flags.done = true;
+      forget(key, flags);
+      throw error;
+    }
+  );
+
+  const entry: Entry = { bytes: 0, controller, flags, tiff };
   cache.set(key, entry);
 
   tiff
     .then((data) => {
-      entry.done = true;
+      flags.done = true;
       // Only if this entry is still the live one for its key. An entry that
       // left the map while converting -- evicted, or cleared -- must not add
       // to `held`, because `forget` and `evictDownToBudget` both subtract
       // `entry.bytes`, which was still 0 when they let it go. Accounting for
       // it now would raise `held` permanently and make the budget evict ever
       // more eagerly for the rest of the session.
-      if (cache.get(key) !== entry) {
+      const live = cache.get(key);
+      if (live?.flags !== flags) {
         return;
       }
-      entry.bytes = data.byteLength;
+      live.bytes = data.byteLength;
       held += data.byteLength;
       evictDownToBudget(key);
     })
@@ -476,20 +487,22 @@ interface Entry {
   return tiff;
 ```
 
-`convert` takes the entry and wires both callbacks:
+`convert` takes the flags and the signal, not the entry — that is what keeps
+it callable before the entry exists:
 
 ```ts
 async function convert(
   path: string,
   io: RawSourceIo,
-  entry: Entry
+  flags: EntryFlags,
+  signal: AbortSignal
 ): Promise<Uint8Array<ArrayBuffer>> {
   const bytes = await io.readFile(path);
   const tiff = await (io.tiffFor ?? workerTiffFor)(path, bytes, {
     onStart: () => {
-      entry.started = true;
+      flags.started = true;
     },
-    signal: entry.controller.signal,
+    signal,
   });
   // Never a SharedArrayBuffer -- these builds are single-threaded, which is
   // what keeps them hostable without COOP/COEP headers, and a page served
@@ -509,14 +522,19 @@ async function convert(
 /**
  * Removes an entry, if it is still the one holding its key.
  *
- * The identity check is what keeps a dropped frame's `AbortError` -- which
- * arrives at the `catch` above one turn later -- from deleting the *fresh*
- * entry a user created by re-adding the same file in between. Without it,
- * that replacement would be orphaned: still converting, no longer cached, and
- * the next consumer to ask would start a third conversion.
+ * Identified by its flags rather than by the entry itself, so a conversion's
+ * own `catch` can call this without a forward reference to the entry it has
+ * not finished building. The two are one-to-one, so the check is the same.
+ *
+ * That check is what keeps a dropped frame's `AbortError` -- which arrives at
+ * the `catch` above one turn later -- from deleting the *fresh* entry a user
+ * created by re-adding the same file in between. Without it, that replacement
+ * would be orphaned: still converting, no longer cached, and the next
+ * consumer to ask would start a third conversion.
  */
-function forget(key: string, entry: Entry): void {
-  if (cache.get(key) !== entry) {
+function forget(key: string, flags: EntryFlags): void {
+  const entry = cache.get(key);
+  if (entry?.flags !== flags) {
     return;
   }
   held -= entry.bytes;
@@ -547,11 +565,11 @@ export function dropRawConversions(paths: string[]): void {
       if (key !== path && !key.startsWith(`${path}|`)) {
         continue;
       }
-      if (entry.started) {
+      if (entry.flags.started) {
         continue;
       }
       entry.controller.abort();
-      forget(key, entry);
+      forget(key, entry.flags);
     }
   }
 }
@@ -803,4 +821,4 @@ EOF
 
 **Type consistency.** `RawConvertOptions` is defined in Task 1 and consumed in Task 2. `dropRawConversions(paths: string[]): void` is defined in Task 2 and called in Task 3 with `[removed]` and `row.files`, both `string[]`. `Entry`'s `started`/`done`/`controller` are introduced and used only within Task 2. `tiffFor`'s options object is structurally identical to `RawConvertOptions` but written inline in `RawSourceIo`, deliberately: importing the worker client's type into the seam would tie the injectable interface to the worker implementation, which is what the seam exists to avoid.
 
-**One thing the implementer must not smooth over.** In Task 2 Step 4, `entry.tiff` is assigned after the entry is constructed, because `convert` needs the entry to write `started` into and the entry needs the promise. The `undefined as unknown as` cast is deliberate and load-bearing; a "cleaner" restructuring that passes a callback instead is fine, but leaving `tiff` optional on the interface is not — every reader of a cached entry would then have to handle a state that never occurs.
+**One thing the implementer must not smooth over.** In Task 2, the two mutable flags live in their own `EntryFlags` object rather than directly on `Entry`, and `forget` identifies an entry by that object rather than by the entry. This is not incidental style: `convert` must be handed something to write `started` into *before* the entry exists, because the entry needs the promise `convert` returns. Flattening the flags onto `Entry` reintroduces that circularity and forces either a cast on `tiff` or a forward reference to `entry` inside its own `catch`. Leaving `tiff` optional on the interface is not an acceptable escape either — every reader of a cached entry would then have to handle a state that never occurs.
