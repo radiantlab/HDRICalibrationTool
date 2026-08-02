@@ -25,6 +25,7 @@ import {
 import { isTauri } from "@/lib/host/env";
 import { pickFiles, pickImageSets } from "@/lib/host/pick";
 import { imageFileExtensions } from "@/lib/image-file-extensions";
+import { dropRawConversions } from "@/lib/raw-preview";
 import { cn } from "@/lib/utils";
 import { Field, FieldContent, FieldError } from "./field";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "./hover-card";
@@ -200,6 +201,12 @@ export function ImageMatrixInput<
       <FieldContent className="flex flex-col gap-0 divide-y overflow-y-auto">
         {value?.map((row: ImageSet, index: number) => {
           const issue = issuesByIndex?.[index];
+          // The preview renders files sorted, and reports the index of what
+          // the user actually clicked. Resolving that index here, against the
+          // same array, is what keeps "remove this one" meaning the frame
+          // under the cursor rather than whichever one happens to sit at that
+          // position in the stored order. See #251.
+          const sorted = row.files.toSorted((a, b) => a.localeCompare(b));
 
           return (
             <div
@@ -211,7 +218,7 @@ export function ImageMatrixInput<
             >
               <ImageSetPreview
                 disabled={disabled}
-                files={row.files.toSorted((a, b) => a.localeCompare(b))}
+                files={sorted}
                 name={row.name}
                 onAdd={async () => {
                   const newFiles = await pickFiles({
@@ -230,12 +237,26 @@ export function ImageMatrixInput<
                 }}
                 onClick={setSelectedImage}
                 onRemove={() => {
+                  dropRawConversions(row.files);
                   field.onChange(value.filter((_, i) => i !== index));
                 }}
                 onRemoveIndex={(deleteIndex) => {
+                  const removed = sorted[deleteIndex];
+                  // The preview maps over the array it was handed, so this
+                  // index is always in bounds -- the check is only what
+                  // `noUncheckedIndexedAccess` needs to see.
+                  if (removed === undefined) {
+                    return;
+                  }
+                  dropRawConversions([removed]);
                   value[index] = {
                     ...row,
-                    files: row.files.filter((_, i) => i !== deleteIndex),
+                    // Filtered by identity rather than by writing `sorted`
+                    // back, which would also normalise the stored order on
+                    // the first removal -- a change `onAdd` would undo on the
+                    // next addition, so the array would flip between sorted
+                    // and not depending on which the user did last.
+                    files: row.files.filter((file) => file !== removed),
                   };
                   field.onChange([...value]);
                 }}
