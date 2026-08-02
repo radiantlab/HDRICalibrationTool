@@ -11,10 +11,14 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import {
   clearRawPreviewCache,
+  dropRawConversions,
   type RawSourceIo,
   rawCacheBytes,
   rawToTiff,
 } from "./raw-preview";
+
+// Hoisted per `useTopLevelRegex`: a regex literal in a test body fails lint.
+const ABORT_MESSAGE = /abort/i;
 
 /** Counts conversions, which is the whole point of the cache. */
 function countingIo(
@@ -29,6 +33,40 @@ function countingIo(
     tiffFor: (path: string) => {
       converted.push(path);
       return Promise.resolve(new Uint8Array(outputBytes));
+    },
+  };
+}
+
+/**
+ * An IO whose conversions finish only when the test says so.
+ *
+ * `countingIo` resolves on the spot, which cannot model the state that
+ * matters most here: a frame that has left the queue and is still converting.
+ * `start()` stands in for the queue handing the frame to the worker, so a
+ * test can place an entry in any of its three states deliberately.
+ */
+function deferredIo(): RawSourceIo & {
+  converted: string[];
+  finish: (path: string, bytes?: number) => void;
+  start: (path: string) => void;
+} {
+  const converted: string[] = [];
+  const starts = new Map<string, () => void>();
+  const finishes = new Map<string, (tiff: Uint8Array) => void>();
+  return {
+    converted,
+    finish: (path, bytes = 1024) => finishes.get(path)?.(new Uint8Array(bytes)),
+    readFile: () => Promise.resolve(new Uint8Array(64)),
+    start: (path) => starts.get(path)?.(),
+    tiffFor: (path, _bytes, options) => {
+      converted.push(path);
+      starts.set(path, () => options?.onStart?.());
+      return new Promise<Uint8Array>((resolve, reject) => {
+        finishes.set(path, resolve);
+        options?.signal?.addEventListener("abort", () =>
+          reject(new DOMException("Aborted", "AbortError"))
+        );
+      });
     },
   };
 }
@@ -132,6 +170,86 @@ describe("shared RAW conversion", () => {
     expect(rawCacheBytes()).toBe(8192);
 
     clearRawPreviewCache();
+    expect(rawCacheBytes()).toBe(0);
+  });
+
+  it("converts a frame once even if it is dropped in flight and re-added", async () => {
+    const io = deferredIo();
+
+    const first = rawToTiff("/in/capt01.CR2", io);
+    // Two turns, not one: `rawToTiff` awaits the cache key, then `convert`
+    // awaits `readFile`, before it ever reaches `tiffFor`. One turn observes
+    // the frame still queued and calls a no-op `io.start`.
+    await Promise.resolve();
+    await Promise.resolve();
+    io.start("/in/capt01.CR2");
+
+    // The user removes the set, then adds it back -- the wrong folder, or a
+    // re-drag. The frame is already converting, so dropping it must not
+    // forget it: a forgotten entry is a miss, and a miss here means a second
+    // conversion of bytes already being converted.
+    dropRawConversions(["/in/capt01.CR2"]);
+    const second = rawToTiff("/in/capt01.CR2", io);
+
+    io.finish("/in/capt01.CR2");
+    await expect(first).resolves.toHaveLength(1024);
+    await expect(second).resolves.toHaveLength(1024);
+    expect(io.converted).toEqual(["/in/capt01.CR2"]);
+  });
+
+  it("forgets a frame dropped before it started, so a re-add converts it", async () => {
+    const io = deferredIo();
+
+    const dropped = rawToTiff("/in/capt01.CR2", io);
+    // Two turns so `tiffFor` has actually run and registered its abort
+    // listener; deliberately no `io.start(...)`, so the frame is still in
+    // the queue when it is dropped.
+    await Promise.resolve();
+    await Promise.resolve();
+    dropRawConversions(["/in/capt01.CR2"]);
+    await expect(dropped).rejects.toThrow(ABORT_MESSAGE);
+
+    const again = rawToTiff("/in/capt01.CR2", io);
+    await Promise.resolve();
+    await Promise.resolve();
+    io.start("/in/capt01.CR2");
+    io.finish("/in/capt01.CR2");
+
+    // A re-added file must convert, not inherit the rejection of the entry
+    // the user threw away.
+    await expect(again).resolves.toHaveLength(1024);
+    expect(io.converted).toHaveLength(2);
+  });
+
+  it("keeps a finished frame, so re-adding it is free", async () => {
+    const source = countingIo();
+
+    await rawToTiff("/in/capt01.CR2", source);
+    dropRawConversions(["/in/capt01.CR2"]);
+    await rawToTiff("/in/capt01.CR2", source);
+
+    // Removing a file is not a reason to throw away work already done: the
+    // LRU budget already governs how long it lives.
+    expect(source.converted).toHaveLength(1);
+  });
+
+  it("does not count a conversion that finished after its entry was gone", async () => {
+    const io = deferredIo();
+
+    const conversion = rawToTiff("/in/capt01.CR2", io);
+    await Promise.resolve();
+    await Promise.resolve();
+    io.start("/in/capt01.CR2");
+    clearRawPreviewCache();
+    io.finish("/in/capt01.CR2");
+    await conversion;
+
+    // `forget` and `evictDownToBudget` both subtract `entry.bytes`, which is
+    // 0 while a conversion is pending. Accounting for the bytes afterwards
+    // would leave `held` permanently ahead of what is actually cached, and a
+    // budget that thinks it is fuller than it is evicts frames it should
+    // have kept. Reached here through `clearRawPreviewCache` because the
+    // eviction path needs 768 MB of real allocation to trigger honestly.
     expect(rawCacheBytes()).toBe(0);
   });
 });
