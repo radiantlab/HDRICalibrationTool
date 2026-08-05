@@ -292,6 +292,31 @@ export default function Home() {
     "lensMask.radius"
   );
 
+  // The image size the current mask was drawn against, carried from the preset
+  // it came from so the mask input can say whether it still fits the selected
+  // image.
+  const [maskSourceSize, setMaskSourceSize] = useState<[number, number] | null>(
+    null
+  );
+
+  // Any movement of the mask drops that provenance: once the user has placed
+  // the circle against an image themselves, where it originally came from no
+  // longer describes it, and a warning about the old size would be nagging
+  // about something they have already dealt with.
+  useEffect(() => {
+    const forget = () => setMaskSourceSize(null);
+    const unsubscribe = [
+      centerX.on("change", forget),
+      centerY.on("change", forget),
+      radius.on("change", forget),
+    ];
+    return () => {
+      for (const stop of unsubscribe) {
+        stop();
+      }
+    };
+  }, [centerX, centerY, radius]);
+
   const [progressVisible, setProgressVisible] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
   const { beginSet, clearLog, getOutputs, log, setTotal } = usePipelineStatus();
@@ -600,7 +625,19 @@ export default function Home() {
           <ResizableHandle withHandle />
           <ResizablePanel>
             <div className="flex h-full min-h-0 flex-col bg-accent">
-              <PresetBar form={form} maskImagePath={selectedImage} />
+              <PresetBar
+                form={form}
+                maskImagePath={selectedImage}
+                onApplyLensMask={(mask, drawnAgainst) => {
+                  // Setting the motion values notifies the listener above
+                  // synchronously, so the size the preset recorded is stored
+                  // after them rather than being cleared by them.
+                  centerX.set(mask.x);
+                  centerY.set(mask.y);
+                  radius.set(mask.radius);
+                  setMaskSourceSize(drawnAgainst);
+                }}
+              />
               <Accordion
                 className="min-h-0 flex-1 overflow-y-auto"
                 collapsible
@@ -741,6 +778,7 @@ export default function Home() {
                         centerX={centerX}
                         centerY={centerY}
                         maskPreviewImage={selectedImage}
+                        maskSourceSize={maskSourceSize}
                         radius={radius}
                         register={register}
                       />
