@@ -2,7 +2,7 @@
  * Port of `pipeline.rs::pipeline` / `process_image_set`.
  *
  * Runs one image set. Batching and cancellation deliberately stay where they
- * already are, in `src/app/home-page/page.tsx`: the Rust command handles a
+ * already are, in `src/app/pipeline/page.tsx`: the Rust command handles a
  * single set too, and never populates `set_index` / `set_total`. Moving the
  * batch loop in here would duplicate behaviour the app already has.
  *

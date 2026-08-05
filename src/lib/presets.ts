@@ -1,4 +1,4 @@
-import type { pipelineConfig } from "@/app/home-page/(pipeline-configuration)/config-provider";
+import type { pipelineConfig } from "@/app/pipeline/(pipeline-configuration)/config-provider";
 import { readJson, writeJson } from "./app-storage";
 // biome-ignore lint/style/noExportedImports: the module uses this internally and re-exports for backward compatibility
 import { sha256Hex } from "./hash";

@@ -5,7 +5,7 @@ import { type FieldPath, useFormState } from "react-hook-form";
 import {
   type pipelineConfig,
   usePipelineConfig,
-} from "@/app/home-page/(pipeline-configuration)/config-provider";
+} from "@/app/pipeline/(pipeline-configuration)/config-provider";
 import { AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 

@@ -18,16 +18,16 @@ Four tabs (`src/app/navigation.tsx`), identical in both hosts:
 
 | Tab | Route | Purpose |
 |---|---|---|
-| Image Generator | `/home-page` | Configure and run the LDR → HDR calibration pipeline |
-| Settings | `/settings-page` | Output folder, and the versions of everything bundled |
+| Image Generator | `/pipeline` | Configure and run the LDR → HDR calibration pipeline |
+| Settings | `/settings` | Output folder, and the versions of everything bundled |
 | Runs | `/runs` | History of previous pipeline runs and their outcomes |
-| Image Viewer | `/image-viewer`, `/image-viewer/view` | Load and inspect a generated `.hdr` file |
+| Image Viewer | `/viewer`, `/viewer/view` | Load and inspect a generated `.hdr` file |
 
-`/` redirects to `/home-page`, so the site root resolves in a browser.
+`/` redirects to `/pipeline`, so the site root resolves in a browser.
 
 ## 3. Feature: Image Generator (Home Page)
 
-`src/app/home-page/page.tsx`
+`src/app/pipeline/page.tsx`
 
 - **Image set input** — drag-and-drop or file-picker selection of an LDR bracket (JPEG, TIFF, or camera raw). Multiple named image sets can be staged; each set is validated to contain at least 2 images, and every staged set is run. On the desktop a set is a directory; in a browser, `webkitdirectory` reports a relative path, so nested folders still become separate sets and a plain multi-file selection becomes one.
 - **Camera response function** — upload of a `.rsp` file describing the camera's tone response, required for JPEG-derived input.
@@ -48,7 +48,7 @@ Four tabs (`src/app/navigation.tsx`), identical in both hosts:
 
 ## 4. Feature: Calibration Pipeline
 
-`src/lib/pipeline/*`, driven from `src/app/home-page/run-wasm-pipeline.ts`
+`src/lib/pipeline/*`, driven from `src/app/pipeline/run-wasm-pipeline.ts`
 
 The pipeline is TypeScript orchestrating WebAssembly. It runs **in a Web Worker**, not on the page: Emscripten's `callMain` is synchronous and blocks its thread for the whole of a tool, so an inline pipeline froze the tab for the length of an hdrgen merge. The worker reads no files itself — the page stages the bytes and transfers them in, because only the page knows how to reach a file (Tauri's filesystem on the desktop, the virtual filesystem in a browser), and keeping that out of the worker is what lets one worker serve both hosts.
 
@@ -79,7 +79,7 @@ The two former Rust commands have TypeScript equivalents: raw conversion rides o
 
 ## 5. Feature: Image Viewer
 
-`src/app/image-viewer/*`
+`src/app/viewer/*`
 
 - **File intake** — drag-and-drop or file picker for a single `.hdr` file (extension-validated); state is passed to the viewer route via a serialized URL query string (`viewer-url.ts`).
 - **Rendering** — a `three.js` (WebGL) canvas renders the HDR pixel data as a texture, with pan/zoom (`react-zoom-pan-pinch`).
@@ -96,7 +96,7 @@ The viewer works on every platform with no additional software. It requires WebG
 
 ## 6. Feature: Settings
 
-`src/app/settings-page/page.tsx`
+`src/app/settings/page.tsx`
 
 - Output folder, on the desktop. It is hidden in a browser, because a browser downloads and the browser chooses where — an output path there would be a control that does nothing (`canWriteToChosenDirectory()`).
 - There are no tool paths to configure: every tool ships with the app.

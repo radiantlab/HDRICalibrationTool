@@ -59,12 +59,12 @@ export default defineConfig({
   webServer: {
     // `next start` cannot serve this build: `next.config.js` sets
     // `output: "export"`, so there is no server to start. `serve` maps
-    // `/home-page` to `home-page.html`, which Python's `http.server` notably
+    // `/pipeline` to `pipeline.html`, which Python's `http.server` notably
     // does not -- see DEPLOYMENT.md.
     command: `npx serve ../out -l ${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
-    url: `http://127.0.0.1:${PORT}/home-page`,
+    url: `http://127.0.0.1:${PORT}/pipeline`,
   },
   workers: 1,
 });

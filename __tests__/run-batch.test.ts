@@ -1,5 +1,5 @@
 import { describe, expect, it, jest } from "@jest/globals";
-import { describeBatchSummary, runBatch } from "../src/app/home-page/run-batch";
+import { describeBatchSummary, runBatch } from "../src/app/pipeline/run-batch";
 import type { ImageSet } from "../src/components/ui/image-set-preview";
 
 function set(name: string): ImageSet {

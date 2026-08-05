@@ -4,7 +4,7 @@ import {
   describeRunConfirmation,
   type RunConfirmation,
   RunConfirmDialog,
-} from "../src/app/home-page/run-confirm-dialog";
+} from "../src/app/pipeline/run-confirm-dialog";
 
 const TITLE = /Not all calibration files have been uploaded/i;
 const GO_BACK = /Go back/i;

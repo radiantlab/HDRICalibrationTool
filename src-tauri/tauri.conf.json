@@ -11,7 +11,7 @@
   "app": {
     "windows": [
       {
-        "url": "home-page",
+        "url": "pipeline",
         "fullscreen": false,
         "height": 800,
         "resizable": true,

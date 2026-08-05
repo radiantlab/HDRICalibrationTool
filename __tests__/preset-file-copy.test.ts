@@ -28,7 +28,7 @@ jest.mock("../src/lib/storage/kv", () => ({
 
 declare const jest: typeof import("@jest/globals").jest;
 
-import type { pipelineConfig } from "../src/app/home-page/(pipeline-configuration)/config-provider";
+import type { pipelineConfig } from "../src/app/pipeline/(pipeline-configuration)/config-provider";
 import { type PresetSourceIo, savePreset } from "../src/lib/presets";
 
 const io: PresetSourceIo = {

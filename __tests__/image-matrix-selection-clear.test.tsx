@@ -15,7 +15,7 @@ jest.mock("@tauri-apps/plugin-fs", () => ({
 import {
   SelectedImageProvider,
   useSelectedImage,
-} from "../src/app/home-page/selected-image-context";
+} from "../src/app/pipeline/selected-image-context";
 import { ImageMatrixInput } from "../src/components/ui/image-matrix-input";
 import type { ImageSet } from "../src/components/ui/image-set-preview";
 import { TooltipProvider } from "../src/components/ui/tooltip";

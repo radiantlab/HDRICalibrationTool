@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
-import type { pipelineConfig } from "../src/app/home-page/(pipeline-configuration)/config-provider";
-import { buildPipelineParams } from "../src/app/home-page/build-pipeline-params";
+import type { pipelineConfig } from "../src/app/pipeline/(pipeline-configuration)/config-provider";
+import { buildPipelineParams } from "../src/app/pipeline/build-pipeline-params";
 
 const settings = {
   dcrawEmuPath: "/tools/dcraw",

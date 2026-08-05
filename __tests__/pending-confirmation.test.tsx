@@ -9,8 +9,8 @@ import {
 import {
   type RunConfirmation,
   RunConfirmDialog,
-} from "../src/app/home-page/run-confirm-dialog";
-import { usePendingConfirmation } from "../src/app/home-page/use-pending-confirmation";
+} from "../src/app/pipeline/run-confirm-dialog";
+import { usePendingConfirmation } from "../src/app/pipeline/use-pending-confirmation";
 
 const GENERATE_ANYWAY = /Generate anyway/i;
 const GO_BACK = /Go back/i;

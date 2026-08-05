@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
-import { HdrMetadataDetails } from "../src/app/image-viewer/view/illuminance-details";
+import { HdrMetadataDetails } from "../src/app/viewer/view/illuminance-details";
 
 const KEY_LABEL_REGEX = /^(CAPDATE|COMPUTED_VERTICAL_ILLUMINANCE|FORMAT|VIEW)$/;
 

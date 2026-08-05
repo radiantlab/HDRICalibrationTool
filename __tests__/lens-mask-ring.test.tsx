@@ -9,7 +9,7 @@ jest.mock("@/lib/generic-image-metadata", () => {
 
 declare const jest: typeof import("@jest/globals").jest;
 
-import { LensMaskEditor } from "../src/app/home-page/lens-mask-editor";
+import { LensMaskEditor } from "../src/app/pipeline/lens-mask-editor";
 
 const IMAGE_WIDTH = 5616;
 const IMAGE_HEIGHT = 3744;

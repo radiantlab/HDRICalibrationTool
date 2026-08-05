@@ -32,7 +32,7 @@ Serve `out/` as static files. The only requirements are the `.wasm` MIME type
 above and clean-URL handling, which almost every static host does.
 
 For a quick local check, note that Python's `http.server` does **not** map
-`/home-page` to `home-page.html`, so use the `.html` paths or a server that
+`/pipeline` to `pipeline.html`, so use the `.html` paths or a server that
 does:
 
 ```sh

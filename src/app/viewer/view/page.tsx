@@ -33,7 +33,7 @@ import {
   Scene,
   WebGLRenderer,
 } from "three";
-import { HdrMetadataDetails } from "@/app/image-viewer/view/illuminance-details";
+import { HdrMetadataDetails } from "@/app/viewer/view/illuminance-details";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -461,7 +461,7 @@ function ImageViewerPageContent() {
   const [filePath] = useQueryState("filePath", parseAsString);
   console.log({ filePath });
   if (!filePath) {
-    redirect("/image-viewer");
+    redirect("/viewer");
   }
 
   return (

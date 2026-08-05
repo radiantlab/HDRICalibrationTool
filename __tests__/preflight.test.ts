@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
-import type { pipelineConfig } from "@/app/home-page/(pipeline-configuration)/config-provider";
-import { describeRunBlocker } from "@/app/home-page/preflight";
+import type { pipelineConfig } from "@/app/pipeline/(pipeline-configuration)/config-provider";
+import { describeRunBlocker } from "@/app/pipeline/preflight";
 
 /** The example Canon 5D Mark III CR2s, as dcraw_emu renders them. */
 const CR2: [number, number] = [5796, 3870];
