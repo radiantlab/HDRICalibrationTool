@@ -23,10 +23,12 @@ static export inside Tauri.
 
 - **No new dependencies.** Everything here is standard library plus what the
   repo already imports.
-- **Paths are opaque keys.** `prepareInputs`, `maybeFilter`, `filterImages`,
-  `warnIfResolutionDependent` and `runner.release(consumed)` must not be
-  modified. If a task seems to need one of them changed, the boundary is in the
-  wrong place; stop and re-read the design.
+- **Paths stay opaque keys.** `prepareInputs`, `maybeFilter`, `filterImages`
+  and `runner.release(consumed)` must not be modified at all, and no code may
+  start branching on what a path looks like. If a task seems to need one of
+  those changed, the boundary is in the wrong place; stop and re-read the
+  design. (Task 4 does edit `warnIfResolutionDependent`, but only the text of
+  the warning it emits, never how it resolves the path.)
 - **The caller's params object is never mutated.** `runs/page.tsx:95` records
   the executed inputs into run history for display, and the form holds the same
   strings.
