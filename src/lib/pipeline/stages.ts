@@ -28,6 +28,22 @@ export function workPath(name: string): string {
   return `${WORK_DIR}/${name}`;
 }
 
+/** POSIX and Windows path separators, so a path from either host splits into segments. */
+const PATH_SEPARATORS = /[/\\]/;
+
+/**
+ * The last segment of a path, for POSIX and Windows separators alike.
+ *
+ * Used to name a staged file after the one the user picked without carrying
+ * the directory it came from. Radiance tools write their own argv into the
+ * header of the picture they produce, so a directory that reaches an argument
+ * list reaches the finished picture. See #241.
+ */
+export function basename(path: string): string {
+  const segment = path.split(PATH_SEPARATORS).pop() ?? "";
+  return segment === "" ? "file" : segment;
+}
+
 /**
  * dcraw_emu flags for RAW -> TIFF conversion.
  *

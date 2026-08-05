@@ -9,6 +9,7 @@
 
 import { describe, expect, it } from "@jest/globals";
 import {
+  basename,
   cropArgs,
   dcrawArgs,
   evalglareArgs,
@@ -270,5 +271,32 @@ describe("readResolution", () => {
     expect(() => readResolution(picture("+Y 100 -X 100"))).toThrow(
       PipelineError
     );
+  });
+});
+
+describe("basename", () => {
+  it("keeps the last segment of a POSIX path", () => {
+    expect(basename("/Users/someone/Drive/cal files/CF_f5d6.cal")).toBe(
+      "CF_f5d6.cal"
+    );
+  });
+
+  // Tauri hands back native paths, so a Windows run carries backslashes.
+  // Splitting on "/" alone would return the whole string and leak exactly what
+  // this helper exists to remove.
+  it("keeps the last segment of a Windows path", () => {
+    expect(basename("C:\\Users\\someone\\Pictures\\DSC_0001.JPG")).toBe(
+      "DSC_0001.JPG"
+    );
+  });
+
+  it("leaves a bare filename alone", () => {
+    expect(basename("CF_f5d6.cal")).toBe("CF_f5d6.cal");
+  });
+
+  // A path ending in a separator has no segment to keep, and an empty string
+  // would produce a work path ending in "-", which reads as a truncation.
+  it("falls back to a placeholder when there is no segment", () => {
+    expect(basename("/some/directory/")).toBe("file");
   });
 });
