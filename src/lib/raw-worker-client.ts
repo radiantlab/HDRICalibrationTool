@@ -60,12 +60,47 @@ export function resetRawWorker(): void {
   abandon?.(new Error("the RAW worker was dropped"));
 }
 
+/**
+ * What a caller may say about a conversion beyond its inputs.
+ *
+ * Not in `raw-worker.types.ts` with the message shapes: neither a signal nor
+ * a callback survives `postMessage`, so these never cross into the worker.
+ * They govern whether the frame is sent at all, which is a decision this side
+ * makes.
+ */
+export interface RawConvertOptions {
+  /**
+   * Called once the frame is past the point of being skipped.
+   *
+   * `raw-preview.ts` cannot work this out for itself -- only the queue knows
+   * when a frame leaves it -- and it needs to, because dropping a frame that
+   * has already been sent must forget nothing.
+   */
+  onStart?: () => void;
+  /** Checked once, at the front of the queue. Aborting later does nothing. */
+  signal?: AbortSignal;
+}
+
 export function convertRawInWorker(
   path: string,
   bytes: Uint8Array,
-  wasmBaseUrl: string
+  wasmBaseUrl: string,
+  options?: RawConvertOptions
 ): Promise<Uint8Array> {
-  const conversion = queue.then(() => send(path, bytes, wasmBaseUrl));
+  const conversion = queue.then(() => {
+    // Checked here rather than when the call was made, which is the whole
+    // point: the work worth skipping is work that has been sitting in the
+    // queue. A signal already aborted on arrival takes this same path, so
+    // there is no second case for it.
+    if (options?.signal?.aborted) {
+      throw new DOMException("Aborted", "AbortError");
+    }
+    // Adjacent to the check on purpose. The instant a frame can no longer be
+    // skipped is the instant it counts as started, and nothing may run
+    // between the two that could throw and leave them disagreeing.
+    options?.onStart?.();
+    return send(path, bytes, wasmBaseUrl);
+  });
   // Discards the value on both paths, not just the error: `p.catch(fn)` is
   // `p.then(undefined, fn)`, so a fulfilled `conversion` would pass its ~67 MB
   // TIFF straight through and `queue` would pin it at module scope until the

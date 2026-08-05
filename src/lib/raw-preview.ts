@@ -29,7 +29,10 @@
  * for a preview-only shortcut to reach for.
  */
 
-import { convertRawInWorker } from "./raw-worker-client";
+import {
+  convertRawInWorker,
+  type RawConvertOptions,
+} from "./raw-worker-client";
 
 /**
  * Where the browser builds are served from. See `public/wasm/README.md`.
@@ -44,8 +47,12 @@ function wasmBaseUrl(): string {
 }
 
 /** The default converter: the worker. Tests inject their own. */
-function workerTiffFor(path: string, bytes: Uint8Array): Promise<Uint8Array> {
-  return convertRawInWorker(path, bytes, wasmBaseUrl());
+function workerTiffFor(
+  path: string,
+  bytes: Uint8Array,
+  options?: RawConvertOptions
+): Promise<Uint8Array> {
+  return convertRawInWorker(path, bytes, wasmBaseUrl(), options);
 }
 
 /**
@@ -88,13 +95,39 @@ export interface RawSourceIo {
    *
    * Named for what it returns rather than what it does: under #243 it will
    * often answer from OPFS without converting anything.
+   *
+   * `options.signal` lets a frame still waiting in the queue be skipped.
+   * `options.onStart` is the converter's half of that bargain: it says the
+   * frame can no longer be skipped, which is the only way this module can
+   * tell a queued frame from one already converting. A converter that never
+   * calls it leaves its frames droppable until they finish -- see
+   * `dropRawConversions`, which keeps a settled entry by its `done` flag
+   * regardless of `started`.
    */
-  tiffFor?: (path: string, bytes: Uint8Array) => Promise<Uint8Array>;
+  tiffFor?: (
+    path: string,
+    bytes: Uint8Array,
+    options?: { onStart?: () => void; signal?: AbortSignal }
+  ) => Promise<Uint8Array>;
+}
+
+/**
+ * What a conversion has done so far, separate from the entry so `convert`
+ * can be given it before the entry it will belong to exists.
+ */
+interface EntryFlags {
+  /** Set once the conversion settles, either way. */
+  done: boolean;
+  /** Set when the frame leaves the queue and reaches the worker. */
+  started: boolean;
 }
 
 interface Entry {
   /** Zero until the conversion resolves, so a pending entry evicts nothing. */
   bytes: number;
+  /** Aborting this skips the frame, but only while it is still queued. */
+  controller: AbortController;
+  flags: EntryFlags;
   tiff: Promise<Uint8Array<ArrayBuffer>>;
 }
 
@@ -124,19 +157,36 @@ export async function rawToTiff(
     return hit.tiff;
   }
 
-  const tiff = convert(path, io).catch((error: unknown) => {
-    // A failure must not be remembered as a result, or the file could never be
-    // retried without a reload.
-    forget(key);
-    throw error;
-  });
+  const controller = new AbortController();
+  const flags: EntryFlags = { done: false, started: false };
 
-  const entry: Entry = { bytes: 0, tiff };
+  const tiff = convert(path, io, flags, controller.signal).catch(
+    (error: unknown) => {
+      // A failure must not be remembered as a result, or the file could never
+      // be retried without a reload.
+      flags.done = true;
+      forget(key, flags);
+      throw error;
+    }
+  );
+
+  const entry: Entry = { bytes: 0, controller, flags, tiff };
   cache.set(key, entry);
 
   tiff
     .then((data) => {
-      entry.bytes = data.byteLength;
+      flags.done = true;
+      // Only if this entry is still the live one for its key. An entry that
+      // left the map while converting -- evicted, or cleared -- must not add
+      // to `held`, because `forget` and `evictDownToBudget` both subtract
+      // `entry.bytes`, which was still 0 when they let it go. Accounting for
+      // it now would raise `held` permanently and make the budget evict ever
+      // more eagerly for the rest of the session.
+      const live = cache.get(key);
+      if (live?.flags !== flags) {
+        return;
+      }
+      live.bytes = data.byteLength;
       held += data.byteLength;
       evictDownToBudget(key);
     })
@@ -173,20 +223,41 @@ function evictDownToBudget(keep: string): void {
   }
 }
 
-function forget(key: string): void {
+/**
+ * Removes an entry, if it is still the one holding its key.
+ *
+ * Identified by its flags rather than by the entry itself, so a conversion's
+ * own `catch` can call this without a forward reference to the entry it has
+ * not finished building. The two are one-to-one, so the check is the same.
+ *
+ * That check is what keeps a dropped frame's `AbortError` -- which arrives at
+ * the `catch` above one turn later -- from deleting the *fresh* entry a user
+ * created by re-adding the same file in between. Without it, that replacement
+ * would be orphaned: still converting, no longer cached, and the next
+ * consumer to ask would start a third conversion.
+ */
+function forget(key: string, flags: EntryFlags): void {
   const entry = cache.get(key);
-  if (entry) {
-    held -= entry.bytes;
-    cache.delete(key);
+  if (entry?.flags !== flags) {
+    return;
   }
+  held -= entry.bytes;
+  cache.delete(key);
 }
 
 async function convert(
   path: string,
-  io: RawSourceIo
+  io: RawSourceIo,
+  flags: EntryFlags,
+  signal: AbortSignal
 ): Promise<Uint8Array<ArrayBuffer>> {
   const bytes = await io.readFile(path);
-  const tiff = await (io.tiffFor ?? workerTiffFor)(path, bytes);
+  const tiff = await (io.tiffFor ?? workerTiffFor)(path, bytes, {
+    onStart: () => {
+      flags.started = true;
+    },
+    signal,
+  });
   // Never a SharedArrayBuffer -- these builds are single-threaded, which is
   // what keeps them hostable without COOP/COEP headers, and a page served
   // without those headers does not even define SharedArrayBuffer. The value
@@ -196,6 +267,39 @@ async function convert(
   // a copy of `.buffer`, not a bare handoff: it does `buffer.slice(0)` before
   // posting to the tiff worker.
   return tiff as Uint8Array<ArrayBuffer>;
+}
+
+/**
+ * Gives up on frames the user has removed.
+ *
+ * Only frames still waiting in the queue are given up on. One already
+ * converting is left alone in both senses: it is not skipped, because the
+ * queue is past the point where that is possible, and it is not forgotten,
+ * because forgetting it would make a re-added set a cache miss and convert
+ * the same bytes a second time. A finished frame is kept too -- it costs
+ * nothing the LRU budget does not already govern, and it makes re-adding the
+ * same file instant. `flags.done` is what recognizes it: a converter is free
+ * to resolve without ever calling `onStart` -- #243's OPFS path will do
+ * exactly that when it answers from a cached TIFF instead of converting --
+ * and such a converter would otherwise leave `flags.started` false on a
+ * completed entry, indistinguishable from one still queued.
+ *
+ * Paths that were never converted, including every non-RAW one, match no key
+ * and cost a scan.
+ */
+export function dropRawConversions(paths: string[]): void {
+  for (const path of paths) {
+    for (const [key, entry] of Array.from(cache.entries())) {
+      if (key !== path && !key.startsWith(`${path}|`)) {
+        continue;
+      }
+      if (entry.flags.started || entry.flags.done) {
+        continue;
+      }
+      entry.controller.abort();
+      forget(key, entry.flags);
+    }
+  }
 }
 
 /**
