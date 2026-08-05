@@ -51,7 +51,7 @@ export default function Navigation() {
               exposure bracket.
 
               The src is absolute. It was relative, which resolved against the
-              current directory and so 404'd on /image-viewer/view.
+              current directory and so 404'd on /viewer/view.
 
               `w-10` matters as much as `h-10`. The width attribute is 512, and
               a CSS height alone does not override it, so the box stayed 512px
@@ -103,11 +103,11 @@ export default function Navigation() {
         {/* Image Configuration page link */}
         <Link
           className={`flex h-full w-full items-center justify-center border-border border-r p-2 font-bold ${
-            pathname === "/home-page"
+            pathname === "/pipeline"
               ? "cursor-default bg-background" // Active page styling
               : "cursor-pointer hover:bg-accent" // Inactive page styling
           }`}
-          href="/home-page"
+          href="/pipeline"
         >
           Image Generator
         </Link>
@@ -115,11 +115,11 @@ export default function Navigation() {
         {/* Settings page link */}
         <Link
           className={`flex h-full w-full items-center justify-center border-border border-r p-2 font-bold ${
-            pathname === "/settings-page"
+            pathname === "/settings"
               ? "cursor-default bg-background"
               : "cursor-pointer hover:bg-accent"
           }`}
-          href="/settings-page"
+          href="/settings"
         >
           Settings
         </Link>
@@ -139,11 +139,11 @@ export default function Navigation() {
         {/* Image Viewer page link */}
         <Link
           className={`flex h-full w-full items-center justify-center p-2 font-bold ${
-            pathname.startsWith("/image-viewer")
+            pathname.startsWith("/viewer")
               ? "cursor-default bg-background"
               : "cursor-pointer hover:bg-accent"
           }`}
-          href="/image-viewer"
+          href="/viewer"
         >
           Image Viewer
         </Link>

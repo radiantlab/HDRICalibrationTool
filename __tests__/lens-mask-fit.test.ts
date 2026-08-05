@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import { describeMaskOverflow } from "@/app/home-page/lens-mask-fit";
+import { describeMaskOverflow } from "@/app/pipeline/lens-mask-fit";
 
 // The dimensions dcraw_emu produces for the example Canon 5D Mark III CR2s,
 // and therefore the dimensions of the merged picture crop is handed.

@@ -36,7 +36,7 @@ export default defineConfig({
           command: `npx serve ../out -l ${PORT}`,
           reuseExistingServer: true,
           timeout: 60_000,
-          url: `http://127.0.0.1:${PORT}/home-page`,
+          url: `http://127.0.0.1:${PORT}/pipeline`,
         },
       }
     : {}),

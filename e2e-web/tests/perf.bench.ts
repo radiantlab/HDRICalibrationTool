@@ -86,7 +86,7 @@ test(`${MODE} against ${TARGET}`, async ({ page }) => {
 
   // --- Cold load -----------------------------------------------------------
   const coldStart = Date.now();
-  await page.goto(`${TARGET}/home-page`, { waitUntil: "load" });
+  await page.goto(`${TARGET}/pipeline`, { waitUntil: "load" });
   const coldLoadMs = Date.now() - coldStart;
 
   const nav = await page.evaluate(() => {

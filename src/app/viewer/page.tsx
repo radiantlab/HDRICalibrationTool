@@ -20,7 +20,7 @@ export default function ImageViewer() {
       toast.error("The selected file is not an HDR image");
       return;
     }
-    router.push(serializeViewerUrl("/image-viewer/view", { filePath }));
+    router.push(serializeViewerUrl("/viewer/view", { filePath }));
   };
 
   return (

@@ -35,7 +35,7 @@ declare const jest: typeof import("@jest/globals").jest;
 
 const SET_LINE = /Set 1 of 3/;
 
-import { RunConsole } from "../src/app/home-page/run-console";
+import { RunConsole } from "../src/app/pipeline/run-console";
 
 describe("RunConsole", () => {
   it("shows every log entry, not just the newest", () => {

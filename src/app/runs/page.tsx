@@ -34,9 +34,9 @@ import {
   type RunRecord,
   readRuns,
 } from "@/lib/run-history";
-import type { buildPipelineParams } from "../home-page/build-pipeline-params";
-import { useGlobalPipelineConfig } from "../home-page/pipeline-config-store";
-import { serializeViewerUrl } from "../image-viewer/viewer-url";
+import type { buildPipelineParams } from "../pipeline/build-pipeline-params";
+import { useGlobalPipelineConfig } from "../pipeline/pipeline-config-store";
+import { serializeViewerUrl } from "../viewer/viewer-url";
 import { groupRunsByDay } from "./group-runs";
 import { openableOutputs } from "./openable-outputs";
 
@@ -118,7 +118,7 @@ export default function RunsPage() {
       },
     });
     toast.success("Inputs restored. Select an image set to run them.");
-    router.push("/home-page");
+    router.push("/pipeline");
   };
 
   return (
@@ -202,7 +202,7 @@ export default function RunsPage() {
                           const [image] = openableOutputs(record);
                           if (image) {
                             router.push(
-                              serializeViewerUrl("/image-viewer/view", {
+                              serializeViewerUrl("/viewer/view", {
                                 filePath: image,
                               })
                             );

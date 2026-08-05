@@ -12,7 +12,7 @@ test("the site root lands on the generator", async ({ page }) => {
   // A static export with no `index.html` 404s at `/`, which is the first
   // thing a visitor sees and the last thing a build log mentions.
   await page.goto("/");
-  await expect(page).toHaveURL(/\/home-page/);
+  await expect(page).toHaveURL(/\/pipeline/);
   await expect(page.getByRole("heading", { name: "LumiLab" })).toBeVisible();
 });
 
@@ -22,12 +22,7 @@ test("every tab is reachable by URL, not only by clicking", async ({
   // Deep links matter more here than on the desktop: a browser user can
   // bookmark, refresh, or be sent one, and a static export only serves a
   // route it actually emitted a file for.
-  for (const route of [
-    "/home-page",
-    "/settings-page",
-    "/runs",
-    "/image-viewer",
-  ]) {
+  for (const route of ["/pipeline", "/settings", "/runs", "/viewer"]) {
     await page.goto(route);
     await expect(page).toHaveURL(new RegExp(route));
     await expect(page.locator("nav")).toBeVisible();
@@ -37,7 +32,7 @@ test("every tab is reachable by URL, not only by clicking", async ({
 test("the logo and title sit flush left, and the controls flush right", async ({
   page,
 }) => {
-  await page.goto("/home-page");
+  await page.goto("/pipeline");
 
   const header = page.locator("#logo");
   const title = page.getByRole("heading", { name: "LumiLab" });
@@ -86,7 +81,7 @@ test("the logo and title sit flush left, and the controls flush right", async ({
 test("the settings page reports the bundled tool versions", async ({
   page,
 }) => {
-  await page.goto("/settings-page");
+  await page.goto("/settings");
 
   // `public/wasm/versions.json` is generated at build time and is easy to
   // leave out of an export. Without it the page renders, so nothing fails --
@@ -103,7 +98,7 @@ test("settings scrolls to its last card", async ({ page }) => {
   // Regression: the action bar was `fixed bottom-0` and sat on top of the end
   // of the page, so the final card could not be reached at any window size.
   await page.setViewportSize({ height: 600, width: 1280 });
-  await page.goto("/settings-page");
+  await page.goto("/settings");
 
   const reachedBottom = await page.evaluate(() => {
     const scroller = Array.from(document.querySelectorAll("*")).find((el) => {
@@ -127,7 +122,7 @@ test("settings scrolls to its last card", async ({ page }) => {
 });
 
 test("dark mode can be chosen and survives a reload", async ({ page }) => {
-  await page.goto("/home-page");
+  await page.goto("/pipeline");
 
   const isDark = () =>
     page.evaluate(() => document.documentElement.classList.contains("dark"));
@@ -148,6 +143,6 @@ test("dark mode can be chosen and survives a reload", async ({ page }) => {
   await page.reload();
   await expect.poll(isDark).toBe(true);
 
-  await page.goto("/settings-page");
+  await page.goto("/settings");
   await expect.poll(isDark).toBe(true);
 });

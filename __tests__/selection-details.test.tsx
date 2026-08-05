@@ -1,8 +1,8 @@
 import { describe, expect, it } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
-import { ImageSelectionProvider } from "../src/app/image-viewer/view/image-selection-context";
-import type { LuminanceSummary } from "../src/app/image-viewer/view/luminance-aggregates";
-import { SelectionDetails } from "../src/app/image-viewer/view/selection-details";
+import { ImageSelectionProvider } from "../src/app/viewer/view/image-selection-context";
+import type { LuminanceSummary } from "../src/app/viewer/view/luminance-aggregates";
+import { SelectionDetails } from "../src/app/viewer/view/selection-details";
 import { TooltipProvider } from "../src/components/ui/tooltip";
 
 const MASK_NOTE = /outside the lens circle/i;

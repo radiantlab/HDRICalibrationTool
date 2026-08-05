@@ -27,7 +27,7 @@
         // This is an HDRI (High Dynamic Range Imaging) tool: bitwise
         // operators are the correct, idiomatic tool for WebGPU buffer-usage
         // flag masks (falsecolor-luminance-webgpu.ts), Radiance RLE binary
-        // scanline decoding (image-viewer/view/page.tsx), and byte-size
+        // scanline decoding (viewer/view/page.tsx), and byte-size
         // shift constants (generic-image-metadata.ts, tiff-worker.ts).
         // Every current use is a real bitmask/binary-format operation, not
         // a typo for a logical operator, so this rule is disabled globally
@@ -121,7 +121,7 @@
       // "(tiff-image)"). This is a Biome bug, not a project preference —
       // exclude them entirely so `ultracite check`/`fix` don't crash.
       "includes": [
-        "src/app/home-page/fs-circular-mas-selection.tsx",
+        "src/app/pipeline/fs-circular-mas-selection.tsx",
         "src/components/ui/(image)/(tiff-image)/tiff-image.tsx"
       ],
       "linter": { "enabled": false },
@@ -206,7 +206,7 @@
       // plugins" when ultracite's unsafe fix rewrote these imports. Keep
       // the bare specifier so the browser bundle keeps working.
       "includes": [
-        "src/app/image-viewer/page.tsx",
+        "src/app/viewer/page.tsx",
         "src/components/ui/image-matrix-input.tsx",
         "src/components/ui/image-set-preview.tsx",
         "src/components/ui/(image)/generic-image.tsx",

@@ -14,8 +14,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { canRevealInFileManager } from "@/lib/host/env";
 import { revealFile } from "@/lib/host/reveal";
-import { serializeViewerUrl } from "../image-viewer/viewer-url";
 import { usePipelineStatus } from "../pipeline-status-context";
+import { serializeViewerUrl } from "../viewer/viewer-url";
 
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString(undefined, { hour12: false });
@@ -68,7 +68,7 @@ export function RunConsole({
 
   const openImage = () => {
     router.push(
-      serializeViewerUrl("/image-viewer/view", {
+      serializeViewerUrl("/viewer/view", {
         filePath: lastEmittedOutput?.path,
       })
     );

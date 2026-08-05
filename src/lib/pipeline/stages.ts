@@ -285,7 +285,7 @@ export function falsecolorArgs(
  * Reads the pixel dimensions from a Radiance picture.
  *
  * Port of `picture::read_resolution`. Note this overlaps with
- * `parseRadianceHDR` in `src/app/image-viewer/view/page.tsx`, which parses the
+ * `parseRadianceHDR` in `src/app/viewer/view/page.tsx`, which parses the
  * same header on its way to decoding pixels. They are deliberately separate --
  * this one only needs the resolution and must stay dependency-free -- but a
  * change to the header format would need making in both. The resolution line follows the blank
