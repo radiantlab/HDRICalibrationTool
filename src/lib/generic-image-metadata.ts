@@ -27,15 +27,29 @@ export function useGenericImageMetadata(
     if (!fsPath) {
       return;
     }
-    const kind: string = path.extname(fsPath).toLowerCase();
-    switch (kind) {
-      case ".jpg":
-      case ".jpeg":
-        return getJpegImageMetadata(fsPath);
-      default:
-        return getTiffImageMetadata(fsPath);
-    }
+    const metadata = metadataFor(fsPath);
+    // Removing a file drops its queued RAW conversion, and the rejection that
+    // causes arrives only once the queue reaches that frame -- by which time
+    // the selection has moved on and every consumer of this promise has
+    // unmounted, leaving nobody attached to it. Same reason as
+    // `tiff-image.tsx`'s handler on its derived decode promise. The original
+    // promise is returned, not the handled one: turning the rejection into a
+    // resolved `undefined` would make a genuine conversion failure look like
+    // an image with no dimensions.
+    metadata.catch(() => undefined);
+    return metadata;
   }, [fsPath]);
+}
+
+function metadataFor(fsPath: string): Promise<GenericImageMetadata> {
+  const kind: string = path.extname(fsPath).toLowerCase();
+  switch (kind) {
+    case ".jpg":
+    case ".jpeg":
+      return getJpegImageMetadata(fsPath);
+    default:
+      return getTiffImageMetadata(fsPath);
+  }
 }
 
 function getJpegImageMetadata(fsPath: string): Promise<GenericImageMetadata> {
