@@ -1,17 +1,19 @@
 /**
  * Settings Page Component for the LumiLab.
  *
- * This component allows users to configure application settings including:
- * - Output file location
- * - User experience level
- * - Debug console access
+ * The one configurable setting left is the output file location, and it shows
+ * only on the desktop: a browser downloads to where the browser decides, so an
+ * output path there would be a control that does nothing.
  *
  * It also reports what this build is made of. There used to be paths here for
  * Radiance, hdrgen and dcraw_emu, which the user had to install and locate;
  * every tool now ships with the app as WebAssembly, so the paths are gone and
- * their versions are shown instead.
+ * their versions are shown instead. The RAW conversion cache reports its size
+ * here too, with a control to empty it.
  *
- * Settings are saved to persistent storage via Tauri API calls.
+ * Settings are saved through the Zustand store in `stores/settings-store.ts`,
+ * which persists to `localStorage` -- not through Tauri, so the same code path
+ * serves both hosts.
  */
 "use client";
 
