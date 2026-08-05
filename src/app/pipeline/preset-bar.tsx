@@ -77,9 +77,26 @@ const SLOT_LABEL: Record<PresetFileSlot, string> = {
 export function PresetBar({
   form,
   maskImagePath,
+  onApplyLensMask,
 }: {
   form: UseFormReturn<pipelineConfig>;
   maskImagePath: string | undefined;
+  /**
+   * Moves the drawn mask onto the preset's values.
+   *
+   * The circle is rendered from motion values, which are written to the form
+   * but never read back from it, so setting the form alone left the preview
+   * showing the previous mask while the fields showed the preset's.
+   *
+   * `drawnAgainst` is the image size the mask was saved against, which the
+   * mask input needs to say whether it still fits the selected image. It is
+   * null for a preset saved with no image selected, where there was nothing to
+   * record.
+   */
+  onApplyLensMask?: (
+    mask: pipelineConfig["lensMask"],
+    drawnAgainst: [number, number] | null
+  ) => void;
 }) {
   const [presets, setPresets] = useState<Preset[]>([]);
   const [selectedId, setSelectedId] = useState<string>("");
@@ -136,6 +153,7 @@ export function PresetBar({
     form.setValue("outputSettings", preset.outputSettings);
     if (preset.lensMask) {
       form.setValue("lensMask", preset.lensMask);
+      onApplyLensMask?.(preset.lensMask, preset.lensMaskImageSize);
     }
     form.setValue("cameraResponseLocation", presetFilePath(preset, "response"));
     form.setValue("correctionFiles", {
