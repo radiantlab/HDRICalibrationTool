@@ -19,7 +19,7 @@ jest.mock("@tauri-apps/plugin-fs", () => ({
   stat: () => Promise.resolve({ isDirectory: false, isFile: true, size: 1024 }),
 }));
 
-import { SelectedImageProvider } from "../src/app/home-page/selected-image-context";
+import { SelectedImageProvider } from "../src/app/pipeline/selected-image-context";
 import {
   ImageMatrixInput,
   type ImageSetIssue,

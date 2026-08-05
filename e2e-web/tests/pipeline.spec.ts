@@ -26,7 +26,7 @@ const RUN_TIMEOUT = 280_000;
 const CR2_FRAMES = 3;
 
 test("generates two HDR pictures from the JPEG bracket", async ({ page }) => {
-  await page.goto("/home-page");
+  await page.goto("/pipeline");
   await loadJpegBracket(page);
   await configureRun(page);
 
@@ -93,7 +93,7 @@ test("generates a second time after the preset is reapplied", async ({
   // Two full runs in one test, and the default budget covers about one.
   test.setTimeout(RUN_TIMEOUT * 2);
 
-  await page.goto("/home-page");
+  await page.goto("/pipeline");
   await loadJpegBracket(page);
   await configureRun(page);
 
@@ -110,12 +110,12 @@ test("generates a second time after the preset is reapplied", async ({
   await expect(progress).toBeHidden();
 
   await page.locator("nav").getByRole("link", { name: "Image Viewer" }).click();
-  await expect(page).toHaveURL(/image-viewer/);
+  await expect(page).toHaveURL(/viewer/);
   await page
     .locator("nav")
     .getByRole("link", { name: "Image Generator" })
     .click();
-  await expect(page).toHaveURL(/home-page/);
+  await expect(page).toHaveURL(/pipeline/);
 
   await applyPreset(page, "Bracket");
 
@@ -143,7 +143,7 @@ test("the page stays responsive while the pipeline runs", async ({ page }) => {
   // the length of an hdrgen merge -- no repaints, no clicks, and eventually
   // the browser's "page is not responding" prompt. It runs in a Web Worker
   // now, and this is what would notice if it ever moved back.
-  await page.goto("/home-page");
+  await page.goto("/pipeline");
   await loadJpegBracket(page);
   await configureRun(page);
 
@@ -207,7 +207,7 @@ test("the page stays responsive while RAW thumbnails are converted", async ({
   // 300_000 ms from playwright.config.ts is comfortably enough on its own --
   // the 180_000 ms bound on the canvas-count assertion below is the tighter,
   // more relevant limit for this test.
-  await page.goto("/home-page");
+  await page.goto("/pipeline");
 
   await page.evaluate(() => {
     const w = window as unknown as { __beats: number[] };

@@ -37,7 +37,7 @@ const CHUNK_BYTES = 8 * 1024 * 1024;
 test("OPFS and IndexedDB accept a converted-frame-sized blob", async ({
   page,
 }) => {
-  await page.goto("/home-page");
+  await page.goto("/pipeline");
 
   const report = await page.evaluate(
     async ({ size, chunkBytes }) => {

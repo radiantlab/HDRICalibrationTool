@@ -13,7 +13,7 @@ declare const jest: typeof import("@jest/globals").jest;
 
 const DIALOG_TITLE = /Configure lens mask/;
 
-import { LensMaskEditor } from "../src/app/home-page/lens-mask-editor";
+import { LensMaskEditor } from "../src/app/pipeline/lens-mask-editor";
 
 describe("LensMaskEditor", () => {
   it("edits the same motion values as the inline preview", async () => {

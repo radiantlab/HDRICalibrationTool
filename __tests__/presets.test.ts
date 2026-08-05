@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import type { pipelineConfig } from "../src/app/home-page/(pipeline-configuration)/config-provider";
+import type { pipelineConfig } from "../src/app/pipeline/(pipeline-configuration)/config-provider";
 import { presetFields, sha256Hex } from "../src/lib/presets";
 
 describe("sha256Hex", () => {

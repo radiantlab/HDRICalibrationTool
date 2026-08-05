@@ -11,7 +11,7 @@ import {
   useController,
 } from "react-hook-form";
 import { toast } from "sonner";
-import { useSelectedImage } from "@/app/home-page/selected-image-context";
+import { useSelectedImage } from "@/app/pipeline/selected-image-context";
 import {
   ContextMenu,
   ContextMenuContent,

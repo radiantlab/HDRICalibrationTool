@@ -11,7 +11,7 @@ import {
   type Path,
   useController,
 } from "react-hook-form";
-import type { pipelineConfig } from "@/app/home-page/(pipeline-configuration)/config-provider";
+import type { pipelineConfig } from "@/app/pipeline/(pipeline-configuration)/config-provider";
 import {
   Field,
   FieldContent,

@@ -17,8 +17,8 @@ import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
 import { canRevealInFileManager } from "@/lib/host/env";
 import { revealFile } from "@/lib/host/reveal";
-import { serializeViewerUrl } from "../image-viewer/viewer-url";
 import { usePipelineStatus } from "../pipeline-status-context";
+import { serializeViewerUrl } from "../viewer/viewer-url";
 
 export function PipelineStatus({
   onFinishAcknowledgment,
@@ -96,7 +96,7 @@ export function PipelineStatus({
               disabled={!lastEmittedOutput}
               onClick={() => {
                 router.push(
-                  serializeViewerUrl("/image-viewer/view", {
+                  serializeViewerUrl("/viewer/view", {
                     filePath: lastEmittedOutput?.path,
                   })
                 );

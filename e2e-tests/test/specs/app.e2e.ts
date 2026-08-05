@@ -317,7 +317,7 @@ function getPipelineFailureMessage(outputDir: string): string | null {
 describe("LumiLab", () => {
   it("opens to the home page", async () => {
     await browser.waitUntil(
-      async () => (await browser.getUrl()).endsWith("/home-page"),
+      async () => (await browser.getUrl()).endsWith("/pipeline"),
       {
         timeout: 10_000,
         timeoutMsg: "expected the app to load to the home page",
@@ -354,7 +354,7 @@ describe("LumiLab", () => {
     await setPersistedSettings({ outputPath: tempOutputDirectory });
     await browser.refresh();
     await browser.waitUntil(
-      async () => (await browser.getUrl()).endsWith("/home-page"),
+      async () => (await browser.getUrl()).endsWith("/pipeline"),
       {
         timeout: 10_000,
         timeoutMsg: "expected the app to return to the home page after refresh",
@@ -472,9 +472,9 @@ describe("LumiLab", () => {
     // on macOS and Linux, so the literal Windows origin that used to be here
     // navigated nowhere on the other two.
     const homeUrl = await browser.getUrl();
-    await browser.url(homeUrl.replace(/\/home-page.*$/, "/image-viewer"));
+    await browser.url(homeUrl.replace(/\/pipeline.*$/, "/viewer"));
     await browser.waitUntil(
-      async () => (await browser.getUrl()).endsWith("/image-viewer"),
+      async () => (await browser.getUrl()).endsWith("/viewer"),
       {
         timeout: 10_000,
         timeoutMsg: "expected the app to navigate to the image viewer page",
@@ -488,7 +488,7 @@ describe("LumiLab", () => {
     await dispatchDrop("image-viewer-input", [hdrFilePath]);
 
     await browser.waitUntil(
-      async () => (await browser.getUrl()).includes("/image-viewer/view"),
+      async () => (await browser.getUrl()).includes("/viewer/view"),
       {
         timeout: 10_000,
         timeoutMsg: "expected the dropped HDR file to open in the image viewer",

@@ -102,7 +102,7 @@ jobs:
         # first thing a visitor sees and the last thing a build log mentions.
         run: |
           test -f out/index.html
-          test -f out/home-page.html
+          test -f out/pipeline.html
           test -f out/wasm/versions.json
           test -f out/wasm/hdrgen.wasm
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
-import type { pipelineConfig } from "@/app/home-page/(pipeline-configuration)/config-provider";
-import { unsuppliedCalibrationFiles } from "@/app/home-page/calibration-files";
+import type { pipelineConfig } from "@/app/pipeline/(pipeline-configuration)/config-provider";
+import { unsuppliedCalibrationFiles } from "@/app/pipeline/calibration-files";
 
 /** The form's own defaults: every calibration field starts empty. */
 function makeConfig(overrides: Partial<pipelineConfig> = {}): pipelineConfig {

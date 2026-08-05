@@ -24,7 +24,7 @@ jest.mock("@/lib/generic-image-metadata", () => {
   return { useGenericImageMetadata: () => metadata };
 });
 
-import { ScaledCircularMaskSelection } from "../src/app/home-page/fs-circular-mas-selection";
+import { ScaledCircularMaskSelection } from "../src/app/pipeline/fs-circular-mas-selection";
 
 describe("lens mask default placement", () => {
   it("centres the mask and starts the radius at a quarter of the image height", async () => {

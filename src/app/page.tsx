@@ -5,7 +5,7 @@
  *
  * Without this the static export contains no `index.html` at all, so a web
  * deployment 404s on its own home page. That never showed up on the desktop,
- * where Tauri opens `/home-page` directly and nothing ever asks for `/`.
+ * where Tauri opens `/pipeline` directly and nothing ever asks for `/`.
  *
  * A client-side replace rather than a server redirect, because `output:
  * "export"` produces static files with no server to redirect from. `replace`
@@ -20,7 +20,7 @@ export default function RootPage() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/home-page");
+    router.replace("/pipeline");
   }, [router]);
 
   return (

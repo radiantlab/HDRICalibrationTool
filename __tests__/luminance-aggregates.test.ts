@@ -1,9 +1,9 @@
 import { describe, expect, it } from "@jest/globals";
-import type { FalsecolorLuminanceMatrix } from "@/app/image-viewer/view/falsecolor-luminance-webgpu";
+import type { FalsecolorLuminanceMatrix } from "@/app/viewer/view/falsecolor-luminance-webgpu";
 import {
   computeLuminanceSummary,
   inferFisheyeMask,
-} from "@/app/image-viewer/view/luminance-aggregates";
+} from "@/app/viewer/view/luminance-aggregates";
 
 const CORNER_LUMINANCE = 1000;
 const INSIDE_LUMINANCE = 10;
