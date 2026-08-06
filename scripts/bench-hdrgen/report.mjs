@@ -26,15 +26,24 @@ export function summarise(records) {
 
   return [...cells.values()].map(({ frames, leg, runs }) => {
     const finished = runs.filter((run) => run.status === "ok" && run.runMs !== null);
-    const unfinished = runs.length - finished.length;
     const times = finished.map((run) => run.runMs);
+    // A hang and a crash are different findings, and telling them apart is
+    // most of why this benchmark exists. Counting both as "timed out" would
+    // report a module that aborted immediately as one that was merely slow,
+    // which points the investigation in the wrong direction.
+    const counted = [
+      ["timed out", runs.filter((run) => run.status === "timeout").length],
+      ["errored", runs.filter((run) => run.status === "error").length],
+    ].filter(([, count]) => count > 0);
     return {
       frames,
       leg,
       maxMs: times.length ? Math.max(...times) : null,
       medianMs: times.length ? median(times) : null,
       minMs: times.length ? Math.min(...times) : null,
-      note: unfinished > 0 ? `${unfinished}/${runs.length} timed out` : null,
+      note: counted.length
+        ? counted.map(([label, count]) => `${count}/${runs.length} ${label}`).join(", ")
+        : null,
     };
   });
 }
