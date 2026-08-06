@@ -161,24 +161,40 @@ export function resizeArgs(
 }
 
 /**
- * pcomb with a `.cal` file. All four corrections use it, differing only in
- * which file they pass.
- *
- * The photometric adjustment used to have its own builder that additionally
- * passed `-h`, which stops pcomb copying the header it was handed. It was the
- * only one of the four that did, so the fourth stage discarded everything the
- * three before it had accumulated: the camera, hdrgen's record of which frames
- * were merged, the original capture date, `PRIMARIES`, `EXPOSURE`, and the
- * crop and resize lines. A calibrated picture therefore carried less
- * provenance than an uncalibrated one, which runs no pcomb stage at all.
- *
- * The flag was never chosen. `extra/ldr-to-hdr.sh:197` has the same asymmetry,
- * `photometric_adjustment.rs` transcribed it in 9825c4b without a word, and
- * this port carried it across for parity with a file that no longer exists.
- * Table 3 step 9 of Pierson et al. (2019) does not call for it. See #241.
+ * pcomb with a `.cal` file. Used by the projection, vignetting and neutral
+ * density corrections, which differ only in which file they pass.
  */
 export function pcombCalArgs(calFile: string, input: string): string[] {
   return ["-f", calFile, input];
+}
+
+/**
+ * The photometric adjustment, which additionally passes `-h`.
+ *
+ * `-h` stops pcomb copying the header it was handed, so this stage discards
+ * everything the three before it accumulated. That looks like an oversight,
+ * and #241 argued it was: the flag traces to `extra/ldr-to-hdr.sh:197` rather
+ * than to Table 3 of Pierson et al. (2019), and it makes a calibrated picture
+ * record less than an uncalibrated one.
+ *
+ * **It is load-bearing anyway, and removing it breaks the pipeline.** Radiance
+ * tools indent an inherited header with tabs, and `evalglare` refuses any
+ * picture whose header has a line containing both `EXPOSURE=` and a tab:
+ *
+ *     pictool.c:214   if (strstr(s, EXPOSSTR) && strstr(s, "\t")) { ... exit(1) }
+ *
+ * `pcompos` writes an `EXPOSURE=` line during the crop. With `-h` here that
+ * line is the last thing written at column zero and evalglare is content. Drop
+ * `-h` and every correction nests it one tab deeper, so the glare stage exits
+ * with "header contains invalid exposure entry" and produces nothing. That was
+ * measured against the shipped wasm binary, not inferred: it is why the
+ * uncalibrated path survives and the calibrated one does not.
+ *
+ * So provenance cannot be inherited. It is written deliberately instead, after
+ * evalglare has run, by `provenanceEntries` below.
+ */
+export function photometricArgs(calFile: string, input: string): string[] {
+  return ["-h", "-f", calFile, input];
 }
 
 /**
@@ -191,6 +207,8 @@ export function headerEditingArgs(entries: {
   view?: { projection: string; verticalAngle: number; horizontalAngle: number };
   evalglareValue?: string;
   measuredIlluminance?: string;
+  /** Ready-made lines from `provenanceEntries`, appended last. */
+  provenance?: string[];
 }): string[] {
   const args = ["-a"];
   if (entries.view) {
@@ -209,8 +227,89 @@ export function headerEditingArgs(entries: {
       `MEASURED_VERTICAL_ILLUMINANCE=${entries.measuredIlluminance.trim()}`
     );
   }
+  args.push(...(entries.provenance ?? []));
   return args;
 }
+
+/** Where `provenanceEntries` reads from. */
+export interface ProvenanceSources {
+  /** Basenames of the `.cal` files applied, in the order the pipeline runs. */
+  calibration: string[];
+  /** The header hdrgen wrote on the merged picture. */
+  mergeHeader: string;
+}
+
+/**
+ * What the finished picture should say about where it came from.
+ *
+ * The merge output records the camera, the capture date, which frames went in
+ * and whether lens flare was removed. None of that survives to the finished
+ * picture, because the photometric adjustment has to pass `-h` to keep
+ * evalglare working -- see `photometricArgs`. Rather than inherit the chain,
+ * which is what breaks evalglare, the parts worth keeping are re-stated here
+ * and appended after the glare stage has run.
+ *
+ * Every line is built as `NAME= value`, matching `VIEW=` and the illuminance
+ * entries the pipeline already writes, rather than passed through verbatim.
+ * hdrgen's own frame line begins with its argv[0], which under WebAssembly is
+ * the placeholder `./this.program` and means nothing to a reader.
+ *
+ * Two rules hold for everything returned, and both are load-bearing rather
+ * than tidiness. No entry may contain a tab, because a tab beside `EXPOSURE=`
+ * is what makes evalglare reject a picture, and someone will run evalglare on
+ * the output. And no entry may be an `EXPOSURE=` line, because the exposure is
+ * the pipeline's to state, not the merge's.
+ */
+export function provenanceEntries({
+  calibration,
+  mergeHeader,
+}: ProvenanceSources): string[] {
+  const lines = mergeHeader.split("\n").map((line) => line.trim());
+  const entries: string[] = [];
+
+  const value = (prefix: string): string | null => {
+    const found = lines.find((line) => line.startsWith(prefix));
+    return found ? found.slice(prefix.length).trim() : null;
+  };
+
+  const camera = value("CAMERA=");
+  if (camera) {
+    entries.push(`CAMERA= ${camera}`);
+  }
+
+  // hdrgen resolves this to one frame's EXIF timestamp -- the first it lists,
+  // which for a bracket shot in order is the last exposure taken. Carried as
+  // it stands: `CAPDATE=` is a standard identifier that `dateval()` parses as
+  // UTC, so it has to stay a single well-formed time rather than a range.
+  const captured = value("CAPDATE=");
+  if (captured) {
+    entries.push(`CAPDATE= ${captured}`);
+  }
+
+  const merged = lines.find((line) => line.includes("created HDR image from "));
+  if (merged) {
+    const frames = merged.slice(
+      merged.indexOf("created HDR image from ") +
+        "created HDR image from ".length
+    );
+    entries.push(`MERGED_FROM= ${frames.trim()}`);
+  }
+
+  if (lines.some((line) => line === "Removed lens flare")) {
+    entries.push("LENS_FLARE= removed");
+  }
+
+  if (calibration.length > 0) {
+    entries.push(`CALIBRATION_FILES= ${calibration.join(" ")}`);
+  }
+
+  return entries.filter(
+    (entry) => !(entry.includes("\t") || entry.includes(EXPOSURE_ENTRY))
+  );
+}
+
+/** The identifier evalglare refuses to see beside a tab. See `photometricArgs`. */
+const EXPOSURE_ENTRY = "EXPOSURE=";
 
 /**
  * evalglare in vertical-illuminance mode.

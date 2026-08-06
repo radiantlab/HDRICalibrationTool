@@ -248,21 +248,42 @@ describe("stage ordering", () => {
       "/cal/fisheye.cal",
       "/work/resize.hdr",
     ]);
-    // The photometric adjustment is last and passes the same arguments as the
-    // other three: it used to add `-h`, which discarded the provenance the
-    // earlier stages had accumulated (#241).
+    // The photometric adjustment is last and suppresses the header.
     expect(call(pcomb, 1).args).toEqual([
+      "-h",
       "-f",
       "/cal/cf.cal",
       "/work/projection_adjustment.hdr",
     ]);
   });
 
-  it("shapes all four corrections identically, none carrying -h", async () => {
-    // The fourth correction (photometric adjustment) passed `-h` until #241,
-    // which discarded the provenance the earlier corrections had
-    // accumulated. This pins all four to the same argument shape so that
-    // flag does not come back.
+  it("re-states the capture in the finished picture's header", async () => {
+    // The photometric adjustment has to discard the header it inherits, so the
+    // camera, the capture date and the frame list would otherwise reach no
+    // finished picture at all. They are written back after evalglare, where
+    // nothing downstream parses them. See `photometricArgs` and #241.
+    const runner = new FakeRunner();
+    await runPipeline({
+      params: params({ photometricAdjustmentCal: "/cal/CF_f8.cal" }),
+      runner,
+    });
+
+    // The second getinfo is the one after evalglare.
+    const getinfo = runner.callsTo("getinfo");
+    expect(getinfo.length).toBeGreaterThanOrEqual(2);
+    const last = call(getinfo, 1).args;
+    expect(last).toContain("CALIBRATION_FILES= CF_f8.cal");
+    // Never an exposure entry, which is what evalglare refuses beside a tab.
+    expect(last.join("\n")).not.toContain("EXPOSURE=");
+  });
+
+  it("suppresses the header on the fourth correction and no other", async () => {
+    // #241 removed `-h` here on the grounds that it discarded provenance, and
+    // that broke the pipeline outright: each correction nests the `EXPOSURE=`
+    // line the crop wrote one tab deeper, and evalglare exits rather than read
+    // a header carrying `EXPOSURE=` and a tab on one line (`pictool.c:214`).
+    // Measured against the shipped wasm binary. The flag stays; provenance is
+    // re-stated after evalglare instead. This pins both halves of that.
     const runner = new FakeRunner();
     await runPipeline({
       params: params({
@@ -294,11 +315,14 @@ describe("stage ordering", () => {
       "/work/vignetting_correction.hdr",
     ]);
     expect(call(pcomb, 3).args).toEqual([
+      "-h",
       "-f",
       "/cal/cf.cal",
       "/work/neutral_density.hdr",
     ]);
-    for (const invocation of pcomb) {
+    // Only the last one. An earlier `-h` would throw away a correction's own
+    // work rather than merely its inherited header.
+    for (const invocation of pcomb.slice(0, 3)) {
       expect(invocation.args).not.toContain("-h");
     }
   });

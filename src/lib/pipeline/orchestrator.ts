@@ -21,6 +21,8 @@ import {
   headerEditingArgs,
   nullifyExposureArgs,
   pcombCalArgs,
+  photometricArgs,
+  provenanceEntries,
   readResolution,
   resizeArgs,
   SQUARE_RESPONSE,
@@ -73,6 +75,20 @@ const RAW_EXTENSIONS = new Set([
   "x3f",
 ]);
 
+/**
+ * The ASCII header of a Radiance picture: everything before the blank line.
+ *
+ * Decoding only the header keeps a finished picture, which runs to tens of
+ * megabytes, out of a string. A picture with no terminator is not a picture
+ * this pipeline produced, so a bounded prefix is the safe reading.
+ */
+function headerTextOf(picture: Uint8Array): string {
+  const limit = Math.min(picture.length, 64_000);
+  const text = new TextDecoder().decode(picture.subarray(0, limit));
+  const end = text.indexOf("\n\n");
+  return end === -1 ? text : text.slice(0, end);
+}
+
 export function isRawImage(name: string): boolean {
   const dot = name.lastIndexOf(".");
   return dot !== -1 && RAW_EXTENSIONS.has(name.slice(dot + 1).toLowerCase());
@@ -85,6 +101,15 @@ interface Correction {
   message: string;
   output: string;
   step: string;
+  /**
+   * Pass `pcomb -h`, dropping the header this stage was handed.
+   *
+   * True for the photometric adjustment alone, and it has to be: without it
+   * every correction nests the `EXPOSURE=` line the crop wrote one tab deeper,
+   * and evalglare refuses a picture whose header carries `EXPOSURE=` and a tab
+   * on one line. See `photometricArgs`.
+   */
+  suppressHeader: boolean;
 }
 
 export interface PipelineResult {
@@ -192,6 +217,15 @@ export async function runPipeline({
   advance();
   checkStop();
 
+  // Read before anything downstream can drop it. This is the only picture in
+  // the run that knows what was photographed: the camera, the capture date and
+  // which frames went in. The photometric adjustment has to discard the header
+  // it inherits, so none of that reaches the finished picture on its own, and
+  // it is re-stated deliberately after evalglare instead. See `photometricArgs`.
+  const mergeHeader = headerTextOf(
+    await runner.readFile(workPath("merge_exposures.hdr"))
+  );
+
   // ---- nullify exposure --------------------------------------------------
   step("nullify_exposure_value", "Nullifying exposure value");
   await run(
@@ -258,6 +292,7 @@ export async function runPipeline({
       message: "Applying projection adjustment",
       output: "projection_adjustment.hdr",
       step: "projection_adjustment",
+      suppressHeader: false,
     },
     {
       cal: params.vignettingCorrectionCal,
@@ -265,6 +300,7 @@ export async function runPipeline({
       message: "Applying vignetting correction",
       output: "vignetting_correction.hdr",
       step: "vignetting_correction",
+      suppressHeader: false,
     },
     {
       cal: params.neutralDensityCal,
@@ -272,6 +308,7 @@ export async function runPipeline({
       message: "Applying neutral density correction",
       output: "neutral_density.hdr",
       step: "neutral_density",
+      suppressHeader: false,
     },
     {
       cal: params.photometricAdjustmentCal,
@@ -279,8 +316,12 @@ export async function runPipeline({
       message: "Applying photometric adjustment",
       output: "photometric_adjustment.hdr",
       step: "photometric_adjustment",
+      suppressHeader: true,
     },
   ];
+
+  /** Basenames of the corrections that actually ran, for the header. */
+  const applied: string[] = [];
 
   for (const correction of corrections) {
     if (correction.cal === "") {
@@ -300,9 +341,11 @@ export async function runPipeline({
       );
     }
 
-    await run(runner, "pcomb", pcombCalArgs(correction.cal, workPath(next)), {
-      stdout: workPath(correction.output),
-    });
+    const args = correction.suppressHeader
+      ? photometricArgs(correction.cal, workPath(next))
+      : pcombCalArgs(correction.cal, workPath(next));
+    await run(runner, "pcomb", args, { stdout: workPath(correction.output) });
+    applied.push(basename(correction.cal));
     next = correction.output;
     checkStop();
   }
@@ -348,6 +391,9 @@ export async function runPipeline({
         params.measuredVerticalIlluminance === undefined
           ? undefined
           : String(params.measuredVerticalIlluminance),
+      // Last, and only here: evalglare has already run, so nothing this adds
+      // can reach the parser that made the inherited header impossible.
+      provenance: provenanceEntries({ calibration: applied, mergeHeader }),
     }),
     {
       stdin: workPath("header_editing_view.hdr"),
