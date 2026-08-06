@@ -80,7 +80,6 @@ function playwright(project) {
         cwd: path.join(REPO, "e2e-web"),
         env: {
           ...process.env,
-          BENCH_REPS: String(REPS),
           // One source of truth for what is merged. The browser leg cannot
           // import fixtures.mjs, so the selection is handed to it rather than
           // recomputed, which is what keeps every leg on the same frames.
@@ -92,6 +91,7 @@ function playwright(project) {
               ])
             )
           ),
+          BENCH_REPS: String(REPS),
         },
         maxBuffer: 32 * 1024 * 1024,
         timeout: 3_000_000,
@@ -144,7 +144,12 @@ for (const project of ["chromium", "webkit"]) {
   }
 }
 
-writeFileSync("bench-results.json", JSON.stringify(records, null, 2));
+// Beside the run's other scratch rather than in the repository root: this is
+// an artefact of one machine on one afternoon, not a file anyone should be
+// tempted to commit.
+const resultsPath = path.join(outDir, "bench-results.json");
+writeFileSync(resultsPath, JSON.stringify(records, null, 2));
+process.stderr.write(`\nevery record: ${resultsPath}\n`);
 process.stdout.write(`${formatTable(summarise(records))}\n`);
 process.stdout.write(
   [
