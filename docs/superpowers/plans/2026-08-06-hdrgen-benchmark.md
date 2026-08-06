@@ -202,7 +202,7 @@ test("formatTable renders a header and one line per row", () => {
 
 - [ ] **Step 2: Run them and watch them fail**
 
-Run: `node --test scripts/bench-hdrgen/`
+Run: `node --test 'scripts/bench-hdrgen/**/*.test.mjs'`
 Expected: FAIL, `Cannot find module '.../fixtures.mjs'`.
 
 - [ ] **Step 3: Write `fixtures.mjs`**
@@ -297,7 +297,7 @@ export function median(values) {
 export function summarise(records) {
   const cells = new Map();
   for (const record of records) {
-    const key = `${record.leg} ${record.frames}`;
+    const key = `${record.leg}:${record.frames}`;
     const cell = cells.get(key) ?? { frames: record.frames, leg: record.leg, runs: [] };
     cell.runs.push(record);
     cells.set(key, cell);
@@ -343,7 +343,7 @@ export function formatTable(rows) {
 
 - [ ] **Step 5: Run them and watch them pass**
 
-Run: `node --test scripts/bench-hdrgen/`
+Run: `node --test 'scripts/bench-hdrgen/**/*.test.mjs'`
 Expected: PASS, 9 tests.
 
 - [ ] **Step 6: Commit**
@@ -450,7 +450,7 @@ there.
 
 - [ ] **Step 4: Run it and watch it fail**
 
-Run: `node --test scripts/bench-hdrgen/`
+Run: `node --test 'scripts/bench-hdrgen/**/*.test.mjs'`
 Expected: FAIL, `Cannot find module './native.mjs'`.
 
 - [ ] **Step 5: Write `native.mjs`**
@@ -522,7 +522,7 @@ export function runNative({ binary, frames, leg, outDir, rep, timeoutMs }) {
 
 - [ ] **Step 6: Run it and watch it pass**
 
-Run: `node --test scripts/bench-hdrgen/`
+Run: `node --test 'scripts/bench-hdrgen/**/*.test.mjs'`
 Expected: PASS, 10 tests.
 
 - [ ] **Step 7: Commit**
@@ -578,7 +578,7 @@ test("runWasmNode separates startup from the merge", { timeout: 120_000 }, async
 
 - [ ] **Step 2: Run it and watch it fail**
 
-Run: `node --test scripts/bench-hdrgen/`
+Run: `node --test 'scripts/bench-hdrgen/**/*.test.mjs'`
 Expected: FAIL, `Cannot find module './wasm-node.mjs'`.
 
 - [ ] **Step 3: Write `wasm-node.mjs`**
@@ -686,7 +686,7 @@ ceiling by running this leg in a child process it can kill.
 
 - [ ] **Step 4: Run it and watch it pass**
 
-Run: `node --test scripts/bench-hdrgen/`
+Run: `node --test 'scripts/bench-hdrgen/**/*.test.mjs'`
 Expected: PASS, 11 tests.
 
 - [ ] **Step 5: Commit**
@@ -1168,7 +1168,7 @@ a result, not a missing measurement.
 - [ ] **Step 5: Verify the helpers still pass and the script is wired**
 
 ```bash
-node --test scripts/bench-hdrgen/
+node --test 'scripts/bench-hdrgen/**/*.test.mjs'
 node -e "console.log(require('./package.json').scripts['bench:hdrgen'])"
 ```
 
