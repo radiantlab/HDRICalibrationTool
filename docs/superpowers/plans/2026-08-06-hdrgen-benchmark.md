@@ -190,6 +190,27 @@ test("summarise notes partial timeouts alongside the median", () => {
   assert.equal(rows[0].note, "1/2 timed out");
 });
 
+// A crash and a hang are different findings. Reporting a leg that aborted as
+// one that "timed out" would send the next person looking for a slow engine
+// when what they have is a broken one.
+test("summarise tells an error apart from a timeout", () => {
+  const rows = summarise([
+    { frames: 8, leg: "wasm-webkit", runMs: 900, status: "ok" },
+    { frames: 8, leg: "wasm-webkit", runMs: null, status: "error" },
+  ]);
+  assert.equal(rows[0].medianMs, 900);
+  assert.equal(rows[0].note, "1/2 errored");
+});
+
+test("summarise counts both when a cell has each", () => {
+  const rows = summarise([
+    { frames: 18, leg: "wasm-chromium", runMs: null, status: "timeout" },
+    { frames: 18, leg: "wasm-chromium", runMs: null, status: "error" },
+  ]);
+  assert.equal(rows[0].medianMs, null);
+  assert.equal(rows[0].note, "1/2 timed out, 1/2 errored");
+});
+
 test("formatTable renders a header and one line per row", () => {
   const text = formatTable([
     { frames: 4, leg: "wasm-node", maxMs: 300, medianMs: 200, minMs: 100, note: null },
@@ -305,15 +326,26 @@ export function summarise(records) {
 
   return [...cells.values()].map(({ frames, leg, runs }) => {
     const finished = runs.filter((run) => run.status === "ok" && run.runMs !== null);
-    const unfinished = runs.length - finished.length;
     const times = finished.map((run) => run.runMs);
+
+    // A hang and a crash are different findings, and telling them apart is
+    // most of why this benchmark exists. Counting both as "timed out" would
+    // report a module that aborted immediately as one that was merely slow,
+    // which points the investigation in the wrong direction.
+    const counted = [
+      ["timed out", runs.filter((run) => run.status === "timeout").length],
+      ["errored", runs.filter((run) => run.status === "error").length],
+    ].filter(([, count]) => count > 0);
+
     return {
       frames,
       leg,
       maxMs: times.length ? Math.max(...times) : null,
       medianMs: times.length ? median(times) : null,
       minMs: times.length ? Math.min(...times) : null,
-      note: unfinished > 0 ? `${unfinished}/${runs.length} timed out` : null,
+      note: counted.length
+        ? counted.map(([label, count]) => `${count}/${runs.length} ${label}`).join(", ")
+        : null,
     };
   });
 }
