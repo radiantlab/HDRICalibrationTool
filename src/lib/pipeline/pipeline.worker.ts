@@ -32,6 +32,15 @@ import {
 
 declare const self: DedicatedWorkerGlobalScope;
 
+/**
+ * Below this, a tool invocation is not worth a line in the run console.
+ *
+ * One second is comfortably above anything healthy -- a whole 18-frame merge
+ * is around fifteen -- so a quiet log means nothing was slow, and any line at
+ * all is a stage worth looking at.
+ */
+const SLOW_TOOL_MS = 1000;
+
 function post(message: PipelineWorkerMessage, transfer: Transferable[] = []) {
   self.postMessage(message, transfer);
 }
@@ -50,6 +59,36 @@ async function run(request: PipelineRunRequest): Promise<void> {
   const runner = new WasmToolRunner({
     compile: urlModuleCompiler(request.wasmBaseUrl),
     load: urlModuleLoader(request.wasmBaseUrl),
+    // A tool only explains itself when it was slow. A run where everything is
+    // quick says nothing, and a run where one stage takes minutes says which
+    // part of it did: fetching the module, compiling it, or computing. That
+    // distinction is the difference between a hosting problem and a build one,
+    // and it cannot be recovered afterwards from wall-clock timestamps alone.
+    onTiming: (timing) => {
+      const total =
+        timing.loadMs +
+        timing.compileMs +
+        timing.instantiateMs +
+        timing.stageMs +
+        timing.runMs +
+        timing.collectMs;
+      if (total < SLOW_TOOL_MS) {
+        return;
+      }
+      const ms = (value: number) => `${(value / 1000).toFixed(1)}s`;
+      post({
+        kind: "status",
+        payload: {
+          kind: "step",
+          message:
+            `${timing.tool} took ${ms(total)}: fetch+compile ${ms(timing.loadMs + timing.compileMs)}, ` +
+            `instantiate ${ms(timing.instantiateMs)}, stage ${ms(timing.stageMs)}, ` +
+            `run ${ms(timing.runMs)}, collect ${ms(timing.collectMs)}`,
+          progress: null,
+          step: "timing",
+        },
+      });
+    },
   });
 
   for (const [path, bytes] of Object.entries(request.files)) {
