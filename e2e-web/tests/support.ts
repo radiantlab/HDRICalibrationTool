@@ -254,6 +254,55 @@ export async function readDownload(download: Download): Promise<Buffer> {
 }
 
 /**
+ * The header of a Radiance picture: everything before the first blank line.
+ *
+ * A picture is an ASCII header, a blank line, a resolution line, then binary
+ * pixels, so this decodes only the part that is text. Worth keeping separate
+ * from the pixels: a finished picture runs to tens of megabytes.
+ */
+export function radianceHeader(bytes: Buffer): string {
+  const end = bytes.indexOf("\n\n");
+  return (
+    end === -1 ? bytes.subarray(0, 8192) : bytes.subarray(0, end)
+  ).toString("latin1");
+}
+
+/**
+ * Absolute paths named anywhere in a header.
+ *
+ * Every Radiance tool appends its own command line to the header of what it
+ * writes, so a path handed to a tool is a path published in the picture. That
+ * is #241: on the desktop the calibration file arrived as an absolute path
+ * from the native dialog, and one reported case named a directory containing
+ * the user's email address.
+ *
+ * Tokenised on whitespace, which is how an argv is echoed. A path containing
+ * spaces is quoted and therefore splits, but its leading fragment still starts
+ * with a slash, so it is still caught -- which is what matters, since this
+ * exists to fail rather than to parse.
+ */
+export function absolutePathsIn(header: string): string[] {
+  return header
+    .split(/\s+/)
+    .map((token) => token.replace(/^["']+/, ""))
+    .filter((token) => token.startsWith("/"));
+}
+
+/**
+ * `VIEW=` lines Radiance still honours.
+ *
+ * A tool that copies an inherited header indents it a tab deeper and prefixes
+ * it with the file it came from, and an indented line is deactivated rather
+ * than removed. hdrgen writes its own `VIEW=` from EXIF, so a finished picture
+ * contains that one, deactivated, plus the one the pipeline wrote with
+ * `getinfo -a`. Only a line at column 0 counts, and there must be exactly one:
+ * Radiance resolves the last active one, so two would be ambiguous.
+ */
+export function activeViewLines(header: string): string[] {
+  return header.split("\n").filter((line) => line.startsWith("VIEW="));
+}
+
+/**
  * Presses Generate and clicks through the confirmation if one appears.
  *
  * The confirmation only fires when something is missing, so a fully configured

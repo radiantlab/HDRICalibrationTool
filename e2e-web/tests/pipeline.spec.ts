@@ -9,12 +9,15 @@
 
 import { expect, test } from "@playwright/test";
 import {
+  absolutePathsIn,
+  activeViewLines,
   applyPreset,
   collectDownloads,
   configureRun,
   generate,
   loadCr2Frames,
   loadJpegBracket,
+  radianceHeader,
   readDownload,
   savePreset,
 } from "./support";
@@ -64,6 +67,35 @@ test("generates two HDR pictures from the JPEG bracket", async ({ page }) => {
     const bytes = await readDownload(download);
     expect(bytes.byteLength).toBeGreaterThan(1024);
     expect(bytes.subarray(0, 10).toString("latin1")).toContain("#?RADIANCE");
+
+    const header = radianceHeader(bytes);
+
+    // #241. Sources are staged under /src and /cal and intermediates under
+    // /work precisely so that the argv every tool echoes into the header names
+    // nothing about the machine that ran it. Any other absolute path here came
+    // from somewhere that has not been sanitised.
+    for (const leaked of absolutePathsIn(header)) {
+      expect(
+        leaked,
+        `${download.suggestedFilename()} names a path outside /src, /cal and /work: ${leaked}`
+      ).toMatch(/^\/(src|cal|work)\//);
+    }
+
+    // A Windows path does not start with a slash, so the check above cannot
+    // see one. The desktop build is the host this leaked from, and it is the
+    // one that runs on Windows.
+    expect(
+      header,
+      `${download.suggestedFilename()} names a Windows path`
+    ).not.toMatch(/[A-Za-z]:\\/);
+
+    // #241's other half. Dropping `pcomb -h` lets the inherited header through,
+    // and the risk was that hdrgen's own EXIF-derived VIEW= came with it and
+    // competed with the one the pipeline writes.
+    expect(
+      activeViewLines(header),
+      `${download.suggestedFilename()} should carry exactly one active VIEW= line`
+    ).toHaveLength(1);
   }
 });
 
