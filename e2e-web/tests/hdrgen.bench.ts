@@ -113,37 +113,43 @@ test("hdrgen across frame counts", async ({ page }, testInfo) => {
   for (const frames of FRAME_COUNTS) {
     for (let rep = 1; rep <= REPS; rep += 1) {
       const names = frameNames(frames);
-      // biome-ignore lint/performance/noAwaitInLoops: a benchmark must never run two measurements at once, which is the whole point
       const record = await page.evaluate(
         async ({ ceiling, frameList, repetition }) => {
-          const startupStarted = performance.now();
-          // Non-literal on purpose: tsc tries to resolve a literal specifier
-          // against the filesystem and fails, though the browser resolves it
-          // against the page origin at run time.
-          const moduleUrl = "/wasm/hdrgen.js";
-          const factory = (await import(moduleUrl)).default;
-          const mod = await factory({
-            noInitialRun: true,
-            print: () => undefined,
-            printErr: () => undefined,
-          });
-          const startupMs = performance.now() - startupStarted;
+          // Loading the module and staging its inputs, kept apart from the
+          // timed call so the measurement is the merge and nothing else.
+          const load = async () => {
+            const startupStarted = performance.now();
+            // Non-literal on purpose: tsc tries to resolve a literal specifier
+            // against the filesystem and fails, though the browser resolves it
+            // against the page origin at run time.
+            const moduleUrl = "/wasm/hdrgen.js";
+            const factory = (await import(moduleUrl)).default;
+            const instance = await factory({
+              noInitialRun: true,
+              print: () => undefined,
+              printErr: () => undefined,
+            });
+            const elapsed = performance.now() - startupStarted;
 
-          mod.FS.mkdir("/src");
-          mod.FS.mkdir("/work");
-          const staged: string[] = [];
-          for (const [index, name] of frameList.entries()) {
-            const response = await fetch(`/frames/${name}`);
-            const bytes = new Uint8Array(await response.arrayBuffer());
-            const at = `/src/${index + 1}-${name}`;
-            mod.FS.writeFile(at, bytes);
-            staged.push(at);
-          }
-          const responseCurve = await fetch("/response");
-          mod.FS.writeFile(
-            "/src/response.rsp",
-            new Uint8Array(await responseCurve.arrayBuffer())
-          );
+            instance.FS.mkdir("/src");
+            instance.FS.mkdir("/work");
+            const paths: string[] = [];
+            for (const [index, name] of frameList.entries()) {
+              const response = await fetch(`/frames/${name}`);
+              const bytes = new Uint8Array(await response.arrayBuffer());
+              const at = `/src/${index + 1}-${name}`;
+              instance.FS.writeFile(at, bytes);
+              paths.push(at);
+            }
+            const responseCurve = await fetch("/response");
+            instance.FS.writeFile(
+              "/src/response.rsp",
+              new Uint8Array(await responseCurve.arrayBuffer())
+            );
+            return { instance, paths, startupMs: elapsed };
+          };
+
+          const { instance: mod, paths: staged, startupMs } = await load();
 
           const argv = [
             "-m",
@@ -171,19 +177,22 @@ test("hdrgen across frame counts", async ({ page }, testInfo) => {
           }
           const runMs = performance.now() - started;
 
-          let outBytes = 0;
-          try {
-            outBytes = mod.FS.readFile("/work/out.hdr").length;
-          } catch {
-            outBytes = 0;
-          }
+          const produced = () => {
+            try {
+              return mod.FS.readFile("/work/out.hdr").length as number;
+            } catch {
+              return 0;
+            }
+          };
+          const outBytes = produced();
+
           if (status === "ok" && outBytes === 0) {
             status = "error";
             detail = "no output produced";
           }
           // callMain is synchronous, so an over-budget run cannot be cut short
           // from here. It is recorded as a timeout after the fact, which is
-          // still the honest label for what a user would experience.
+          // still the honest label for what a user would have experienced.
           if (status === "ok" && runMs > ceiling) {
             status = "timeout";
           }

@@ -60,25 +60,25 @@ const seconds = (ms) => (ms === null ? "—" : (ms / 1000).toFixed(1));
 
 export function formatTable(rows) {
   const header = ["leg", "frames", "median", "min", "max", "note"];
-  const body = rows.map((row) => [
-    row.leg,
-    String(row.frames),
-    seconds(row.medianMs),
-    seconds(row.minMs),
-    seconds(row.maxMs),
-    row.note ?? "",
+  const body = rows.map((cell) => [
+    cell.leg,
+    String(cell.frames),
+    seconds(cell.medianMs),
+    seconds(cell.minMs),
+    seconds(cell.maxMs),
+    cell.note ?? "",
   ]);
   const widths = header.map((_, column) =>
     Math.max(header[column].length, ...body.map((line) => line[column].length))
   );
-  const line = (cells) =>
+  const row = (cells) =>
     cells
       .map((cell, column) => cell.padEnd(widths[column]))
       .join("  ")
       .trimEnd();
   return [
-    line(header),
-    line(widths.map((width) => "-".repeat(width))),
-    ...body.map(line),
+    row(header),
+    row(widths.map((width) => "-".repeat(width))),
+    ...body.map(row),
   ].join("\n");
 }

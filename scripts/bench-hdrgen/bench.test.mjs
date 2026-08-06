@@ -3,6 +3,10 @@ import { test } from "node:test";
 import { frameFiles, hdrgenArgv, stagedName } from "./fixtures.mjs";
 import { formatTable, median, summarise } from "./report.mjs";
 
+const LEG_HEADING = /leg/;
+const LEG_NAME = /wasm-node/;
+const MEDIAN_SECONDS = /0\.2/;
+
 test("frameFiles returns the requested count, in order", () => {
   const four = frameFiles(4);
   assert.equal(four.length, 4);
@@ -147,9 +151,9 @@ test("formatTable renders a header and one line per row", () => {
       note: null,
     },
   ]);
-  assert.match(text, /leg/);
-  assert.match(text, /wasm-node/);
-  assert.match(text, /0\.2/);
+  assert.match(text, LEG_HEADING);
+  assert.match(text, LEG_NAME);
+  assert.match(text, MEDIAN_SECONDS);
 });
 
 // The browser leg cannot import this module, so it carries its own copy of the
@@ -164,5 +168,5 @@ test("frameFiles picks a known, evenly spread selection", () => {
   assert.deepEqual(positions(4), [0, 6, 11, 17]);
   assert.deepEqual(positions(8), [0, 2, 5, 7, 10, 12, 15, 17]);
   assert.deepEqual(positions(12), [0, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17]);
-  assert.deepEqual(positions(18), [...Array(18).keys()]);
+  assert.deepEqual(positions(18), [...new Array(18).keys()]);
 });

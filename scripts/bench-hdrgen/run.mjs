@@ -111,17 +111,16 @@ for (const frames of FRAME_COUNTS) {
       ["native-x86_64", ROSETTA_BINARY],
     ]) {
       process.stderr.write(`  ${leg} ${frames} frames, rep ${rep}\n`);
-      // biome-ignore lint/performance/noAwaitInLoops: a benchmark must not run two measurements at once
-      records.push(
-        await runNative({
-          binary,
-          frames,
-          leg,
-          outDir,
-          rep,
-          timeoutMs: CEILING_MS,
-        })
-      );
+      // biome-ignore lint/performance/noAwaitInLoops: a benchmark must never run two measurements at once, which is the entire point of it
+      const record = await runNative({
+        binary,
+        frames,
+        leg,
+        outDir,
+        rep,
+        timeoutMs: CEILING_MS,
+      });
+      records.push(record);
     }
     process.stderr.write(`  wasm-node ${frames} frames, rep ${rep}\n`);
     // biome-ignore lint/performance/noAwaitInLoops: same reason
