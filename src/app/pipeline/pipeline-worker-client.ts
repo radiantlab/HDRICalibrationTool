@@ -13,6 +13,7 @@ import type {
   PipelineRunRequest,
   PipelineWorkerMessage,
 } from "@/lib/pipeline/pipeline.worker.types";
+import { sanitizeSources } from "@/lib/pipeline/source-paths";
 import { workPath } from "@/lib/pipeline/stages";
 import {
   PipelineError,
@@ -65,28 +66,21 @@ function owned(bytes: Uint8Array): Uint8Array {
   return bytes.slice();
 }
 
-/** Files the pipeline reads by path and so must be staged before it starts. */
-function referencedFiles(params: PipelineParams): string[] {
-  return [
-    ...params.inputImages,
-    params.responseFunction,
-    params.fisheyeCorrectionCal,
-    params.vignettingCorrectionCal,
-    params.neutralDensityCal,
-    params.photometricAdjustmentCal,
-  ].filter((path) => path !== "");
-}
-
 export async function executeInWorker(
   options: ExecuteOptions
 ): Promise<PipelineRunResult> {
   const files: Record<string, Uint8Array> = {};
 
+  // Named without their directories, so no host path reaches a tool's argv and
+  // therefore none reaches the header of the finished picture (#241). The
+  // caller's params keep the paths the user picked: run history displays them.
+  const { params: stagedParams, sources } = sanitizeSources(options.params);
+
   // Staged up front rather than lazily: a missing input should fail before any
   // wasm module is instantiated, not eight stages in.
-  for (const path of referencedFiles(options.params)) {
+  for (const [staged, source] of sources) {
     // biome-ignore lint/performance/noAwaitInLoops: reads are sequential so a missing file fails on its own path rather than inside an aggregate rejection
-    files[path] = owned(await options.read(path));
+    files[staged] = owned(await options.read(source));
   }
 
   // Hand over RAW conversions already in hand from drawing the thumbnails.
@@ -167,7 +161,7 @@ export async function executeInWorker(
 
       const request: PipelineRunRequest = {
         files,
-        params: options.params,
+        params: stagedParams,
         wasmBaseUrl: options.wasmBaseUrl,
       };
       try {

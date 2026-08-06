@@ -13,6 +13,7 @@
 import { falsecolor } from "./falsecolor";
 import { type DecodeImage, filterImages } from "./filter-images";
 import {
+  basename,
   cropArgs,
   dcrawArgs,
   evalglareArgs,
@@ -21,6 +22,7 @@ import {
   nullifyExposureArgs,
   pcombCalArgs,
   photometricArgs,
+  provenanceEntries,
   readResolution,
   resizeArgs,
   SQUARE_RESPONSE,
@@ -73,6 +75,20 @@ const RAW_EXTENSIONS = new Set([
   "x3f",
 ]);
 
+/**
+ * The ASCII header of a Radiance picture: everything before the blank line.
+ *
+ * Decoding only the header keeps a finished picture, which runs to tens of
+ * megabytes, out of a string. A picture with no terminator is not a picture
+ * this pipeline produced, so a bounded prefix is the safe reading.
+ */
+function headerTextOf(picture: Uint8Array): string {
+  const limit = Math.min(picture.length, 64_000);
+  const text = new TextDecoder().decode(picture.subarray(0, limit));
+  const end = text.indexOf("\n\n");
+  return end === -1 ? text : text.slice(0, end);
+}
+
 export function isRawImage(name: string): boolean {
   const dot = name.lastIndexOf(".");
   return dot !== -1 && RAW_EXTENSIONS.has(name.slice(dot + 1).toLowerCase());
@@ -85,6 +101,14 @@ interface Correction {
   message: string;
   output: string;
   step: string;
+  /**
+   * Pass `pcomb -h`, dropping the header this stage was handed.
+   *
+   * True for the photometric adjustment alone, and it has to be: without it
+   * every correction nests the `EXPOSURE=` line the crop wrote one tab deeper,
+   * and evalglare refuses a picture whose header carries `EXPOSURE=` and a tab
+   * on one line. See `photometricArgs`.
+   */
   suppressHeader: boolean;
 }
 
@@ -193,6 +217,15 @@ export async function runPipeline({
   advance();
   checkStop();
 
+  // Read before anything downstream can drop it. This is the only picture in
+  // the run that knows what was photographed: the camera, the capture date and
+  // which frames went in. The photometric adjustment has to discard the header
+  // it inherits, so none of that reaches the finished picture on its own, and
+  // it is re-stated deliberately after evalglare instead. See `photometricArgs`.
+  const mergeHeader = headerTextOf(
+    await runner.readFile(workPath("merge_exposures.hdr"))
+  );
+
   // ---- nullify exposure --------------------------------------------------
   step("nullify_exposure_value", "Nullifying exposure value");
   await run(
@@ -287,6 +320,9 @@ export async function runPipeline({
     },
   ];
 
+  /** Basenames of the corrections that actually ran, for the header. */
+  const applied: string[] = [];
+
   for (const correction of corrections) {
     if (correction.cal === "") {
       continue;
@@ -309,6 +345,7 @@ export async function runPipeline({
       ? photometricArgs(correction.cal, workPath(next))
       : pcombCalArgs(correction.cal, workPath(next));
     await run(runner, "pcomb", args, { stdout: workPath(correction.output) });
+    applied.push(basename(correction.cal));
     next = correction.output;
     checkStop();
   }
@@ -354,6 +391,9 @@ export async function runPipeline({
         params.measuredVerticalIlluminance === undefined
           ? undefined
           : String(params.measuredVerticalIlluminance),
+      // Last, and only here: evalglare has already run, so nothing this adds
+      // can reach the parser that made the inherited header impossible.
+      provenance: provenanceEntries({ calibration: applied, mergeHeader }),
     }),
     {
       stdin: workPath("header_editing_view.hdr"),
@@ -596,13 +636,25 @@ async function warnIfResolutionDependent(
   width: number,
   height: number
 ): Promise<void> {
+  // The staged name, not the path. The path is a staged path now, which means
+  // nothing to a user, and the run transcript is stored with the run, so
+  // whatever goes in a warning is kept alongside it.
+  const name = basename(calPath);
   let text: string;
   try {
     text = new TextDecoder().decode(await runner.readFile(calPath));
-  } catch (error) {
+  } catch {
+    // Deliberately not reporting the underlying error's own text: different
+    // `ToolRunner`s phrase a read failure differently, and at least one
+    // spells out the staged path verbatim, which is exactly what this
+    // message exists to avoid. The message is built only from values this
+    // function already controls, so that guarantee holds regardless of how
+    // any runner words its rejection. Nothing is lost by leaving it out --
+    // the correction stage that follows will fail on its own and report the
+    // real error if the file is genuinely unreadable.
     emit({
       kind: "warning",
-      message: `Could not read the ${label} calibration file ${calPath}: ${error}`,
+      message: `Could not read the ${label} calibration file ${name}.`,
       progress: null,
       step: "cal_check",
     });
@@ -615,7 +667,7 @@ async function warnIfResolutionDependent(
   }
   emit({
     kind: "warning",
-    message: calWarning(label, calPath, width, height, constants),
+    message: calWarning(label, name, width, height, constants),
     progress: null,
     step: "cal_check",
   });

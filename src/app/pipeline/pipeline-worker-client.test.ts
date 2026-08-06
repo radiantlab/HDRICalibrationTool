@@ -216,8 +216,55 @@ describe("staging bytes for the worker", () => {
 
     // Protecting the caller's buffers by sending the worker an empty view
     // would be no fix at all, so what arrived is asserted as well as what
-    // survived.
-    expect(received[0]).toEqual({ "/session/1/a.jpg": [1, 2, 3] });
+    // survived. The key is the staged name, not the source: see #241.
+    expect(received[0]).toEqual({ "/src/1-a.jpg": [1, 2, 3] });
+  });
+
+  it("stages every file under a name that carries no directory", async () => {
+    installWorkerDouble();
+    const store = sessionStore({
+      "/session/1/DSC_0001.JPG": [1],
+      "/session/2/CF_f5d6.cal": [2],
+      "/session/3/response_function.rsp": [3],
+    });
+
+    await run(
+      store,
+      params({
+        inputImages: ["/session/1/DSC_0001.JPG"],
+        photometricAdjustmentCal: "/session/2/CF_f5d6.cal",
+        responseFunction: "/session/3/response_function.rsp",
+      })
+    );
+
+    expect(Object.keys(received[0] ?? {}).sort()).toEqual([
+      "/cal/photometric-CF_f5d6.cal",
+      "/src/1-DSC_0001.JPG",
+      "/src/response-response_function.rsp",
+    ]);
+  });
+
+  it("reads from the source path and stages under the staged path", async () => {
+    installWorkerDouble();
+    const store = sessionStore({ "/session/1/a.jpg": [9, 9] });
+
+    await run(store, params({ inputImages: ["/session/1/a.jpg"] }));
+
+    // The bytes have to come from where the file actually is; only the name
+    // the worker sees changes.
+    expect(received[0]?.["/src/1-a.jpg"]).toEqual([9, 9]);
+  });
+
+  it("leaves the caller's params naming the files the user picked", async () => {
+    installWorkerDouble();
+    const store = sessionStore({ "/session/1/a.jpg": [1] });
+    const original = params({ inputImages: ["/session/1/a.jpg"] });
+
+    await run(store, original);
+
+    // Run history records these for display. Rewriting them in place would
+    // show the user staged paths for files they chose themselves.
+    expect(original.inputImages).toEqual(["/session/1/a.jpg"]);
   });
 
   // The store above is a stand-in, and a stand-in can only prove the client

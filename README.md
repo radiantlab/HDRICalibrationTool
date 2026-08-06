@@ -197,9 +197,9 @@ The application itself is licensed **GPL-3.0** (see [`LICENSE`](./LICENSE)). It 
 
 | Component | Licence | Source |
 |---|---|---|
-| Radiance tools | Radiance Software License 2.0 (BSD-3-Clause in substance) | [radiantlab/Radiance](https://github.com/radiantlab/Radiance) |
+| Radiance tools | Radiance Software License 2.0 (BSD-3-Clause in substance) | [radiantlab/Radiance](https://github.com/radiantlab/Radiance), upstream at [LBNL-ETA/Radiance](https://github.com/LBNL-ETA/Radiance) |
 | `hdrgen` | BSD-3-Clause, see [`licenses/BSD-3-Clause.txt`](./licenses/BSD-3-Clause.txt) | [radiantlab/hdrgen](https://github.com/radiantlab/hdrgen), upstream at [radiance-org/hdrgen](https://github.com/radiance-org/hdrgen) |
-| panlib | BSD-3-Clause | [radiantlab/panlib](https://github.com/radiantlab/panlib) |
+| panlib | BSD-3-Clause | [radiantlab/panlib](https://github.com/radiantlab/panlib), upstream at [radiance-org/panlib](https://github.com/radiance-org/panlib) |
 | LibRaw (`dcraw_emu`) | LGPL-2.1, see [`licenses/LGPL-2.1.txt`](./licenses/LGPL-2.1.txt) | [radiantlab/LibRaw](https://github.com/radiantlab/LibRaw), upstream at https://www.libraw.org/ |
 
 LibRaw offers a choice of LGPL-2.1 or CDDL-1.0; the LGPL is the one that applies here, because the CDDL is incompatible with the GPL. Where LibRaw is statically linked rather than invoked as a separate process, as it is in the WebAssembly pipeline, it is incorporated under **LGPL-2.1 section 3**, which permits applying ordinary GPL terms to that copy. The reasoning, and the obligations that follow for a browser deployment, are recorded in [`licenses/DECISIONS.md`](./licenses/DECISIONS.md).

@@ -9,6 +9,7 @@
 
 import { describe, expect, it } from "@jest/globals";
 import {
+  basename,
   cropArgs,
   dcrawArgs,
   evalglareArgs,
@@ -19,6 +20,7 @@ import {
   nullifyExposureArgs,
   pcombCalArgs,
   photometricArgs,
+  provenanceEntries,
   readResolution,
   resizeArgs,
   SQUARE_RESPONSE,
@@ -203,7 +205,7 @@ describe("the remaining stage arguments", () => {
     ]);
   });
 
-  it("the .cal corrections differ only in the file they pass", () => {
+  it("the three geometric corrections differ only in the file they pass", () => {
     expect(pcombCalArgs("fisheye.cal", "in.hdr")).toEqual([
       "-f",
       "fisheye.cal",
@@ -216,7 +218,13 @@ describe("the remaining stage arguments", () => {
     ]);
   });
 
-  it("the photometric adjustment additionally suppresses the header", () => {
+  // Not tidiness, and not the parity with a deleted Rust file it was once
+  // justified by. Without `-h` every correction nests the `EXPOSURE=` line
+  // that `pcompos` wrote one tab deeper, and evalglare exits rather than read
+  // a picture whose header has `EXPOSURE=` and a tab on the same line
+  // (`pictool.c:214`). Removing this flag stopped the pipeline producing
+  // anything at all. See #241.
+  it("the photometric adjustment suppresses the inherited header", () => {
     expect(photometricArgs("cf.cal", "in.hdr")).toEqual([
       "-h",
       "-f",
@@ -270,5 +278,109 @@ describe("readResolution", () => {
     expect(() => readResolution(picture("+Y 100 -X 100"))).toThrow(
       PipelineError
     );
+  });
+});
+
+describe("basename", () => {
+  it("keeps the last segment of a POSIX path", () => {
+    expect(basename("/Users/someone/Drive/cal files/CF_f5d6.cal")).toBe(
+      "CF_f5d6.cal"
+    );
+  });
+
+  // Tauri hands back native paths, so a Windows run carries backslashes.
+  // Splitting on "/" alone would return the whole string and leak exactly what
+  // this helper exists to remove.
+  it("keeps the last segment of a Windows path", () => {
+    expect(basename("C:\\Users\\someone\\Pictures\\DSC_0001.JPG")).toBe(
+      "DSC_0001.JPG"
+    );
+  });
+
+  it("leaves a bare filename alone", () => {
+    expect(basename("CF_f5d6.cal")).toBe("CF_f5d6.cal");
+  });
+
+  // A path ending in a separator has no segment to keep, and an empty string
+  // would produce a staged path ending in "-", which reads as a truncation.
+  it("falls back to a placeholder when there is no segment", () => {
+    expect(basename("/some/directory/")).toBe("file");
+  });
+});
+
+describe("provenanceEntries", () => {
+  // What hdrgen actually writes, taken from a real merge of the reference
+  // bracket rather than invented, including the argv[0] placeholder the
+  // WebAssembly build reports.
+  const MERGE_HEADER = [
+    "#?RADIANCE",
+    "CAMERA= Canon Canon EOS 5D Mark II version v.0",
+    "./this.program created HDR image from '2-IMG_6956.JPG' '1-IMG_6955.JPG'",
+    "Removed lens flare",
+    "CAPDATE= 2017:07:13 15:45:30",
+    "EXPOSURE=1.6402e-01",
+    "PRIMARIES= 0.6400 0.3300 0.2900 0.6000 0.1500 0.0600 0.3333 0.3333",
+    "FORMAT=32-bit_rle_rgbe",
+  ].join("\n");
+
+  it("restates the capture, without hdrgen's argv[0]", () => {
+    const entries = provenanceEntries({
+      calibration: [],
+      mergeHeader: MERGE_HEADER,
+    });
+
+    expect(entries).toContain("CAMERA= Canon Canon EOS 5D Mark II version v.0");
+    expect(entries).toContain("CAPDATE= 2017:07:13 15:45:30");
+    expect(entries).toContain("MERGED_FROM= '2-IMG_6956.JPG' '1-IMG_6955.JPG'");
+    expect(entries).toContain("LENS_FLARE= removed");
+    // `./this.program` is Emscripten's placeholder and says nothing true.
+    expect(entries.join("\n")).not.toContain("this.program");
+  });
+
+  // The whole reason provenance is re-stated rather than inherited: a tab
+  // beside EXPOSURE= is what makes evalglare refuse a picture, and someone
+  // will run evalglare on the finished output.
+  it("never emits an exposure entry or a tab", () => {
+    const entries = provenanceEntries({
+      calibration: ["photometric-CF_f8.cal"],
+      mergeHeader: `${MERGE_HEADER}\n\tEXPOSURE=1.0000e+00`,
+    });
+
+    expect(entries.join("\n")).not.toContain("EXPOSURE=");
+    expect(entries.join("\n")).not.toContain("\t");
+  });
+
+  it("names the calibration files by basename", () => {
+    const entries = provenanceEntries({
+      calibration: ["fisheye-fisheye_corr.cal", "photometric-CF_f8.cal"],
+      mergeHeader: MERGE_HEADER,
+    });
+
+    expect(entries).toContain(
+      "CALIBRATION_FILES= fisheye-fisheye_corr.cal photometric-CF_f8.cal"
+    );
+  });
+
+  it("says nothing it was not told", () => {
+    const entries = provenanceEntries({
+      calibration: [],
+      mergeHeader: "#?RADIANCE\nFORMAT=32-bit_rle_rgbe",
+    });
+
+    expect(entries).toEqual([]);
+  });
+
+  it("appends its entries after the values the pipeline computed", () => {
+    const args = headerEditingArgs({
+      evalglareValue: "900.9",
+      provenance: ["CAMERA= Canon", "CAPDATE= 2017:07:13 15:45:30"],
+    });
+
+    expect(args).toEqual([
+      "-a",
+      "COMPUTED_VERTICAL_ILLUMINANCE=900.9",
+      "CAMERA= Canon",
+      "CAPDATE= 2017:07:13 15:45:30",
+    ]);
   });
 });
