@@ -57,6 +57,20 @@ reasoning is in [`licenses/DECISIONS.md`](./licenses/DECISIONS.md).
 
 ## Known limits of the web build
 
+- **A browser that has disabled its JIT runs this about ten times slower.**
+  Microsoft Edge's "Enhance your security on the web" (Settings, Privacy) turns
+  off the JavaScript JIT compiler for sites it does not consider familiar, and
+  a newly deployed URL never is. Everything then runs interpreted, WebAssembly
+  included: the reference JPEG bracket went from 30 seconds to 6 minutes 32
+  seconds, with no error and nothing visibly different about the page. The same
+  build served from `localhost` was unaffected, because a site you open every
+  day stays on that feature's allowlist -- which is exactly what makes this so
+  easy to misread as "the deployment is slow".
+
+  Adding the site to that setting's exceptions restores full speed. The app
+  measures the engine at the start of each run and says so in the run console
+  when it looks like this, because the state is otherwise invisible.
+
 - **Outputs are downloaded**, and the browser decides where. There is no
   output-directory setting, and "open folder" is hidden, because a browser has
   no file manager to open and no path to open it at.

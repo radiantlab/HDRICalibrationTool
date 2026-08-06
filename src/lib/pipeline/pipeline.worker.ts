@@ -45,6 +45,74 @@ function post(message: PipelineWorkerMessage, transfer: Transferable[] = []) {
   self.postMessage(message, transfer);
 }
 
+/**
+ * Iterations of a trivial arithmetic loop, used to size the engine.
+ *
+ * Small enough that the check itself is unnoticeable next to a run that takes
+ * tens of seconds, and large enough that the result is not dominated by timer
+ * resolution.
+ */
+const CALIBRATION_ITERATIONS = 3e7;
+
+/** What this loop costs on a healthy engine, measured: 32 ms in Chromium. */
+const HEALTHY_MS = 30;
+
+/**
+ * Above this, the engine is running far below what a working JIT delivers.
+ *
+ * An absolute threshold conflates a slow device with a disabled JIT, and
+ * nothing available from JavaScript tells them apart, so this errs towards
+ * firing. That is the right way round: the message is true either way -- a run
+ * really will take minutes -- and a spurious line costs a reader a moment,
+ * while a missed one costs them an afternoon of blaming the tool.
+ *
+ * For scale: 32 ms here with a JIT, 271 ms on the same machine with Edge's
+ * enhanced security turning it off.
+ */
+const NO_JIT_MS = 150;
+
+/**
+ * How fast this engine actually executes code.
+ *
+ * Worth measuring because the answer is occasionally catastrophic and
+ * completely invisible. Microsoft Edge's "Enhance your security on the web"
+ * disables the JavaScript JIT for sites it does not consider familiar, and a
+ * freshly deployed URL is never familiar. Everything then runs interpreted:
+ * this pipeline went from thirty seconds to six and a half minutes, with no
+ * error, no warning and nothing different about the page.
+ *
+ * That state is indistinguishable from "this tool is slow" unless something
+ * says otherwise, and it cost most of a day to identify once. The wording
+ * reports the observation rather than diagnosing the cause, because a genuinely
+ * slow device would land here too and deserves a truthful message.
+ */
+function reportEngineSpeed(): void {
+  const started = performance.now();
+  let sink = 0;
+  for (let i = 0; i < CALIBRATION_ITERATIONS; i += 1) {
+    sink += i % 7;
+  }
+  const elapsed = performance.now() - started;
+  if (elapsed < NO_JIT_MS || sink === -1) {
+    return;
+  }
+
+  post({
+    kind: "status",
+    payload: {
+      kind: "warning",
+      message:
+        `This browser is executing code about ${Math.round(elapsed / HEALTHY_MS)}x slower than expected, ` +
+        "so this run will take minutes rather than seconds. The usual cause is a " +
+        "browser security setting that disables the JavaScript JIT compiler for " +
+        'unfamiliar sites: in Edge, Settings, Privacy, "Enhance your security on ' +
+        'the web". Adding this site to its exceptions restores full speed.',
+      progress: null,
+      step: "engine_speed",
+    },
+  });
+}
+
 self.addEventListener("message", (event: MessageEvent<PipelineRunRequest>) => {
   run(event.data).catch((error: unknown) => {
     post({
@@ -56,6 +124,8 @@ self.addEventListener("message", (event: MessageEvent<PipelineRunRequest>) => {
 });
 
 async function run(request: PipelineRunRequest): Promise<void> {
+  reportEngineSpeed();
+
   const runner = new WasmToolRunner({
     compile: urlModuleCompiler(request.wasmBaseUrl),
     load: urlModuleLoader(request.wasmBaseUrl),
