@@ -248,13 +248,83 @@ describe("stage ordering", () => {
       "/cal/fisheye.cal",
       "/work/resize.hdr",
     ]);
-    // the photometric adjustment is last and suppresses the header
+    // The photometric adjustment is last and suppresses the header.
     expect(call(pcomb, 1).args).toEqual([
       "-h",
       "-f",
       "/cal/cf.cal",
       "/work/projection_adjustment.hdr",
     ]);
+  });
+
+  it("re-states the capture in the finished picture's header", async () => {
+    // The photometric adjustment has to discard the header it inherits, so the
+    // camera, the capture date and the frame list would otherwise reach no
+    // finished picture at all. They are written back after evalglare, where
+    // nothing downstream parses them. See `photometricArgs` and #241.
+    const runner = new FakeRunner();
+    await runPipeline({
+      params: params({ photometricAdjustmentCal: "/cal/CF_f8.cal" }),
+      runner,
+    });
+
+    // The second getinfo is the one after evalglare.
+    const getinfo = runner.callsTo("getinfo");
+    expect(getinfo.length).toBeGreaterThanOrEqual(2);
+    const last = call(getinfo, 1).args;
+    expect(last).toContain("CALIBRATION_FILES= CF_f8.cal");
+    // Never an exposure entry, which is what evalglare refuses beside a tab.
+    expect(last.join("\n")).not.toContain("EXPOSURE=");
+  });
+
+  it("suppresses the header on the fourth correction and no other", async () => {
+    // #241 removed `-h` here on the grounds that it discarded provenance, and
+    // that broke the pipeline outright: each correction nests the `EXPOSURE=`
+    // line the crop wrote one tab deeper, and evalglare exits rather than read
+    // a header carrying `EXPOSURE=` and a tab on one line (`pictool.c:214`).
+    // Measured against the shipped wasm binary. The flag stays; provenance is
+    // re-stated after evalglare instead. This pins both halves of that.
+    const runner = new FakeRunner();
+    await runPipeline({
+      params: params({
+        fisheyeCorrectionCal: "/cal/fisheye.cal",
+        neutralDensityCal: "/cal/nd.cal",
+        photometricAdjustmentCal: "/cal/cf.cal",
+        vignettingCorrectionCal: "/cal/vignetting.cal",
+      }),
+      runner,
+    });
+
+    const pcomb = runner
+      .callsTo("pcomb")
+      .filter((invocation) => !invocation.io?.stdout?.includes("/fc_"));
+    expect(pcomb).toHaveLength(4);
+    expect(call(pcomb, 0).args).toEqual([
+      "-f",
+      "/cal/fisheye.cal",
+      "/work/resize.hdr",
+    ]);
+    expect(call(pcomb, 1).args).toEqual([
+      "-f",
+      "/cal/vignetting.cal",
+      "/work/projection_adjustment.hdr",
+    ]);
+    expect(call(pcomb, 2).args).toEqual([
+      "-f",
+      "/cal/nd.cal",
+      "/work/vignetting_correction.hdr",
+    ]);
+    expect(call(pcomb, 3).args).toEqual([
+      "-h",
+      "-f",
+      "/cal/cf.cal",
+      "/work/neutral_density.hdr",
+    ]);
+    // Only the last one. An earlier `-h` would throw away a correction's own
+    // work rather than merely its inherited header.
+    for (const invocation of pcomb.slice(0, 3)) {
+      expect(invocation.args).not.toContain("-h");
+    }
   });
 
   it("chains each stage onto the previous stage's output", async () => {
@@ -547,6 +617,51 @@ describe("calibration file resolution warnings", () => {
     ).toContain("Could not read the fisheye calibration file");
     // the run still completed
     expect(events.at(-1)).toMatchObject({ kind: "done" });
+  });
+
+  it("names the file rather than the path it was staged under", async () => {
+    const runner = new FakeRunner();
+    await runner.writeFile("/cal/vignetting-VC_f5d6.cal", HARDCODED);
+    const events: PipelineStatusPayload[] = [];
+
+    await runPipeline({
+      emit: (payload) => events.push(payload),
+      params: params({
+        vignettingCorrectionCal: "/cal/vignetting-VC_f5d6.cal",
+      }),
+      runner,
+    });
+
+    const warning = warnings(events).find(
+      (event) => event.step === "cal_check"
+    );
+    // The transcript is stored with the run, so a path in it is a path kept.
+    expect(warning?.message).toContain("VC_f5d6.cal");
+    expect(warning?.message).not.toContain("/cal/");
+  });
+
+  it("names the file when it cannot be read either", async () => {
+    const runner = new FakeRunner();
+    const events: PipelineStatusPayload[] = [];
+    const stagedPath = "/cal/fisheye-missing.cal";
+
+    await runPipeline({
+      emit: (payload) => events.push(payload),
+      params: params({ fisheyeCorrectionCal: stagedPath }),
+      runner,
+    });
+
+    const warning = warnings(events).find(
+      (event) => event.step === "cal_check"
+    );
+    expect(warning?.message).toContain("missing.cal");
+    // Pin the invariant, not today's wording: the staged path must not
+    // appear anywhere in the message, including inside whatever detail an
+    // underlying `ToolRunner` failure carries -- not just its directory
+    // prefix, which a differently-worded rejection could avoid while still
+    // spelling out the full path some other way.
+    expect(warning?.message).not.toContain(stagedPath);
+    expect(warning?.message).not.toContain("/cal/");
   });
 });
 

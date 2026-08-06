@@ -60,7 +60,7 @@ export function resolutionDependentConstants(text: string): number[] | null {
 
 export function calWarning(
   label: string,
-  path: string,
+  name: string,
   width: number,
   height: number,
   constants: number[]
@@ -71,7 +71,7 @@ export function calWarning(
       : `it contains the constants ${constants.join(", ")}`;
 
   return (
-    `The ${label} calibration file ${path} does not reference xres/yres, so it cannot adapt to ` +
+    `The ${label} calibration file ${name} does not reference xres/yres, so it cannot adapt to ` +
     `the working resolution. The image is ${width}x${height} at this step and ${listed}. If those ` +
     "are pixel coordinates calibrated for a different resolution, the correction will be " +
     "applied about the wrong centre."

@@ -28,6 +28,22 @@ export function workPath(name: string): string {
   return `${WORK_DIR}/${name}`;
 }
 
+/** POSIX and Windows path separators, so a path from either host splits into segments. */
+const PATH_SEPARATORS = /[/\\]/;
+
+/**
+ * The last segment of a path, for POSIX and Windows separators alike.
+ *
+ * Used to name a staged file after the one the user picked without carrying
+ * the directory it came from. Radiance tools write their own argv into the
+ * header of the picture they produce, so a directory that reaches an argument
+ * list reaches the finished picture. See #241.
+ */
+export function basename(path: string): string {
+  const segment = path.split(PATH_SEPARATORS).pop() ?? "";
+  return segment === "" ? "file" : segment;
+}
+
 /**
  * dcraw_emu flags for RAW -> TIFF conversion.
  *
@@ -155,24 +171,27 @@ export function pcombCalArgs(calFile: string, input: string): string[] {
 /**
  * The photometric adjustment, which additionally passes `-h`.
  *
- * `-h` does not suppress pcomb's own command line -- that still appears in the
- * output. It toggles `echoheader` off (`pcomb.c:118`), which stops the input's
- * header from being copied through, so everything upstream is discarded
- * here: the camera, hdrgen's record of which frames were merged, the
- * original capture date, `PRIMARIES`, `EXPOSURE`, and the crop and resize
- * lines. A picture processed with calibration files therefore carries less
- * provenance than one processed without, since without them no pcomb stage
- * runs at all.
+ * `-h` stops pcomb copying the header it was handed, so this stage discards
+ * everything the three before it accumulated. That looks like an oversight,
+ * and #241 argued it was: the flag traces to `extra/ldr-to-hdr.sh:197` rather
+ * than to Table 3 of Pierson et al. (2019), and it makes a calibrated picture
+ * record less than an uncalibrated one.
  *
- * Nothing numerical is lost. `PRIMARIES` is always Radiance's default here
- * (`ra_xyze -r` writes those), and `EXPOSURE` is always 1 because
- * `nullify_exposure_value` passes `ra_xyze -o`, which sets `origexp = 1.0`
- * (`ra_xyze.c:105`). Every reader defaults a missing `EXPOSURE` to 1 anyway.
+ * **It is load-bearing anyway, and removing it breaks the pipeline.** Radiance
+ * tools indent an inherited header with tabs, and `evalglare` refuses any
+ * picture whose header has a line containing both `EXPOSURE=` and a tab:
  *
- * Kept because `photometric_adjustment.rs:20` does it and this port must match
- * byte for byte. It is the only one of the four pcomb stages that passes `-h`,
- * which is what makes it look accidental rather than chosen: the three before
- * it accumulate header lines that this one throws away.
+ *     pictool.c:214   if (strstr(s, EXPOSSTR) && strstr(s, "\t")) { ... exit(1) }
+ *
+ * `pcompos` writes an `EXPOSURE=` line during the crop. With `-h` here that
+ * line is the last thing written at column zero and evalglare is content. Drop
+ * `-h` and every correction nests it one tab deeper, so the glare stage exits
+ * with "header contains invalid exposure entry" and produces nothing. That was
+ * measured against the shipped wasm binary, not inferred: it is why the
+ * uncalibrated path survives and the calibrated one does not.
+ *
+ * So provenance cannot be inherited. It is written deliberately instead, after
+ * evalglare has run, by `provenanceEntries` below.
  */
 export function photometricArgs(calFile: string, input: string): string[] {
   return ["-h", "-f", calFile, input];
@@ -188,6 +207,8 @@ export function headerEditingArgs(entries: {
   view?: { projection: string; verticalAngle: number; horizontalAngle: number };
   evalglareValue?: string;
   measuredIlluminance?: string;
+  /** Ready-made lines from `provenanceEntries`, appended last. */
+  provenance?: string[];
 }): string[] {
   const args = ["-a"];
   if (entries.view) {
@@ -206,8 +227,89 @@ export function headerEditingArgs(entries: {
       `MEASURED_VERTICAL_ILLUMINANCE=${entries.measuredIlluminance.trim()}`
     );
   }
+  args.push(...(entries.provenance ?? []));
   return args;
 }
+
+/** Where `provenanceEntries` reads from. */
+export interface ProvenanceSources {
+  /** Basenames of the `.cal` files applied, in the order the pipeline runs. */
+  calibration: string[];
+  /** The header hdrgen wrote on the merged picture. */
+  mergeHeader: string;
+}
+
+/**
+ * What the finished picture should say about where it came from.
+ *
+ * The merge output records the camera, the capture date, which frames went in
+ * and whether lens flare was removed. None of that survives to the finished
+ * picture, because the photometric adjustment has to pass `-h` to keep
+ * evalglare working -- see `photometricArgs`. Rather than inherit the chain,
+ * which is what breaks evalglare, the parts worth keeping are re-stated here
+ * and appended after the glare stage has run.
+ *
+ * Every line is built as `NAME= value`, matching `VIEW=` and the illuminance
+ * entries the pipeline already writes, rather than passed through verbatim.
+ * hdrgen's own frame line begins with its argv[0], which under WebAssembly is
+ * the placeholder `./this.program` and means nothing to a reader.
+ *
+ * Two rules hold for everything returned, and both are load-bearing rather
+ * than tidiness. No entry may contain a tab, because a tab beside `EXPOSURE=`
+ * is what makes evalglare reject a picture, and someone will run evalglare on
+ * the output. And no entry may be an `EXPOSURE=` line, because the exposure is
+ * the pipeline's to state, not the merge's.
+ */
+export function provenanceEntries({
+  calibration,
+  mergeHeader,
+}: ProvenanceSources): string[] {
+  const lines = mergeHeader.split("\n").map((line) => line.trim());
+  const entries: string[] = [];
+
+  const value = (prefix: string): string | null => {
+    const found = lines.find((line) => line.startsWith(prefix));
+    return found ? found.slice(prefix.length).trim() : null;
+  };
+
+  const camera = value("CAMERA=");
+  if (camera) {
+    entries.push(`CAMERA= ${camera}`);
+  }
+
+  // hdrgen resolves this to one frame's EXIF timestamp -- the first it lists,
+  // which for a bracket shot in order is the last exposure taken. Carried as
+  // it stands: `CAPDATE=` is a standard identifier that `dateval()` parses as
+  // UTC, so it has to stay a single well-formed time rather than a range.
+  const captured = value("CAPDATE=");
+  if (captured) {
+    entries.push(`CAPDATE= ${captured}`);
+  }
+
+  const merged = lines.find((line) => line.includes("created HDR image from "));
+  if (merged) {
+    const frames = merged.slice(
+      merged.indexOf("created HDR image from ") +
+        "created HDR image from ".length
+    );
+    entries.push(`MERGED_FROM= ${frames.trim()}`);
+  }
+
+  if (lines.some((line) => line === "Removed lens flare")) {
+    entries.push("LENS_FLARE= removed");
+  }
+
+  if (calibration.length > 0) {
+    entries.push(`CALIBRATION_FILES= ${calibration.join(" ")}`);
+  }
+
+  return entries.filter(
+    (entry) => !(entry.includes("\t") || entry.includes(EXPOSURE_ENTRY))
+  );
+}
+
+/** The identifier evalglare refuses to see beside a tab. See `photometricArgs`. */
+const EXPOSURE_ENTRY = "EXPOSURE=";
 
 /**
  * evalglare in vertical-illuminance mode.

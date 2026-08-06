@@ -127,6 +127,26 @@ async function dispatchDrop(targetId: string, paths: string[]) {
   );
 }
 
+/**
+ * Fills a controlled input so React actually hears about it.
+ *
+ * Assigning `element.value` directly is not enough, and the way it fails is
+ * silent. React replaces the `value` property on the input's prototype with
+ * its own accessor and keeps a tracker of the last value it wrote; on an input
+ * event it compares the two and drops the event when they match. A direct
+ * assignment updates the DOM *and* the tracker in one go, so React compares
+ * equal, concludes nothing changed, and never tells the form.
+ *
+ * The result is a test that looks entirely convincing: the field displays the
+ * path, any assertion on `getValue()` passes, and the form behind it is empty.
+ * That is what happened here. Every calibration file, the response function and
+ * the lens mask were set this way, so `generates an HDR image` was running an
+ * unconfigured pipeline and had never once exercised a `.cal` correction. It
+ * stayed green while a change that broke calibration for every user went by.
+ *
+ * Calling the prototype's own setter writes the value without touching React's
+ * tracker, so the tracker still holds the old one and the event survives.
+ */
 async function setTextInputValue(selector: string, value: string) {
   await browser.waitUntil(
     async () =>
@@ -145,8 +165,15 @@ async function setTextInputValue(selector: string, value: string) {
       if (!element) {
         throw new Error(`Could not find input: ${inputSelector}`);
       }
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        window.HTMLInputElement.prototype,
+        "value"
+      )?.set;
+      if (!nativeSetter) {
+        throw new Error("HTMLInputElement.prototype has no value setter");
+      }
       element.focus();
-      element.value = nextValue;
+      nativeSetter.call(element, nextValue);
       element.dispatchEvent(new Event("input", { bubbles: true }));
       element.dispatchEvent(new Event("change", { bubbles: true }));
       element.blur();
@@ -466,6 +493,39 @@ describe("LumiLab", () => {
       outputFiles.find((fileName) => !fileName.endsWith("_fc.hdr")) ??
       outputFiles[0];
     assert.ok(hdrForViewer, "expected at least one HDR file for image viewer");
+
+    // The picture is proof of what actually ran, and it is the only proof
+    // available here. This test filled five fields and, until the input setter
+    // was fixed, none of them reached the form: it produced an HDR from an
+    // unconfigured pipeline and reported success, for months. Counting files
+    // cannot tell those apart. The header can.
+    const finishedHeader = readFileSync(
+      path.join(tempOutputDirectory, hdrForViewer)
+    )
+      .subarray(0, 8192)
+      .toString("latin1");
+
+    // Written only when a correction ran, so this fails if the calibration
+    // fields go back to being silently ignored.
+    assert.ok(
+      finishedHeader.includes("CALIBRATION_FILES="),
+      `expected the finished picture to record the calibration it was given.\n${finishedHeader.slice(0, 600)}`
+    );
+
+    // #241: an absolute path handed to a Radiance tool is published inside the
+    // picture. On the desktop those come from the native file dialog, which is
+    // why this assertion lives in the desktop suite rather than the web one.
+    for (const token of finishedHeader.split(/\s+/)) {
+      const bare = token.replace(/^["']+/, "");
+      assert.ok(
+        !bare.startsWith("/") || /^\/(src|cal|work)\//.test(bare),
+        `finished picture names a path outside /src, /cal and /work: ${bare}`
+      );
+    }
+    assert.ok(
+      !/[A-Za-z]:\\/.test(finishedHeader),
+      "finished picture names a Windows path"
+    );
 
     // Derived from wherever the app already is, not hardcoded. Tauri serves
     // the app from `http://tauri.localhost` on Windows but `tauri://localhost`
