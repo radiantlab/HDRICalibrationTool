@@ -64,6 +64,42 @@ The browser leaks nothing either way: `vfs.ts` already registers picked files
 under synthetic `/session/...` and `/presets/...` paths, which is exactly the
 shape this design gives the desktop.
 
+## `-h` is load-bearing, and this design was wrong about it
+
+> **Corrected after CI.** Everything below this heading was written on the
+> premise that `-h` could simply be removed. It cannot. Removing it stopped the
+> pipeline producing anything at all, on every platform, and CI caught it where
+> no local test could.
+>
+> Radiance tools indent an inherited header with tabs, and evalglare refuses
+> any picture whose header carries `EXPOSURE=` and a tab on one line:
+>
+> ```c
+> pictool.c:214   if (strstr(s, EXPOSSTR) && strstr(s, "\t")) { ... exit(1) }
+> ```
+>
+> `pcompos` writes an `EXPOSURE=` line during the crop. With `-h` on the fourth
+> correction that line is the last written at column zero and evalglare is
+> content. Without it, every correction nests it one tab deeper and the glare
+> stage exits with "header contains invalid exposure entry", producing nothing.
+> Measured against the shipped wasm binary, not inferred. It also explains why
+> the uncalibrated path kept working: with no correction, nothing nests the
+> line.
+>
+> The hypothesis everyone tested, including this document, was the stale
+> `VIEW=` line, and that part was fine. The flag was load-bearing for
+> `EXPOSURE`. Testing the one risk that had been written down, rather than
+> asking what else parses that header, is how both the earlier audit and this
+> design missed it.
+>
+> **Provenance is therefore re-stated rather than inherited**, after evalglare
+> has run, through the same `getinfo -a` the pipeline already uses: camera,
+> capture date, merged frame list, lens-flare note, and calibration basenames.
+> Nothing emitted carries a tab or an exposure entry, because someone will run
+> evalglare on the output. `CAPDATE=` is carried as hdrgen resolved it, naming
+> one frame's timestamp, since `header.c:44` makes it a standard identifier
+> parsed as UTC and it must stay a single well-formed time.
+
 ## Where `-h` came from
 
 Worth recording, because it determines whether removing it is a change or a
