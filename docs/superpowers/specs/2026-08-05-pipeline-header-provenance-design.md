@@ -1,6 +1,6 @@
 # Stop leaking host paths into pictures, and let provenance through
 
-**Status:** designed, not implemented
+**Status:** implemented
 **Date:** 2026-08-05
 **Closes:** [#241](https://github.com/radiantlab/LumiLab/issues/241)
 **Settles:** the `pcomb -h` consistency follow-up parked in
@@ -40,11 +40,25 @@ it looked narrow is instructive.
 re-paths everything: frames become `/work/inputN.tiff` (`:520`) and the
 response function becomes `/work/sqr.rsp` (`:540`). The LDR branch returns
 `params.inputImages` and `params.responseFunction` unchanged (`:506-510`), so
-on the desktop hdrgen is handed host paths and writes them into its provenance
-lines.
+on the desktop hdrgen is handed host paths.
 
-#241's table was built from a CR2 run, where the merge stage had no host path
-left to leak. The `pcomb` line was the only one visible.
+> **Corrected during implementation.** This section originally concluded that
+> hdrgen therefore writes those host paths into its provenance line, making the
+> merge a second leak surface. That is wrong, and it was checked rather than
+> reasoned about only after the code was written. Given frames under
+> `/tmp/.../Deep Dir-user@example.edu/bracket/`, hdrgen writes
+> `hdrgen created HDR image from 'IMG_6958.JPG' 'IMG_6957.JPG' ...`: basenames
+> only, because hdrgen strips the directory itself. The response function is
+> not named in the header at all.
+>
+> So the leak is exactly what #241 reported, the `pcomb -f` cal path, and
+> nothing more. Re-pathing the merge inputs is not load-bearing. It is kept
+> because it costs nothing, because it makes a header identical across machines
+> and hosts for the same inputs, and because a naming rule with an exception is
+> worse than one without. But it fixes nothing on its own.
+
+#241's table was built from a CR2 run, and the `pcomb` line was the only leak
+visible there because it is the only leak there is.
 
 The browser leaks nothing either way: `vfs.ts` already registers picked files
 under synthetic `/session/...` and `/presets/...` paths, which is exactly the
@@ -181,20 +195,54 @@ Unit:
   directories) and an assertion that the caller's params object is not mutated.
 - `photometricArgs` emits no `-h`.
 
-Manual, on the example CR2 bracket and a JPEG bracket, both hosts if
-convenient and the desktop at minimum, since it is the only host that leaked:
+Automated, and this replaces the manual check this section originally planned.
+`pipeline.spec.ts` already downloads both finished pictures and reads their
+bytes, so asserting on the header there costs no extra run time and turns #241
+into a standing guard rather than a one-off inspection. It asserts that every
+absolute path in either output sits under `/src`, `/cal` or `/work`, that no
+Windows path appears (which the first check cannot see, since one does not
+start with a slash), and that exactly one **active** `VIEW=` line survives.
 
-1. `getinfo` on the calibrated output contains no host path, no home directory,
-   no email address.
-2. It carries the provenance chain: camera, capture date, hdrgen's frame list,
-   the crop and resize lines, and four `pcomb` lines showing basenames.
-3. It carries exactly one active `VIEW=` line, which is the `-h` hypothesis
-   under test.
-4. A JPEG run's hdrgen provenance names `/src/...` frames, not host paths.
+### What the assertions were validated against
 
-Nothing in the suite asserts on header content today, so the manual run is the
-real verification. This adds to the manual-check debt tracked in #256 rather
-than reducing it.
+A test that has never seen the failure it guards proves nothing, so both were
+checked in both directions against real Radiance output before being committed.
+
+The full stage sequence was reproduced with the natively installed Radiance
+tools, with a calibration file at
+`/tmp/.../Secret Dir-user@example.edu/CF_f5d6.cal`, standing in for the path
+#241 reported:
+
+| header | absolute paths outside the allowlist | active `VIEW=` |
+| --- | --- | --- |
+| four corrections, unsanitised cal path | **4**, one per `pcomb` stage | 1 |
+| real 18-frame merge, shipped wasm hdrgen, sources under `/src` | 0 | 0 (written later) |
+| hdrgen given deep absolute input paths | 0 | 1 |
+
+So the guard catches the reported leak, catches it once per correction stage,
+and does not fire on clean output.
+
+### The `-h` hypothesis, settled
+
+Removing `-h` risked letting hdrgen's own EXIF-derived `VIEW=` through to
+compete with the one the pipeline writes. hdrgen does emit one
+(`VIEW= -vtv -vh 133.295593 -vv 114.143967` on the reference bracket), so the
+concern was real rather than theoretical.
+
+Running the sequence confirms what the earlier audit predicted, and shows the
+mechanism: each stage that copies an inherited header indents it one tab deeper
+and prefixes it with the file it came from, so hdrgen's `VIEW=` ends up five
+tabs in and deactivated, while the one `getinfo -a` writes sits at column 0.
+Exactly one active line, and the flag was not load-bearing.
+
+### Not verified here
+
+The browser end-to-end run against the full 18-frame bracket did not complete
+locally, so these assertions will first run for real in CI. The cause is
+unrelated to this change and is recorded separately: the shipped wasm binaries
+merge that bracket in 22 s headless under Node and about the same in the
+desktop webview, while the same merge under Playwright's Chromium on the same
+machine did not finish in fifteen minutes.
 
 ## Not in scope
 
