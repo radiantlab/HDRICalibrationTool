@@ -25,7 +25,9 @@
       "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost https://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'",
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": [
+          "**"
+        ]
       }
     }
   },
@@ -57,5 +59,5 @@
     "shortDescription": ""
   },
   "plugins": {},
-  "version": "4.0.0"
+  "version": "5.0.0"
 }
