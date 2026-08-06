@@ -81,8 +81,12 @@ jobs:
             const { data } = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: `app-v${version}`,
-              name: `App v${version}`,
+              // Bare `v5.0.0`, matching every tag before it: v4.0.0, v3.1.0,
+              // v3.0.0, v2.0.0. Tauri's own convention is `app-v${version}`,
+              // which this used, but a release history that changes naming
+              // partway stops sorting and stops being guessable from a link.
+              tag_name: `v${version}`,
+              name: `v${version}`,
               body: [
                 'Install the file for your operating system. There is nothing else to install:',
                 'Radiance, hdrgen and dcraw_emu ship inside the application as WebAssembly.',
