@@ -1,6 +1,6 @@
 # How fast is hdrgen, really, in each place we run it
 
-**Status:** designed, not implemented
+**Status:** measured
 **Date:** 2026-08-06
 
 ## The question
@@ -114,3 +114,54 @@ app could not separate those.
 - The full-app number. `perf.bench.ts` already measures that, and mixing it in
   would reintroduce exactly the confound this design removes.
 - Fixing whatever is found. This measures.
+
+
+## Results
+
+Measured 2026-08-06 on an Apple Silicon laptop (arm64, 32 GB), machine
+otherwise idle. Median of three repetitions, seconds, for the merge alone.
+
+| leg | 4 | 8 | 12 | 18 frames |
+| --- | --- | --- | --- | --- |
+| native-arm64 | 5.4 | 7.0 | 9.1 | 13.6 |
+| native-x86_64 (Rosetta) | 5.4 | 9.3 | 12.5 | 18.4 |
+| wasm-node | 12.0 | 15.1 | 18.6 | 22.8 |
+| wasm-chromium | 5.7 | 7.7 | 10.3 | 14.5 |
+| wasm-webkit | 6.5 | 8.8 | 9.5 | 13.4 |
+
+### What the WebAssembly build costs
+
+**In a browser, nothing measurable.** At the full bracket WebKit runs the merge
+in 13.4 s against native arm64's 13.6 s, and Chromium in 14.5 s, about 1.07x.
+`PRD.md:79`'s "roughly 2x native" is wrong, and wrong pessimistically, for the
+case the web build actually runs. Correcting that claim is a separate change.
+
+Two caveats keep this honest rather than triumphal. The native legs read their
+frames from disk inside the timed region and the wasm legs do not, which
+flatters wasm by some small amount at these sizes. And a merge is not pure
+compute; a workload dominated by tight numerical loops would likely separate
+the two more.
+
+**Rosetta costs about 1.35x** at 18 frames, 18.4 s against 13.6 s. That is why
+the earlier ad-hoc comparison, native 4.0 s against wasm 4.2 s, read as parity:
+the native side was emulated. Building arm64 from the pinned commit is what
+turned a misleading result into a usable one.
+
+### The unexplained row
+
+`wasm-node` is the slowest leg everywhere, 1.68x native at 18 frames and well
+behind both browsers, despite Node and Chromium sharing V8. No explanation is
+offered here because none has been tested. The leading suspicion is the
+harness rather than Node: the module is built for web and worker environments
+and cannot fetch its own `.wasm` under Node, so that leg hands over a compiled
+module through `instantiateWasm`, which may not reach the same optimisation
+tier as a browser's streaming compile. Anyone relying on this row should settle
+that first.
+
+### What this does not say
+
+Nothing about the deployed site. A full merge is ~14 s in a browser, so a
+deployment that feels far slower than that is not slow because of the merge.
+The candidates left are delivery of the wasm payload and the application around
+it, and `e2e-web/tests/perf.bench.ts` already exists to separate those with
+`TARGET_URL`.
