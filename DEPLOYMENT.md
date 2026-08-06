@@ -57,19 +57,28 @@ reasoning is in [`licenses/DECISIONS.md`](./licenses/DECISIONS.md).
 
 ## Known limits of the web build
 
-- **A browser that has disabled its JIT runs this about ten times slower.**
-  Microsoft Edge's "Enhance your security on the web" (Settings, Privacy) turns
-  off the JavaScript JIT compiler for sites it does not consider familiar, and
-  a newly deployed URL never is. Everything then runs interpreted, WebAssembly
-  included: the reference JPEG bracket went from 30 seconds to 6 minutes 32
-  seconds, with no error and nothing visibly different about the page. The same
-  build served from `localhost` was unaffected, because a site you open every
-  day stays on that feature's allowlist -- which is exactly what makes this so
-  easy to misread as "the deployment is slow".
+- **A browser with JavaScript optimisation turned off runs this about ten
+  times slower.** Every major browser can be put in that state, and the cost
+  falls on everything, WebAssembly included. Observed here: the reference JPEG
+  bracket went from 30 seconds to 6 minutes 32 seconds, with no error and
+  nothing visibly different about the page.
 
-  Adding the site to that setting's exceptions restores full speed. The app
-  measures the engine at the start of each run and says so in the run console
-  when it looks like this, because the state is otherwise invisible.
+  | Browser | Where |
+  |---|---|
+  | Edge | "Enhance your security on the web" (Settings, Privacy). On *Balanced* it keeps optimisation only for sites visited often. |
+  | Chrome, Brave, Opera, Vivaldi | Per site since Chromium 122, under Settings, Privacy and security, Security. Disables the upper JIT tiers rather than all of them, so the penalty is smaller. |
+  | Safari | Part of Lockdown Mode; not separable from it. |
+  | Firefox | `javascript.options.ion` in `about:config`. Tor Browser does it at "Safer". |
+
+  Edge's "visited often" rule is what makes this so easy to misread as a
+  hosting problem: it exempts `localhost`, which you open every day, while
+  catching a newly deployed URL. Managed machines can arrive here without
+  anyone choosing it, since the CIS benchmark for Edge recommends disabling
+  JIT at Level 2.
+
+  Allowing the site restores full speed. The app measures the engine at the
+  start of each run and says so in the run console when it looks like this,
+  because the state is otherwise invisible.
 
 - **Outputs are downloaded**, and the browser decides where. There is no
   output-directory setting, and "open folder" is hidden, because a browser has

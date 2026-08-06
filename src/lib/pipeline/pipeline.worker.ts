@@ -75,16 +75,29 @@ const NO_JIT_MS = 150;
  * How fast this engine actually executes code.
  *
  * Worth measuring because the answer is occasionally catastrophic and
- * completely invisible. Microsoft Edge's "Enhance your security on the web"
- * disables the JavaScript JIT for sites it does not consider familiar, and a
- * freshly deployed URL is never familiar. Everything then runs interpreted:
- * this pipeline went from thirty seconds to six and a half minutes, with no
- * error, no warning and nothing different about the page.
+ * completely invisible. Every major browser can be put in a state where
+ * JavaScript optimisation is off, and the cost is roughly an order of
+ * magnitude across everything, WebAssembly included:
  *
- * That state is indistinguishable from "this tool is slow" unless something
- * says otherwise, and it cost most of a day to identify once. The wording
- * reports the observation rather than diagnosing the cause, because a genuinely
- * slow device would land here too and deserves a truthful message.
+ *   - Edge's "Enhance your security on the web", which on its Balanced setting
+ *     keeps optimisation only for sites visited often -- so a freshly deployed
+ *     URL is excluded while `localhost` is not, which is what makes this look
+ *     like a hosting problem.
+ *   - Chrome and other Chromium browsers, per site, since Chromium 122.
+ *   - Safari, as part of Lockdown Mode, which cannot be turned off separately.
+ *   - Firefox via `javascript.options.ion`, and Tor Browser at "Safer".
+ *
+ * Managed machines reach the same place without anyone choosing it: the CIS
+ * benchmark for Edge recommends disabling JIT outright at Level 2.
+ *
+ * Observed here: thirty seconds became six and a half minutes, with no error,
+ * no warning and nothing different about the page. That is indistinguishable
+ * from "this tool is slow" unless something says otherwise, and it cost most
+ * of a day to identify once.
+ *
+ * The message reports the observation and offers the usual causes rather than
+ * asserting one, because a genuinely slow device lands here too and deserves a
+ * truthful message rather than a wrong diagnosis.
  */
 function reportEngineSpeed(): void {
   const started = performance.now();
@@ -102,11 +115,13 @@ function reportEngineSpeed(): void {
     payload: {
       kind: "warning",
       message:
-        `This browser is executing code about ${Math.round(elapsed / HEALTHY_MS)}x slower than expected, ` +
-        "so this run will take minutes rather than seconds. The usual cause is a " +
-        "browser security setting that disables the JavaScript JIT compiler for " +
-        'unfamiliar sites: in Edge, Settings, Privacy, "Enhance your security on ' +
-        'the web". Adding this site to its exceptions restores full speed.',
+        `This browser is executing code about ${Math.round(elapsed / HEALTHY_MS)}x slower ` +
+        "than expected, so this run will take minutes rather than seconds. The usual " +
+        "cause is a browser security setting that turns off JavaScript optimisation, " +
+        "often only for sites you have not visited before: Edge's \"Enhance your " +
+        "security on the web\" (Settings, Privacy), Chrome's JavaScript optimisation " +
+        "setting (Settings, Privacy and security, Security), or Safari's Lockdown " +
+        "Mode. Allowing this site restores full speed.",
       progress: null,
       step: "engine_speed",
     },
