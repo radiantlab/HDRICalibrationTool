@@ -44,9 +44,9 @@ const CAL_SLOTS = [
 ] as const;
 
 export interface SanitizedSources {
-  /** Params naming work paths. The object handed in is left untouched. */
+  /** Params naming staged paths. The object handed in is left untouched. */
   params: PipelineParams;
-  /** Work path to the path its bytes must be read from, in staging order. */
+  /** Staged path to the path its bytes must be read from, in staging order. */
   sources: Map<string, string>;
 }
 
@@ -56,17 +56,17 @@ export function sanitizeSources(params: PipelineParams): SanitizedSources {
   // 1-based, matching the index `prepareInputs` gives the converted TIFFs, so
   // the two numbering schemes read the same way in a status log.
   const inputImages = params.inputImages.map((path, index) => {
-    const work = `${SRC_DIR}/${index + 1}-${basename(path)}`;
-    sources.set(work, path);
-    return work;
+    const staged = `${SRC_DIR}/${index + 1}-${basename(path)}`;
+    sources.set(staged, path);
+    return staged;
   });
 
-  const staged: PipelineParams = { ...params, inputImages };
+  const stagedParams: PipelineParams = { ...params, inputImages };
 
   if (params.responseFunction !== "") {
-    const work = `${SRC_DIR}/response-${basename(params.responseFunction)}`;
-    sources.set(work, params.responseFunction);
-    staged.responseFunction = work;
+    const staged = `${SRC_DIR}/response-${basename(params.responseFunction)}`;
+    sources.set(staged, params.responseFunction);
+    stagedParams.responseFunction = staged;
   }
 
   for (const [field, slot] of CAL_SLOTS) {
@@ -76,10 +76,10 @@ export function sanitizeSources(params: PipelineParams): SanitizedSources {
     if (path === "") {
       continue;
     }
-    const work = `${CAL_DIR}/${slot}-${basename(path)}`;
-    sources.set(work, path);
-    staged[field] = work;
+    const staged = `${CAL_DIR}/${slot}-${basename(path)}`;
+    sources.set(staged, path);
+    stagedParams[field] = staged;
   }
 
-  return { params: staged, sources };
+  return { params: stagedParams, sources };
 }
