@@ -24,6 +24,20 @@ export const RESPONSE = path.join(
 
 const JPEG_DIR = path.join(INPUTS, "JPEG");
 
+/**
+ * `count` frames spread evenly across the bracket, endpoints included.
+ *
+ * Not the first `count`, and the difference is not cosmetic. A bracket is an
+ * exposure sequence, so a prefix is all long exposures and they are nearly
+ * identical: the pipeline's own filter reported "kept 1 of 4" on the first four
+ * frames, which would have benchmarked a merge of one frame while the table
+ * said four. Sampling across the sequence keeps the dynamic range, and with it
+ * the work.
+ *
+ * The endpoints are included because the darkest and brightest frames are what
+ * define the range a merge has to reconcile; dropping them would measure an
+ * easier problem than the application solves.
+ */
 export function frameFiles(count) {
   const all = readdirSync(JPEG_DIR)
     .filter((name) => name.toUpperCase().endsWith(".JPG"))
@@ -32,7 +46,17 @@ export function frameFiles(count) {
   if (count > all.length) {
     throw new Error(`asked for ${count} frames, the bracket has ${all.length}`);
   }
-  return all.slice(0, count);
+  if (count <= 0) {
+    return [];
+  }
+  if (count === 1) {
+    return [all[Math.floor((all.length - 1) / 2)]];
+  }
+  const step = (all.length - 1) / (count - 1);
+  return Array.from(
+    { length: count },
+    (_unused, index) => all[Math.round(index * step)]
+  );
 }
 
 /**

@@ -19,13 +19,19 @@ export function summarise(records) {
   const cells = new Map();
   for (const record of records) {
     const key = `${record.leg}:${record.frames}`;
-    const cell = cells.get(key) ?? { frames: record.frames, leg: record.leg, runs: [] };
+    const cell = cells.get(key) ?? {
+      frames: record.frames,
+      leg: record.leg,
+      runs: [],
+    };
     cell.runs.push(record);
     cells.set(key, cell);
   }
 
   return [...cells.values()].map(({ frames, leg, runs }) => {
-    const finished = runs.filter((run) => run.status === "ok" && run.runMs !== null);
+    const finished = runs.filter(
+      (run) => run.status === "ok" && run.runMs !== null
+    );
     const times = finished.map((run) => run.runMs);
     // A hang and a crash are different findings, and telling them apart is
     // most of why this benchmark exists. Counting both as "timed out" would
@@ -42,7 +48,9 @@ export function summarise(records) {
       medianMs: times.length ? median(times) : null,
       minMs: times.length ? Math.min(...times) : null,
       note: counted.length
-        ? counted.map(([label, count]) => `${count}/${runs.length} ${label}`).join(", ")
+        ? counted
+            .map(([label, count]) => `${count}/${runs.length} ${label}`)
+            .join(", ")
         : null,
     };
   });
@@ -64,8 +72,13 @@ export function formatTable(rows) {
     Math.max(header[column].length, ...body.map((line) => line[column].length))
   );
   const line = (cells) =>
-    cells.map((cell, column) => cell.padEnd(widths[column])).join("  ").trimEnd();
-  return [line(header), line(widths.map((width) => "-".repeat(width))), ...body.map(line)].join(
-    "\n"
-  );
+    cells
+      .map((cell, column) => cell.padEnd(widths[column]))
+      .join("  ")
+      .trimEnd();
+  return [
+    line(header),
+    line(widths.map((width) => "-".repeat(width))),
+    ...body.map(line),
+  ].join("\n");
 }

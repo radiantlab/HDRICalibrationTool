@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { frameFiles, hdrgenArgv, stagedName } from "./fixtures.mjs";
 import { formatTable, median, summarise } from "./report.mjs";
 
-test("frameFiles returns the requested count, sorted", () => {
+test("frameFiles returns the requested count, in order", () => {
   const four = frameFiles(4);
   assert.equal(four.length, 4);
   assert.deepEqual([...four].sort(), four);
@@ -14,9 +14,38 @@ test("frameFiles(18) is the whole bracket", () => {
   assert.equal(frameFiles(18).length, 18);
 });
 
-// Every leg has to measure the same work. A leg building its own arguments is
-// how a benchmark ends up comparing two different things and reporting the
-// difference as an engine result.
+// The reason this is not a prefix. A bracket is an exposure sequence, so the
+// first four frames are four long exposures that differ barely at all -- the
+// pipeline's own filter kept one of them. Sampling across the sequence is what
+// makes a four-frame measurement a measurement of four frames' work.
+test("frameFiles spreads across the bracket rather than taking a prefix", () => {
+  const all = frameFiles(18);
+  const four = frameFiles(4);
+
+  assert.equal(four[0], all[0], "the first frame anchors the range");
+  assert.equal(four[3], all[17], "the last frame anchors the other end");
+  assert.notDeepEqual(four, all.slice(0, 4));
+
+  // Evenly spaced, to within the rounding a non-integer stride forces.
+  const positions = four.map((file) => all.indexOf(file));
+  const gaps = positions.slice(1).map((at, index) => at - positions[index]);
+  assert.ok(
+    Math.max(...gaps) - Math.min(...gaps) <= 1,
+    `expected even spacing, got positions ${positions.join(",")}`
+  );
+});
+
+test("frameFiles never repeats a frame", () => {
+  for (const count of [4, 8, 12, 18]) {
+    const frames = frameFiles(count);
+    assert.equal(
+      new Set(frames).size,
+      count,
+      `${count} frames should be distinct`
+    );
+  }
+});
+
 test("hdrgenArgv matches the shape the app builds", () => {
   const argv = hdrgenArgv({
     frames: ["/src/1-a.JPG", "/src/2-b.JPG"],
@@ -109,9 +138,31 @@ test("summarise counts both when a cell has each", () => {
 
 test("formatTable renders a header and one line per row", () => {
   const text = formatTable([
-    { frames: 4, leg: "wasm-node", maxMs: 300, medianMs: 200, minMs: 100, note: null },
+    {
+      frames: 4,
+      leg: "wasm-node",
+      maxMs: 300,
+      medianMs: 200,
+      minMs: 100,
+      note: null,
+    },
   ]);
   assert.match(text, /leg/);
   assert.match(text, /wasm-node/);
   assert.match(text, /0\.2/);
+});
+
+// The browser leg cannot import this module, so it carries its own copy of the
+// spread when run by hand. Pinning the selection here means that at least one
+// of the two cannot drift unnoticed, and the orchestrator passes this exact
+// list to the browser leg so a real run never uses the copy at all.
+test("frameFiles picks a known, evenly spread selection", () => {
+  const all = frameFiles(18).map((file) => file.split("/").pop());
+  const positions = (count) =>
+    frameFiles(count).map((file) => all.indexOf(file.split("/").pop()));
+
+  assert.deepEqual(positions(4), [0, 6, 11, 17]);
+  assert.deepEqual(positions(8), [0, 2, 5, 7, 10, 12, 15, 17]);
+  assert.deepEqual(positions(12), [0, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, 17]);
+  assert.deepEqual(positions(18), [...Array(18).keys()]);
 });
