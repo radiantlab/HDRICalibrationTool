@@ -13,6 +13,7 @@
 import { falsecolor } from "./falsecolor";
 import { type DecodeImage, filterImages } from "./filter-images";
 import {
+  basename,
   cropArgs,
   dcrawArgs,
   evalglareArgs,
@@ -589,13 +590,22 @@ async function warnIfResolutionDependent(
   width: number,
   height: number
 ): Promise<void> {
+  // The staged name, not the path. The path is a work path now, which means
+  // nothing to a user, and the run transcript is stored with the run, so
+  // whatever goes in a warning is kept alongside it.
+  const name = basename(calPath);
   let text: string;
   try {
     text = new TextDecoder().decode(await runner.readFile(calPath));
   } catch (error) {
+    // The runner's own failure text embeds the staged path (e.g. "no such
+    // file /cal/<name>"), so that has to be scrubbed too -- naming the file
+    // in the label while the detail still spells out the path it lives
+    // under would defeat the point of this function.
+    const detail = String(error).replaceAll(calPath, name);
     emit({
       kind: "warning",
-      message: `Could not read the ${label} calibration file ${calPath}: ${error}`,
+      message: `Could not read the ${label} calibration file ${name}: ${detail}`,
       progress: null,
       step: "cal_check",
     });
@@ -608,7 +618,7 @@ async function warnIfResolutionDependent(
   }
   emit({
     kind: "warning",
-    message: calWarning(label, calPath, width, height, constants),
+    message: calWarning(label, name, width, height, constants),
     progress: null,
     step: "cal_check",
   });

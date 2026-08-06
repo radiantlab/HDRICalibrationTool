@@ -258,6 +258,51 @@ describe("stage ordering", () => {
     ]);
   });
 
+  it("shapes all four corrections identically, none carrying -h", async () => {
+    // The fourth correction (photometric adjustment) passed `-h` until #241,
+    // which discarded the provenance the earlier corrections had
+    // accumulated. This pins all four to the same argument shape so that
+    // flag does not come back.
+    const runner = new FakeRunner();
+    await runPipeline({
+      params: params({
+        fisheyeCorrectionCal: "/cal/fisheye.cal",
+        neutralDensityCal: "/cal/nd.cal",
+        photometricAdjustmentCal: "/cal/cf.cal",
+        vignettingCorrectionCal: "/cal/vignetting.cal",
+      }),
+      runner,
+    });
+
+    const pcomb = runner
+      .callsTo("pcomb")
+      .filter((invocation) => !invocation.io?.stdout?.includes("/fc_"));
+    expect(pcomb).toHaveLength(4);
+    expect(call(pcomb, 0).args).toEqual([
+      "-f",
+      "/cal/fisheye.cal",
+      "/work/resize.hdr",
+    ]);
+    expect(call(pcomb, 1).args).toEqual([
+      "-f",
+      "/cal/vignetting.cal",
+      "/work/projection_adjustment.hdr",
+    ]);
+    expect(call(pcomb, 2).args).toEqual([
+      "-f",
+      "/cal/nd.cal",
+      "/work/vignetting_correction.hdr",
+    ]);
+    expect(call(pcomb, 3).args).toEqual([
+      "-f",
+      "/cal/cf.cal",
+      "/work/neutral_density.hdr",
+    ]);
+    for (const invocation of pcomb) {
+      expect(invocation.args).not.toContain("-h");
+    }
+  });
+
   it("chains each stage onto the previous stage's output", async () => {
     const runner = new FakeRunner();
     await runPipeline({
@@ -548,6 +593,44 @@ describe("calibration file resolution warnings", () => {
     ).toContain("Could not read the fisheye calibration file");
     // the run still completed
     expect(events.at(-1)).toMatchObject({ kind: "done" });
+  });
+
+  it("names the file rather than the path it was staged under", async () => {
+    const runner = new FakeRunner();
+    await runner.writeFile("/cal/vignetting-VC_f5d6.cal", HARDCODED);
+    const events: PipelineStatusPayload[] = [];
+
+    await runPipeline({
+      emit: (payload) => events.push(payload),
+      params: params({
+        vignettingCorrectionCal: "/cal/vignetting-VC_f5d6.cal",
+      }),
+      runner,
+    });
+
+    const warning = warnings(events).find(
+      (event) => event.step === "cal_check"
+    );
+    // The transcript is stored with the run, so a path in it is a path kept.
+    expect(warning?.message).toContain("VC_f5d6.cal");
+    expect(warning?.message).not.toContain("/cal/");
+  });
+
+  it("names the file when it cannot be read either", async () => {
+    const runner = new FakeRunner();
+    const events: PipelineStatusPayload[] = [];
+
+    await runPipeline({
+      emit: (payload) => events.push(payload),
+      params: params({ fisheyeCorrectionCal: "/cal/fisheye-missing.cal" }),
+      runner,
+    });
+
+    const warning = warnings(events).find(
+      (event) => event.step === "cal_check"
+    );
+    expect(warning?.message).toContain("missing.cal");
+    expect(warning?.message).not.toContain("/cal/");
   });
 });
 
