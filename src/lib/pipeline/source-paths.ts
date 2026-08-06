@@ -16,8 +16,19 @@
  * Pure, and deliberately so. It decides names; the caller stages the bytes.
  */
 
-import { basename, WORK_DIR } from "./stages";
+import { basename } from "./stages";
 import type { PipelineParams } from "./types";
+
+/**
+ * Sources live outside `/work`, which is reserved for intermediates.
+ *
+ * `collectOutputs` scans `/work` after every tool and files what it finds as
+ * something that tool produced (`wasm-runner.ts:404`). A source staged under
+ * `/work` would be collected as an output. The runner already expects sources
+ * elsewhere, and `makeParentDirs` creates whatever depth they need.
+ */
+const SRC_DIR = "/src";
+const CAL_DIR = "/cal";
 
 /**
  * The four correction slots, named after the stage rather than the form field.
@@ -45,7 +56,7 @@ export function sanitizeSources(params: PipelineParams): SanitizedSources {
   // 1-based, matching the index `prepareInputs` gives the converted TIFFs, so
   // the two numbering schemes read the same way in a status log.
   const inputImages = params.inputImages.map((path, index) => {
-    const work = `${WORK_DIR}/src/${index + 1}-${basename(path)}`;
+    const work = `${SRC_DIR}/${index + 1}-${basename(path)}`;
     sources.set(work, path);
     return work;
   });
@@ -53,7 +64,7 @@ export function sanitizeSources(params: PipelineParams): SanitizedSources {
   const staged: PipelineParams = { ...params, inputImages };
 
   if (params.responseFunction !== "") {
-    const work = `${WORK_DIR}/src/response-${basename(params.responseFunction)}`;
+    const work = `${SRC_DIR}/response-${basename(params.responseFunction)}`;
     sources.set(work, params.responseFunction);
     staged.responseFunction = work;
   }
@@ -65,7 +76,7 @@ export function sanitizeSources(params: PipelineParams): SanitizedSources {
     if (path === "") {
       continue;
     }
-    const work = `${WORK_DIR}/cal/${slot}-${basename(path)}`;
+    const work = `${CAL_DIR}/${slot}-${basename(path)}`;
     sources.set(work, path);
     staged[field] = work;
   }

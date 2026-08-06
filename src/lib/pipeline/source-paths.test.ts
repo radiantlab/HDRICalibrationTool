@@ -49,8 +49,8 @@ describe("sanitizeSources", () => {
     );
 
     expect(staged.inputImages).toEqual([
-      "/work/src/1-DSC_0001.JPG",
-      "/work/src/2-DSC_0002.JPG",
+      "/src/1-DSC_0001.JPG",
+      "/src/2-DSC_0002.JPG",
     ]);
   });
 
@@ -65,8 +65,8 @@ describe("sanitizeSources", () => {
     );
 
     expect(new Set(staged.inputImages).size).toBe(2);
-    expect(sources.get("/work/src/1-DSC_0001.JPG")).toBe("/a/DSC_0001.JPG");
-    expect(sources.get("/work/src/2-DSC_0001.JPG")).toBe("/b/DSC_0001.JPG");
+    expect(sources.get("/src/1-DSC_0001.JPG")).toBe("/a/DSC_0001.JPG");
+    expect(sources.get("/src/2-DSC_0001.JPG")).toBe("/b/DSC_0001.JPG");
   });
 
   it("names each .cal after the correction it belongs to", () => {
@@ -79,15 +79,13 @@ describe("sanitizeSources", () => {
       })
     );
 
-    expect(staged.fisheyeCorrectionCal).toBe(
-      "/work/cal/fisheye-fisheye_corr.cal"
-    );
+    expect(staged.fisheyeCorrectionCal).toBe("/cal/fisheye-fisheye_corr.cal");
     expect(staged.vignettingCorrectionCal).toBe(
-      "/work/cal/vignetting-vignetting.cal"
+      "/cal/vignetting-vignetting.cal"
     );
-    expect(staged.neutralDensityCal).toBe("/work/cal/neutral-NDfilter.cal");
+    expect(staged.neutralDensityCal).toBe("/cal/neutral-NDfilter.cal");
     expect(staged.photometricAdjustmentCal).toBe(
-      "/work/cal/photometric-CF_f5d6.cal"
+      "/cal/photometric-CF_f5d6.cal"
     );
   });
 
@@ -102,8 +100,8 @@ describe("sanitizeSources", () => {
     );
 
     expect(staged.neutralDensityCal).not.toBe(staged.photometricAdjustmentCal);
-    expect(sources.get("/work/cal/neutral-same.cal")).toBe("/cal/same.cal");
-    expect(sources.get("/work/cal/photometric-same.cal")).toBe("/cal/same.cal");
+    expect(sources.get("/cal/neutral-same.cal")).toBe("/cal/same.cal");
+    expect(sources.get("/cal/photometric-same.cal")).toBe("/cal/same.cal");
   });
 
   it("names the response function", () => {
@@ -111,9 +109,7 @@ describe("sanitizeSources", () => {
       params({ responseFunction: "/Users/someone/resp/response_function.rsp" })
     );
 
-    expect(staged.responseFunction).toBe(
-      "/work/src/response-response_function.rsp"
-    );
+    expect(staged.responseFunction).toBe("/src/response-response_function.rsp");
   });
 
   // An unsupplied slot is an empty string, which the orchestrator tests for to
@@ -154,9 +150,9 @@ describe("sanitizeSources", () => {
     );
 
     expect([...sources.keys()]).toEqual([
-      "/work/src/1-1.jpg",
-      "/work/src/response-resp.rsp",
-      "/work/cal/fisheye-f.cal",
+      "/src/1-1.jpg",
+      "/src/response-resp.rsp",
+      "/cal/fisheye-f.cal",
     ]);
   });
 
