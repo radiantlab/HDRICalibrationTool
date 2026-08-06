@@ -597,15 +597,18 @@ async function warnIfResolutionDependent(
   let text: string;
   try {
     text = new TextDecoder().decode(await runner.readFile(calPath));
-  } catch (error) {
-    // The runner's own failure text embeds the staged path (e.g. "no such
-    // file /cal/<name>"), so that has to be scrubbed too -- naming the file
-    // in the label while the detail still spells out the path it lives
-    // under would defeat the point of this function.
-    const detail = String(error).replaceAll(calPath, name);
+  } catch {
+    // Deliberately not reporting the underlying error's own text: different
+    // `ToolRunner`s phrase a read failure differently, and at least one
+    // spells out the staged path verbatim, which is exactly what this
+    // message exists to avoid. The message is built only from values this
+    // function already controls, so that guarantee holds regardless of how
+    // any runner words its rejection. Nothing is lost by leaving it out --
+    // the correction stage that follows will fail on its own and report the
+    // real error if the file is genuinely unreadable.
     emit({
       kind: "warning",
-      message: `Could not read the ${label} calibration file ${name}: ${detail}`,
+      message: `Could not read the ${label} calibration file ${name}.`,
       progress: null,
       step: "cal_check",
     });

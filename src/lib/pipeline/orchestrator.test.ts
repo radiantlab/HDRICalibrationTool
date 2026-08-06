@@ -619,10 +619,11 @@ describe("calibration file resolution warnings", () => {
   it("names the file when it cannot be read either", async () => {
     const runner = new FakeRunner();
     const events: PipelineStatusPayload[] = [];
+    const stagedPath = "/cal/fisheye-missing.cal";
 
     await runPipeline({
       emit: (payload) => events.push(payload),
-      params: params({ fisheyeCorrectionCal: "/cal/fisheye-missing.cal" }),
+      params: params({ fisheyeCorrectionCal: stagedPath }),
       runner,
     });
 
@@ -630,6 +631,12 @@ describe("calibration file resolution warnings", () => {
       (event) => event.step === "cal_check"
     );
     expect(warning?.message).toContain("missing.cal");
+    // Pin the invariant, not today's wording: the staged path must not
+    // appear anywhere in the message, including inside whatever detail an
+    // underlying `ToolRunner` failure carries -- not just its directory
+    // prefix, which a differently-worded rejection could avoid while still
+    // spelling out the full path some other way.
+    expect(warning?.message).not.toContain(stagedPath);
     expect(warning?.message).not.toContain("/cal/");
   });
 });
