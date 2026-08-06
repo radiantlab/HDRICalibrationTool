@@ -19,7 +19,6 @@ import {
   type LuminanceArgs,
   nullifyExposureArgs,
   pcombCalArgs,
-  photometricArgs,
   readResolution,
   resizeArgs,
   SQUARE_RESPONSE,
@@ -204,22 +203,15 @@ describe("the remaining stage arguments", () => {
     ]);
   });
 
-  it("the .cal corrections differ only in the file they pass", () => {
+  it("all four .cal corrections differ only in the file they pass", () => {
+    // Including the photometric adjustment, which used to add `-h` and so
+    // discarded everything the three before it had accumulated. See #241.
     expect(pcombCalArgs("fisheye.cal", "in.hdr")).toEqual([
       "-f",
       "fisheye.cal",
       "in.hdr",
     ]);
-    expect(pcombCalArgs("vignetting.cal", "in.hdr")).toEqual([
-      "-f",
-      "vignetting.cal",
-      "in.hdr",
-    ]);
-  });
-
-  it("the photometric adjustment additionally suppresses the header", () => {
-    expect(photometricArgs("cf.cal", "in.hdr")).toEqual([
-      "-h",
+    expect(pcombCalArgs("cf.cal", "in.hdr")).toEqual([
       "-f",
       "cf.cal",
       "in.hdr",

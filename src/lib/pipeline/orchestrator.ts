@@ -20,7 +20,6 @@ import {
   headerEditingArgs,
   nullifyExposureArgs,
   pcombCalArgs,
-  photometricArgs,
   readResolution,
   resizeArgs,
   SQUARE_RESPONSE,
@@ -85,7 +84,6 @@ interface Correction {
   message: string;
   output: string;
   step: string;
-  suppressHeader: boolean;
 }
 
 export interface PipelineResult {
@@ -259,7 +257,6 @@ export async function runPipeline({
       message: "Applying projection adjustment",
       output: "projection_adjustment.hdr",
       step: "projection_adjustment",
-      suppressHeader: false,
     },
     {
       cal: params.vignettingCorrectionCal,
@@ -267,7 +264,6 @@ export async function runPipeline({
       message: "Applying vignetting correction",
       output: "vignetting_correction.hdr",
       step: "vignetting_correction",
-      suppressHeader: false,
     },
     {
       cal: params.neutralDensityCal,
@@ -275,7 +271,6 @@ export async function runPipeline({
       message: "Applying neutral density correction",
       output: "neutral_density.hdr",
       step: "neutral_density",
-      suppressHeader: false,
     },
     {
       cal: params.photometricAdjustmentCal,
@@ -283,7 +278,6 @@ export async function runPipeline({
       message: "Applying photometric adjustment",
       output: "photometric_adjustment.hdr",
       step: "photometric_adjustment",
-      suppressHeader: true,
     },
   ];
 
@@ -305,10 +299,9 @@ export async function runPipeline({
       );
     }
 
-    const args = correction.suppressHeader
-      ? photometricArgs(correction.cal, workPath(next))
-      : pcombCalArgs(correction.cal, workPath(next));
-    await run(runner, "pcomb", args, { stdout: workPath(correction.output) });
+    await run(runner, "pcomb", pcombCalArgs(correction.cal, workPath(next)), {
+      stdout: workPath(correction.output),
+    });
     next = correction.output;
     checkStop();
   }

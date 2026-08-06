@@ -161,37 +161,24 @@ export function resizeArgs(
 }
 
 /**
- * pcomb with a `.cal` file. Used by the projection, vignetting and neutral
- * density corrections, which differ only in which file they pass.
+ * pcomb with a `.cal` file. All four corrections use it, differing only in
+ * which file they pass.
+ *
+ * The photometric adjustment used to have its own builder that additionally
+ * passed `-h`, which stops pcomb copying the header it was handed. It was the
+ * only one of the four that did, so the fourth stage discarded everything the
+ * three before it had accumulated: the camera, hdrgen's record of which frames
+ * were merged, the original capture date, `PRIMARIES`, `EXPOSURE`, and the
+ * crop and resize lines. A calibrated picture therefore carried less
+ * provenance than an uncalibrated one, which runs no pcomb stage at all.
+ *
+ * The flag was never chosen. `extra/ldr-to-hdr.sh:197` has the same asymmetry,
+ * `photometric_adjustment.rs` transcribed it in 9825c4b without a word, and
+ * this port carried it across for parity with a file that no longer exists.
+ * Table 3 step 9 of Pierson et al. (2019) does not call for it. See #241.
  */
 export function pcombCalArgs(calFile: string, input: string): string[] {
   return ["-f", calFile, input];
-}
-
-/**
- * The photometric adjustment, which additionally passes `-h`.
- *
- * `-h` does not suppress pcomb's own command line -- that still appears in the
- * output. It toggles `echoheader` off (`pcomb.c:118`), which stops the input's
- * header from being copied through, so everything upstream is discarded
- * here: the camera, hdrgen's record of which frames were merged, the
- * original capture date, `PRIMARIES`, `EXPOSURE`, and the crop and resize
- * lines. A picture processed with calibration files therefore carries less
- * provenance than one processed without, since without them no pcomb stage
- * runs at all.
- *
- * Nothing numerical is lost. `PRIMARIES` is always Radiance's default here
- * (`ra_xyze -r` writes those), and `EXPOSURE` is always 1 because
- * `nullify_exposure_value` passes `ra_xyze -o`, which sets `origexp = 1.0`
- * (`ra_xyze.c:105`). Every reader defaults a missing `EXPOSURE` to 1 anyway.
- *
- * Kept because `photometric_adjustment.rs:20` does it and this port must match
- * byte for byte. It is the only one of the four pcomb stages that passes `-h`,
- * which is what makes it look accidental rather than chosen: the three before
- * it accumulate header lines that this one throws away.
- */
-export function photometricArgs(calFile: string, input: string): string[] {
-  return ["-h", "-f", calFile, input];
 }
 
 /**

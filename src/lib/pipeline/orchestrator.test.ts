@@ -248,9 +248,10 @@ describe("stage ordering", () => {
       "/cal/fisheye.cal",
       "/work/resize.hdr",
     ]);
-    // the photometric adjustment is last and suppresses the header
+    // The photometric adjustment is last and passes the same arguments as the
+    // other three: it used to add `-h`, which discarded the provenance the
+    // earlier stages had accumulated (#241).
     expect(call(pcomb, 1).args).toEqual([
-      "-h",
       "-f",
       "/cal/cf.cal",
       "/work/projection_adjustment.hdr",
