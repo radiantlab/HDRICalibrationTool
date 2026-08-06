@@ -105,14 +105,13 @@ substitute it).
 
 It already reads every referenced file and builds the `files` map the worker
 writes into the virtual filesystem (`pipeline.worker.ts:55`). It gains a path
-map: every referenced file is staged under a sanitized work path, and the
-worker receives a **copy** of `params` whose path fields point at those work
-paths.
+map: every referenced file is staged under a sanitized path, and the worker
+receives a **copy** of `params` whose path fields point at those staged paths.
 
 The copy matters. `runs/page.tsx:95` records the executed inputs into run
 history for display, and the form holds the same strings. Mutating params in
-place would put `/work/...` in front of users; rewriting only what crosses into
-the worker leaves both untouched.
+place would put `/src/...` and `/cal/...` in front of users; rewriting only
+what crosses into the worker leaves both untouched.
 
 ### Naming
 
@@ -176,7 +175,7 @@ is rewritten in the same change, and so is the matching justification in
 
 ## Consequences
 
-**Error messages name work paths.** A stage that fails reports the path it was
+**Error messages name staged paths.** A stage that fails reports the path it was
 given, so a user would see `/src/3-DSC_0003.JPG` rather than their own file.
 Preserving the basename is what keeps the message identifiable, and that is the
 whole mitigation: nothing maps a staged path back to the one the user picked.
