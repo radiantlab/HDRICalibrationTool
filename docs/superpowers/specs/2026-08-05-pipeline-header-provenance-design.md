@@ -105,11 +105,21 @@ the worker leaves both untouched.
 Keep the basename, which carries meaning: `CF_f5d6.cal` names the aperture the
 file was derived at. Drop the directory, which is the part that leaks.
 
-| What | Work path |
+| What | Staged path |
 | --- | --- |
-| input frame *n* | `/work/src/<n>-<basename>` |
-| response function | `/work/src/response-<basename>` |
-| `.cal` file | `/work/cal/<slot>-<basename>` |
+| input frame *n* | `/src/<n>-<basename>` |
+| response function | `/src/response-<basename>` |
+| `.cal` file | `/cal/<slot>-<basename>` |
+
+Outside `/work`, deliberately. `WORK_DIR`'s comment states that every
+*intermediate* lives under that prefix, and `collectOutputs`
+(`wasm-runner.ts:404`) is built on it: after each tool it scans `/work` and
+files whatever it finds as something the tool produced. Sources staged under
+`/work/src` would appear there as directory entries and be collected as
+zero-byte outputs. The runner already expects sources to live elsewhere
+(`wasm-runner.ts:383`: "Source images keep whatever path the caller gave them,
+which is not necessarily under /work"), and `makeParentDirs` creates whatever
+depth they need.
 
 `<n>` is the frame's 1-based position in `params.inputImages`, matching the
 index `prepareInputs` already uses for `/work/inputN.tiff`. `<slot>` is one of
@@ -153,7 +163,7 @@ is rewritten in the same change, and so is the matching justification in
 ## Consequences
 
 **Error messages name work paths.** A stage that fails reports the path it was
-given, so a user would see `/work/src/3-DSC_0003.JPG` rather than their own
+given, so a user would see `/src/3-DSC_0003.JPG` rather than their own
 file. Preserving the basename keeps the message identifiable. Each user-facing
 error path is checked, and mapped back to the original where a message reaches
 the UI.
@@ -180,7 +190,7 @@ convenient and the desktop at minimum, since it is the only host that leaked:
    the crop and resize lines, and four `pcomb` lines showing basenames.
 3. It carries exactly one active `VIEW=` line, which is the `-h` hypothesis
    under test.
-4. A JPEG run's hdrgen provenance names `/work/src/...` frames, not host paths.
+4. A JPEG run's hdrgen provenance names `/src/...` frames, not host paths.
 
 Nothing in the suite asserts on header content today, so the manual run is the
 real verification. This adds to the manual-check debt tracked in #256 rather

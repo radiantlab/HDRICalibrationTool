@@ -7,7 +7,9 @@ output picture headers, and let the provenance chain through to the calibrated
 picture.
 
 **Architecture:** One new pure module names every file a run reads under a
-`/work` path that keeps the basename and drops the directory. The staging
+staged path that keeps the basename and drops the directory. Sources go under
+`/src` and `/cal`, outside `/work`, which the runner reserves for
+intermediates it collects after every tool. The staging
 boundary (`executeInWorker`) applies it, so the orchestrator, the filter stage
 and the `release` bookkeeping never learn about it. With no host path left in
 an argv, `-h` on the fourth correction stage stops being load-bearing and the
@@ -47,7 +49,7 @@ static export inside Tauri.
 | File | Responsibility |
 | --- | --- |
 | `src/lib/pipeline/stages.ts` | Gains `basename`, loses `photometricArgs`. Already owns `WORK_DIR` and `workPath`, so it is where path helpers live. |
-| `src/lib/pipeline/source-paths.ts` | **New.** Pure: given params, returns params naming work paths plus the work-path-to-source map. Knows nothing about IO. |
+| `src/lib/pipeline/source-paths.ts` | **New.** Pure: given params, returns params naming staged paths plus the staged-path-to-source map. Owns `SRC_DIR` and `CAL_DIR`. Knows nothing about IO. |
 | `src/app/pipeline/pipeline-worker-client.ts` | Applies the map when staging, sends the rewritten params. |
 | `src/lib/pipeline/orchestrator.ts` | Loses `suppressHeader` and the `photometricArgs` branch; names basenames in calibration warnings. |
 
@@ -62,7 +64,8 @@ static export inside Tauri.
 - Test: `src/lib/pipeline/source-paths.test.ts`
 
 **Interfaces:**
-- Consumes: `PipelineParams` from `./types`, `WORK_DIR` from `./stages`.
+- Consumes: `PipelineParams` from `./types`, `basename` from `./stages`.
+  Sources are staged outside `/work`, so `WORK_DIR` is not used here.
 - Produces: `basename(path: string): string` from `./stages`;
   `sanitizeSources(params: PipelineParams): SanitizedSources` and
   `interface SanitizedSources { params: PipelineParams; sources: Map<string, string> }`
@@ -190,8 +193,8 @@ describe("sanitizeSources", () => {
     );
 
     expect(staged.inputImages).toEqual([
-      "/work/src/1-DSC_0001.JPG",
-      "/work/src/2-DSC_0002.JPG",
+      "/src/1-DSC_0001.JPG",
+      "/src/2-DSC_0002.JPG",
     ]);
   });
 
@@ -206,8 +209,8 @@ describe("sanitizeSources", () => {
     );
 
     expect(new Set(staged.inputImages).size).toBe(2);
-    expect(sources.get("/work/src/1-DSC_0001.JPG")).toBe("/a/DSC_0001.JPG");
-    expect(sources.get("/work/src/2-DSC_0001.JPG")).toBe("/b/DSC_0001.JPG");
+    expect(sources.get("/src/1-DSC_0001.JPG")).toBe("/a/DSC_0001.JPG");
+    expect(sources.get("/src/2-DSC_0001.JPG")).toBe("/b/DSC_0001.JPG");
   });
 
   it("names each .cal after the correction it belongs to", () => {
@@ -220,13 +223,13 @@ describe("sanitizeSources", () => {
       })
     );
 
-    expect(staged.fisheyeCorrectionCal).toBe("/work/cal/fisheye-fisheye_corr.cal");
+    expect(staged.fisheyeCorrectionCal).toBe("/cal/fisheye-fisheye_corr.cal");
     expect(staged.vignettingCorrectionCal).toBe(
-      "/work/cal/vignetting-vignetting.cal"
+      "/cal/vignetting-vignetting.cal"
     );
-    expect(staged.neutralDensityCal).toBe("/work/cal/neutral-NDfilter.cal");
+    expect(staged.neutralDensityCal).toBe("/cal/neutral-NDfilter.cal");
     expect(staged.photometricAdjustmentCal).toBe(
-      "/work/cal/photometric-CF_f5d6.cal"
+      "/cal/photometric-CF_f5d6.cal"
     );
   });
 
@@ -241,8 +244,8 @@ describe("sanitizeSources", () => {
     );
 
     expect(staged.neutralDensityCal).not.toBe(staged.photometricAdjustmentCal);
-    expect(sources.get("/work/cal/neutral-same.cal")).toBe("/cal/same.cal");
-    expect(sources.get("/work/cal/photometric-same.cal")).toBe("/cal/same.cal");
+    expect(sources.get("/cal/neutral-same.cal")).toBe("/cal/same.cal");
+    expect(sources.get("/cal/photometric-same.cal")).toBe("/cal/same.cal");
   });
 
   it("names the response function", () => {
@@ -251,7 +254,7 @@ describe("sanitizeSources", () => {
     );
 
     expect(staged.responseFunction).toBe(
-      "/work/src/response-response_function.rsp"
+      "/src/response-response_function.rsp"
     );
   });
 
@@ -293,9 +296,9 @@ describe("sanitizeSources", () => {
     );
 
     expect([...sources.keys()]).toEqual([
-      "/work/src/1-1.jpg",
-      "/work/src/response-resp.rsp",
-      "/work/cal/fisheye-f.cal",
+      "/src/1-1.jpg",
+      "/src/response-resp.rsp",
+      "/cal/fisheye-f.cal",
     ]);
   });
 
@@ -339,8 +342,19 @@ Create `src/lib/pipeline/source-paths.ts`:
  * Pure, and deliberately so. It decides names; the caller stages the bytes.
  */
 
-import { basename, WORK_DIR } from "./stages";
+import { basename } from "./stages";
 import type { PipelineParams } from "./types";
+
+/**
+ * Sources live outside `/work`, which is reserved for intermediates.
+ *
+ * `collectOutputs` scans `/work` after every tool and files what it finds as
+ * something that tool produced (`wasm-runner.ts:404`). A source staged under
+ * `/work` would be collected as an output. The runner already expects sources
+ * elsewhere, and `makeParentDirs` creates whatever depth they need.
+ */
+const SRC_DIR = "/src";
+const CAL_DIR = "/cal";
 
 /**
  * The four correction slots, named after the stage rather than the form field.
@@ -368,7 +382,7 @@ export function sanitizeSources(params: PipelineParams): SanitizedSources {
   // 1-based, matching the index `prepareInputs` gives the converted TIFFs, so
   // the two numbering schemes read the same way in a status log.
   const inputImages = params.inputImages.map((path, index) => {
-    const work = `${WORK_DIR}/src/${index + 1}-${basename(path)}`;
+    const work = `${SRC_DIR}/${index + 1}-${basename(path)}`;
     sources.set(work, path);
     return work;
   });
@@ -376,7 +390,7 @@ export function sanitizeSources(params: PipelineParams): SanitizedSources {
   const staged: PipelineParams = { ...params, inputImages };
 
   if (params.responseFunction !== "") {
-    const work = `${WORK_DIR}/src/response-${basename(params.responseFunction)}`;
+    const work = `${SRC_DIR}/response-${basename(params.responseFunction)}`;
     sources.set(work, params.responseFunction);
     staged.responseFunction = work;
   }
@@ -388,7 +402,7 @@ export function sanitizeSources(params: PipelineParams): SanitizedSources {
     if (path === "") {
       continue;
     }
-    const work = `${WORK_DIR}/cal/${slot}-${basename(path)}`;
+    const work = `${CAL_DIR}/${slot}-${basename(path)}`;
     sources.set(work, path);
     staged[field] = work;
   }
@@ -448,7 +462,7 @@ test at line 211 (`"still hands the worker the bytes it staged"`) with:
     // Protecting the caller's buffers by sending the worker an empty view
     // would be no fix at all, so what arrived is asserted as well as what
     // survived. The key is the staged name, not the source: see #241.
-    expect(received[0]).toEqual({ "/work/src/1-a.jpg": [1, 2, 3] });
+    expect(received[0]).toEqual({ "/src/1-a.jpg": [1, 2, 3] });
   });
 ```
 
@@ -473,9 +487,9 @@ Then append these tests inside the same `describe`:
     );
 
     expect(Object.keys(received[0]).sort()).toEqual([
-      "/work/cal/photometric-CF_f5d6.cal",
-      "/work/src/1-DSC_0001.JPG",
-      "/work/src/response-response_function.rsp",
+      "/cal/photometric-CF_f5d6.cal",
+      "/src/1-DSC_0001.JPG",
+      "/src/response-response_function.rsp",
     ]);
   });
 
@@ -487,7 +501,7 @@ Then append these tests inside the same `describe`:
 
     // The bytes have to come from where the file actually is; only the name
     // the worker sees changes.
-    expect(received[0]["/work/src/1-a.jpg"]).toEqual([9, 9]);
+    expect(received[0]["/src/1-a.jpg"]).toEqual([9, 9]);
   });
 
   it("leaves the caller's params naming the files the user picked", async () => {
@@ -747,13 +761,13 @@ In `src/lib/pipeline/orchestrator.test.ts`, inside the
 ```ts
   it("names the file rather than the path it was staged under", async () => {
     const runner = new FakeRunner();
-    await runner.writeFile("/work/cal/vignetting-VC_f5d6.cal", HARDCODED);
+    await runner.writeFile("/cal/vignetting-VC_f5d6.cal", HARDCODED);
     const events: PipelineStatusPayload[] = [];
 
     await runPipeline({
       emit: (payload) => events.push(payload),
       params: params({
-        vignettingCorrectionCal: "/work/cal/vignetting-VC_f5d6.cal",
+        vignettingCorrectionCal: "/cal/vignetting-VC_f5d6.cal",
       }),
       runner,
     });
@@ -763,7 +777,7 @@ In `src/lib/pipeline/orchestrator.test.ts`, inside the
     );
     // The transcript is stored with the run, so a path in it is a path kept.
     expect(warning?.message).toContain("VC_f5d6.cal");
-    expect(warning?.message).not.toContain("/work/cal/");
+    expect(warning?.message).not.toContain("/cal/");
   });
 
   it("names the file when it cannot be read either", async () => {
@@ -772,7 +786,7 @@ In `src/lib/pipeline/orchestrator.test.ts`, inside the
 
     await runPipeline({
       emit: (payload) => events.push(payload),
-      params: params({ fisheyeCorrectionCal: "/work/cal/fisheye-missing.cal" }),
+      params: params({ fisheyeCorrectionCal: "/cal/fisheye-missing.cal" }),
       runner,
     });
 
@@ -780,14 +794,14 @@ In `src/lib/pipeline/orchestrator.test.ts`, inside the
       (event) => event.step === "cal_check"
     );
     expect(warning?.message).toContain("missing.cal");
-    expect(warning?.message).not.toContain("/work/cal/");
+    expect(warning?.message).not.toContain("/cal/");
   });
 ```
 
 - [ ] **Step 2: Run them and watch them fail**
 
 Run: `npx jest src/lib/pipeline/orchestrator.test.ts -t "names the file"`
-Expected: FAIL, both, on the `not.toContain("/work/cal/")` assertion.
+Expected: FAIL, both, on the `not.toContain("/cal/")` assertion.
 
 - [ ] **Step 3: Name the basename in both messages**
 
@@ -838,7 +852,7 @@ npx ultracite fix src/lib/pipeline/orchestrator.ts src/lib/pipeline/orchestrator
 git add src/lib/pipeline/orchestrator.ts src/lib/pipeline/orchestrator.test.ts
 git commit -m "fix(pipeline): name the calibration file in warnings, not its staging path
 
-Staged files are named /work/cal/<slot>-<file> now, which means nothing to a
+Staged files are named /cal/<slot>-<file> now, which means nothing to a
 user reading a status log. The run transcript is stored with the run, so this
 is also the last place a full host path was being written down.
 
@@ -897,12 +911,12 @@ Confirm, and record each in the design doc:
 1. No host path, home directory, user name or email address anywhere.
 2. The calibrated picture carries the provenance chain: camera, capture date,
    hdrgen's frame list, the crop and resize lines, and four `pcomb` lines
-   showing `/work/cal/<slot>-<basename>`.
+   showing `/cal/<slot>-<basename>`.
 3. Exactly one **active** `VIEW=` line. This is the `-h` hypothesis under test:
    `-h` may have been standing in for Table 3 step 10's `sed '/VIEW/d'`. A
    second active line here means the flag was load-bearing after all, so stop
    and report rather than working around it.
-4. hdrgen's provenance names `/work/src/<n>-<basename>` frames.
+4. hdrgen's provenance names `/src/<n>-<basename>` frames.
 
 - [ ] **Step 5: Repeat with the example CR2 bracket**
 
