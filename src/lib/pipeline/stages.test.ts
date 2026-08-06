@@ -287,7 +287,7 @@ describe("basename", () => {
   });
 
   // A path ending in a separator has no segment to keep, and an empty string
-  // would produce a work path ending in "-", which reads as a truncation.
+  // would produce a staged path ending in "-", which reads as a truncation.
   it("falls back to a placeholder when there is no segment", () => {
     expect(basename("/some/directory/")).toBe("file");
   });

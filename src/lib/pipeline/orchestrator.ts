@@ -590,7 +590,7 @@ async function warnIfResolutionDependent(
   width: number,
   height: number
 ): Promise<void> {
-  // The staged name, not the path. The path is a work path now, which means
+  // The staged name, not the path. The path is a staged path now, which means
   // nothing to a user, and the run transcript is stored with the run, so
   // whatever goes in a warning is kept alongside it.
   const name = basename(calPath);

@@ -177,10 +177,12 @@ is rewritten in the same change, and so is the matching justification in
 ## Consequences
 
 **Error messages name work paths.** A stage that fails reports the path it was
-given, so a user would see `/src/3-DSC_0003.JPG` rather than their own
-file. Preserving the basename keeps the message identifiable. Each user-facing
-error path is checked, and mapped back to the original where a message reaches
-the UI.
+given, so a user would see `/src/3-DSC_0003.JPG` rather than their own file.
+Preserving the basename is what keeps the message identifiable, and that is the
+whole mitigation: nothing maps a staged path back to the one the user picked.
+A failing stage still surfaces the tool's own stderr through `describeError`
+(`types.ts:106`), which names the staged path. The two calibration warnings are
+the exception, and they name the basename outright.
 
 **Existing pictures are unaffected.** This changes what future runs write. It
 does not and cannot clean headers already written, and anyone who has published
@@ -218,9 +220,16 @@ tools, with a calibration file at
 | four corrections, unsanitised cal path | **4**, one per `pcomb` stage | 1 |
 | real 18-frame merge, shipped wasm hdrgen, sources under `/src` | 0 | 0 (written later) |
 | hdrgen given deep absolute input paths | 0 | 1 |
+| the whole post-merge sequence through the shipped wasm binaries, staged paths | 0 | 1 |
 
 So the guard catches the reported leak, catches it once per correction stage,
 and does not fire on clean output.
+
+Every row above is the **picture**. The false-colour map is deliberately not
+asserted on for the view line: `falsecolor` composes it with `pcompos -h`, so
+it inherits no header and carries no `VIEW=` at all. Asserting a count either
+way would pin behaviour this design lists as a separate problem to be filed.
+Both path assertions do apply to it.
 
 ### The `-h` hypothesis, settled
 

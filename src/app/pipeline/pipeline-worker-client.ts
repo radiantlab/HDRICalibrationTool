@@ -78,9 +78,9 @@ export async function executeInWorker(
 
   // Staged up front rather than lazily: a missing input should fail before any
   // wasm module is instantiated, not eight stages in.
-  for (const [work, source] of sources) {
+  for (const [staged, source] of sources) {
     // biome-ignore lint/performance/noAwaitInLoops: reads are sequential so a missing file fails on its own path rather than inside an aggregate rejection
-    files[work] = owned(await options.read(source));
+    files[staged] = owned(await options.read(source));
   }
 
   // Hand over RAW conversions already in hand from drawing the thumbnails.

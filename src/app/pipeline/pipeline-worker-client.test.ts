@@ -244,7 +244,7 @@ describe("staging bytes for the worker", () => {
     ]);
   });
 
-  it("reads from the source path and stages under the work path", async () => {
+  it("reads from the source path and stages under the staged path", async () => {
     installWorkerDouble();
     const store = sessionStore({ "/session/1/a.jpg": [9, 9] });
 
@@ -263,7 +263,7 @@ describe("staging bytes for the worker", () => {
     await run(store, original);
 
     // Run history records these for display. Rewriting them in place would
-    // show the user /work paths for files they chose themselves.
+    // show the user staged paths for files they chose themselves.
     expect(original.inputImages).toEqual(["/session/1/a.jpg"]);
   });
 
