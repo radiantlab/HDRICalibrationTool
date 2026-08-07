@@ -485,14 +485,20 @@ async function maybeFilter(
   }
 
   const before = params.inputImages.length;
+  const started = performance.now();
   const kept = await filterImages(
     params.inputImages,
     { diameter: params.diameter, xleft: params.xleft, ytop: params.ytop },
     decodeImage
   );
+  // The duration is reported because this stage runs no WebAssembly at all --
+  // it decodes each frame with `createImageBitmap`. When a whole run is slow,
+  // whether this stage slowed down with it is what says if the cause is the
+  // WebAssembly build or something underneath both.
+  const elapsed = (performance.now() - started) / 1000;
   emit({
     kind: "step",
-    message: `Filtering images: kept ${kept.length} of ${before}`,
+    message: `Filtering images: kept ${kept.length} of ${before} in ${elapsed.toFixed(1)}s`,
     progress: null,
     step: "filter_images",
   });

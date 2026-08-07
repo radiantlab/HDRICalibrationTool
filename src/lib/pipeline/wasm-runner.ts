@@ -200,6 +200,37 @@ export interface WasmRunnerOptions {
   load: ModuleLoader;
   /** Reports each tool's peak wasm heap, for surfacing memory pressure. */
   onHeapPeak?: (tool: string, bytes: number) => void;
+  /** Reports where a tool invocation spent its time. See `ToolTiming`. */
+  onTiming?: (timing: ToolTiming) => void;
+}
+
+/**
+ * Where one tool invocation spent its time.
+ *
+ * Exists because "the deployed site is slow" is not a question inspection can
+ * answer. A stage that takes four minutes might be downloading, compiling,
+ * instantiating or computing, and those have nothing to do with each other:
+ * the first two are the host's problem, the last is the build's. Without this
+ * split the only honest answer is a guess, and guesses about this have already
+ * been wrong more than once.
+ *
+ * `loadMs` and `compileMs` are network on a tool's first use in a run and
+ * essentially zero afterwards, since both are cached per runner.
+ */
+export interface ToolTiming {
+  /** Reading back whatever it produced. */
+  collectMs: number;
+  /** Fetching and compiling the `.wasm`. */
+  compileMs: number;
+  /** Building an instance from the compiled module. */
+  instantiateMs: number;
+  /** Fetching and evaluating the Emscripten glue. */
+  loadMs: number;
+  /** `callMain`: the tool actually running. */
+  runMs: number;
+  /** Copying the inputs this call names into the instance's filesystem. */
+  stageMs: number;
+  tool: string;
 }
 
 /** Where a captured stdout is parked inside an instance before being read back. */
@@ -214,6 +245,7 @@ export class WasmToolRunner implements ToolRunner {
   private readonly onHeapPeak:
     | ((tool: string, bytes: number) => void)
     | undefined;
+  private readonly onTiming: ((timing: ToolTiming) => void) | undefined;
   /** Factories are cached; the *instances* they produce never are. */
   private readonly factories = new Map<string, Promise<ModuleFactory>>();
 
@@ -221,6 +253,7 @@ export class WasmToolRunner implements ToolRunner {
     this.load = options.load;
     this.compile = options.compile;
     this.onHeapPeak = options.onHeapPeak;
+    this.onTiming = options.onTiming;
   }
 
   writeFile(path: string, data: Uint8Array | string): Promise<void> {
@@ -279,10 +312,18 @@ export class WasmToolRunner implements ToolRunner {
   }
 
   async run(tool: string, args: string[], io?: ToolIo): Promise<ToolResult> {
+    const clock = [performance.now()];
+    const mark = () => {
+      clock.push(performance.now());
+      return clock.at(-1) as number;
+    };
+
     const factory = await this.factoryFor(tool);
+    mark();
 
     const stderr: string[] = [];
     const compiled = await this.compiledFor(tool);
+    mark();
     const instance = await factory({
       // Hands the glue an already-compiled module rather than letting it fetch
       // and compile its own. Emscripten calls this instead of everything else
@@ -316,14 +357,18 @@ export class WasmToolRunner implements ToolRunner {
       thisProgram: tool,
     });
 
+    mark();
+
     makeDir(instance, WORK_DIR);
     const staged = this.stageInputs(instance, args, io);
     instance.FS.chdir(WORK_DIR);
+    mark();
 
     const captureTo = io?.captureStdout ? CAPTURE_PATH : io?.stdout;
     redirectStdio(instance, io?.stdin, captureTo);
 
     const code = instance.callMain(args);
+    mark();
 
     this.onHeapPeak?.(tool, instance.HEAPU8.length);
 
@@ -333,6 +378,19 @@ export class WasmToolRunner implements ToolRunner {
       stdout = new TextDecoder().decode(readIfPresent(instance, CAPTURE_PATH));
     }
     this.collectOutputs(instance, staged);
+    mark();
+
+    const elapsed = (index: number) =>
+      (clock[index] as number) - (clock[index - 1] as number);
+    this.onTiming?.({
+      collectMs: elapsed(6),
+      compileMs: elapsed(2),
+      instantiateMs: elapsed(3),
+      loadMs: elapsed(1),
+      runMs: elapsed(5),
+      stageMs: elapsed(4),
+      tool,
+    });
 
     return { code, stderr: stderr.join("\n"), stdout };
   }
