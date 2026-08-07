@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { $, browser } from "@wdio/globals";
-import { describe, it } from "mocha";
+import { after, describe, it } from "mocha";
 
 const E2E_DROP_EVENT = "__lumilab_e2e_drop__";
 const jpegInputDirectory = fileURLToPath(
@@ -183,6 +183,39 @@ async function setTextInputValue(selector: string, value: string) {
   );
 }
 
+/**
+ * The settings this suite found before it changed anything.
+ *
+ * The desktop app and this suite share one Tauri identifier, which is
+ * deliberate -- renaming it would orphan every user's presets and history --
+ * but it means they also share one `localStorage`. Writing an output folder
+ * here therefore writes it into the real application on the developer's own
+ * machine, and leaving it there points their installed build at a temporary
+ * directory that will not exist next week.
+ *
+ * That is not hypothetical: a path from a run predating the LumiLab rename was
+ * still in a released build's settings months later, and the first run after
+ * it failed with `failed to open file at path: ... (os error 2)` once the whole
+ * pipeline had already finished.
+ */
+let settingsBeforeSuite: string | null = null;
+
+async function rememberPersistedSettings() {
+  settingsBeforeSuite = await browser.execute(
+    () => window.localStorage.getItem("hdr-settings") ?? null
+  );
+}
+
+async function restorePersistedSettings() {
+  await browser.execute((previous: string | null) => {
+    if (previous === null) {
+      window.localStorage.removeItem("hdr-settings");
+      return;
+    }
+    window.localStorage.setItem("hdr-settings", previous);
+  }, settingsBeforeSuite);
+}
+
 async function setPersistedSettings(nextSettings: { outputPath?: string }) {
   await browser.execute((settingsPatch) => {
     const storageKey = "hdr-settings";
@@ -342,6 +375,13 @@ function getPipelineFailureMessage(outputDir: string): string | null {
 }
 
 describe("LumiLab", () => {
+  // Runs whether or not the suite passed. A failed run is exactly when the
+  // developer's own settings would otherwise be left pointing at a temporary
+  // directory, because nothing later in the suite would have put them back.
+  after(async () => {
+    await restorePersistedSettings();
+  });
+
   it("opens to the home page", async () => {
     await browser.waitUntil(
       async () => (await browser.getUrl()).endsWith("/pipeline"),
@@ -378,6 +418,7 @@ describe("LumiLab", () => {
   const generatesHdr = process.platform === "win32" ? it.skip : it;
 
   generatesHdr("generates an HDR image", async () => {
+    await rememberPersistedSettings();
     await setPersistedSettings({ outputPath: tempOutputDirectory });
     await browser.refresh();
     await browser.waitUntil(
