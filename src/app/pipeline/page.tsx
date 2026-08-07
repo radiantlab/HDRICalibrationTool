@@ -81,7 +81,7 @@ import { unsuppliedCalibrationFiles } from "./calibration-files";
 import { LensMaskInput } from "./lens-mask-input";
 import { useGlobalPipelineConfig } from "./pipeline-config-store";
 import { PipelineStatus } from "./pipeline-status";
-import { describeRunBlocker } from "./preflight";
+import { describeRunProblem } from "./preflight";
 import { PresetBar } from "./preset-bar";
 import { describeBatchSummary, runBatch, type SetPosition } from "./run-batch";
 import {
@@ -467,10 +467,18 @@ export default function Home() {
             // what every set is run with. Deliberately not per set: the mask
             // is checked against the selected preview image only, and
             // validating each set's own dimensions is separate work.
-            const blocker = describeRunBlocker(data, maskSize);
-            if (blocker) {
-              toast.error(blocker);
-              await recordAttempt(blocker, [], [], "", 1, logAtSubmit);
+            // Includes the output folder, checked before the work rather than
+            // after it. A missing folder used to surface as a raw filesystem
+            // error once every stage had already run, throwing away the whole
+            // pipeline and saying nothing about which folder was wrong.
+            const problem = await describeRunProblem(
+              data,
+              maskSize,
+              settings.outputPath
+            );
+            if (problem) {
+              toast.error(problem);
+              await recordAttempt(problem, [], [], "", 1, logAtSubmit);
               return;
             }
 

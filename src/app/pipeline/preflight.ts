@@ -1,3 +1,4 @@
+import { describeOutputFolderProblem } from "@/lib/host/save";
 import type { pipelineConfig } from "./(pipeline-configuration)/config-provider";
 import { maskBox } from "./build-pipeline-params";
 import { describeMaskOverflow } from "./lens-mask-fit";
@@ -44,4 +45,24 @@ export function describeRunBlocker(
   // crop stage would catch part of this, but only after every exposure has
   // been merged, which is the expensive part of a run.
   return maskSize ? describeMaskOverflow(maskBox(data), maskSize) : null;
+}
+
+/**
+ * The first reason this run cannot start, or null if it can.
+ *
+ * One gate rather than two. `describeRunBlocker` is pure and answers from the
+ * configuration alone; the output folder can only be answered by asking the
+ * filesystem, and on a browser there is no folder to ask about. Callers want
+ * "can this run start", so the split is an implementation detail rather than
+ * something every caller should have to remember to check twice.
+ */
+export async function describeRunProblem(
+  data: pipelineConfig,
+  maskSize: [width: number, height: number] | null,
+  outputPath: string
+): Promise<string | null> {
+  return (
+    describeRunBlocker(data, maskSize) ??
+    (await describeOutputFolderProblem(outputPath))
+  );
 }
