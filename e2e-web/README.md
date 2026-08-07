@@ -48,5 +48,5 @@ wall clock.
 
 ## Fixtures
 
-Read from `../e2e-tests/test/inputs/` rather than copied, so both suites run
+Read from the repository's `example/` directory rather than copied, so both suites run
 the same bracket and cannot drift on to different inputs while both stay green.

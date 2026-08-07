@@ -76,11 +76,11 @@ Open the application created by the installer in the previous step. You should b
 
 ### Uploading Response File and Image Information
 
-Upload the response file that should have a file extension of `.rsp` and fill in the image data for the cropping, resizing and view settings. Check the `example` directory for more information.
+Upload the response file that should have a file extension of `.rsp` and fill in the image data for the cropping, resizing and view settings. The [`example`](./example) directory holds a complete set: an 18-frame JPEG bracket, a 10-frame CR2 bracket, a response function, and calibration files for several apertures. It is the same data the test suites run, so it is known to work.
 
 ### Uploading Calibration Files
 
-Upload the calibration files for the remaining fields. These should have a `.cal` file extension. Check the `example` directory for more information.
+Upload the calibration files for the remaining fields. These should have a `.cal` file extension; [`example/calibration_files`](./example/calibration_files) has fisheye, vignetting, neutral-density and calibration-factor examples, the latter two named by the aperture they were derived at.
 
 ### Settings
 

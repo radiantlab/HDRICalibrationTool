@@ -1,10 +1,12 @@
 /**
  * Shared fixtures and the two browser-specific seams the specs are built on.
  *
- * Input fixtures are read from `../e2e-tests/test/inputs/` rather than copied.
- * The JPEG bracket and its calibration files are the same bracket the desktop
- * suite runs, and duplicating them would let the two suites silently drift on
- * to different inputs while both reported green.
+ * Input fixtures are read from the repository's `example/` directory rather
+ * than copied. That directory is also what the README sends users to, so the
+ * sample data people are told to look at is the sample data three test suites
+ * exercise, and it cannot quietly stop working. Copying it per suite is how
+ * two copies of `fisheye_corr.cal` ended up disagreeing about what to do
+ * outside the lens circle, with the wrong one shipped as the example.
  */
 
 import { readdirSync, readFileSync } from "node:fs";
@@ -14,7 +16,7 @@ import type { Download, Page } from "@playwright/test";
 import { expect } from "@playwright/test";
 
 const inputsDirectory = fileURLToPath(
-  new URL("../../e2e-tests/test/inputs", import.meta.url)
+  new URL("../../example", import.meta.url)
 );
 
 export const jpegDirectory = path.join(inputsDirectory, "JPEG");

@@ -8,31 +8,37 @@ import { after, describe, it } from "mocha";
 
 const E2E_DROP_EVENT = "__lumilab_e2e_drop__";
 const jpegInputDirectory = fileURLToPath(
-  new URL("../inputs/JPEG", import.meta.url)
+  new URL("../../../example/JPEG", import.meta.url)
 );
 const responseFunctionPath = fileURLToPath(
   new URL(
-    "../inputs/response_function_files/Response_function.rsp",
+    "../../../example/response_function_files/Response_function.rsp",
     import.meta.url
   )
 );
 const fisheyeCorrectionPath = fileURLToPath(
-  new URL("../inputs/calibration_files/fisheye_corr.cal", import.meta.url)
+  new URL(
+    "../../../example/calibration_files/fisheye_corr.cal",
+    import.meta.url
+  )
 );
 const vignettingCorrectionPath = fileURLToPath(
-  new URL("../inputs/calibration_files/vignetting_f8.cal", import.meta.url)
+  new URL(
+    "../../../example/calibration_files/vignetting_f8.cal",
+    import.meta.url
+  )
 );
 const neutralDensityCorrectionPath = fileURLToPath(
   new URL(
-    "../inputs/calibration_files/NDfilter_no_transform.cal",
+    "../../../example/calibration_files/NDfilter_no_transform.cal",
     import.meta.url
   )
 );
 const calibrationFactorPath = fileURLToPath(
-  new URL("../inputs/calibration_files/CF_f8.cal", import.meta.url)
+  new URL("../../../example/calibration_files/CF_f8.cal", import.meta.url)
 );
 const lensInformationPath = fileURLToPath(
-  new URL("../inputs/JPEG/ImageLensInformation.txt", import.meta.url)
+  new URL("../../../example/JPEG/ImageLensInformation.txt", import.meta.url)
 );
 // No tool paths. CI used to download Radiance and hdrgen from their GitHub
 // releases and point E2E_RADIANCE_PATH / E2E_HDRGEN_PATH at the extracted bin

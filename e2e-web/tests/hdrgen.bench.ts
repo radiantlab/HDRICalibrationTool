@@ -23,9 +23,7 @@ import { fileURLToPath } from "node:url";
 import { test } from "@playwright/test";
 
 const WASM_DIR = fileURLToPath(new URL("../../public/wasm", import.meta.url));
-const INPUTS = fileURLToPath(
-  new URL("../../e2e-tests/test/inputs", import.meta.url)
-);
+const INPUTS = fileURLToPath(new URL("../../example", import.meta.url));
 const JPEG_DIR = path.join(INPUTS, "JPEG");
 const OUT = process.env.BENCH_OUT ?? "/tmp/hdrgen-bench-browser.json";
 

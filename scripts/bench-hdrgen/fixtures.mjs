@@ -12,9 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 /** The same bracket the two end-to-end suites use. */
-export const INPUTS = fileURLToPath(
-  new URL("../../e2e-tests/test/inputs", import.meta.url)
-);
+export const INPUTS = fileURLToPath(new URL("../../example", import.meta.url));
 
 export const RESPONSE = path.join(
   INPUTS,
