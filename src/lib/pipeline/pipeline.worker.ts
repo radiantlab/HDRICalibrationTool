@@ -32,8 +32,100 @@ import {
 
 declare const self: DedicatedWorkerGlobalScope;
 
+/**
+ * Below this, a tool invocation is not worth a line in the run console.
+ *
+ * One second is comfortably above anything healthy -- a whole 18-frame merge
+ * is around fifteen -- so a quiet log means nothing was slow, and any line at
+ * all is a stage worth looking at.
+ */
+const SLOW_TOOL_MS = 1000;
+
 function post(message: PipelineWorkerMessage, transfer: Transferable[] = []) {
   self.postMessage(message, transfer);
+}
+
+/**
+ * Iterations of a trivial arithmetic loop, used to size the engine.
+ *
+ * Small enough that the check itself is unnoticeable next to a run that takes
+ * tens of seconds, and large enough that the result is not dominated by timer
+ * resolution.
+ */
+const CALIBRATION_ITERATIONS = 3e7;
+
+/** What this loop costs on a healthy engine, measured: 32 ms in Chromium. */
+const HEALTHY_MS = 30;
+
+/**
+ * Above this, the engine is running far below what a working JIT delivers.
+ *
+ * An absolute threshold conflates a slow device with a disabled JIT, and
+ * nothing available from JavaScript tells them apart, so this errs towards
+ * firing. That is the right way round: the message is true either way -- a run
+ * really will take minutes -- and a spurious line costs a reader a moment,
+ * while a missed one costs them an afternoon of blaming the tool.
+ *
+ * For scale: 32 ms here with a JIT, 271 ms on the same machine with Edge's
+ * enhanced security turning it off.
+ */
+const NO_JIT_MS = 150;
+
+/**
+ * How fast this engine actually executes code.
+ *
+ * Worth measuring because the answer is occasionally catastrophic and
+ * completely invisible. Every major browser can be put in a state where
+ * JavaScript optimisation is off, and the cost is roughly an order of
+ * magnitude across everything, WebAssembly included:
+ *
+ *   - Edge's "Enhance your security on the web", which on its Balanced setting
+ *     keeps optimisation only for sites visited often -- so a freshly deployed
+ *     URL is excluded while `localhost` is not, which is what makes this look
+ *     like a hosting problem.
+ *   - Chrome and other Chromium browsers, per site, since Chromium 122.
+ *   - Safari, as part of Lockdown Mode, which cannot be turned off separately.
+ *   - Firefox via `javascript.options.ion`, and Tor Browser at "Safer".
+ *
+ * Managed machines reach the same place without anyone choosing it: the CIS
+ * benchmark for Edge recommends disabling JIT outright at Level 2.
+ *
+ * Observed here: thirty seconds became six and a half minutes, with no error,
+ * no warning and nothing different about the page. That is indistinguishable
+ * from "this tool is slow" unless something says otherwise, and it cost most
+ * of a day to identify once.
+ *
+ * The message reports the observation and offers the usual causes rather than
+ * asserting one, because a genuinely slow device lands here too and deserves a
+ * truthful message rather than a wrong diagnosis.
+ */
+function reportEngineSpeed(): void {
+  const started = performance.now();
+  let sink = 0;
+  for (let i = 0; i < CALIBRATION_ITERATIONS; i += 1) {
+    sink += i % 7;
+  }
+  const elapsed = performance.now() - started;
+  if (elapsed < NO_JIT_MS || sink === -1) {
+    return;
+  }
+
+  post({
+    kind: "status",
+    payload: {
+      kind: "warning",
+      message:
+        `This browser is executing code about ${Math.round(elapsed / HEALTHY_MS)}x slower ` +
+        "than expected, so this run will take minutes rather than seconds. The usual " +
+        "cause is a browser security setting that turns off JavaScript optimisation, " +
+        "often only for sites you have not visited before: Edge's \"Enhance your " +
+        "security on the web\" (Settings, Privacy), Chrome's JavaScript optimisation " +
+        "setting (Settings, Privacy and security, Security), or Safari's Lockdown " +
+        "Mode. Allowing this site restores full speed.",
+      progress: null,
+      step: "engine_speed",
+    },
+  });
 }
 
 self.addEventListener("message", (event: MessageEvent<PipelineRunRequest>) => {
@@ -47,9 +139,41 @@ self.addEventListener("message", (event: MessageEvent<PipelineRunRequest>) => {
 });
 
 async function run(request: PipelineRunRequest): Promise<void> {
+  reportEngineSpeed();
+
   const runner = new WasmToolRunner({
     compile: urlModuleCompiler(request.wasmBaseUrl),
     load: urlModuleLoader(request.wasmBaseUrl),
+    // A tool only explains itself when it was slow. A run where everything is
+    // quick says nothing, and a run where one stage takes minutes says which
+    // part of it did: fetching the module, compiling it, or computing. That
+    // distinction is the difference between a hosting problem and a build one,
+    // and it cannot be recovered afterwards from wall-clock timestamps alone.
+    onTiming: (timing) => {
+      const total =
+        timing.loadMs +
+        timing.compileMs +
+        timing.instantiateMs +
+        timing.stageMs +
+        timing.runMs +
+        timing.collectMs;
+      if (total < SLOW_TOOL_MS) {
+        return;
+      }
+      const ms = (value: number) => `${(value / 1000).toFixed(1)}s`;
+      post({
+        kind: "status",
+        payload: {
+          kind: "step",
+          message:
+            `${timing.tool} took ${ms(total)}: fetch+compile ${ms(timing.loadMs + timing.compileMs)}, ` +
+            `instantiate ${ms(timing.instantiateMs)}, stage ${ms(timing.stageMs)}, ` +
+            `run ${ms(timing.runMs)}, collect ${ms(timing.collectMs)}`,
+          progress: null,
+          step: "timing",
+        },
+      });
+    },
   });
 
   for (const [path, bytes] of Object.entries(request.files)) {
