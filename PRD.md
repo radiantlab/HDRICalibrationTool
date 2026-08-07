@@ -76,7 +76,7 @@ Every staged image set runs, in sequence (`run-batch.ts`).
 
 The two former Rust commands have TypeScript equivalents: raw conversion rides on the `dcraw_emu` WebAssembly build behind a two-tier cache that survives a reload (§7), and `src/lib/hdr-metadata.ts` parses a Radiance header into the key/value map the viewer displays.
 
-**Numerical parity.** The WebAssembly build was validated against native binaries on the reference brackets: the RAW/TIFF path matches to 1e-8, and the JPEG path differs by an unbiased ~1.7%, traced to the float IDCT and settled deliberately in #235. Wall clock is roughly 2x native, the cost of a single-threaded build that needs no COOP/COEP headers and therefore hosts anywhere.
+**Numerical parity.** The WebAssembly build was validated against native binaries on the reference brackets: the RAW/TIFF path matches to 1e-8, and the JPEG path differs by an unbiased ~1.7%, traced to the float IDCT and settled deliberately in #235. Wall clock is roughly native, measured rather than estimated: merging the 18-frame reference bracket takes 13.4 s in WebKit and 14.5 s in Chromium against 13.6 s for a native arm64 build of the same commit ([`scripts/bench-hdrgen`](./scripts/bench-hdrgen/README.md)). This paragraph previously claimed ~2x native, which was never measured and is pessimistic for the browser, the case the web build actually runs. Two caveats hold the number honest: the native leg reads its frames from disk inside the timed region and the WebAssembly legs do not, and a merge is not pure compute, so a workload of tight numerical loops would likely separate them more. The build is single-threaded on purpose, which is what lets it host anywhere without COOP/COEP headers.
 
 ## 5. Feature: Image Viewer
 

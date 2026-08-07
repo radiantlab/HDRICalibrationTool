@@ -23,6 +23,10 @@ const config = {
     "<rootDir>/node_modules/",
     "<rootDir>/e2e-tests/",
     "<rootDir>/e2e-web/",
+    // The hdrgen benchmark's tests run under `node --test`, not Jest. Jest
+    // does collect `.mjs`, so without this it pulls them into the jsdom
+    // environment where `node:test` has no meaning.
+    "<rootDir>/scripts/",
     "<rootDir>/out/",
   ],
 };
