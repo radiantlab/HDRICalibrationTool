@@ -37,6 +37,39 @@ export interface SavedOutput {
  * `directory` is ignored in a browser, where there is nowhere to put it but
  * the download folder.
  */
+/**
+ * Why the configured output folder cannot be written to, or null if it can.
+ *
+ * Checked before a run rather than after, because the alternative is what
+ * happened in practice: a full pipeline completed, then the first write failed
+ * with `failed to open file at path: ... (os error 2)`, and the work was lost
+ * with nothing said about which folder was wrong or where to change it.
+ *
+ * The folder can be stale for ordinary reasons -- an external drive that is
+ * not mounted, a directory since deleted, a path restored from a backup -- and
+ * the setting is persistent, so a wrong value keeps failing every run until
+ * someone notices it.
+ *
+ * Browsers have no output folder to check: the download lands wherever the
+ * browser decides, so there is nothing here to be wrong.
+ */
+export async function describeOutputFolderProblem(
+  directory: string
+): Promise<string | null> {
+  if (!(isTauri() && directory)) {
+    return null;
+  }
+  const { exists } = await import("@tauri-apps/plugin-fs");
+  try {
+    if (await exists(directory)) {
+      return null;
+    }
+  } catch (error) {
+    return `Could not check the output folder ${directory}: ${error}. Choose another in Settings.`;
+  }
+  return `The output folder ${directory} does not exist, so there is nowhere to save the results. Choose another in Settings.`;
+}
+
 export async function saveOutput(
   directory: string,
   name: string,
