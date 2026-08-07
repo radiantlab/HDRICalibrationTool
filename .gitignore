@@ -49,3 +49,6 @@ next-env.d.ts
 
 # Playwright MCP scratch output, written while inspecting the running app
 /.playwright-mcp/
+
+# rust-analyzer's flycheck scratch: per-machine, and committed once by accident
+/target

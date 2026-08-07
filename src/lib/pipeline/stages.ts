@@ -173,9 +173,10 @@ export function pcombCalArgs(calFile: string, input: string): string[] {
  *
  * `-h` stops pcomb copying the header it was handed, so this stage discards
  * everything the three before it accumulated. That looks like an oversight,
- * and #241 argued it was: the flag traces to `extra/ldr-to-hdr.sh:197` rather
- * than to Table 3 of Pierson et al. (2019), and it makes a calibrated picture
- * record less than an uncalibrated one.
+ * and #241 argued it was: the flag traces to the lab's own `ldr-to-hdr.sh`,
+ * which had the same asymmetry at line 197, rather than to Table 3 of Pierson
+ * et al. (2019). That script lived at `extra/ldr-to-hdr.sh` until the tree was
+ * tidied; it is in the history if the original is ever wanted.
  *
  * **It is load-bearing anyway, and removing it breaks the pipeline.** Radiance
  * tools indent an inherited header with tabs, and `evalglare` refuses any
